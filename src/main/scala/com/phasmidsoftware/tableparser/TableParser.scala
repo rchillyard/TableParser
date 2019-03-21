@@ -18,6 +18,7 @@ trait TableParser[Table] {
 
   def builder(rows: Seq[Row]): Table
 
+  // CONSIDER returning Table unwrapped and using lifted conversion functions
     def parse(ws: Seq[String]): Try[Table] = {
       def parseRows(header: Seq[String], ws1: Seq[String]): Try[Table] = for (rs <- FP.sequence(for (w <- ws1) yield rowParser.parse(w)(header))) yield builder(rs)
 
@@ -61,9 +62,10 @@ object Table {
 
 /**
   * CONSIDER eliminating this base class
-  * @param rows
-  * @param maybeHeader
-  * @tparam Row
+  *
+  * @param rows        the rows of the table
+  * @param maybeHeader (optional) header
+  * @tparam Row the underlying type of each Row
   */
 abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Seq[String]]) extends Table[Row]{
   self =>
