@@ -6,8 +6,20 @@ import scala.reflect.ClassTag
 
 /**
   * Trait to define the various formats for reading case classes from table rows.
+  *
+  * NOTE In each of these cellReader methods, the CellParser has a read method which ignores the columns.
+  *
+  * CONSIDER renaming this trait.
+  *
+  * CONSIDER renaming the methods.
   */
 trait Formats {
+
+  def cellReaderSeq[P: CellParser]: CellParser[Seq[P]] = {
+    new MultiCellParser[Seq[P]] {
+      def read(row: Row, columns: Seq[String]): Seq[P] = for (w <- row.ws) yield implicitly[CellParser[P]].read(CellValue(w))
+    }
+  }
 
   def cellReader1[P1: CellParser, T <: Product : ClassTag](construct: P1 => T): CellParser[T] = {
     val Array(p1) = Formats.extractFieldNames(implicitly[ClassTag[T]])
@@ -35,6 +47,64 @@ trait Formats {
         val p2V = implicitly[CellParser[P2]].read(CellValue(row(p2)))
         val p3V = implicitly[CellParser[P3]].read(CellValue(row(p3)))
         construct(p1V, p2V, p3V)
+      }
+    }
+  }
+
+  def cellReader4[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4) => T): CellParser[T] = {
+    val Array(p1, p2, p3, p4) = Formats.extractFieldNames(implicitly[ClassTag[T]])
+    new MultiCellParser[T] {
+      override def read(row: Row, columns: Seq[String]): T = {
+        val p1V = implicitly[CellParser[P1]].read(CellValue(row(p1)))
+        val p2V = implicitly[CellParser[P2]].read(CellValue(row(p2)))
+        val p3V = implicitly[CellParser[P3]].read(CellValue(row(p3)))
+        val p4V = implicitly[CellParser[P4]].read(CellValue(row(p4)))
+        construct(p1V, p2V, p3V, p4V)
+      }
+    }
+  }
+
+  def cellReader5[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5) => T): CellParser[T] = {
+    val Array(p1, p2, p3, p4, p5) = Formats.extractFieldNames(implicitly[ClassTag[T]])
+    new MultiCellParser[T] {
+      override def read(row: Row, columns: Seq[String]): T = {
+        val p1V = implicitly[CellParser[P1]].read(CellValue(row(p1)))
+        val p2V = implicitly[CellParser[P2]].read(CellValue(row(p2)))
+        val p3V = implicitly[CellParser[P3]].read(CellValue(row(p3)))
+        val p4V = implicitly[CellParser[P4]].read(CellValue(row(p4)))
+        val p5V = implicitly[CellParser[P5]].read(CellValue(row(p5)))
+        construct(p1V, p2V, p3V, p4V, p5V)
+      }
+    }
+  }
+
+  def cellReader6[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6) => T): CellParser[T] = {
+    val Array(p1, p2, p3, p4, p5, p6) = Formats.extractFieldNames(implicitly[ClassTag[T]])
+    new MultiCellParser[T] {
+      override def read(row: Row, columns: Seq[String]): T = {
+        val p1V = implicitly[CellParser[P1]].read(CellValue(row(p1)))
+        val p2V = implicitly[CellParser[P2]].read(CellValue(row(p2)))
+        val p3V = implicitly[CellParser[P3]].read(CellValue(row(p3)))
+        val p4V = implicitly[CellParser[P4]].read(CellValue(row(p4)))
+        val p5V = implicitly[CellParser[P5]].read(CellValue(row(p5)))
+        val p6V = implicitly[CellParser[P6]].read(CellValue(row(p6)))
+        construct(p1V, p2V, p3V, p4V, p5V, p6V)
+      }
+    }
+  }
+
+  def cellReader7[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7) => T): CellParser[T] = {
+    val Array(p1, p2, p3, p4, p5, p6, p7) = Formats.extractFieldNames(implicitly[ClassTag[T]])
+    new MultiCellParser[T] {
+      override def read(row: Row, columns: Seq[String]): T = {
+        val p1V = implicitly[CellParser[P1]].read(CellValue(row(p1)))
+        val p2V = implicitly[CellParser[P2]].read(CellValue(row(p2)))
+        val p3V = implicitly[CellParser[P3]].read(CellValue(row(p3)))
+        val p4V = implicitly[CellParser[P4]].read(CellValue(row(p4)))
+        val p5V = implicitly[CellParser[P5]].read(CellValue(row(p5)))
+        val p6V = implicitly[CellParser[P6]].read(CellValue(row(p6)))
+        val p7V = implicitly[CellParser[P7]].read(CellValue(row(p7)))
+        construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V)
       }
     }
   }

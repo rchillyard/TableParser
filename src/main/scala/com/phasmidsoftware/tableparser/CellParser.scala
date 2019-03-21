@@ -30,3 +30,7 @@ sealed abstract class Convertible {
 case class CellValue(w: String) extends Convertible
 
 case class RowValues(row: Row, ws: Seq[String]) extends Convertible
+
+object RowValues {
+  def apply(row: Row): RowValues = RowValues(row, row.hdr)
+}

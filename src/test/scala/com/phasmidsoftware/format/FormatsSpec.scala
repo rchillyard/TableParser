@@ -32,6 +32,22 @@ class FormatsSpec extends FlatSpec with Matchers {
     implicit val myDateFormat: CellParser[MyDate] = cellReader3(MyDate)
   }
 
+  case class FourTuple(s: String, x: Int, w: String, y: Int)
+
+  object FourTupleFormat extends Formats {
+
+    import Formats._
+
+    implicit val fourTupleFormat: CellParser[FourTuple] = cellReader4(FourTuple)
+  }
+
+  object IntSeqFormat extends Formats {
+
+    import Formats._
+
+    implicit val intSeqFormat: CellParser[Seq[Int]] = cellReaderSeq
+  }
+
   behavior of "FormatsSpec"
 
   it should "convertTo Int" in {
@@ -41,24 +57,33 @@ class FormatsSpec extends FlatSpec with Matchers {
   }
 
   it should "convertTo MyNumber" in {
-    val r = Row(Seq("1"), Seq("x"))
-    val z = RowValues(r, Seq("x"))
+    val r = RowValues(Row(Seq("1"), Seq("x")))
     import MyNumberFormat._
-    z.convertTo shouldBe MyNumber(1)
+    r.convertTo shouldBe MyNumber(1)
   }
 
   it should "convertTo PhoneNumber" in {
-    val r = Row(Seq("Robin", "6173705720"), Seq("name", "x"))
-    val z = RowValues(r, Seq("name", "x"))
+    val r = RowValues(Row(Seq("Robin", "6171234567"), Seq("name", "x")))
     import PhoneNumberFormat._
-    z.convertTo[PhoneNumber] shouldBe PhoneNumber("Robin", 6173705720L)
+    r.convertTo[PhoneNumber] shouldBe PhoneNumber("Robin", 6171234567L)
   }
 
   it should "convertTo MyDate" in {
-    val r = Row(Seq("21", "March", "2019"), Seq("day", "month", "year"))
-    val z = RowValues(r, Seq("day", "month", "year"))
+    val r = RowValues(Row(Seq("21", "March", "2019"), Seq("day", "month", "year")))
     import MyDateFormat._
-    z.convertTo[MyDate] shouldBe MyDate(21, "March", 2019)
+    r.convertTo[MyDate] shouldBe MyDate(21, "March", 2019)
+  }
+
+  it should "convertTo Tuple4" in {
+    val r = RowValues(Row(Seq("Thursday", "21", "March", "2019"), Seq("s", "x", "w", "y")))
+    import FourTupleFormat._
+    r.convertTo[FourTuple] shouldBe FourTuple("Thursday", 21, "March", 2019)
+  }
+
+  it should "convertTo Seq[Int]" in {
+    val r = RowValues(Row(Seq("21", "03", "2019"), Nil))
+    import IntSeqFormat._
+    r.convertTo[Seq[Int]] shouldBe List(21, 3, 2019)
   }
 
 }
