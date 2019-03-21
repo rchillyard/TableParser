@@ -1,6 +1,6 @@
 package com.phasmidsoftware.format
 
-import com.phasmidsoftware.tableparser.Row
+import com.phasmidsoftware.tableparser.{CellParser, CellValue, Row, RowValues}
 import org.scalatest.{FlatSpec, Matchers}
 
 class FormatsSpec extends FlatSpec with Matchers {
@@ -11,7 +11,7 @@ class FormatsSpec extends FlatSpec with Matchers {
 
     import Formats._
 
-    implicit val myNumberFormat: CellReader[MyNumber] = cellReader1(MyNumber.apply)
+    implicit val myNumberFormat: CellParser[MyNumber] = cellReader1(MyNumber)
   }
 
   case class PhoneNumber(name: String, x: Long)
@@ -20,7 +20,16 @@ class FormatsSpec extends FlatSpec with Matchers {
 
     import Formats._
 
-    implicit val phoneNumberFormat: CellReader[PhoneNumber] = cellReader2(PhoneNumber.apply)
+    implicit val phoneNumberFormat: CellParser[PhoneNumber] = cellReader2(PhoneNumber)
+  }
+
+  case class MyDate(day: Int, month: String, year: Int)
+
+  object MyDateFormat extends Formats {
+
+    import Formats._
+
+    implicit val myDateFormat: CellParser[MyDate] = cellReader3(MyDate)
   }
 
   behavior of "FormatsSpec"
@@ -43,6 +52,13 @@ class FormatsSpec extends FlatSpec with Matchers {
     val z = RowValues(r, Seq("name", "x"))
     import PhoneNumberFormat._
     z.convertTo[PhoneNumber] shouldBe PhoneNumber("Robin", 6173705720L)
+  }
+
+  it should "convertTo MyDate" in {
+    val r = Row(Seq("21", "March", "2019"), Seq("day", "month", "year"))
+    val z = RowValues(r, Seq("day", "month", "year"))
+    import MyDateFormat._
+    z.convertTo[MyDate] shouldBe MyDate(21, "March", 2019)
   }
 
 }

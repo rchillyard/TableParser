@@ -1,6 +1,6 @@
 package com.phasmidsoftware.format
 
-import com.phasmidsoftware.tableparser.Row
+import com.phasmidsoftware.tableparser._
 
 import scala.reflect.ClassTag
 
@@ -9,69 +9,48 @@ import scala.reflect.ClassTag
   */
 trait Formats {
 
-  def cellReader1[P1: CellReader, T <: Product : ClassTag](construct: P1 => T): CellReader[T] = {
+  def cellReader1[P1: CellParser, T <: Product : ClassTag](construct: P1 => T): CellParser[T] = {
     val Array(p1) = Formats.extractFieldNames(implicitly[ClassTag[T]])
-    cellReader1(construct, p1)
+    new MultiCellParser[T] {
+      def read(row: Row, columns: Seq[String]): T = construct(implicitly[CellParser[P1]].read(CellValue(row(p1))))
+    }
   }
 
-  def cellReader2[P1: CellReader, P2: CellReader, T <: Product : ClassTag](construct: (P1, P2) => T): CellReader[T] = {
+  def cellReader2[P1: CellParser, P2: CellParser, T <: Product : ClassTag](construct: (P1, P2) => T): CellParser[T] = {
     val Array(p1, p2) = Formats.extractFieldNames(implicitly[ClassTag[T]])
-    cellReader2(construct, p1, p2)
+    new MultiCellParser[T] {
+      override def read(row: Row, columns: Seq[String]): T = {
+        val p1V = implicitly[CellParser[P1]].read(CellValue(row(p1)))
+        val p2V = implicitly[CellParser[P2]].read(CellValue(row(p2)))
+        construct(p1V, p2V)
+      }
+    }
   }
 
-  private def cellReader1[P1: CellReader, T <: Product](construct: P1 => T, fieldName1: String): CellReader[T] = new RowReader[T] {
-    def read(row: Row, columns: Seq[String]): T = construct(implicitly[CellReader[P1]].read(CellValue(row(fieldName1))))
-  }
-
-  private def cellReader2[P1: CellReader, P2: CellReader, T <: Product](construct: (P1, P2) => T, fieldName1: String, fieldName2: String): CellReader[T] = new RowReader[T] {
-    override def read(row: Row, columns: Seq[String]): T = {
-      val p1V = implicitly[CellReader[P1]].read(CellValue(row(fieldName1)))
-      val p2V = implicitly[CellReader[P2]].read(CellValue(row(fieldName2)))
-      construct(p1V, p2V)
+  def cellReader3[P1: CellParser, P2: CellParser, P3: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3) => T): CellParser[T] = {
+    val Array(p1, p2, p3) = Formats.extractFieldNames(implicitly[ClassTag[T]])
+    new MultiCellParser[T] {
+      override def read(row: Row, columns: Seq[String]): T = {
+        val p1V = implicitly[CellParser[P1]].read(CellValue(row(p1)))
+        val p2V = implicitly[CellParser[P2]].read(CellValue(row(p2)))
+        val p3V = implicitly[CellParser[P3]].read(CellValue(row(p3)))
+        construct(p1V, p2V, p3V)
+      }
     }
   }
 }
 
-trait CellReader[T] {
-  // Need to define this better so that we don't have any non-implemented methods.
-  def convertString(w: String): T
-
-  def read(value: Convertible): T = value match {
-    case CellValue(w) => convertString(w)
-    case RowValues(row, columns) => read(row, columns)
-    case _ => throw FormatsException(s"CellReader: Cannot convert value $value of type ${value.getClass}")
-  }
-
-  def read(row: Row, columns: Seq[String]): T
-}
-
-trait SingleCellReader[T] extends CellReader[T] {
-  def read(row: Row, columns: Seq[String]): T = ???
-}
-
-trait RowReader[T] extends CellReader[T] {
-  def convertString(w: String): T = ???
-}
-
-sealed abstract class Convertible {
-  def convertTo[T: CellReader]: T = cellReader.read(this)
-}
-
-case class CellValue(w: String) extends Convertible
-
-case class RowValues(row: Row, ws: Seq[String]) extends Convertible
-
 object Formats {
 
-  implicit object IntCellReader extends SingleCellReader[Int] {
+  implicit object IntCellParser$ extends SingleCellParser[Int] {
     def convertString(w: String): Int = w.toInt
   }
 
-  implicit object LongCellReader extends SingleCellReader[Long] {
+  implicit object LongCellParser$ extends SingleCellParser[Long] {
     override def convertString(w: String): Long = w.toLong
   }
 
-  implicit object StringCellReader extends SingleCellReader[String] {
+  implicit object StringCellParser$ extends SingleCellParser[String] {
     override def convertString(w: String): String = w
   }
 

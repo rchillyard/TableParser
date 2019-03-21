@@ -3,7 +3,7 @@ package com.phasmidsoftware.tableparser
 import java.io.File
 import java.net.URI
 
-import com.phasmidsoftware.csvparser._
+import com.phasmidsoftware.csvparser.{FP, RowException}
 
 import scala.io.Source
 import scala.util.{Failure, Try}
