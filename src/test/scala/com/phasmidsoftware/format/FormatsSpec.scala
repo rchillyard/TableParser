@@ -1,5 +1,6 @@
 package com.phasmidsoftware.format
 
+import com.phasmidsoftware.tableparser.Row
 import org.scalatest.{FlatSpec, Matchers}
 
 class FormatsSpec extends FlatSpec with Matchers {

@@ -2,22 +2,22 @@ package com.phasmidsoftware.tableparser
 
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.util.{Failure, Success, Try}
 import scala.util.parsing.combinator.JavaTokenParsers
+import scala.util.{Failure, Success, Try}
 
 class TableParserSpec extends FlatSpec with Matchers {
 
   case class IntPair(a: Int, b: Int)
 
   class IntPairParser extends JavaTokenParsers {
-    def pair: Parser[(Int,Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt,y.toInt) }
+    def pair: Parser[(Int, Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
   }
 
   val intPairParser = new IntPairParser
 
   trait IntPairRowParser extends RowParser[IntPair] {
-    override def parse(w: String)(header: Seq[String]): Try[IntPair] = intPairParser.parseAll(intPairParser.pair,w) match {
-      case intPairParser.Success((x,y),_) => Success(IntPair(x,y))
+    override def parse(w: String)(header: Seq[String]): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
+      case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
       case _ => Failure(TableException(s"unable to parse $w"))
     }
 

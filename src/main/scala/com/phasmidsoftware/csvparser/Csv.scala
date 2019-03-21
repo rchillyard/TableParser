@@ -3,7 +3,6 @@ package com.phasmidsoftware.csvparser
 import scala.util.{Failure, Try}
 
 
-
 trait CsvParser {
 
   def hasHeader: Boolean
