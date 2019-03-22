@@ -2,23 +2,93 @@ package com.phasmidsoftware.tableparser
 
 import scala.util.Try
 import scala.util.matching.Regex
-import scala.util.parsing.combinator.JavaTokenParsers
 
+/**
+  * Trait to describe a parser which will yield a Try[Row] from a String representing a line of a table.
+  *
+  * @tparam Row the (parametric) Row type for which there must be evidence of a CellParser[Row].
+  */
 trait RowParser[Row] {
 
+  /**
+    * Parse the String w, resulting in a Try[Row]
+    *
+    * @param w      the String to be parsed.
+    * @param header the header already parsed.
+    * @return a Try[Row].
+    */
   def parse(w: String)(header: Seq[String]): Try[Row]
 
-  def parseHeader(w: String): Seq[String]
+  /**
+    * Parse the String, resulting in a Seq[String]
+    *
+    * @param w the String to be parsed: always the first line of a CSV file.
+    * @return a Try[Seq[String]
+    */
+  def parseHeader(w: String): Try[Seq[String]]
 }
 
-case class StandardRowParser[Row: CellParser](delimiter: Regex = ",".r, string: Regex = """\w*""".r, quote: Char = '"') extends RowParser[Row] {
-  val parser = new TokenParser(delimiter, string, quote)
+/**
+  * StandardRowParser: a parser which extends RowParser[Row] and will yield a Try[Row] from a String representing a line of a table.
+  *
+  * @param parser the LineParser to use
+  * @tparam Row the (parametric) Row type for which there must be evidence of a CellParser[Row].
+  */
+case class StandardRowParser[Row: CellParser](parser: LineParser) extends RowParser[Row] {
 
   override def parse(w: String)(header: Seq[String]): Try[Row] = for (ws <- parser.parseRow(w); r <- Try(RowValues(Row(ws, header)).convertTo[Row])) yield r
 
-  override def parseHeader(w: String): Seq[String] = ???
+  override def parseHeader(w: String): Try[Seq[String]] = parser.parseRow(w.toUpperCase)
 }
 
+object StandardRowParser {
+  def apply[Row: CellParser](delimiter: Regex, string: Regex, quote: Char): StandardRowParser[Row] =
+    StandardRowParser(new LineParser(delimiter, string, quote))
+}
+
+trait RowConfig {
+  /**
+    * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
+    */
+  val delimiter: Regex
+  /**
+    * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
+    */
+  val string: Regex
+  /**
+    * the "quote" Char (see LineParser). defaults to ".
+    */
+  val quote: Char
+}
+
+trait DefaultRowConfig extends RowConfig {
+  /**
+    * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
+    */
+  val delimiter: Regex = ", *".r
+  /**
+    * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
+    */
+  val string: Regex = """\w*""".r
+  /**
+    * the "quote" Char (see LineParser). defaults to ".
+    */
+  val quote: Char = '"'
+}
+
+
+object RowConfig {
+
+  implicit object defaultRowConfig extends DefaultRowConfig
+
+}
+
+/**
+  * Case class to represent a row in the table.
+  *
+  * @param ws  the (raw) Strings that make up the row.
+  * @param hdr is the column names.
+  */
 case class Row(ws: Seq[String], hdr: Seq[String]) extends (String => String) {
   /**
     * Method to yield the value for a given column name
@@ -27,21 +97,7 @@ case class Row(ws: Seq[String], hdr: Seq[String]) extends (String => String) {
     * @return the value as a String
     * @throws IndexOutOfBoundsException if w is not contained in hdr or hdr is longer than ws.
     */
-  override def apply(w: String): String = ws(hdr.indexOf(w))
-}
-
-class TokenParser(delimiter: Regex, string: Regex, quote: Char) extends JavaTokenParsers {
-  def parseRow(w: String): Try[Seq[String]] = parseAll(row, w) match {
-    case Success(s, _) => scala.util.Success(s)
-    case Failure(x, _) => scala.util.Failure(ParserException(x))
-    case Error(x, _) => scala.util.Failure(ParserException(x))
+  override def apply(w: String): String = try ws(hdr.indexOf(w.toUpperCase)) catch {
+    case _: IndexOutOfBoundsException => throw ParserException(s"unable to lookup value for $w")
   }
-
-  def row: Parser[Seq[String]] = rep1sep(cell, delimiter)
-
-  def cell: Parser[String] = quotedString | string | failure("invalid string")
-
-  def quotedString: Parser[String] = quote ~> s"""[^$quote]*""".r <~ quote
 }
-
-case class ParserException(msg: String) extends Exception(msg)

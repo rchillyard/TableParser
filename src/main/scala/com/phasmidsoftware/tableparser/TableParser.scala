@@ -1,7 +1,7 @@
 package com.phasmidsoftware.tableparser
 
-import java.io.File
-import java.net.URI
+import java.io.{File, InputStream}
+import java.net.{URI, URL}
 
 import com.phasmidsoftware.csvparser.{FP, RowException}
 
@@ -20,10 +20,11 @@ trait TableParser[Table] {
 
   // CONSIDER returning Table unwrapped and using lifted conversion functions
   def parse(ws: Seq[String]): Try[Table] = {
-    def parseRows(header: Seq[String], ws1: Seq[String]): Try[Table] = for (rs <- FP.sequence(for (w <- ws1) yield rowParser.parse(w)(header))) yield builder(rs)
+    def parseRows(header: Seq[String], ws1: Seq[String]): Try[Table] =
+      for (rs <- FP.sequence(for (w <- ws1) yield rowParser.parse(w)(header))) yield builder(rs)
 
     if (hasHeader) ws match {
-      case h :: t => parseRows(rowParser.parseHeader(h), t)
+      case h #:: t => for (ws <- rowParser.parseHeader(h); rs <- parseRows(ws, t)) yield rs
       case _ => Failure(RowException("no rows to parse"))
     }
     else parseRows(Nil, ws)
@@ -56,6 +57,10 @@ object Table {
   def parse[T: TableParser](x: Source): Try[T] = parse(x.getLines())
 
   def parse[T: TableParser](u: URI): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
+
+  def parse[T: TableParser](u: URL): Try[T] = parse(u.toURI)
+
+  def parse[T: TableParser](i: InputStream): Try[T] = for (s <- Try(Source.fromInputStream(i)); t <- parse(s)) yield t
 
   def parse[T: TableParser](f: File): Try[T] = for (s <- Try(Source.fromFile(f)); t <- parse(s)) yield t
 }

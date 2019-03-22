@@ -31,4 +31,8 @@ class LineParser(delimiter: Regex, string: Regex, quote: Char) extends JavaToken
   override def toString: String = s"""LineParser: delimiter=$delimiter, string=$string, quote="$quote""""
 }
 
+object LineParser {
+  def apply(implicit c: RowConfig): LineParser = new LineParser(c.delimiter, c.string, c.quote)
+}
+
 case class ParserException(msg: String) extends Exception(msg)

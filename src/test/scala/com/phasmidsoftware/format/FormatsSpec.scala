@@ -57,25 +57,25 @@ class FormatsSpec extends FlatSpec with Matchers {
   }
 
   it should "convertTo MyNumber" in {
-    val r = RowValues(Row(Seq("1"), Seq("x")))
+    val r = RowValues(Row(Seq("1"), Seq("X")))
     import MyNumberFormat._
     r.convertTo shouldBe MyNumber(1)
   }
 
   it should "convertTo PhoneNumber" in {
-    val r = RowValues(Row(Seq("Robin", "6171234567"), Seq("name", "x")))
+    val r = RowValues(Row(Seq("Robin", "6171234567"), Seq("NAME", "X")))
     import PhoneNumberFormat._
     r.convertTo[PhoneNumber] shouldBe PhoneNumber("Robin", 6171234567L)
   }
 
   it should "convertTo MyDate" in {
-    val r = RowValues(Row(Seq("21", "March", "2019"), Seq("day", "month", "year")))
+    val r = RowValues(Row(Seq("21", "March", "2019"), Seq("DAY", "MONTH", "YEAR")))
     import MyDateFormat._
     r.convertTo[MyDate] shouldBe MyDate(21, "March", 2019)
   }
 
   it should "convertTo Tuple4" in {
-    val r = RowValues(Row(Seq("Thursday", "21", "March", "2019"), Seq("s", "x", "w", "y")))
+    val r = RowValues(Row(Seq("Thursday", "21", "March", "2019"), Seq("S", "X", "W", "Y")))
     import FourTupleFormat._
     r.convertTo[FourTuple] shouldBe FourTuple("Thursday", 21, "March", 2019)
   }

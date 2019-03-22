@@ -1,6 +1,7 @@
 package com.phasmidsoftware.format
 
 import com.phasmidsoftware.tableparser._
+import org.joda.time.LocalDate
 
 import scala.reflect.ClassTag
 
@@ -113,7 +114,7 @@ trait Formats {
 object Formats {
 
   implicit object IntCellParser$ extends SingleCellParser[Int] {
-    def convertString(w: String): Int = w.toInt
+    def convertString(w: String): Int = implicitly[Parseable[Int]].parse(w)
   }
 
   implicit object LongCellParser$ extends SingleCellParser[Long] {
@@ -122,6 +123,10 @@ object Formats {
 
   implicit object StringCellParser$ extends SingleCellParser[String] {
     override def convertString(w: String): String = w
+  }
+
+  implicit object LocalDateCellParser$ extends SingleCellParser[LocalDate] {
+    override def convertString(w: String): LocalDate = implicitly[Parseable[LocalDate]].parse(w)
   }
 
   private def extractFieldNames(classTag: ClassTag[_]): Array[String] = {
