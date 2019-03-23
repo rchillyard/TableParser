@@ -13,16 +13,12 @@ class FormatsSpec extends FlatSpec with Matchers {
 
   object MyNumberFormat extends Formats {
 
-    import Formats._
-
     implicit val myNumberFormat: CellParser[MyNumber] = cellReader1(MyNumber)
   }
 
   case class PhoneNumber(name: String, x: Long)
 
   object PhoneNumberFormat extends Formats {
-
-    import Formats._
 
     implicit val phoneNumberFormat: CellParser[PhoneNumber] = cellReader2(PhoneNumber)
   }
@@ -31,16 +27,12 @@ class FormatsSpec extends FlatSpec with Matchers {
 
   object MyDateFormat extends Formats {
 
-    import Formats._
-
     implicit val myDateFormat: CellParser[MyDate] = cellReader3(MyDate)
   }
 
   case class FourTuple(s: String, x: Int, w: String, y: Int)
 
   object FourTupleFormat extends Formats {
-
-    import Formats._
 
     implicit val fourTupleFormat: CellParser[FourTuple] = cellReader4(FourTuple)
   }
@@ -53,16 +45,17 @@ class FormatsSpec extends FlatSpec with Matchers {
 
     def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 
-    import Formats._
-
     implicit val dateFormat: CellParser[LocalDate] = cellReader(parseDate)
     implicit val dailyRaptorReportFormat: CellParser[DailyRaptorReport] = cellReader4(DailyRaptorReport)
   }
 
+  object DailyRaptorReportFormatISO extends Formats {
+
+    implicit val dailyRaptorReportFormatISO: CellParser[DailyRaptorReport] = cellReader4(DailyRaptorReport)
+  }
+
 
   object IntSeqFormat extends Formats {
-
-    import Formats._
 
     implicit val intSeqFormat: CellParser[Seq[Int]] = cellReaderSeq
   }
@@ -71,7 +64,6 @@ class FormatsSpec extends FlatSpec with Matchers {
 
   it should "convertTo Int" in {
     val x = CellValue("1")
-    import Formats._
     x.convertTo[Int] shouldBe 1
   }
 
@@ -102,6 +94,13 @@ class FormatsSpec extends FlatSpec with Matchers {
   it should "convertTo DailyRaptorReport" in {
     val r = RowValues(Row(Seq("09/16/2018", "Partly Cloudy", "3308", "5"), Seq("DATE", "WEATHER", "BW", "RT")))
     import DailyRaptorReportFormat._
+    //noinspection ScalaDeprecation
+    r.convertTo[DailyRaptorReport] shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5)
+  }
+
+  it should "convertTo DailyRaptorReport in ISO date format" in {
+    val r = RowValues(Row(Seq("2018-09-16", "Partly Cloudy", "3308", "5"), Seq("DATE", "WEATHER", "BW", "RT")))
+    import DailyRaptorReportFormatISO._
     //noinspection ScalaDeprecation
     r.convertTo[DailyRaptorReport] shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5)
   }

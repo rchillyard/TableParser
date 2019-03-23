@@ -3,13 +3,12 @@ package com.phasmidsoftware.tableparser
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 
-import com.phasmidsoftware.format.FP
-
 import scala.io.Source
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 /**
   * A Table of Rows.
+  *
   * @tparam Row the type of each row.
   */
 trait Table[Row] extends Iterable[Row] {

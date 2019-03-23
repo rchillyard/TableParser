@@ -1,6 +1,10 @@
 package com.phasmidsoftware.tableparser
 
-import com.phasmidsoftware.format.FormatsException
+import java.io.File
+import java.net.URL
+
+import com.phasmidsoftware.format.{FormatsException, Parseable}
+import org.joda.time.LocalDate
 
 trait CellParser[T] {
   // TODO Need to define this better so that we don't have any non-implemented methods.
@@ -35,4 +39,41 @@ case class RowValues(row: Row, ws: Seq[String]) extends Convertible
 
 object RowValues {
   def apply(row: Row): RowValues = RowValues(row, row.hdr)
+}
+
+object CellParser {
+
+  implicit object BooleanCellParser$ extends SingleCellParser[Boolean] {
+    def convertString(w: String): Boolean = implicitly[Parseable[Boolean]].parse(w)
+  }
+
+  implicit object IntCellParser$ extends SingleCellParser[Int] {
+    def convertString(w: String): Int = implicitly[Parseable[Int]].parse(w)
+  }
+
+  implicit object LongCellParser$ extends SingleCellParser[Long] {
+    override def convertString(w: String): Long = implicitly[Parseable[Long]].parse(w)
+  }
+
+  implicit object DoubleCellParser$ extends SingleCellParser[Double] {
+    override def convertString(w: String): Double = implicitly[Parseable[Double]].parse(w)
+  }
+
+  implicit object StringCellParser$ extends SingleCellParser[String] {
+    override def convertString(w: String): String = w
+  }
+
+  implicit object DateTimeParser$ extends SingleCellParser[LocalDate] {
+    override def convertString(w: String): LocalDate = implicitly[Parseable[LocalDate]].parse(w)
+  }
+
+  implicit object URLParser$ extends SingleCellParser[URL] {
+    override def convertString(w: String): URL = implicitly[Parseable[URL]].parse(w)
+  }
+
+  implicit object FileParser$ extends SingleCellParser[File] {
+    override def convertString(w: String): File = implicitly[Parseable[File]].parse(w)
+  }
+
+
 }

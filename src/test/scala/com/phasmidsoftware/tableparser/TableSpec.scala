@@ -2,13 +2,13 @@ package com.phasmidsoftware.tableparser
 
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.util.{Failure, Success, Try}
 import scala.util.parsing.combinator.JavaTokenParsers
+import scala.util.{Failure, Success, Try}
 
 class TableSpec extends FlatSpec with Matchers {
 
   case class IntPair(a: Int, b: Int) {
-    def map(f: Int=>Int): IntPair = IntPair(f(a), f(b))
+    def map(f: Int => Int): IntPair = IntPair(f(a), f(b))
   }
 
   object IntPair {
@@ -42,6 +42,7 @@ class TableSpec extends FlatSpec with Matchers {
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
+
   }
 
   behavior of "Table"
@@ -59,12 +60,12 @@ class TableSpec extends FlatSpec with Matchers {
   }
 
   it should "map" in {
-    val f: IntPair=>IntPair = _ map (_ * 2)
+    val f: IntPair => IntPair = _ map (_ * 2)
 
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
     iIty should matchPattern { case Success(_) => }
-    iIty.get.map(f).rows shouldBe Seq(IntPair(2,4), IntPair(84,198))
+    iIty.get.map(f).rows shouldBe Seq(IntPair(2, 4), IntPair(84, 198))
   }
 
   it should "$plus$plus" in {
@@ -72,12 +73,12 @@ class TableSpec extends FlatSpec with Matchers {
   }
 
   it should "flatMap" in {
-    val f: IntPair=>Table[IntPair] = p => TableWithoutHeader(Seq(p))
+    val f: IntPair => Table[IntPair] = p => TableWithoutHeader(Seq(p))
 
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
     iIty should matchPattern { case Success(_) => }
-    iIty.get.flatMap(f).rows shouldBe Seq(IntPair(1,2), IntPair(42,99))
+    iIty.get.flatMap(f).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
   }
 
 }

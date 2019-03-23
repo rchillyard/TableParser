@@ -62,7 +62,7 @@ trait Formats {
     * @param construct a function (P1,P2) => T, usually the apply method of a case class.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
-    * @tparam T the underlying type of the result, a Product.
+    * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1 and P2 and thence into a T
     */
   def cellReader2[P1: CellParser, P2: CellParser, T <: Product : ClassTag](construct: (P1, P2) => T): CellParser[T] = {
@@ -83,7 +83,7 @@ trait Formats {
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
     * @tparam P3 the type of the third field of the Product type T.
-    * @tparam T the underlying type of the result, a Product.
+    * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2 and P3 and thence into a T
     */
   def cellReader3[P1: CellParser, P2: CellParser, P3: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3) => T): CellParser[T] = {
@@ -106,7 +106,7 @@ trait Formats {
     * @tparam P2 the type of the second field of the Product type T.
     * @tparam P3 the type of the second field of the Product type T.
     * @tparam P4 the type of the fourth field of the Product type T.
-    * @tparam T the underlying type of the result, a Product.
+    * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3 and P4 and thence into a T
     */
   def cellReader4[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4) => T): CellParser[T] = {
@@ -131,7 +131,7 @@ trait Formats {
     * @tparam P3 the type of the second field of the Product type T.
     * @tparam P4 the type of the fourth field of the Product type T.
     * @tparam P5 the type of the fifth field of the Product type T.
-    * @tparam T the underlying type of the result, a Product.
+    * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4 and P5 and thence into a T
     */
   def cellReader5[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5) => T): CellParser[T] = {
@@ -158,7 +158,7 @@ trait Formats {
     * @tparam P4 the type of the fourth field of the Product type T.
     * @tparam P5 the type of the fifth field of the Product type T.
     * @tparam P6 the type of the sixth field of the Product type T.
-    * @tparam T the underlying type of the result, a Product.
+    * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5 and P6 and thence into a T
     */
   def cellReader6[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6) => T): CellParser[T] = {
@@ -187,7 +187,7 @@ trait Formats {
     * @tparam P5 the type of the fifth field of the Product type T.
     * @tparam P6 the type of the sixth field of the Product type T.
     * @tparam P7 the type of the seventh field of the Product type T.
-    * @tparam T the underlying type of the result, a Product.
+    * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6 and P7 and thence into a T
     */
   def cellReader7[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7) => T): CellParser[T] = {
@@ -212,26 +212,6 @@ trait Formats {
   * i.e. they don't depend on some other parameter such as the formatter in DateTime conversions.
   */
 object Formats {
-
-  implicit object BooleanCellParser$ extends SingleCellParser[Boolean] {
-    def convertString(w: String): Boolean = implicitly[Parseable[Boolean]].parse(w)
-  }
-
-  implicit object IntCellParser$ extends SingleCellParser[Int] {
-    def convertString(w: String): Int = implicitly[Parseable[Int]].parse(w)
-  }
-
-  implicit object LongCellParser$ extends SingleCellParser[Long] {
-    override def convertString(w: String): Long = implicitly[Parseable[Long]].parse(w)
-  }
-
-  implicit object DoubleCellParser$ extends SingleCellParser[Double] {
-    override def convertString(w: String): Double = implicitly[Parseable[Double]].parse(w)
-  }
-
-  implicit object StringCellParser$ extends SingleCellParser[String] {
-    override def convertString(w: String): String = w
-  }
 
   private def extractFieldNames(classTag: ClassTag[_]): Array[String] = {
     import java.lang.reflect.Modifier
