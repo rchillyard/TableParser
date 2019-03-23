@@ -1,7 +1,6 @@
 package com.phasmidsoftware
 
-package object tableparser {
+package object table {
 
-  def cellReader[T](implicit reader: CellParser[T]): CellParser[T] = reader
 
 }

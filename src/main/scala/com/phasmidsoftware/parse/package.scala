@@ -1,5 +1,7 @@
 package com.phasmidsoftware
 
-package object format {
+package object parse {
+
+  def cellReader[T](implicit reader: CellParser[T]): CellParser[T] = reader
 
 }

@@ -1,6 +1,6 @@
-package com.phasmidsoftware.format
+package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.tableparser._
+import com.phasmidsoftware.table._
 
 import scala.reflect.ClassTag
 
