@@ -1,5 +1,6 @@
-package com.phasmidsoftware.tableparser
+package com.phasmidsoftware.table
 
+import com.phasmidsoftware.parse.ParserException
 import org.scalatest.{FlatSpec, Matchers}
 
 class RowSpec extends FlatSpec with Matchers {

@@ -1,8 +1,8 @@
-package com.phasmidsoftware.format
+package com.phasmidsoftware.parse
 
 import java.util.Date
 
-import com.phasmidsoftware.tableparser.{CellParser, CellValue, Row, RowValues}
+import com.phasmidsoftware.table.Row
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}
@@ -98,7 +98,7 @@ class FormatsSpec extends FlatSpec with Matchers {
     r.convertTo[DailyRaptorReport] shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5)
   }
 
-  it should "convertTo DailyRaptorReport in ISO date format" in {
+  it should "convertTo DailyRaptorReport in ISO date parse" in {
     val r = RowValues(Row(Seq("2018-09-16", "Partly Cloudy", "3308", "5"), Seq("DATE", "WEATHER", "BW", "RT")))
     import DailyRaptorReportFormatISO._
     //noinspection ScalaDeprecation

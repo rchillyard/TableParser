@@ -1,5 +1,6 @@
-package com.phasmidsoftware.tableparser
+package com.phasmidsoftware.table
 
+import com.phasmidsoftware.parse.{RowParser, TableParser}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.parsing.combinator.JavaTokenParsers

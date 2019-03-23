@@ -1,9 +1,9 @@
-package com.phasmidsoftware.tableparser
+package com.phasmidsoftware.parse
 
 import java.io.File
 import java.net.URL
 
-import com.phasmidsoftware.format.{FormatsException, Parseable}
+import com.phasmidsoftware.table.Row
 import org.joda.time.LocalDate
 
 trait CellParser[T] {

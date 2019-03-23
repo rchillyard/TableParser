@@ -1,6 +1,5 @@
-package com.phasmidsoftware.tableparser
+package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.format.Formats
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.matching.Regex
@@ -13,8 +12,6 @@ class RowParserSpec extends FlatSpec with Matchers {
   val header: Seq[String] = Seq("SPECIES", "COUNT")
 
   object HawkCountFormat extends Formats {
-
-    import Formats._
 
     implicit val hawkCountFormat: CellParser[HawkCount] = cellReader2(HawkCount)
   }

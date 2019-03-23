@@ -1,4 +1,4 @@
-package com.phasmidsoftware.tableparser
+package com.phasmidsoftware.parse
 
 import org.scalatest.{FlatSpec, Matchers}
 

@@ -1,9 +1,8 @@
-package com.phasmidsoftware.tableparser
-
+package com.phasmidsoftware.parse
 
 import java.util.Date
 
-import com.phasmidsoftware.format.Formats
+import com.phasmidsoftware.table.{Table, TableException, TableWithoutHeader}
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}

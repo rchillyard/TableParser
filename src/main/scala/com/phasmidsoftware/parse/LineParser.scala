@@ -1,4 +1,4 @@
-package com.phasmidsoftware.tableparser
+package com.phasmidsoftware.parse
 
 import scala.util.Try
 import scala.util.matching.Regex

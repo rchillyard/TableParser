@@ -1,7 +1,9 @@
-package com.phasmidsoftware.tableparser
+package com.phasmidsoftware.table
 
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
+
+import com.phasmidsoftware.parse.TableParser
 
 import scala.io.Source
 import scala.util.Try

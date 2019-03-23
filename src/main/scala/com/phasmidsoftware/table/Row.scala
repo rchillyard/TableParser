@@ -1,4 +1,6 @@
-package com.phasmidsoftware.tableparser
+package com.phasmidsoftware.table
+
+import com.phasmidsoftware.parse.ParserException
 
 /**
   * Case class to represent a (raw) row from a table.

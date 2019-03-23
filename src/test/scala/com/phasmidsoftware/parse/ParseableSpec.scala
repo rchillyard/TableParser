@@ -1,4 +1,4 @@
-package com.phasmidsoftware.format
+package com.phasmidsoftware.parse
 
 import org.scalatest.{FlatSpec, Matchers}
 

@@ -1,6 +1,4 @@
-package com.phasmidsoftware.tableparser
-
-import com.phasmidsoftware.format.FP
+package com.phasmidsoftware.parse
 
 import scala.util.{Failure, Try}
 

@@ -1,4 +1,4 @@
-package com.phasmidsoftware.format
+package com.phasmidsoftware.parse
 
 import java.io.File
 import java.net.URL

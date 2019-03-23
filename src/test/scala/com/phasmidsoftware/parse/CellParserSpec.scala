@@ -1,5 +1,6 @@
-package com.phasmidsoftware.tableparser
+package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.table.Row
 import org.scalatest.{FlatSpec, Matchers}
 
 //noinspection NotImplementedCode
