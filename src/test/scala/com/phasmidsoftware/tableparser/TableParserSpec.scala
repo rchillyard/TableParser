@@ -1,6 +1,8 @@
 package com.phasmidsoftware.tableparser
 
 
+import java.util.Date
+
 import com.phasmidsoftware.format.Formats
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
@@ -11,6 +13,8 @@ import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
 class TableParserSpec extends FlatSpec with Matchers {
+
+  behavior of "TableParser"
 
   case class IntPair(a: Int, b: Int)
 
@@ -48,15 +52,13 @@ class TableParserSpec extends FlatSpec with Matchers {
 
   }
 
-  behavior of "TableParser"
-
   it should "parse int pair" in {
 
     import IntPair._
 
     val strings: Seq[String] = Seq("1 2")
     Table.parse(strings) match {
-      case Success(t) => succeed
+      case Success(_) => succeed
       case Failure(x) => fail(x.getLocalizedMessage)
     }
   }
@@ -125,6 +127,8 @@ class TableParserSpec extends FlatSpec with Matchers {
     val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parse(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
     x should matchPattern { case Success(TableWithoutHeader(_)) => }
     x.get.rows.size shouldBe 13
+    //noinspection ScalaDeprecation
+    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 12)), "Dense Fog/Light Rain", 0, 0)
   }
 
 }

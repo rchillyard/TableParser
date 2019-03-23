@@ -45,7 +45,7 @@ trait Formats {
     * Method to return a CellParser[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
     *
     * @param construct a function P => T, usually the apply method of a case class.
-    * @tparam P the type of the (single) field of the Product type T.
+    * @tparam P1 the type of the (single) field of the Product type T.
     * @tparam T the underlying type of the result, a Product.
     * @return a MultiCellParser which converts a String from a Row into the field type P and thence into a T
     */

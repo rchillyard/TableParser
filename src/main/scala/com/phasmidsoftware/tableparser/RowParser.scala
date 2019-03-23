@@ -82,22 +82,3 @@ object RowConfig {
   implicit object defaultRowConfig extends DefaultRowConfig
 
 }
-
-/**
-  * Case class to represent a row in the table.
-  *
-  * @param ws  the (raw) Strings that make up the row.
-  * @param hdr is the column names.
-  */
-case class Row(ws: Seq[String], hdr: Seq[String]) extends (String => String) {
-  /**
-    * Method to yield the value for a given column name
-    *
-    * @param w the column name
-    * @return the value as a String
-    * @throws IndexOutOfBoundsException if w is not contained in hdr or hdr is longer than ws.
-    */
-  override def apply(w: String): String = try ws(hdr.indexOf(w.toUpperCase)) catch {
-    case _: IndexOutOfBoundsException => throw ParserException(s"unable to lookup value for $w")
-  }
-}

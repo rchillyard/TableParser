@@ -2,6 +2,7 @@ package com.phasmidsoftware.tableparser
 
 import org.scalatest.{FlatSpec, Matchers}
 
+//noinspection NotImplementedCode
 class CellParserSpec extends FlatSpec with Matchers {
 
   private val intCellParser = new CellParser[Int] {

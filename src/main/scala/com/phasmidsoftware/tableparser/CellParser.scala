@@ -3,7 +3,7 @@ package com.phasmidsoftware.tableparser
 import com.phasmidsoftware.format.FormatsException
 
 trait CellParser[T] {
-  // Need to define this better so that we don't have any non-implemented methods.
+  // TODO Need to define this better so that we don't have any non-implemented methods.
   def convertString(w: String): T
 
   def read(value: Convertible): T = value match {
@@ -16,10 +16,12 @@ trait CellParser[T] {
 }
 
 trait SingleCellParser[T] extends CellParser[T] {
+  //noinspection NotImplementedCode
   def read(row: Row, columns: Seq[String]): T = ???
 }
 
 trait MultiCellParser[T] extends CellParser[T] {
+  //noinspection NotImplementedCode
   def convertString(w: String): T = ???
 }
 

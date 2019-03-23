@@ -3,7 +3,7 @@ package com.phasmidsoftware.tableparser
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 
-import com.phasmidsoftware.csvparser.{FP, RowException}
+import com.phasmidsoftware.format.FP
 
 import scala.io.Source
 import scala.util.{Failure, Try}
@@ -25,7 +25,7 @@ trait TableParser[Table] {
 
     if (hasHeader) ws match {
       case h #:: t => for (ws <- rowParser.parseHeader(h); rs <- parseRows(ws, t)) yield rs
-      case _ => Failure(RowException("no rows to parse"))
+      case _ => Failure(ParserException("no rows to parse"))
     }
     else parseRows(Nil, ws)
   }
