@@ -1,7 +1,6 @@
 package com.phasmidsoftware.format
 
 import com.phasmidsoftware.tableparser._
-import org.joda.time.LocalDate
 
 import scala.reflect.ClassTag
 
@@ -16,12 +15,40 @@ import scala.reflect.ClassTag
   */
 trait Formats {
 
+  /**
+    * Method to return a CellParser[Seq[P].
+    *
+    * @tparam P the underlying type of the result
+    * @return a MultiCellParser[Seq[P]
+    */
   def cellReaderSeq[P: CellParser]: CellParser[Seq[P]] = {
     new MultiCellParser[Seq[P]] {
       def read(row: Row, columns: Seq[String]): Seq[P] = for (w <- row.ws) yield implicitly[CellParser[P]].read(CellValue(w))
     }
   }
 
+  /**
+    * Method to return a CellParser[T] based on a function to convert a P into a T
+    *
+    * @param construct a function P => T.
+    * @tparam P the type of the intermediate type.
+    * @tparam T the underlying type of the result.
+    * @return a SingleCellParser which converts a String into the intermediate type P and thence into a T
+    */
+  def cellReader[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = {
+    new SingleCellParser[T] {
+      def convertString(w: String): T = construct(implicitly[CellParser[P]].read(CellValue(w)))
+    }
+  }
+
+  /**
+    * Method to return a CellParser[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
+    *
+    * @param construct a function P => T, usually the apply method of a case class.
+    * @tparam P the type of the (single) field of the Product type T.
+    * @tparam T the underlying type of the result, a Product.
+    * @return a MultiCellParser which converts a String from a Row into the field type P and thence into a T
+    */
   def cellReader1[P1: CellParser, T <: Product : ClassTag](construct: P1 => T): CellParser[T] = {
     val Array(p1) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
@@ -29,6 +56,15 @@ trait Formats {
     }
   }
 
+  /**
+    * Method to return a CellParser[T] where T is a 2-ary Product and which is based on a function to convert a (P1,P2) into a T.
+    *
+    * @param construct a function (P1,P2) => T, usually the apply method of a case class.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam T the underlying type of the result, a Product.
+    * @return a MultiCellParser which converts Strings from a Row into the field types P1 and P2 and thence into a T
+    */
   def cellReader2[P1: CellParser, P2: CellParser, T <: Product : ClassTag](construct: (P1, P2) => T): CellParser[T] = {
     val Array(p1, p2) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
@@ -40,6 +76,16 @@ trait Formats {
     }
   }
 
+  /**
+    * Method to return a CellParser[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
+    *
+    * @param construct a function (P1,P2,P3) => T, usually the apply method of a case class.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
+    * @tparam T the underlying type of the result, a Product.
+    * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2 and P3 and thence into a T
+    */
   def cellReader3[P1: CellParser, P2: CellParser, P3: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3) => T): CellParser[T] = {
     val Array(p1, p2, p3) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
@@ -52,6 +98,17 @@ trait Formats {
     }
   }
 
+  /**
+    * Method to return a CellParser[T] where T is a 4-ary Product and which is based on a function to convert a (P1,P2,P3,P4) into a T.
+    *
+    * @param construct a function (P1,P2,P3,P4) => T, usually the apply method of a case class.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam T the underlying type of the result, a Product.
+    * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3 and P4 and thence into a T
+    */
   def cellReader4[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
@@ -65,6 +122,18 @@ trait Formats {
     }
   }
 
+  /**
+    * Method to return a CellParser[T] where T is a 5-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5) into a T.
+    *
+    * @param construct a function (P1,P2,P3,P4,P5) => T, usually the apply method of a case class.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam T the underlying type of the result, a Product.
+    * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4 and P5 and thence into a T
+    */
   def cellReader5[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
@@ -79,6 +148,19 @@ trait Formats {
     }
   }
 
+  /**
+    * Method to return a CellParser[T] where T is a 6-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6) into a T.
+    *
+    * @param construct a function (P1,P2,P3,P4,P5,P6) => T, usually the apply method of a case class.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam P6 the type of the sixth field of the Product type T.
+    * @tparam T the underlying type of the result, a Product.
+    * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5 and P6 and thence into a T
+    */
   def cellReader6[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5, p6) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
@@ -94,6 +176,20 @@ trait Formats {
     }
   }
 
+  /**
+    * Method to return a CellParser[T] where T is a 7-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7) into a T.
+    *
+    * @param construct a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam P6 the type of the sixth field of the Product type T.
+    * @tparam P7 the type of the seventh field of the Product type T.
+    * @tparam T the underlying type of the result, a Product.
+    * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6 and P7 and thence into a T
+    */
   def cellReader7[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5, p6, p7) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
@@ -111,22 +207,30 @@ trait Formats {
   }
 }
 
+/**
+  * This companion object comprises CellParser[T] objects which represent conversions that are fixed,
+  * i.e. they don't depend on some other parameter such as the formatter in DateTime conversions.
+  */
 object Formats {
+
+  implicit object BooleanCellParser$ extends SingleCellParser[Boolean] {
+    def convertString(w: String): Boolean = implicitly[Parseable[Boolean]].parse(w)
+  }
 
   implicit object IntCellParser$ extends SingleCellParser[Int] {
     def convertString(w: String): Int = implicitly[Parseable[Int]].parse(w)
   }
 
   implicit object LongCellParser$ extends SingleCellParser[Long] {
-    override def convertString(w: String): Long = w.toLong
+    override def convertString(w: String): Long = implicitly[Parseable[Long]].parse(w)
+  }
+
+  implicit object DoubleCellParser$ extends SingleCellParser[Double] {
+    override def convertString(w: String): Double = implicitly[Parseable[Double]].parse(w)
   }
 
   implicit object StringCellParser$ extends SingleCellParser[String] {
     override def convertString(w: String): String = w
-  }
-
-  implicit object LocalDateCellParser$ extends SingleCellParser[LocalDate] {
-    override def convertString(w: String): LocalDate = implicitly[Parseable[LocalDate]].parse(w)
   }
 
   private def extractFieldNames(classTag: ClassTag[_]): Array[String] = {

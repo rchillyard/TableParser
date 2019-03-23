@@ -61,7 +61,6 @@ class RowSpec extends FlatSpec with Matchers {
   it should "apply" in {
     val x = SeqRow.create(Seq("1", "Hello", "true"), "A", "B", "C")
     val r = Row3(x)({ case s: String => s.toInt }, { case s: String => s }, { case s: String => s.toBoolean })
-    println(r)
     r.getCell[Int]("A") shouldBe Some(1)
     r.getCell[String]("B") shouldBe Some("Hello")
     r.getCell[Boolean]("C") shouldBe Some(true)

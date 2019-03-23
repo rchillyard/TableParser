@@ -1,6 +1,10 @@
 package com.phasmidsoftware.format
 
+import java.util.Date
+
 import com.phasmidsoftware.tableparser.{CellParser, CellValue, Row, RowValues}
+import org.joda.time.LocalDate
+import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}
 
 class FormatsSpec extends FlatSpec with Matchers {
@@ -41,6 +45,21 @@ class FormatsSpec extends FlatSpec with Matchers {
     implicit val fourTupleFormat: CellParser[FourTuple] = cellReader4(FourTuple)
   }
 
+  case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
+
+  object DailyRaptorReportFormat extends Formats {
+
+    private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+
+    def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
+
+    import Formats._
+
+    implicit val dateFormat: CellParser[LocalDate] = cellReader(parseDate)
+    implicit val dailyRaptorReportFormat: CellParser[DailyRaptorReport] = cellReader4(DailyRaptorReport)
+  }
+
+
   object IntSeqFormat extends Formats {
 
     import Formats._
@@ -78,6 +97,13 @@ class FormatsSpec extends FlatSpec with Matchers {
     val r = RowValues(Row(Seq("Thursday", "21", "March", "2019"), Seq("S", "X", "W", "Y")))
     import FourTupleFormat._
     r.convertTo[FourTuple] shouldBe FourTuple("Thursday", 21, "March", 2019)
+  }
+
+  it should "convertTo DailyRaptorReport" in {
+    val r = RowValues(Row(Seq("09/16/2018", "Partly Cloudy", "3308", "5"), Seq("DATE", "WEATHER", "BW", "RT")))
+    import DailyRaptorReportFormat._
+    //noinspection ScalaDeprecation
+    r.convertTo[DailyRaptorReport] shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5)
   }
 
   it should "convertTo Seq[Int]" in {

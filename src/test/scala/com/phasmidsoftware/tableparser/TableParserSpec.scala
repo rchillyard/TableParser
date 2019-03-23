@@ -3,6 +3,7 @@ package com.phasmidsoftware.tableparser
 
 import com.phasmidsoftware.format.Formats
 import org.joda.time.LocalDate
+import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.matching.Regex
@@ -27,6 +28,7 @@ class TableParserSpec extends FlatSpec with Matchers {
         case _ => Failure(TableException(s"unable to parse $w"))
       }
 
+      //noinspection NotImplementedCode
       override def parseHeader(w: String): Try[Seq[String]] = ???
     }
 
@@ -42,8 +44,7 @@ class TableParserSpec extends FlatSpec with Matchers {
       def builder(rows: Seq[Row]): Table[IntPair] = TableWithoutHeader(rows)
     }
 
-    implicit object IntPairTableParser extends IntPairTableParser {
-    }
+    implicit object IntPairTableParser extends IntPairTableParser
 
   }
 
@@ -55,7 +56,7 @@ class TableParserSpec extends FlatSpec with Matchers {
 
     val strings: Seq[String] = Seq("1 2")
     Table.parse(strings) match {
-      case Success(t) => println(t);
+      case Success(t) => succeed
       case Failure(x) => fail(x.getLocalizedMessage)
     }
   }
@@ -67,11 +68,15 @@ class TableParserSpec extends FlatSpec with Matchers {
   object DailyRaptorReport {
     val header: Seq[String] = Seq("date", "weather", "bw", "ri")
 
-
     object DailyRaptorReportFormat extends Formats {
+
+      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+
+      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 
       import Formats._
 
+      implicit val dateFormat: CellParser[LocalDate] = cellReader(parseDate)
       implicit val dailyRaptorReportFormat: CellParser[DailyRaptorReport] = cellReader4(DailyRaptorReport.apply)
     }
 
@@ -83,7 +88,6 @@ class TableParserSpec extends FlatSpec with Matchers {
     }
 
     implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
-
 
     implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
 
@@ -97,9 +101,7 @@ class TableParserSpec extends FlatSpec with Matchers {
       def builder(rows: Seq[Row]): Table[DailyRaptorReport] = TableWithoutHeader(rows)
     }
 
-    implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser {
-    }
-
+    implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
 
   }
 
@@ -112,6 +114,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     val line1 = "Date\tWeather\tWnd Dir\tWnd Spd\tBV\tTV\tUV\tOS\tBE\tNH\tSS\tCH\tGO\tUA\tRS\tBW\tRT\tRL\tUB\tGE\tUE\tAK\tM\tP\tUF\tUR\tOth\tTot"
     val line2 = "09/16/2018\tPartly Cloudy\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410"
     val Success(header) = rowParser.parseHeader(line1)
+
     val hawkCount: Try[DailyRaptorReport] = parser.parse(line2)(header)
     hawkCount should matchPattern { case Success(DailyRaptorReport(_, "Partly Cloudy", 3308, 5)) => }
   }
@@ -119,13 +122,9 @@ class TableParserSpec extends FlatSpec with Matchers {
   it should "parse raptors.csv" in {
     import DailyRaptorReport._
 
-    //    import DailyRaptorReportTableParser._
-
-    //    val z = implicitly[TableParser[Table[DailyRaptorReport]]]
-
     val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parse(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
-    x should matchPattern { case Success(_) => }
-    println(x)
+    x should matchPattern { case Success(TableWithoutHeader(_)) => }
+    x.get.rows.size shouldBe 13
   }
 
 }
