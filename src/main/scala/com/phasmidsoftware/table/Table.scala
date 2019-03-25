@@ -3,10 +3,10 @@ package com.phasmidsoftware.table
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 
-import com.phasmidsoftware.parse.TableParser
+import com.phasmidsoftware.parse.{ParserException, TableParser}
 
 import scala.io.Source
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
   * A Table of Rows.
@@ -45,6 +45,12 @@ object Table {
   def parse[T: TableParser](i: InputStream): Try[T] = for (s <- Try(Source.fromInputStream(i)); t <- parse(s)) yield t
 
   def parse[T: TableParser](f: File): Try[T] = for (s <- Try(Source.fromFile(f)); t <- parse(s)) yield t
+
+  def parseResource[T: TableParser](s: String, clazz: Class[_]): Try[T] =
+    clazz.getResource(s) match {
+      case null => Failure(ParserException(s"Table.getResource: $s does not exist for $clazz"))
+      case u => parse(u)
+    }
 }
 
 /**

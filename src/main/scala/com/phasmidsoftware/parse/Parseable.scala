@@ -6,6 +6,7 @@ import java.net.URL
 import org.joda.time.LocalDate
 
 import scala.util.Try
+import scala.util.parsing.combinator.JavaTokenParsers
 
 /**
   * Type class which describes a type which can be parsed from a String.
@@ -22,13 +23,15 @@ trait Parseable[T] {
 object Parseable {
 
   trait ParseableBoolean extends Parseable[Boolean] {
-    override def parse(s: String): Boolean = s.toBoolean
+    // CONSIDER doing something about this because an illegal value throws IllegalArgumentException (not very helpful)
+    // FIXME we have values that are not true/false that we have to recognize
+    override def parse(s: String): Boolean = try s.toBoolean catch { case e: IllegalArgumentException => throw ParserException(s"ParseableBoolean: cannot intepret '$s' as a Boolean")}
   }
 
   implicit object ParseableBoolean extends ParseableBoolean
 
   trait ParseableInt extends Parseable[Int] {
-    override def parse(s: String): Int = s.toInt
+    override def parse(s: String): Int = try s.toInt catch { case e: IllegalArgumentException => throw ParserException(s"ParseableInt: cannot intepret '$s' as an Int")}
   }
 
   implicit object ParseableInt extends ParseableInt
@@ -63,4 +66,25 @@ object Parseable {
 
   implicit object ParseableFile extends ParseableFile
 
+  trait ParseableStringList$ extends Parseable[List[String]] {
+    override def parse(s: String): List[String] = split(s)
+  }
+
+  implicit object ParseableStringList$ extends ParseableStringList$
+
+  private val parser = new ListParser()
+
+  private def split(w: String): List[String] = {
+    parser.parseAll(parser.list, w) match {
+      case parser.Success(ws: List[String], _) => ws
+      case parser.Failure(msg,_) => throw ParserException(s"cannot split string '$w': $msg")
+      case parser.Error(msg,_) => throw ParserException(s"cannot split string '$w': $msg")
+      case _ => throw ParserException(s"cannot split string '$w'")
+    }
+  }
+}
+
+class ListParser() extends JavaTokenParsers {
+
+  def list: Parser[List[String]] = "{" ~> repsep("""\w+""",",") <~ "}"
 }

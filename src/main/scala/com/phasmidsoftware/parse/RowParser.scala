@@ -1,5 +1,6 @@
 package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.table
 import com.phasmidsoftware.table.Row
 
 import scala.util.Try
@@ -44,8 +45,8 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends RowPar
 }
 
 object StandardRowParser {
-  def apply[Row: CellParser](delimiter: Regex, string: Regex, quote: Char): StandardRowParser[Row] =
-    StandardRowParser(new LineParser(delimiter, string, quote))
+  def apply[Row: CellParser](delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char): StandardRowParser[Row] =
+    StandardRowParser(new LineParser(delimiter, string, enclosures, listSeparator, quote))
 }
 
 trait RowConfig {
@@ -58,9 +59,19 @@ trait RowConfig {
     */
   val string: Regex
   /**
+    * the "listSep" character (see LineParser). defaults to "|"
+    */
+  val listSep: Char
+  /**
+    * the "listEnclosure" characters (see LineParser). defaults to "{}"
+    */
+  val listEnclosure: String
+  /**
     * the "quote" Char (see LineParser). defaults to ".
     */
   val quote: Char
+
+  override def toString: String = s"RowConfig: delimiter='$delimiter', string='$string', listSep='$listSep', listEnclosure='$listEnclosure', $quote='$quote'"
 }
 
 trait DefaultRowConfig extends RowConfig {
@@ -72,6 +83,15 @@ trait DefaultRowConfig extends RowConfig {
     * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
     */
   val string: Regex = """\w*""".r
+
+  /**
+    * the "listSep" character (see LineParser). defaults to "|"
+    */
+  override val listSep: Char = '|'
+  /**
+    * the "listEnclosure" characters (see LineParser). defaults to "{}"
+    */
+  override val listEnclosure: String = "{}"
   /**
     * the "quote" Char (see LineParser). defaults to ".
     */

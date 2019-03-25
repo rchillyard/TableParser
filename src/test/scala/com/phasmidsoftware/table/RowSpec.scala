@@ -16,9 +16,9 @@ class RowSpec extends FlatSpec with Matchers {
 
   it should "fail apply(Int) when appropriate" in {
     val r: Row = Row(Seq("1", "2", "Junk"), Seq("A", "B", "C"))
-    an[ParserException] should be thrownBy r(-1)
+    an[IndexOutOfBoundsException] should be thrownBy r(-1)
     an[ParserException] should be thrownBy r(3)
-    the[ParserException] thrownBy r(3) should have message "Row: index out of range: 3"
+    the[ParserException] thrownBy r(3) should have message "Row: index out of range: 3 (there are 3 elements)"
   }
 
   it should "apply(String) correctly" in {

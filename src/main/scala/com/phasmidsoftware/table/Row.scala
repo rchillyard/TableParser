@@ -18,7 +18,8 @@ case class Row(ws: Seq[String], hdr: Seq[String]) extends (String => String) {
     * @throws ParserException if x is out of range.
     */
   def apply(x: Int): String = try ws(x) catch {
-    case _: IndexOutOfBoundsException => throw ParserException(s"Row: index out of range: $x")
+    case e: IndexOutOfBoundsException if x == -1 => throw e
+    case _: IndexOutOfBoundsException => throw ParserException(s"Row: index out of range: $x (there are ${ws.size} elements)")
   }
 
   /**
@@ -28,9 +29,9 @@ case class Row(ws: Seq[String], hdr: Seq[String]) extends (String => String) {
     * @return the value as a String.
     * @throws ParserException if w is not contained in hdr.
     */
-  def apply(w: String): String = try ws(getIndex(w)) catch {
+  def apply(w: String): String = try apply(getIndex(w)) catch {
     case _: IndexOutOfBoundsException => throw ParserException(s"Row: unknown column: $w")
   }
 
-  private def getIndex(w: String) = hdr.indexOf(w.toUpperCase)
+  def getIndex(w: String): Int = hdr.indexOf(w.toUpperCase)
 }

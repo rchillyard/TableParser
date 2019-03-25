@@ -24,6 +24,10 @@ trait SingleCellParser[T] extends CellParser[T] {
   def read(row: Row, columns: Seq[String]): T = ???
 }
 
+/**
+  * CONSIDER renaming this to something like RowParser, or RawRowParser
+  * @tparam T
+  */
 trait MultiCellParser[T] extends CellParser[T] {
   //noinspection NotImplementedCode
   def convertString(w: String): T = ???
@@ -73,6 +77,10 @@ object CellParser {
 
   implicit object FileParser$ extends SingleCellParser[File] {
     override def convertString(w: String): File = implicitly[Parseable[File]].parse(w)
+  }
+
+  implicit object ListCellParser$ extends SingleCellParser[List[String]] {
+    def convertString(w: String): List[String] = implicitly[Parseable[List[String]]].parse(w)
   }
 
 
