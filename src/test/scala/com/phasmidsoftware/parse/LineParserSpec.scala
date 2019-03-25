@@ -35,7 +35,7 @@ class LineParserSpec extends FlatSpec with Matchers {
 
   it should "parse list" in {
     p1.parseAll(p1.list,"""{Hello,Goodbye}""") should matchPattern { case p1.Success("{Hello,Goodbye}", _) => }
-    p2.parseAll(p2.list,"Hello") should matchPattern { case p2.Failure(_, _) => }
+    p2.parseAll(p2.list, "Hello") should matchPattern { case p2.Failure(_, _) => }
     p2.parseAll(p2.list,"""Hello|Goodbye""") should matchPattern { case p2.Success("{Hello,Goodbye}", _) => }
     p2.parseAll(p2.list,"""Action|Adventure|Fantasy|Sci-Fi""") should matchPattern { case p2.Success("{Action,Adventure,Fantasy,Sci-Fi}", _) => }
 

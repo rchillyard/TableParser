@@ -6,7 +6,7 @@ import java.net.{URI, URL}
 import com.phasmidsoftware.parse.{ParserException, TableParser}
 
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 /**
   * A Table of Rows.

@@ -1,6 +1,5 @@
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.table
 import com.phasmidsoftware.table.Row
 
 import scala.util.Try

@@ -26,7 +26,8 @@ trait SingleCellParser[T] extends CellParser[T] {
 
 /**
   * CONSIDER renaming this to something like RowParser, or RawRowParser
-  * @tparam T
+  *
+  * @tparam T the type of the result
   */
 trait MultiCellParser[T] extends CellParser[T] {
   //noinspection NotImplementedCode

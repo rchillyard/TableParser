@@ -304,17 +304,17 @@ trait Formats {
     * Method to return a CellParser[T] where T is a 10-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) into a T.
     *
     * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
-    * @tparam P1 the type of the first field of the Product type T.
-    * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the second field of the Product type T.
-    * @tparam P4 the type of the fourth field of the Product type T.
-    * @tparam P5 the type of the fifth field of the Product type T.
-    * @tparam P6 the type of the sixth field of the Product type T.
-    * @tparam P7 the type of the seventh field of the Product type T.
-    * @tparam P8 the type of the eighth field of the Product type T.
-    * @tparam P9 the type of the ninth field of the Product type T.
+    * @tparam P1  the type of the first field of the Product type T.
+    * @tparam P2  the type of the second field of the Product type T.
+    * @tparam P3  the type of the second field of the Product type T.
+    * @tparam P4  the type of the fourth field of the Product type T.
+    * @tparam P5  the type of the fifth field of the Product type T.
+    * @tparam P6  the type of the sixth field of the Product type T.
+    * @tparam P7  the type of the seventh field of the Product type T.
+    * @tparam P8  the type of the eighth field of the Product type T.
+    * @tparam P9  the type of the ninth field of the Product type T.
     * @tparam P10 the type of the tenth field of the Product type T.
-    * @tparam T  the underlying type of the result, a Product.
+    * @tparam T   the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8 and P9 and thence into a T
     */
   def cellReader10[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T): CellParser[T] = {
@@ -340,18 +340,18 @@ trait Formats {
     * Method to return a CellParser[T] where T is a 11-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) into a T.
     *
     * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
-    * @tparam P1 the type of the first field of the Product type T.
-    * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the second field of the Product type T.
-    * @tparam P4 the type of the fourth field of the Product type T.
-    * @tparam P5 the type of the fifth field of the Product type T.
-    * @tparam P6 the type of the sixth field of the Product type T.
-    * @tparam P7 the type of the seventh field of the Product type T.
-    * @tparam P8 the type of the eighth field of the Product type T.
-    * @tparam P9 the type of the ninth field of the Product type T.
+    * @tparam P1  the type of the first field of the Product type T.
+    * @tparam P2  the type of the second field of the Product type T.
+    * @tparam P3  the type of the second field of the Product type T.
+    * @tparam P4  the type of the fourth field of the Product type T.
+    * @tparam P5  the type of the fifth field of the Product type T.
+    * @tparam P6  the type of the sixth field of the Product type T.
+    * @tparam P7  the type of the seventh field of the Product type T.
+    * @tparam P8  the type of the eighth field of the Product type T.
+    * @tparam P9  the type of the ninth field of the Product type T.
     * @tparam P10 the type of the tenth field of the Product type T.
     * @tparam P11 the type of the eleventh field of the Product type T.
-    * @tparam T  the underlying type of the result, a Product.
+    * @tparam T   the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8 and P9 and thence into a T
     */
   def cellReader11[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T): CellParser[T] = {
@@ -360,9 +360,9 @@ trait Formats {
       override def read(row: Row, columns: Seq[String]): T = {
         val p1V = implicitly[CellParser[P1]].read(CellValue(row(p1)))
         // TODO distribute this form to all definitions of pXV in all methods.
-        val p2V = readCell[T,P2](row, columns)(p2)
-        val p3V = readCell[T,P3](row, columns)(p3)
-        val p4V = readCell[T,P4](row, columns)(p4)
+        val p2V = readCell[T, P2](row, columns)(p2)
+        val p3V = readCell[T, P3](row, columns)(p3)
+        val p4V = readCell[T, P4](row, columns)(p4)
         val p5V = implicitly[CellParser[P5]].read(CellValue(row(p5)))
         val p6V = implicitly[CellParser[P6]].read(CellValue(row(p6)))
         val p7V = implicitly[CellParser[P7]].read(CellValue(row(p7)))
@@ -378,7 +378,7 @@ trait Formats {
   private def readCell[T <: Product : ClassTag, P: CellParser](row: Row, columns: Seq[String])(p: String): P = {
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(p)
-    if (idx>=0) cellParser.read(CellValue(row(idx)))
+    if (idx >= 0) cellParser.read(CellValue(row(idx)))
     else cellParser.read(row, columns)
   }
 }

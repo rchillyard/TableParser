@@ -20,7 +20,7 @@ trait TableParser[Table] {
 
     def separateHeaderAndRows(h: String, t: Seq[String]) = for (ws <- rowParser.parseHeader(h); rs <- parseRows(ws, t)) yield rs
 
-    if (rowParser==null) Failure(ParserException("implicit RowParser[Row] is undefined"))
+    if (rowParser == null) Failure(ParserException("implicit RowParser[Row] is undefined"))
 
     else if (hasHeader) ws match {
       case h #:: t => separateHeaderAndRows(h, t)

@@ -1,11 +1,8 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse._
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
 
 import scala.collection.mutable
-import scala.io.Source
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -37,10 +34,10 @@ case class Multi(xs: List[String])
 /**
   * The movie format (including language and duration).
   *
-  * @param color       whether filmed in color
-  * @param language    the native language of the characters
+  * @param color        whether filmed in color
+  * @param language     the native language of the characters
   * @param aspect_ratio the aspect ratio of the film
-  * @param duration    its length in minutes
+  * @param duration     its length in minutes
   */
 case class Format(color: String, language: String, aspect_ratio: Double, duration: Int) {
   override def toString: String = {
@@ -51,9 +48,9 @@ case class Format(color: String, language: String, aspect_ratio: Double, duratio
 /**
   * The production: its country, year, and financials
   *
-  * @param country   country of origin
-  * @param budget    production budget in US dollars
-  * @param gross     gross earnings (?)
+  * @param country    country of origin
+  * @param budget     production budget in US dollars
+  * @param gross      gross earnings (?)
   * @param title_year the year the title was registered (?)
   */
 case class Production(country: String, budget: Int, gross: Int, title_year: Int) {
@@ -81,18 +78,26 @@ case class Principal(name: Name, facebookLikes: Int) {
 /**
   * A name of a contributor to the production
   *
-  * @param first         first name
-  * @param middle        middle name or initial
-  * @param last          last name
-  * @param suffix        suffix
+  * @param first  first name
+  * @param middle middle name or initial
+  * @param last   last name
+  * @param suffix suffix
   */
 case class Name(first: String, middle: Option[String], last: String, suffix: Option[String]) {
   override def toString: String = {
-    case class Result(r: StringBuffer) { def append(s: String): Unit = r.append(" "+s); override def toString = r.toString}
+    case class Result(r: StringBuffer) {
+      def append(s: String): Unit = r.append(" " + s);
+
+      override def toString: String = r.toString
+    }
     val r: Result = Result(new StringBuffer(first))
-    middle foreach {r.append}
+    middle foreach {
+      r.append
+    }
     r.append(last)
-    suffix foreach {r.append}
+    suffix foreach {
+      r.append
+    }
     r.toString
   }
 }
@@ -114,7 +119,7 @@ object MovieFormat extends Formats {
   implicit val ratingFormat: CellParser[Rating] = cellReader2(Rating.apply)
   implicit val formatFormat: CellParser[Format] = cellReader4(Format.apply)
   implicit val productionFormat: CellParser[Production] = cellReader4(Production.apply)
-  val fPrincipal: (String, Int)=> Principal = Principal.apply
+  val fPrincipal: (String, Int) => Principal = Principal.apply
   implicit val principalFormat: CellParser[Principal] = cellReader2(fPrincipal)
   implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews.apply)
   implicit val multiFormat: CellParser[Multi] = cellReader1(Multi)
@@ -128,11 +133,11 @@ object MovieFormat extends Formats {
 
   implicit object MovieConfig extends MovieConfig
 
-//  println(s"movie config: ${implicitly[RowConfig]}")
+  //  println(s"movie config: ${implicitly[RowConfig]}")
 
   implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie](LineParser.apply)
 
-//  println(s"movie parser: $parser")
+  //  println(s"movie parser: $parser")
 
   trait MovieTableParser extends TableParser[Table[Movie]] {
     type Row = Movie
@@ -145,6 +150,7 @@ object MovieFormat extends Formats {
   }
 
   implicit object MovieTableParser extends MovieTableParser
+
 }
 
 object Movie extends App {
@@ -213,7 +219,8 @@ object Reviews {
 
 object Name {
   // this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
-  private val rName = """^([\p{L}\-\']+\.?)\s*(([\p{L}\-]+\.)\s)?([\p{L}\-\']+\.?)(\s([\p{L}\-]+\.?))?$""".r
+  private val rName =
+    """^([\p{L}\-\']+\.?)\s*(([\p{L}\-]+\.)\s)?([\p{L}\-\']+\.?)(\s([\p{L}\-]+\.?))?$""".r
 
   def apply(name: String): Name = name match {
     case rName(first, _, null, last, _, null) => apply(first, None, last, None)
@@ -230,12 +237,13 @@ object Principal {
     case _ => throw new Exception(s"logic error in Principal: $params")
   }
 
-  def apply(name: String, facebookLikes: Int): Principal = apply(Name(name),facebookLikes)
+  def apply(name: String, facebookLikes: Int): Principal = apply(Name(name), facebookLikes)
 }
 
 object Rating {
   // Hint: This regex matches three patterns: (\w*), (-(\d\d)), (\d\d), for example "PG-13", the first one matches "PG", second one "-13", third one "13".
-  private val rRating = """^(\w*)(-(\d\d))?$""".r
+  private val rRating =
+    """^(\w*)(-(\d\d))?$""".r
 
   /**
     * Alternative apply method for the Rating class such that a single String is decoded
@@ -246,10 +254,10 @@ object Rating {
   // Hint: This should similar to apply method in Object Name. The parameter of apply in case match should be same as case class Rating
   // 13 points
   def apply(s: String): Rating = /*SOLUTION*/
-  s match {
-    case rRating(code, _, null) => apply(code, None)
-    case rRating(code, _, age) => apply(code, Try(age.toInt).toOption)
-    case _ => throw new Exception(s"parse error in Rating: $s")
-  }/*END*/
+    s match {
+      case rRating(code, _, null) => apply(code, None)
+      case rRating(code, _, age) => apply(code, Try(age.toInt).toOption)
+      case _ => throw new Exception(s"parse error in Rating: $s")
+    } /*END*/
 
 }
