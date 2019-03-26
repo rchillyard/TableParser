@@ -1,5 +1,7 @@
 package com.phasmidsoftware.table
 
+import org.scalatest.{FlatSpec, Matchers}
+
 import scala.util._
 
 class MovieFuncSpec extends FlatSpec with Matchers {

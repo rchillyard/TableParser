@@ -18,4 +18,14 @@ class ParseableSpec extends FlatSpec with Matchers {
     implicitly[Parseable[Double]].parse("3.1415927") shouldBe 3.1415927
   }
 
+  it should "parse {1,2,3}" in {
+    implicitly[Parseable[StringList]].parse("{1,2,3}") shouldBe List("1", "2", "3")
+  }
+
+  behavior of "ListParser"
+  it should "parse a list" in {
+    val p = new ListParser
+    p.parseAll(p.list, "{1,2,3}") should matchPattern { case p.Success(_, _) => }
+    p.parseAll(p.list, "{1,2-3,3}") should matchPattern { case p.Success(_, _) => }
+  }
 }

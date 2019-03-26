@@ -29,7 +29,11 @@ import scala.util.matching.Regex
   */
 case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Principal, genres: Multi, plotKeywords: Multi, imdb: String)
 
-case class Multi(xs: List[String])
+case class Multi(xs: StringList)
+
+object Multi {
+  def apply(w: String): Multi = apply(Parseable.split(w))
+}
 
 /**
   * The movie format (including language and duration).
@@ -114,8 +118,15 @@ case class Rating(code: String, age: Option[Int]) {
 
 object MovieFormat extends Formats {
 
-  implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper("title" -> "movie_title", "actor1" -> "actor_1", "actor2" -> "actor_2", "actor3" -> "actor_3")
-  implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper("imdbScore" -> "imdb_score",
+  implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(
+    "title" -> "movie_title",
+    "actor1" -> "actor_1",
+    "actor2" -> "actor_2",
+    "actor3" -> "actor_3",
+    "plotKeywords" -> "plot_keywords",
+    "imdb" -> "movie_imdb_link")
+  implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(
+    "imdbScore" -> "imdb_score",
     "facebookLikes" -> "movie_facebook_likes",
     "contentRating" -> "content_rating",
     "numUsersReview" -> "num_user_for_reviews",
@@ -127,7 +138,7 @@ object MovieFormat extends Formats {
   implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper()
   implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(Some("$x_"), "facebookLikes" -> "facebook_likes")
   implicit val multiColumnHelper: ColumnHelper[Multi] = columnHelper()
-  implicit val listFormat: CellParser[List[String]] = cellReaderList[String]
+  implicit val listFormat: CellParser[StringList] = cellReader(Parseable.split)
   val fRating: String => Rating = Rating.apply
   //  implicit val ageFormat: CellParser[Option[Int]] = cellReaderOpt[Int]
   implicit val ratingFormat: CellParser[Rating] = cellReader(fRating)
@@ -136,7 +147,8 @@ object MovieFormat extends Formats {
   val fPrincipal: (String, Int) => Principal = Principal.apply
   implicit val principalFormat: CellParser[Principal] = cellReader2(fPrincipal)
   implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews.apply)
-  implicit val multiFormat: CellParser[Multi] = cellReader1(Multi)
+  val fMulti: String => Multi = Multi.apply
+  implicit val multiFormat: CellParser[Multi] = cellReader(fMulti)
   implicit val movieFormat: CellParser[Movie] = cellReader11(Movie.apply)
 
   trait MovieConfig extends DefaultRowConfig {

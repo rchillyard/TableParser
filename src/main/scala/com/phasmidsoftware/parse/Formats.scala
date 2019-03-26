@@ -18,7 +18,7 @@ trait Formats {
   /**
     * Method to return a CellParser[Seq[P].
     * This is used only by unit tests.
-    * CONSIDER eliminating this.
+    * CONSIDER eliminating this; only used in unit tests
     *
     * @tparam P the underlying type of the result
     * @return a MultiCellParser[Seq[P]
@@ -29,19 +29,34 @@ trait Formats {
     }
   }
 
-  /**
-    * Method to return a CellParser[Seq[P].
-    * This is used only by unit tests.
-    * CONSIDER eliminating this.
-    *
-    * @tparam P the underlying type of the result
-    * @return a MultiCellParser[Seq[P]
-    */
-  def cellReaderList[P: CellParser]: CellParser[List[P]] = {
-    new SingleCellParser[List[P]] {
-      def convertString(w: String): List[P] = for (x <- implicitly[Parseable[List[String]]].parse(w)) yield implicitly[CellParser[P]].read(CellValue(x))
-    }
-  }
+  //
+  //  /**
+  //    * Method to return a CellParser[Seq[P].
+  //    * This is used only by unit tests.
+  //    * CONSIDER eliminating this.
+  //    *
+  //    * @tparam P the underlying type of the result
+  //    * @return a MultiCellParser[Seq[P]
+  //    */
+  //  def cellReaderList[P: CellParser]: CellParser[List[P]] = {
+  //    new SingleCellParser[List[P]] {
+  //      def convertString(w: String): List[P] = for (x <- implicitly[Parseable[StringList]].parse(w)) yield implicitly[CellParser[P]].read(CellValue(x))
+  //    }
+  //  }
+
+  //  /**
+  //    * Method to return a CellParser[Seq[P].
+  //    * This is used only by unit tests.
+  //    * CONSIDER eliminating this.
+  //    *
+  //    * @tparam P the underlying type of the result
+  //    * @return a MultiCellParser[Seq[P]
+  //    */
+  //  def cellReaderList[P: CellParser]: CellParser[StringList] = {
+  //    new SingleCellParser[StringList]] {
+  //      def convertString(w: String): StringList = for (x <- implicitly[Parseable[StringList]].parse(w)) yield x
+  //    }
+  //  }
 
   /**
     * Method to return a CellParser[Option[P].
@@ -83,6 +98,8 @@ trait Formats {
   def cellReader1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T): CellParser[T] = {
     val Array(p1) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader1"
+
       def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         construct(p1V)
@@ -102,6 +119,7 @@ trait Formats {
   def cellReader2[P1: CellParser, P2: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2) => T): CellParser[T] = {
     val Array(p1, p2) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader2"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -123,6 +141,7 @@ trait Formats {
   def cellReader3[P1: CellParser, P2: CellParser, P3: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3) => T): CellParser[T] = {
     val Array(p1, p2, p3) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader3"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -146,6 +165,7 @@ trait Formats {
   def cellReader4[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader4"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -171,6 +191,7 @@ trait Formats {
   def cellReader5[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader5"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -198,6 +219,7 @@ trait Formats {
   def cellReader6[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5, p6) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader6"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -227,6 +249,7 @@ trait Formats {
   def cellReader7[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5, p6, p7) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader7"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -258,6 +281,7 @@ trait Formats {
   def cellReader8[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader8"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -291,6 +315,7 @@ trait Formats {
   def cellReader9[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader9"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -326,6 +351,7 @@ trait Formats {
   def cellReader10[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader10"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -363,6 +389,7 @@ trait Formats {
   def cellReader11[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader11"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -402,6 +429,7 @@ trait Formats {
   def cellReader12[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, P12: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T): CellParser[T] = {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = Formats.extractFieldNames(implicitly[ClassTag[T]])
     new MultiCellParser[T] {
+      override def toString: String = "MultiCellParser: cellReader12"
       override def read(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
@@ -432,6 +460,7 @@ trait Formats {
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
+    //   println(s"readCell[${implicitly[ClassTag[T]].runtimeClass}](wo=$wo,...)($p) with cellParser=$cellParser, ids=$idx")
     if (idx >= 0) cellParser.read(CellValue(row(idx)))
     else try cellParser.read(Some(columnName), row, columns) catch {
       case _: UnsupportedOperationException =>

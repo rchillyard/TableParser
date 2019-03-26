@@ -60,7 +60,9 @@ class FormatsSpec extends FlatSpec with Matchers {
     implicit val dailyRaptorReportFormatISO: CellParser[DailyRaptorReport] = cellReader4(DailyRaptorReport)
   }
 
-
+  /**
+    * NOTE: only used in testing currently
+    */
   object IntSeqFormat extends Formats {
 
     implicit val intSeqFormat: CellParser[Seq[Int]] = cellReaderSeq

@@ -17,6 +17,7 @@ trait Parseable[T] {
 
   def parse(s: String): T
 
+  // NOTE not currently used
   def tryParse(s: String): Try[T] = Try(parse(s))
 }
 
@@ -70,25 +71,26 @@ object Parseable {
 
   implicit object ParseableFile extends ParseableFile
 
-  trait ParseableStringList$ extends Parseable[List[String]] {
-    override def parse(s: String): List[String] = split(s)
+  /**
+    * This trait splits strings of the form {x,y,z}, regardless of the format specified by the RowConfig object.
+    */
+  trait ParseableStringList$ extends Parseable[StringList] {
+    override def parse(s: String): StringList = split(s)
   }
 
   implicit object ParseableStringList$ extends ParseableStringList$
 
   private val parser = new ListParser()
 
-  private def split(w: String): List[String] = {
-    parser.parseAll(parser.list, w) match {
-      case parser.Success(ws: List[String], _) => ws
-      case parser.Failure(msg, _) => throw ParserException(s"cannot split string '$w': $msg")
-      case parser.Error(msg, _) => throw ParserException(s"cannot split string '$w': $msg")
-      case _ => throw ParserException(s"cannot split string '$w'")
-    }
+  def split(w: String): StringList = parser.parseAll(parser.list, w) match {
+    case parser.Success(ws: StringList, _) => ws
+    case parser.Failure(msg, _) => throw ParserException(s"cannot split string '$w': $msg")
+    case parser.Error(msg, _) => throw ParserException(s"cannot split string '$w': $msg")
+    case _ => throw ParserException(s"cannot split string '$w'")
   }
 }
 
 class ListParser() extends JavaTokenParsers {
 
-  def list: Parser[List[String]] = "{" ~> repsep("""\w+""", ",") <~ "}"
+  def list: Parser[StringList] = "{" ~> repsep("""[^\,\}]+""".r, ",") <~ "}"
 }

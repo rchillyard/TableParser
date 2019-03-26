@@ -25,6 +25,8 @@ case class Row(ws: Seq[String], hdr: Header) extends (String => String) {
   /**
     * Method to yield the value for a given column name
     *
+    * NOTE this doesn't seem to be used.
+    *
     * @param w the column name.
     * @return the value as a String.
     * @throws ParserException if w is not contained in hdr.
@@ -33,7 +35,13 @@ case class Row(ws: Seq[String], hdr: Header) extends (String => String) {
     case _: IndexOutOfBoundsException => throw ParserException(s"Row: unknown column: $w")
   }
 
-  def getIndex(w: String): Int = hdr.getIndex(w)
+  /**
+    * Method to get the index of a column name
+    *
+    * @param column the column name
+    * @return the index, which might be -1
+    */
+  def getIndex(column: String): Int = hdr.getIndex(column)
 
   override def toString(): String = s"""Row: ${ws.mkString("[", ",", "]")} with header=$hdr"""
 }
