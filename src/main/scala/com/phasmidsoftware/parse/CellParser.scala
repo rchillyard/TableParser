@@ -6,6 +6,8 @@ import java.net.URL
 import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
 
+import scala.util.Try
+
 trait CellParser[T] {
   // TODO Need to define this better so that we don't have any non-implemented methods.
   def convertString(w: String): T
@@ -39,7 +41,7 @@ trait MultiCellParser[T] extends CellParser[T] {
 }
 
 sealed abstract class Convertible {
-  def convertTo[T: CellParser]: T = cellReader.read(this)
+  def convertTo[T: CellParser]: Try[T] = Try(cellReader.read(this))
 }
 
 case class CellValue(w: String) extends Convertible

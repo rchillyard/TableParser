@@ -7,6 +7,8 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.util.Success
+
 class FormatsSpec extends FlatSpec with Matchers {
 
   case class MyNumber(x: Int)
@@ -72,51 +74,51 @@ class FormatsSpec extends FlatSpec with Matchers {
 
   it should "convertTo Int" in {
     val x = CellValue("1")
-    x.convertTo[Int] shouldBe 1
+    x.convertTo[Int] shouldBe Success(1)
   }
 
   it should "convertTo MyNumber" in {
     val r = RowValues(Row(Seq("1"), Header.create("x")))
     import MyNumberFormat._
-    r.convertTo shouldBe MyNumber(1)
+    r.convertTo shouldBe Success(MyNumber(1))
   }
 
   it should "convertTo PhoneNumber" in {
     val r = RowValues(Row(Seq("Robin", "6171234567"), Header.create("name", "x")))
     import PhoneNumberFormat._
-    r.convertTo[PhoneNumber] shouldBe PhoneNumber("Robin", 6171234567L)
+    r.convertTo[PhoneNumber] shouldBe Success(PhoneNumber("Robin", 6171234567L))
   }
 
   it should "convertTo MyDate" in {
     val r = RowValues(Row(Seq("21", "March", "2019"), Header.create("day", "month", "year")))
     import MyDateFormat._
-    r.convertTo[MyDate] shouldBe MyDate(21, "March", 2019)
+    r.convertTo[MyDate] shouldBe Success(MyDate(21, "March", 2019))
   }
 
   it should "convertTo Tuple4" in {
     val r = RowValues(Row(Seq("Thursday", "21", "March", "2019"), Header.create("s", "x", "w", "y")))
     import FourTupleFormat._
-    r.convertTo[FourTuple] shouldBe FourTuple("Thursday", 21, "March", 2019)
+    r.convertTo[FourTuple] shouldBe Success(FourTuple("Thursday", 21, "March", 2019))
   }
 
   it should "convertTo DailyRaptorReport" in {
     val r = RowValues(Row(Seq("09/16/2018", "Partly Cloudy", "3308", "5"), Header.create("Date", "Weather", "BW", "RT")))
     import DailyRaptorReportFormat._
     //noinspection ScalaDeprecation
-    r.convertTo[DailyRaptorReport] shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5)
+    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5))
   }
 
   it should "convertTo DailyRaptorReport in ISO date parse" in {
     val r = RowValues(Row(Seq("2018-09-16", "Partly Cloudy", "3308", "5"), Header.create("Date", "Weather", "BW", "RT")))
     import DailyRaptorReportFormatISO._
     //noinspection ScalaDeprecation
-    r.convertTo[DailyRaptorReport] shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5)
+    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5))
   }
 
   it should "convertTo Seq[Int]" in {
     val r = RowValues(Row(Seq("21", "03", "2019"), Header.create()))
     import IntSeqFormat._
-    r.convertTo[Seq[Int]] shouldBe List(21, 3, 2019)
+    r.convertTo[Seq[Int]] shouldBe Success(List(21, 3, 2019))
   }
 
 }

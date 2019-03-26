@@ -38,7 +38,7 @@ trait RowParser[Row] {
   */
 case class StandardRowParser[Row: CellParser](parser: LineParser) extends RowParser[Row] {
 
-  override def parse(w: String)(header: Header): Try[Row] = for (ws <- parser.parseRow(w); r <- Try(RowValues(Row(ws, header)).convertTo[Row])) yield r
+  override def parse(w: String)(header: Header): Try[Row] = for (ws <- parser.parseRow(w); r <- RowValues(Row(ws, header)).convertTo[Row]) yield r
 
   override def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow(w.toUpperCase)) yield Header(ws)
 }
@@ -80,8 +80,9 @@ trait DefaultRowConfig extends RowConfig {
   val delimiter: Regex = ", *".r
   /**
     * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
+    * CONSIDER making the string regex derive from the delimiter
     */
-  val string: Regex = """\w*""".r
+  val string: Regex = """[^\,]*""".r
 
   /**
     * the "listSep" character (see LineParser). defaults to "|"

@@ -144,7 +144,7 @@ object MovieFormat extends Formats {
   implicit val movieFormat: CellParser[Movie] = cellReader11(Movie.apply)
 
   trait MovieConfig extends DefaultRowConfig {
-    override val string: Regex = """[\w\/\-\ \_\?:=\.]+\s*""".r
+    override val string: Regex = """[^\,]*""".r
     override val delimiter: Regex = """,""".r
     override val listEnclosure: String = ""
   }
