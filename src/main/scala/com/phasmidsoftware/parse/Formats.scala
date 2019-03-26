@@ -29,35 +29,6 @@ trait Formats {
     }
   }
 
-  //
-  //  /**
-  //    * Method to return a CellParser[Seq[P].
-  //    * This is used only by unit tests.
-  //    * CONSIDER eliminating this.
-  //    *
-  //    * @tparam P the underlying type of the result
-  //    * @return a MultiCellParser[Seq[P]
-  //    */
-  //  def cellReaderList[P: CellParser]: CellParser[List[P]] = {
-  //    new SingleCellParser[List[P]] {
-  //      def convertString(w: String): List[P] = for (x <- implicitly[Parseable[StringList]].parse(w)) yield implicitly[CellParser[P]].read(CellValue(x))
-  //    }
-  //  }
-
-  //  /**
-  //    * Method to return a CellParser[Seq[P].
-  //    * This is used only by unit tests.
-  //    * CONSIDER eliminating this.
-  //    *
-  //    * @tparam P the underlying type of the result
-  //    * @return a MultiCellParser[Seq[P]
-  //    */
-  //  def cellReaderList[P: CellParser]: CellParser[StringList] = {
-  //    new SingleCellParser[StringList]] {
-  //      def convertString(w: String): StringList = for (x <- implicitly[Parseable[StringList]].parse(w)) yield x
-  //    }
-  //  }
-
   /**
     * Method to return a CellParser[Option[P].
     *
@@ -527,3 +498,16 @@ trait ColumnHelper[T] {
     (for (prfx <- _maybePrefix; s <- so) yield prfx.replace("$x", s)).getOrElse("") + _aliases.toMap.getOrElse(w, w)
   }
 }
+
+/**
+  * This class is used for the situation where a column in a table actually contains a set of
+  * attributes, typically separated by "|" and possibly bracketed by "{}"
+  *
+  * @param xs the attribute values.
+  */
+case class AttributeSet(xs: StringList)
+
+object AttributeSet {
+  def apply(w: String): AttributeSet = apply(Parseable.split(w))
+}
+

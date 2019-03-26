@@ -24,8 +24,6 @@ trait Parseable[T] {
 object Parseable {
 
   trait ParseableBoolean extends Parseable[Boolean] {
-    // CONSIDER doing something about this because an illegal value throws IllegalArgumentException (not very helpful)
-    // FIXME we have values that are not true/false that we have to recognize
     override def parse(s: String): Boolean = try s.toBoolean catch {
       case _: IllegalArgumentException => throw ParserException(s"ParseableBoolean: cannot interpret '$s' as a Boolean")
     }

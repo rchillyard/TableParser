@@ -2,7 +2,6 @@ package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse._
 
-import scala.collection.mutable
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -27,13 +26,7 @@ import scala.util.matching.Regex
   * I will suggest you only focus on each TO BE IMPLEMENTED in the assignments.
   *
   */
-case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Principal, genres: Multi, plotKeywords: Multi, imdb: String)
-
-case class Multi(xs: StringList)
-
-object Multi {
-  def apply(w: String): Multi = apply(Parseable.split(w))
-}
+case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Principal, genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
 /**
   * The movie format (including language and duration).
@@ -137,18 +130,17 @@ object MovieFormat extends Formats {
   implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper()
   implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper()
   implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(Some("$x_"), "facebookLikes" -> "facebook_likes")
-  implicit val multiColumnHelper: ColumnHelper[Multi] = columnHelper()
+  implicit val multiColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
   implicit val listFormat: CellParser[StringList] = cellReader(Parseable.split)
   val fRating: String => Rating = Rating.apply
-  //  implicit val ageFormat: CellParser[Option[Int]] = cellReaderOpt[Int]
   implicit val ratingFormat: CellParser[Rating] = cellReader(fRating)
   implicit val formatFormat: CellParser[Format] = cellReader4(Format.apply)
   implicit val productionFormat: CellParser[Production] = cellReader4(Production.apply)
   val fPrincipal: (String, Int) => Principal = Principal.apply
   implicit val principalFormat: CellParser[Principal] = cellReader2(fPrincipal)
   implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews.apply)
-  val fMulti: String => Multi = Multi.apply
-  implicit val multiFormat: CellParser[Multi] = cellReader(fMulti)
+  val fMulti: String => AttributeSet = AttributeSet.apply
+  implicit val multiFormat: CellParser[AttributeSet] = cellReader(fMulti)
   implicit val movieFormat: CellParser[Movie] = cellReader11(Movie.apply)
 
   trait MovieConfig extends DefaultRowConfig {
@@ -174,49 +166,6 @@ object MovieFormat extends Formats {
   }
 
   implicit object MovieTableParser extends MovieTableParser
-
-}
-
-object Movie extends App {
-
-  /**
-    * Form a list from the elements explicitly specified (by position) from the given list
-    *
-    * @param list    a list of Strings
-    * @param indices a variable number of index values for the desired elements
-    * @return a list of Strings containing the specified elements in order
-    */
-  def elements(list: Seq[String], indices: Int*): List[String] = {
-    val x = mutable.ListBuffer[String]()
-    // Hint: form a new list which is consisted by the elements in list in position indices. Int* means array of Int.
-    // 6 points
-    // SOLUTION
-    for (i <- indices) x += list(i)
-    // END
-    x.toList
-  }
-
-  /**
-    * Alternative apply method for the Movie class
-    *
-    * @param ws a sequence of Strings
-    * @return a Movie
-    */
-  def apply(ws: Seq[String]): Movie = {
-    // we ignore facenumber_in_poster since I have no idea what that means.
-    val title = ws(11)
-    val format = Format(elements(ws, 0, 19, 26, 3))
-    val production = Production(elements(ws, 20, 22, 8, 23))
-    val reviews = Reviews(elements(ws, 25, 27, 21, 18, 12, 2, 13))
-    val director = Principal(elements(ws, 1, 4))
-    val actor1 = Principal(elements(ws, 10, 7))
-    val actor2 = Principal(elements(ws, 6, 24))
-    val actor3 = Principal(elements(ws, 14, 5))
-    val plotKeywords = Multi(ws(16).split("""\|""").toList)
-    val genres = Multi(ws(9).split("""\|""").toList)
-    val imdb = ws(17)
-    Movie(title, format, production, reviews, director, actor1, actor2, actor3, genres, plotKeywords, imdb)
-  }
 
 }
 
@@ -265,23 +214,19 @@ object Principal {
 }
 
 object Rating {
-  // Hint: This regex matches three patterns: (\w*), (-(\d\d)), (\d\d), for example "PG-13", the first one matches "PG", second one "-13", third one "13".
-  private val rRating =
-    """^(\w*)(-(\d\d))?$""".r
-
   /**
     * Alternative apply method for the Rating class such that a single String is decoded
     *
     * @param s a String made up of a code, optionally followed by a dash and a number, e.g. "R" or "PG-13"
     * @return a Rating
     */
-  // Hint: This should similar to apply method in Object Name. The parameter of apply in case match should be same as case class Rating
-  // 13 points
-  def apply(s: String): Rating = /*SOLUTION*/
+  def apply(s: String): Rating =
     s match {
       case rRating(code, _, null) => apply(code, None)
       case rRating(code, _, age) => apply(code, Try(age.toInt).toOption)
       case _ => throw new Exception(s"parse error in Rating: $s")
-    } /*END*/
+    }
+
+  private val rRating = """^(\w*)(-(\d\d))?$""".r
 
 }

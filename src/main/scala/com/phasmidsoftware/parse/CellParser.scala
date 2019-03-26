@@ -99,10 +99,4 @@ object CellParser {
     override def toString: String = "FileParser$"
   }
 
-  //  implicit object ListCellParser$ extends SingleCellParser[StringList] {
-  //    def convertString(w: String): StringList = implicitly[Parseable[StringList]].parse(w)
-  //    override def toString: String = "ListCellParser$"
-  //  }
-
-
 }
