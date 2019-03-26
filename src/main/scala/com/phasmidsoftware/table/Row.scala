@@ -8,7 +8,7 @@ import com.phasmidsoftware.parse.ParserException
   * @param ws  the (raw) Strings that make up the row.
   * @param hdr is the column names, which should all be in upper case.
   */
-case class Row(ws: Seq[String], hdr: Seq[String]) extends (String => String) {
+case class Row(ws: Seq[String], hdr: Header) extends (String => String) {
 
   /**
     * Method to yield the xth element of this Row.
@@ -29,9 +29,11 @@ case class Row(ws: Seq[String], hdr: Seq[String]) extends (String => String) {
     * @return the value as a String.
     * @throws ParserException if w is not contained in hdr.
     */
-  def apply(w: String): String = try apply(getIndex(w)) catch {
+  def apply(w: String): String = try apply(hdr.getIndex(w)) catch {
     case _: IndexOutOfBoundsException => throw ParserException(s"Row: unknown column: $w")
   }
 
-  def getIndex(w: String): Int = hdr.indexOf(w.toUpperCase)
+  def getIndex(w: String): Int = hdr.getIndex(w)
+
+  override def toString(): String = s"""Row: ${ws.mkString("[", ",", "]")} with header=$hdr"""
 }

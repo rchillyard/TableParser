@@ -15,13 +15,13 @@ import scala.util.{Failure, Try}
   */
 trait Table[Row] extends Iterable[Row] {
 
-  def maybeHeader: Option[Seq[String]]
+  def maybeHeader: Option[Header]
 
   def map[S](f: Row => S): Table[S] = unit(rows map f, maybeHeader)
 
   def flatMap[U](f: Row => Table[U]): Table[U] = (rows map f).foldLeft(unit[U](Nil, None))(_ ++ _)
 
-  def unit[S](rows: Seq[S], maybeHeader: Option[Seq[String]]): Table[S]
+  def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S]
 
   def ++[U >: Row](table: Table[U]): Table[U] = unit[U](rows ++ table.rows, for (h1 <- maybeHeader; h2 <- table.maybeHeader) yield h1 ++ h2)
 
@@ -53,6 +53,16 @@ object Table {
     }
 }
 
+case class Header(xs: Seq[String]) {
+  def getIndex(w: String): Int = xs.indexOf(w.toUpperCase)
+
+  def ++(other: Header): Header = Header(xs ++ other.xs)
+}
+
+object Header {
+  def create(ws: String*): Header = apply(ws map (_.toUpperCase))
+}
+
 /**
   * CONSIDER eliminating this base class
   *
@@ -60,20 +70,20 @@ object Table {
   * @param maybeHeader (optional) header
   * @tparam Row the underlying type of each Row
   */
-abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Seq[String]]) extends Table[Row] {
+abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) extends Table[Row] {
   self =>
 
 }
 
-case class TableWithHeader[Row](rows: Seq[Row], header: Seq[String]) extends BaseTable[Row](rows, Some(header)) {
-  override def unit[S](rows: Seq[S], maybeHeader: Option[Seq[String]]): Table[S] = maybeHeader match {
+case class TableWithHeader[Row](rows: Seq[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
+  override def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
     case Some(h) => TableWithHeader(rows, h);
     case _ => throw TableException("header is non-existent")
   }
 }
 
 case class TableWithoutHeader[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None) {
-  override def unit[S](rows: Seq[S], maybeHeader: Option[Seq[String]]): Table[S] = maybeHeader match {
+  override def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
     case None => TableWithoutHeader(rows);
     case _ => throw TableException("header should be non-existent")
   }

@@ -1,6 +1,6 @@
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.table.Row
+import com.phasmidsoftware.table.{Header, Row}
 import org.scalatest.{FlatSpec, Matchers}
 
 //noinspection NotImplementedCode
@@ -9,13 +9,13 @@ class CellParserSpec extends FlatSpec with Matchers {
   private val intCellParser = new CellParser[Int] {
     def convertString(w: String): Int = w.toInt
 
-    def read(row: Row, columns: Seq[String]): Int = ???
+    def read(w: Option[String], row: Row, columns: Header): Int = ???
   }
 
   private val booleanCellParser = new CellParser[Boolean] {
     def convertString(w: String): Boolean = w.toBoolean
 
-    def read(row: Row, columns: Seq[String]): Boolean = ???
+    def read(w: Option[String], row: Row, columns: Header): Boolean = ???
   }
 
   behavior of "CellParser"

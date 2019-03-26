@@ -2,7 +2,7 @@ package com.phasmidsoftware.parse
 
 import java.util.Date
 
-import com.phasmidsoftware.table.{Table, TableException, TableWithoutHeader}
+import com.phasmidsoftware.table.{Header, Table, TableException, TableWithoutHeader}
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}
@@ -26,13 +26,13 @@ class TableParserSpec extends FlatSpec with Matchers {
     val intPairParser = new IntPairParser
 
     trait IntPairRowParser extends RowParser[IntPair] {
-      override def parse(w: String)(header: Seq[String]): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
+      override def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
         case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse $w"))
       }
 
       //noinspection NotImplementedCode
-      override def parseHeader(w: String): Try[Seq[String]] = ???
+      override def parseHeader(w: String): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -76,6 +76,7 @@ class TableParserSpec extends FlatSpec with Matchers {
       def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 
       implicit val dateFormat: CellParser[LocalDate] = cellReader(parseDate)
+      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
       implicit val dailyRaptorReportFormat: CellParser[DailyRaptorReport] = cellReader4(DailyRaptorReport.apply)
     }
 

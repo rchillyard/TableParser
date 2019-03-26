@@ -24,10 +24,10 @@ import scala.util.matching.Regex
   * I won't suggest you to understand the whole program in this assignment,
   * there are some advanced features like `implicit` which hasn't been covered in class.
   * You should be able to understand it before midterm.
-  * I will suggest you only focus on TO BE IMPLEMENTEDs in the assignments.
+  * I will suggest you only focus on each TO BE IMPLEMENTED in the assignments.
   *
   */
-case class Movie(movie_title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Principal, genres: Multi, plotKeywords: Multi, imdb: String)
+case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Principal, genres: Multi, plotKeywords: Multi, imdb: String)
 
 case class Multi(xs: List[String])
 
@@ -63,7 +63,7 @@ case class Production(country: String, budget: Int, gross: Int, title_year: Int)
 /**
   * Information about various forms of review, including the content rating.
   */
-case class Reviews(imdb_score: Double, facebook_likes: Int, contentRating: Rating, numUsersReview: Int, numUsersVoted: Int, numCriticReviews: Int, totalFacebookLikes: Int)
+case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating, numUsersReview: Int, numUsersVoted: Int, numCriticReviews: Int, totalFacebookLikes: Int)
 
 /**
   * A cast or crew principal
@@ -86,7 +86,7 @@ case class Principal(name: Name, facebookLikes: Int) {
 case class Name(first: String, middle: Option[String], last: String, suffix: Option[String]) {
   override def toString: String = {
     case class Result(r: StringBuffer) {
-      def append(s: String): Unit = r.append(" " + s);
+      def append(s: String): Unit = r.append(" " + s)
 
       override def toString: String = r.toString
     }
@@ -114,9 +114,23 @@ case class Rating(code: String, age: Option[Int]) {
 
 object MovieFormat extends Formats {
 
+  implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper("title" -> "movie_title", "actor1" -> "actor_1", "actor2" -> "actor_2", "actor3" -> "actor_3")
+  implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper("imdbScore" -> "imdb_score",
+    "facebookLikes" -> "movie_facebook_likes",
+    "contentRating" -> "content_rating",
+    "numUsersReview" -> "num_user_for_reviews",
+    "numUsersVoted" -> "num_voted_users",
+    "numCriticReviews" -> "num_critic_for_reviews",
+    "totalFacebookLikes" -> "cast_total_facebook_likes")
+  implicit val ratingColumnHelper: ColumnHelper[Rating] = columnHelper()
+  implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper()
+  implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper()
+  implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(Some("$x_"), "facebookLikes" -> "facebook_likes")
+  implicit val multiColumnHelper: ColumnHelper[Multi] = columnHelper()
   implicit val listFormat: CellParser[List[String]] = cellReaderList[String]
-  implicit val ageFormat: CellParser[Option[Int]] = cellReaderOpt[Int]
-  implicit val ratingFormat: CellParser[Rating] = cellReader2(Rating.apply)
+  val fRating: String => Rating = Rating.apply
+  //  implicit val ageFormat: CellParser[Option[Int]] = cellReaderOpt[Int]
+  implicit val ratingFormat: CellParser[Rating] = cellReader(fRating)
   implicit val formatFormat: CellParser[Format] = cellReader4(Format.apply)
   implicit val productionFormat: CellParser[Production] = cellReader4(Production.apply)
   val fPrincipal: (String, Int) => Principal = Principal.apply
@@ -126,23 +140,21 @@ object MovieFormat extends Formats {
   implicit val movieFormat: CellParser[Movie] = cellReader11(Movie.apply)
 
   trait MovieConfig extends DefaultRowConfig {
-    override val string: Regex = """[\w\/\-\ \_\?:=\.]+""".r
+    override val string: Regex = """[\w\/\-\ \_\?:=\.]+\s*""".r
     override val delimiter: Regex = """,""".r
     override val listEnclosure: String = ""
   }
 
   implicit object MovieConfig extends MovieConfig
 
-  //  println(s"movie config: ${implicitly[RowConfig]}")
-
   implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie](LineParser.apply)
-
-  //  println(s"movie parser: $parser")
 
   trait MovieTableParser extends TableParser[Table[Movie]] {
     type Row = Movie
 
     def hasHeader: Boolean = true
+
+    override def forgiving: Boolean = true
 
     def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
 

@@ -1,5 +1,6 @@
 package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.table.Header
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.matching.Regex
@@ -9,10 +10,11 @@ class RowParserSpec extends FlatSpec with Matchers {
 
   case class HawkCount(species: String, count: Int)
 
-  val header: Seq[String] = Seq("SPECIES", "COUNT")
+  val header: Header = Header.create("species", "count")
 
   object HawkCountFormat extends Formats {
 
+    implicit val hawkCountColumnHelper: ColumnHelper[HawkCount] = columnHelper()
     implicit val hawkCountFormat: CellParser[HawkCount] = cellReader2(HawkCount)
   }
 

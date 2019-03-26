@@ -1,6 +1,6 @@
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.table.Row
+import com.phasmidsoftware.table.{Header, Row}
 
 import scala.util.Try
 import scala.util.matching.Regex
@@ -19,7 +19,7 @@ trait RowParser[Row] {
     * @param header the header already parsed.
     * @return a Try[Row].
     */
-  def parse(w: String)(header: Seq[String]): Try[Row]
+  def parse(w: String)(header: Header): Try[Row]
 
   /**
     * Parse the String, resulting in a Seq[String]
@@ -27,7 +27,7 @@ trait RowParser[Row] {
     * @param w the String to be parsed: always the first line of a CSV file.
     * @return a Try[Seq[String]
     */
-  def parseHeader(w: String): Try[Seq[String]]
+  def parseHeader(w: String): Try[Header]
 }
 
 /**
@@ -38,9 +38,9 @@ trait RowParser[Row] {
   */
 case class StandardRowParser[Row: CellParser](parser: LineParser) extends RowParser[Row] {
 
-  override def parse(w: String)(header: Seq[String]): Try[Row] = for (ws <- parser.parseRow(w); r <- Try(RowValues(Row(ws, header)).convertTo[Row])) yield r
+  override def parse(w: String)(header: Header): Try[Row] = for (ws <- parser.parseRow(w); r <- Try(RowValues(Row(ws, header)).convertTo[Row])) yield r
 
-  override def parseHeader(w: String): Try[Seq[String]] = parser.parseRow(w.toUpperCase)
+  override def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow(w.toUpperCase)) yield Header(ws)
 }
 
 object StandardRowParser {

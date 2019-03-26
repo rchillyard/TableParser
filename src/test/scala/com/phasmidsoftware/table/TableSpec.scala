@@ -21,13 +21,13 @@ class TableSpec extends FlatSpec with Matchers {
     val intPairParser = new IntPairParser
 
     trait IntPairRowParser extends RowParser[IntPair] {
-      override def parse(w: String)(header: Seq[String]): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
+      override def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
         case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse $w"))
       }
 
       //noinspection NotImplementedCode
-      override def parseHeader(w: String): Try[Seq[String]] = ???
+      override def parseHeader(w: String): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser

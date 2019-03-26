@@ -3,7 +3,7 @@ package com.phasmidsoftware.parse
 import java.io.File
 import java.net.URL
 
-import com.phasmidsoftware.table.Row
+import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
 
 trait CellParser[T] {
@@ -12,16 +12,16 @@ trait CellParser[T] {
 
   def read(value: Convertible): T = value match {
     case CellValue(w) => convertString(w)
-    case RowValues(row, columns) => read(row, columns)
+    case RowValues(row, columns) => read(None, row, columns)
     case _ => throw FormatsException(s"CellParser: cannot convert value $value of type ${value.getClass}")
   }
 
-  def read(row: Row, columns: Seq[String]): T
+  // CONSIDER do we actually need the Header parameter here?
+  def read(w: Option[String], row: Row, columns: Header): T
 }
 
 trait SingleCellParser[T] extends CellParser[T] {
-  //noinspection NotImplementedCode
-  def read(row: Row, columns: Seq[String]): T = ???
+  def read(w: Option[String], row: Row, columns: Header): T = throw new UnsupportedOperationException
 }
 
 /**
@@ -31,7 +31,8 @@ trait SingleCellParser[T] extends CellParser[T] {
   */
 trait MultiCellParser[T] extends CellParser[T] {
   //noinspection NotImplementedCode
-  def convertString(w: String): T = ???
+  def convertString(w: String): T = throw ParserException(s"MultiCellParser: convertString not implemented: $w")
+
 }
 
 sealed abstract class Convertible {
@@ -40,7 +41,7 @@ sealed abstract class Convertible {
 
 case class CellValue(w: String) extends Convertible
 
-case class RowValues(row: Row, ws: Seq[String]) extends Convertible
+case class RowValues(row: Row, ws: Header) extends Convertible
 
 object RowValues {
   def apply(row: Row): RowValues = RowValues(row, row.hdr)

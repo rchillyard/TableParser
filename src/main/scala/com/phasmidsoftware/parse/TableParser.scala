@@ -1,5 +1,7 @@
 package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.table.Header
+
 import scala.util.{Failure, Try}
 
 trait TableParser[Table] {
@@ -8,15 +10,26 @@ trait TableParser[Table] {
 
   def hasHeader: Boolean
 
+  def forgiving: Boolean = false
+
   def rowParser: RowParser[Row]
 
   def builder(rows: Seq[Row]): Table
 
+
   // CONSIDER returning Table unwrapped and using lifted conversion functions
   def parse(ws: Seq[String]): Try[Table] = {
     // CONSIDER swap order of params
-    def parseRows(header: Seq[String], ws1: Seq[String]): Try[Table] =
-      for (rs <- FP.sequence(for (w <- ws1) yield rowParser.parse(w)(header))) yield builder(rs)
+    def parseRows(header: Header, ws1: Seq[String]): Try[Table] = {
+      val rys = for (w <- ws1) yield rowParser.parse(w)(header)
+      for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs)
+    }
+
+    def logFailures(rys: Seq[Try[Row]]): Seq[Try[Row]] = {
+      val (good, bad) = rys.partition(_.isSuccess)
+      bad.map(_.failed.get) foreach println
+      good
+    }
 
     def separateHeaderAndRows(h: String, t: Seq[String]) = for (ws <- rowParser.parseHeader(h); rs <- parseRows(ws, t)) yield rs
 
@@ -27,6 +40,6 @@ trait TableParser[Table] {
       case h :: t => separateHeaderAndRows(h, t)
       case _ => Failure(ParserException("no rows to parse"))
     }
-    else parseRows(Nil, ws)
+    else parseRows(Header(Nil), ws)
   }
 }
