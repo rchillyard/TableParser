@@ -46,7 +46,7 @@ object Table {
 
   def parse[T: TableParser](f: File): Try[T] = for (s <- Try(Source.fromFile(f)); t <- parse(s)) yield t
 
-  def parseResource[T: TableParser](s: String, clazz: Class[_]): Try[T] =
+  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass): Try[T] =
     clazz.getResource(s) match {
       case null => Failure(ParserException(s"Table.getResource: $s does not exist for $clazz"))
       case u => parse(u)

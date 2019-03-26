@@ -88,6 +88,29 @@ object Parseable {
   }
 }
 
+abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
+  override def parse(s: String): Option[T] = Try(implicitly[Parseable[T]].parse(s)).toOption
+}
+
+object ParseableOption {
+
+  implicit object ParseableOptionBoolean extends ParseableOption[Boolean]
+
+  implicit object ParseableOptionInt extends ParseableOption[Int]
+
+  implicit object ParseableOptionDouble extends ParseableOption[Double]
+
+  implicit object ParseableOptionLong extends ParseableOption[Long]
+
+  implicit object ParseableOptionLocalDate extends ParseableOption[LocalDate]
+
+  implicit object ParseableOptionURL extends ParseableOption[URL]
+
+  implicit object ParseableOptionFile extends ParseableOption[File]
+
+}
+
+
 class ListParser() extends JavaTokenParsers {
 
   def list: Parser[StringList] = "{" ~> repsep("""[^\,\}]+""".r, ",") <~ "}"

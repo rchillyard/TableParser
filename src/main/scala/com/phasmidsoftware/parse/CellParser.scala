@@ -101,4 +101,22 @@ object CellParser {
     override def toString: String = "FileParser$"
   }
 
+  abstract class OptionParser[T: Parseable] extends SingleCellParser[Option[T]] {
+    override def convertString(w: String): Option[T] = Try(implicitly[Parseable[T]].parse(w)).toOption
+  }
+
+  implicit object BooleanOptionParser extends OptionParser[Boolean]
+
+  implicit object IntOptionParser extends OptionParser[Int]
+
+  implicit object LongOptionParser extends OptionParser[Long]
+
+  implicit object DoubleOptionParser extends OptionParser[Double]
+
+  implicit object LocalDateOptionParser extends OptionParser[LocalDate]
+
+  implicit object URLOptionParser extends OptionParser[URL]
+
+  implicit object FileOptionParser extends OptionParser[File]
+
 }

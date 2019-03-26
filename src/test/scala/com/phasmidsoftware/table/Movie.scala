@@ -50,7 +50,7 @@ case class Format(color: String, language: String, aspect_ratio: Double, duratio
   * @param gross      gross earnings (?)
   * @param title_year the year the title was registered (?)
   */
-case class Production(country: String, budget: Int, gross: Int, title_year: Int) {
+case class Production(country: String, budget: Option[Int], gross: Int, title_year: Int) {
   def isKiwi: Boolean = this match {
     case Production("New Zealand", _, _, _) => true
     case _ => false
@@ -141,6 +141,7 @@ object MovieFormat extends Formats {
   implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews.apply)
   val fMulti: String => AttributeSet = AttributeSet.apply
   implicit val multiFormat: CellParser[AttributeSet] = cellReader(fMulti)
+
   implicit val movieFormat: CellParser[Movie] = cellReader11(Movie.apply)
 
   trait MovieConfig extends DefaultRowConfig {
@@ -178,7 +179,7 @@ object Format {
 
 object Production {
   def apply(params: List[String]): Production = params match {
-    case country :: budget :: gross :: titleYear :: Nil => apply(country, budget.toInt, gross.toInt, titleYear.toInt)
+    case country :: budget :: gross :: titleYear :: Nil => apply(country, Try(budget.toInt).toOption, gross.toInt, titleYear.toInt)
     case _ => throw new Exception(s"logic error in Production: $params")
   }
 }

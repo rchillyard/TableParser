@@ -28,4 +28,11 @@ class ParseableSpec extends FlatSpec with Matchers {
     p.parseAll(p.list, "{1,2,3}") should matchPattern { case p.Success(_, _) => }
     p.parseAll(p.list, "{1,2-3,3}") should matchPattern { case p.Success(_, _) => }
   }
+
+  behavior of "OptionParser"
+  it should "parse an optional value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[Int]]].parse("1") shouldBe Some(1)
+    implicitly[Parseable[Option[Int]]].parse("") shouldBe None
+  }
 }
