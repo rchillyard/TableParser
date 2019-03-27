@@ -129,8 +129,9 @@ object MovieFormat extends Formats {
   implicit val ratingColumnHelper: ColumnHelper[Rating] = columnHelper()
   implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper()
   implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper()
-  implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(Some("$x_"), "facebookLikes" -> "facebook_likes")
+  implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(Some("$x_$c"), "facebookLikes" -> "facebook_likes")
   implicit val multiColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
+  // CONSIDER can we use ParseableStringList here?
   implicit val listFormat: CellParser[StringList] = cellReader(Parseable.split)
   val fRating: String => Rating = Rating.apply
   implicit val ratingFormat: CellParser[Rating] = cellReader(fRating)
@@ -139,22 +140,19 @@ object MovieFormat extends Formats {
   val fPrincipal: (String, Int) => Principal = Principal.apply
   implicit val principalFormat: CellParser[Principal] = cellReader2(fPrincipal)
   implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews.apply)
-  val fMulti: String => AttributeSet = AttributeSet.apply
-  implicit val multiFormat: CellParser[AttributeSet] = cellReader(fMulti)
-
+  val fAttributes: String => AttributeSet = AttributeSet.apply
+  implicit val attributesFormat: CellParser[AttributeSet] = cellReader(fAttributes)
   implicit val movieFormat: CellParser[Movie] = cellReader11(Movie.apply)
 
-  trait MovieConfig extends DefaultRowConfig {
+  implicit object MovieConfig extends DefaultRowConfig {
     override val string: Regex = """[^\,]*""".r
     override val delimiter: Regex = """,""".r
     override val listEnclosure: String = ""
   }
 
-  implicit object MovieConfig extends MovieConfig
-
   implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie](LineParser.apply)
 
-  trait MovieTableParser extends TableParser[Table[Movie]] {
+  implicit object MovieTableParser extends TableParser[Table[Movie]] {
     type Row = Movie
 
     def hasHeader: Boolean = true
@@ -165,9 +163,6 @@ object MovieFormat extends Formats {
 
     def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
   }
-
-  implicit object MovieTableParser extends MovieTableParser
-
 }
 
 object Format {

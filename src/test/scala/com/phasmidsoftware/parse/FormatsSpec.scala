@@ -2,6 +2,7 @@ package com.phasmidsoftware.parse
 
 import java.util.Date
 
+import com.phasmidsoftware.table.MovieFormat.columnHelper
 import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
@@ -119,6 +120,20 @@ class FormatsSpec extends FlatSpec with Matchers {
     val r = RowValues(Row(Seq("21", "03", "2019"), Header.create()))
     import IntSeqFormat._
     r.convertTo[Seq[Int]] shouldBe Success(List(21, 3, 2019))
+  }
+
+  behavior of "ColumnHelper"
+
+  it should "convert correctly with format" in {
+    val ch = columnHelper(Some("$x_$c"), "facebookLikes" -> "facebook_likes")
+    ch.lookup(None, "facebookLikes") shouldBe "facebook_likes"
+    ch.lookup(Some("X"), "facebookLikes") shouldBe "X_facebook_likes"
+  }
+
+  it should "convert correctly w/o format" in {
+    val ch = columnHelper("facebookLikes" -> "facebook_likes")
+    ch.lookup(None, "facebookLikes") shouldBe "facebook_likes"
+    ch.lookup(Some("X"), "facebookLikes") shouldBe "facebook_likes"
   }
 
 }

@@ -495,7 +495,8 @@ trait ColumnHelper[T] {
     * @return a String which may include a prefix.
     */
   def lookup(so: Option[String], w: String): String = {
-    (for (prfx <- _maybePrefix; s <- so) yield prfx.replace("$x", s)).getOrElse("") + _aliases.toMap.getOrElse(w, w)
+    val column = _aliases.toMap.getOrElse(w, w)
+    (for (prfx <- _maybePrefix; s <- so) yield prfx.replace("$x", s).replace("$c", column)).getOrElse(column)
   }
 }
 

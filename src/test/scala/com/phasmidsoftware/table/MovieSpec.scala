@@ -1,5 +1,6 @@
 package com.phasmidsoftware.table
 
+import com.phasmidsoftware.parse.{RowParser, TableParser}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util._
@@ -17,7 +18,7 @@ class MovieSpec extends FlatSpec with Matchers {
       "Color,James Cameron,723,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,237000000,2009,936,7.9,1.78,33000"
     )
 
-    val x: Try[Table[Movie]] = for (r <- Table.parse(movies)) yield r
+    val x: Try[Table[Movie]] = Table.parse(movies)
     x should matchPattern { case Success(TableWithoutHeader(_)) => }
     val mt = x.get
     println(s"Movie: successfully read ${mt.size} rows")
@@ -33,7 +34,7 @@ class MovieSpec extends FlatSpec with Matchers {
       "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
     )
 
-    val x: Try[Table[Movie]] = for (r <- Table.parse(movies)) yield r
+    val x: Try[Table[Movie]] = Table.parse(movies)
     x should matchPattern { case Success(TableWithoutHeader(_)) => }
     x.get.size shouldBe 0
   }
@@ -41,8 +42,16 @@ class MovieSpec extends FlatSpec with Matchers {
   it should "fail to read the first (edited) movie from the IMDB dataset" in {
     import MovieFormat._
 
-    implicit object MovieTableParser extends MovieTableParser {
+    implicit object MovieTableParser extends TableParser[Table[Movie]] {
+      type Row = Movie
+
+      def hasHeader: Boolean = true
+
       override def forgiving: Boolean = false
+
+      def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
+
+      def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
     }
 
     val movies = Seq(
@@ -50,7 +59,7 @@ class MovieSpec extends FlatSpec with Matchers {
       "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
     )
 
-    val x: Try[Table[Movie]] = for (r <- Table.parse(movies)) yield r
+    val x: Try[Table[Movie]] = Table.parse(movies)
     x should matchPattern { case Failure(_) => }
   }
 

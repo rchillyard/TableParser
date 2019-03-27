@@ -11,7 +11,7 @@ class MovieFuncSpec extends FlatSpec with Matchers {
   it should "be ingested properly" in {
     import MovieFormat._
 
-    val x: Try[Table[Movie]] = for (r <- Table.parseResource("movie_metadata.csv")) yield r
+    val x: Try[Table[Movie]] = Table.parseResource("movie_metadata.csv")
     x should matchPattern { case Success(TableWithoutHeader(_)) => }
     val mt = x.get
     println(s"Movie: successfully read ${mt.size} rows")
