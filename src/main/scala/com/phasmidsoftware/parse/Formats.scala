@@ -419,13 +419,17 @@ trait Formats {
     }
   }
 
-  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = new ColumnHelper[T] {
-    self =>
+  def columnHelper[T](columnNameMapper: String => String, maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = new ColumnHelper[T] {
     override val _maybePrefix: Option[String] = maybePrefix
     override val _aliases: Seq[(String, String)] = aliases
+    override val _columnNameMapper: String => String = columnNameMapper
   }
 
-  def columnHelper[T](aliases: (String, String)*): ColumnHelper[T] = columnHelper(None, aliases: _*)
+  def columnHelper[T](columnNameMapper: String => String, aliases: (String, String)*): ColumnHelper[T] = columnHelper(columnNameMapper, None, aliases: _*)
+
+  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, maybePrefix, aliases: _*)
+
+  def columnHelper[T](aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, aliases: _*)
 
   private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): P = {
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
@@ -488,6 +492,14 @@ trait ColumnHelper[T] {
   val _aliases: Seq[(String, String)]
 
   /**
+    * This defines the default mapping between parameter names and column names.
+    * It is only used if there is no mapping defined in aliases.
+    *
+    * @return the mapper function.
+    */
+  val _columnNameMapper: String => String
+
+  /**
     * This is the lookup function
     *
     * @param so is an optional string to be inserted into the prefix
@@ -495,7 +507,7 @@ trait ColumnHelper[T] {
     * @return a String which may include a prefix.
     */
   def lookup(so: Option[String], w: String): String = {
-    val column = _aliases.toMap.getOrElse(w, w)
+    val column = _aliases.toMap.getOrElse(w, _columnNameMapper(w))
     (for (prfx <- _maybePrefix; s <- so) yield prfx.replace("$x", s).replace("$c", column)).getOrElse(column)
   }
 }

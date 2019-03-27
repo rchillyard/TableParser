@@ -31,26 +31,26 @@ case class Movie(title: String, format: Format, production: Production, reviews:
 /**
   * The movie format (including language and duration).
   *
-  * @param color        whether filmed in color
-  * @param language     the native language of the characters
-  * @param aspect_ratio the aspect ratio of the film
-  * @param duration     its length in minutes
+  * @param color       whether filmed in color
+  * @param language    the native language of the characters
+  * @param aspectRatio the aspect ratio of the film
+  * @param duration    its length in minutes
   */
-case class Format(color: String, language: String, aspect_ratio: Double, duration: Int) {
+case class Format(color: String, language: String, aspectRatio: Double, duration: Int) {
   override def toString: String = {
-    s"$color,$language,$aspect_ratio,$duration"
+    s"$color,$language,$aspectRatio,$duration"
   }
 }
 
 /**
   * The production: its country, year, and financials
   *
-  * @param country    country of origin
-  * @param budget     production budget in US dollars
-  * @param gross      gross earnings (?)
-  * @param title_year the year the title was registered (?)
+  * @param country   country of origin
+  * @param budget    production budget in US dollars
+  * @param gross     gross earnings (?)
+  * @param titleYear the year the title was registered (?)
   */
-case class Production(country: String, budget: Option[Int], gross: Int, title_year: Int) {
+case class Production(country: String, budget: Option[Int], gross: Int, titleYear: Int) {
   def isKiwi: Boolean = this match {
     case Production("New Zealand", _, _, _) => true
     case _ => false
@@ -111,26 +111,22 @@ case class Rating(code: String, age: Option[Int]) {
 
 object MovieFormat extends Formats {
 
-  implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(
+  def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+
+  implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelCaseColumnNameMapper _,
     "title" -> "movie_title",
-    "actor1" -> "actor_1",
-    "actor2" -> "actor_2",
-    "actor3" -> "actor_3",
-    "plotKeywords" -> "plot_keywords",
     "imdb" -> "movie_imdb_link")
-  implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(
-    "imdbScore" -> "imdb_score",
+  implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelCaseColumnNameMapper _,
     "facebookLikes" -> "movie_facebook_likes",
-    "contentRating" -> "content_rating",
     "numUsersReview" -> "num_user_for_reviews",
     "numUsersVoted" -> "num_voted_users",
     "numCriticReviews" -> "num_critic_for_reviews",
     "totalFacebookLikes" -> "cast_total_facebook_likes")
   implicit val ratingColumnHelper: ColumnHelper[Rating] = columnHelper()
-  implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper()
-  implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper()
-  implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(Some("$x_$c"), "facebookLikes" -> "facebook_likes")
-  implicit val multiColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
+  implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelCaseColumnNameMapper _)
+  implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
+  implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
+  implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
   // CONSIDER can we use ParseableStringList here?
   implicit val listFormat: CellParser[StringList] = cellReader(Parseable.split)
   val fRating: String => Rating = Rating.apply

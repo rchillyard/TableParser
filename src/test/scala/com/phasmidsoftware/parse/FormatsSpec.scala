@@ -136,4 +136,19 @@ class FormatsSpec extends FlatSpec with Matchers {
     ch.lookup(Some("X"), "facebookLikes") shouldBe "facebook_likes"
   }
 
+  behavior of "ColumnHelper with name mapper"
+
+  def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+
+  it should "convert correctly with format" in {
+    val ch = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
+    ch.lookup(None, "facebookLikes") shouldBe "facebook_Likes"
+    ch.lookup(Some("X"), "facebookLikes") shouldBe "X_facebook_Likes"
+  }
+
+  it should "convert correctly w/o format" in {
+    val ch = columnHelper(camelCaseColumnNameMapper _)
+    ch.lookup(None, "facebookLikes") shouldBe "facebook_Likes"
+    ch.lookup(Some("X"), "facebookLikes") shouldBe "facebook_Likes"
+  }
 }
