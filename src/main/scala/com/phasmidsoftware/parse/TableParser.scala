@@ -29,7 +29,8 @@ trait TableParser[Table] {
       val string = s"${e.getLocalizedMessage}${
         if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
       }"
-      println(string)
+      // TODO this should be using a logger
+      System.err.println(string)
     }
 
     def logFailures(rys: Seq[Try[Row]]): Seq[Try[Row]] = {

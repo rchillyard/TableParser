@@ -37,7 +37,7 @@ trait SingleCellParser[T] extends CellParser[T] {
   */
 trait MultiCellParser[T] extends CellParser[T] {
   //noinspection NotImplementedCode
-  def convertString(w: String): T = throw ParserException(s"MultiCellParser: convertString not implemented: $w")
+  def convertString(w: String): T = throw new UnsupportedOperationException
 
   override def toString: String = "MultiCellParser"
 }

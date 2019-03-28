@@ -30,11 +30,13 @@ class ParseableSpec extends FlatSpec with Matchers {
     implicitly[Parseable[StringList]].parse("{1,2,3}") shouldBe List("1", "2", "3")
   }
 
+
   behavior of "ListParser"
   it should "parse a list" in {
     val p = new ListParser
     p.parseAll(p.list, "{1,2,3}") should matchPattern { case p.Success(_, _) => }
     p.parseAll(p.list, "{1,2-3,3}") should matchPattern { case p.Success(_, _) => }
+    p.parseAll(p.list, "1") should matchPattern { case p.Success(_, _) => }
   }
 
   behavior of "OptionParser"

@@ -70,11 +70,16 @@ class CellParsersSpec extends FlatSpec with Matchers {
     implicit val intSeqParser: CellParser[Seq[Int]] = cellParserSeq
   }
 
-  behavior of "CellParsers"
+  behavior of "Convertibles"
 
   it should "convertTo Int" in {
     val x = CellValue("1")
     x.convertTo[Int] shouldBe Success(1)
+  }
+
+  it should "convertTo Double" in {
+    val x = CellValue("1.0")
+    x.convertTo[Double] shouldBe Success(1.0)
   }
 
   it should "convertTo MyNumber" in {
@@ -120,4 +125,42 @@ class CellParsersSpec extends FlatSpec with Matchers {
     import IntSeqParser._
     r.convertTo[Seq[Int]] shouldBe Success(List(21, 3, 2019))
   }
+
+  behavior of "CellParsers"
+
+  it should "parse Int" in {
+    implicitly[CellParser[Int]].convertString("1") shouldBe 1
+  }
+
+  it should "parse Double" in {
+    implicitly[CellParser[Double]].convertString("1") shouldBe 1.0
+  }
+
+  it should "parse Long" in {
+    implicitly[CellParser[Long]].convertString("99") shouldBe 99L
+  }
+
+  it should "parse BigInt" in {
+    implicitly[CellParser[BigInt]].convertString("999999999999") shouldBe BigInt("999999999999")
+  }
+
+  it should "parse Option[Int]" in {
+    implicitly[CellParser[Option[Int]]].convertString("") shouldBe None
+    implicitly[CellParser[Option[Int]]].convertString("1") shouldBe Some(1)
+  }
+
+  // FIXME this one really should be fixed.
+  ignore should "parse Option[MyNumber]" in {
+    object X extends CellParsers {
+
+      import MyNumberParser._
+
+      implicit val optionalPrincipalParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
+    }
+    import X._
+    implicitly[CellParser[Option[MyNumber]]].convertString("") shouldBe None
+    implicitly[CellParser[Option[MyNumber]]].convertString("1") shouldBe Some(1)
+    println("done")
+  }
+
 }

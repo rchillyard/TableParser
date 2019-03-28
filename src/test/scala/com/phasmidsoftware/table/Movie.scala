@@ -127,8 +127,6 @@ object MovieParser extends CellParsers {
   implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
   implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
   implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
-  // CONSIDER can we use ParseableStringList here?
-  implicit val listParser: CellParser[StringList] = cellParser(Parseable.split)
   val fRating: String => Rating = Rating.apply
   implicit val ratingParser: CellParser[Rating] = cellParser(fRating)
   implicit val formatParser: CellParser[Format] = cellParser4(Format)
