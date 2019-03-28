@@ -40,7 +40,7 @@ There are object methods to parse most forms of text: _File, Resource, InputStre
 
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
 an implicit ionstance of _CellParser[T]_ must be in scope.
-This is achieved via invoking a method (from object Formats) of the following form:
+This is achieved via invoking a method (from object Parsers) of the following form:
 where _f_ is a function which which takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
 and where _T_ is the type to be constructed:
 
@@ -87,14 +87,14 @@ Example
 
 The basic structure of application code will look something like this:
 
-        import MovieFormat._
+        import MovieParser._
     
         val x: Try[Table[Movie]] = Table.parseResource("movie_metadata.csv")
      
 In this example, the row type is _Movie_, a case class with eleven parameters.
 The data can be found in a local resource (relative to this class) called movie_metadata.csv.
 All of the (implicit) details that characterize this particular table input are provided
-in the _MovieFormat_ object.
+in the _MovieParser_ object.
 
 The _Movie_ class looks like this:
 
@@ -103,7 +103,7 @@ The _Movie_ class looks like this:
 Note that we make actor3 optional because some movies don't specify an actor3.
 Unlike with ordinary values such as Int, Double, we do have to add an additional implicit definition to accomplish this (see in example code below):
  
-    optionalPrincipalFormat: CellParser[Option[Principal]] = cellReaderOpt
+    implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
  
 The other case classes look like this:
 
@@ -114,50 +114,50 @@ The other case classes look like this:
     case class Name(first: String, middle: Option[String], last: String, suffix: Option[String])
     case class Rating(code: String, age: Option[Int])
 
-The _MovieFormat_ object looks like this:
+The _MovieParser_ object looks like this:
 
-     object MovieFormat extends Formats {
-        def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])","_$1")
-        implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelCaseColumnNameMapper _,
-          "title" -> "movie_title",
-          "imdb" -> "movie_imdb_link")
-        implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelCaseColumnNameMapper _,
-          "facebookLikes" -> "movie_facebook_likes",
-          "numUsersReview" -> "num_user_for_reviews",
-          "numUsersVoted" -> "num_voted_users",
-          "numCriticReviews" -> "num_critic_for_reviews",
-          "totalFacebookLikes" -> "cast_total_facebook_likes")
-        implicit val ratingColumnHelper: ColumnHelper[Rating] = columnHelper()
-        implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelCaseColumnNameMapper _)
-        implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
-        implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
-        implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
-        implicit val listFormat: CellParser[StringList] = cellReader(Parseable.split)
-        val fRating: String => Rating = Rating.apply
-        implicit val ratingFormat: CellParser[Rating] = cellReader(fRating)
-        implicit val formatFormat: CellParser[Format] = cellReader4(Format)
-        implicit val productionFormat: CellParser[Production] = cellReader4(Production)
-        implicit val nameFormat: CellParser[Name] = cellReader(Name.apply)
-        implicit val principalFormat: CellParser[Principal] = cellReader2(Principal)
-        implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews)
-        val fAttributes: String => AttributeSet = AttributeSet.apply
-        implicit val attributesFormat: CellParser[AttributeSet] = cellReader(fAttributes)
-        implicit val movieFormat: CellParser[Movie] = cellReader11(Movie)
-        implicit val optionalPrincipalFormat: CellParser[Option[Principal]] = cellReaderOpt
-        implicit object MovieConfig extends DefaultRowConfig {
-          override val string: Regex = """[^\,]*""".r
-          override val delimiter: Regex = """,""".r
-          override val listEnclosure: String = ""
-        }
-        implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
-        implicit object MovieTableParser extends TableParser[Table[Movie]] {
-          type Row = Movie
-          def hasHeader: Boolean = true
-          override def forgiving: Boolean = true
-          def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
-          def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
-       }
-     }
+    object MovieParser extends CellParsers {
+      def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+      implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelCaseColumnNameMapper _,
+        "title" -> "movie_title",
+        "imdb" -> "movie_imdb_link")
+      implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelCaseColumnNameMapper _,
+        "facebookLikes" -> "movie_facebook_likes",
+        "numUsersReview" -> "num_user_for_reviews",
+        "numUsersVoted" -> "num_voted_users",
+        "numCriticReviews" -> "num_critic_for_reviews",
+        "totalFacebookLikes" -> "cast_total_facebook_likes")
+      implicit val ratingColumnHelper: ColumnHelper[Rating] = columnHelper()
+      implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelCaseColumnNameMapper _)
+      implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
+      implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
+      implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
+      implicit val listParser: CellParser[StringList] = cellParser(Parseable.split)
+      val fRating: String => Rating = Rating.apply
+      implicit val ratingParser: CellParser[Rating] = cellParser(fRating)
+      implicit val formatParser: CellParser[Format] = cellParser4(Format)
+      implicit val productionParser: CellParser[Production] = cellParser4(Production)
+      implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
+      implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
+      implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
+      val fAttributes: String => AttributeSet = AttributeSet.apply
+      implicit val attributesParser: CellParser[AttributeSet] = cellParser(fAttributes)
+      implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
+      implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
+      implicit object MovieConfig extends DefaultRowConfig {
+        override val string: Regex = """[^,]*""".r
+        override val delimiter: Regex = """,""".r
+        override val listEnclosure: String = ""
+      }
+      implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
+      implicit object MovieTableParser extends TableParser[Table[Movie]] {
+        type Row = Movie
+        def hasHeader: Boolean = true
+        override def forgiving: Boolean = true
+        def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
+        def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
+      }
+    }
 
 In this code,
 _movieColumnHelper_, and the other columnHelpers, specify parameter-column mappings.
