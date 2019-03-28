@@ -20,6 +20,8 @@ strings and delimiters, also to vary the quote character.
 User Guide
 ==========
 
+Current version: 1.0.0.
+
 The _Table_ trait expresses the result of parsing from a representation of a table.
 Each row is represented by a parametric type _Row_.
 Typically, this _Row_ type is a case class with one parameter corresponding to one column in the table file.

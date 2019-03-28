@@ -14,6 +14,14 @@ class ParseableSpec extends FlatSpec with Matchers {
     implicitly[Parseable[Int]].parse("99") shouldBe 99
   }
 
+  it should "parse 999999999" in {
+    implicitly[Parseable[Long]].parse("999999999") shouldBe 999999999L
+  }
+
+  it should "parse 99999999999999999" in {
+    implicitly[Parseable[BigInt]].parse("99999999999999999") shouldBe BigInt("99999999999999999")
+  }
+
   it should "parse 3.1415927" in {
     implicitly[Parseable[Double]].parse("3.1415927") shouldBe 3.1415927
   }

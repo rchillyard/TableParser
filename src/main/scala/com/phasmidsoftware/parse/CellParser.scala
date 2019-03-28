@@ -74,6 +74,12 @@ object CellParser {
     override def toString: String = "LongCellParser$"
   }
 
+  implicit object BigIntCellParser$ extends SingleCellParser[BigInt] {
+    override def convertString(w: String): BigInt = implicitly[Parseable[BigInt]].parse(w)
+
+    override def toString: String = "BigIntCellParser$"
+  }
+
   implicit object DoubleCellParser$ extends SingleCellParser[Double] {
     override def convertString(w: String): Double = implicitly[Parseable[Double]].parse(w)
 

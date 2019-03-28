@@ -47,6 +47,14 @@ object Parseable {
 
   implicit object ParseableLong extends ParseableLong
 
+  trait ParseableBigInt extends Parseable[BigInt] {
+    override def parse(s: String): BigInt = try BigInt(s) catch {
+      case _: IllegalArgumentException => throw ParseableException(s"ParseableBigInt: cannot interpret '$s' as a BigInt")
+    }
+  }
+
+  implicit object ParseableBigInt extends ParseableBigInt
+
   trait ParseableDouble extends Parseable[Double] {
     override def parse(s: String): Double = try s.toDouble catch {
       case _: IllegalArgumentException => throw ParseableException(s"ParseableDouble: cannot interpret '$s' as a Double")
