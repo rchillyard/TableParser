@@ -25,7 +25,7 @@ object Parseable {
 
   trait ParseableBoolean extends Parseable[Boolean] {
     override def parse(s: String): Boolean = try s.toBoolean catch {
-      case _: IllegalArgumentException => throw ParserException(s"ParseableBoolean: cannot interpret '$s' as a Boolean")
+      case _: IllegalArgumentException => throw ParseableException(s"ParseableBoolean: cannot interpret '$s' as a Boolean")
     }
   }
 
@@ -33,38 +33,48 @@ object Parseable {
 
   trait ParseableInt extends Parseable[Int] {
     override def parse(s: String): Int = try s.toInt catch {
-      case _: IllegalArgumentException => throw ParserException(s"ParseableInt: cannot interpret '$s' as an Int")
+      case _: IllegalArgumentException => throw ParseableException(s"ParseableInt: cannot interpret '$s' as an Int")
     }
   }
 
   implicit object ParseableInt extends ParseableInt
 
   trait ParseableLong extends Parseable[Long] {
-    override def parse(s: String): Long = s.toLong
+    override def parse(s: String): Long = try s.toLong catch {
+      case _: IllegalArgumentException => throw ParseableException(s"ParseableLong: cannot interpret '$s' as a Long")
+    }
   }
 
   implicit object ParseableLong extends ParseableLong
 
   trait ParseableDouble extends Parseable[Double] {
-    override def parse(s: String): Double = s.toDouble
+    override def parse(s: String): Double = try s.toDouble catch {
+      case _: IllegalArgumentException => throw ParseableException(s"ParseableDouble: cannot interpret '$s' as a Double")
+    }
   }
 
   implicit object ParseableDouble extends ParseableDouble
 
   trait ParseableLocalDate extends Parseable[LocalDate] {
-    override def parse(s: String): LocalDate = LocalDate.parse(s)
+    override def parse(s: String): LocalDate = try LocalDate.parse(s) catch {
+      case e: IllegalArgumentException => throw ParseableException(s"ParseableLocalDate: cannot interpret '$s' as a LocalDate", e)
+    }
   }
 
   implicit object ParseableLocalDate extends ParseableLocalDate
 
   trait ParseableURL extends Parseable[URL] {
-    override def parse(s: String): URL = new URL(s)
+    override def parse(s: String): URL = try new URL(s) catch {
+      case e: IllegalArgumentException => throw ParseableException(s"ParseableURL: cannot interpret '$s' as an URL", e)
+    }
   }
 
   implicit object ParseableURL extends ParseableURL
 
   trait ParseableFile extends Parseable[File] {
-    override def parse(s: String): File = new File(s)
+    override def parse(s: String): File = try new File(s) catch {
+      case e: IllegalArgumentException => throw ParseableException(s"ParseableFile: cannot interpret '$s' as a File", e)
+    }
   }
 
   implicit object ParseableFile extends ParseableFile
@@ -72,19 +82,21 @@ object Parseable {
   /**
     * This trait splits strings of the form {x,y,z}, regardless of the format specified by the RowConfig object.
     */
-  trait ParseableStringList$ extends Parseable[StringList] {
-    override def parse(s: String): StringList = split(s)
+  trait ParseableStringList extends Parseable[StringList] {
+    override def parse(s: String): StringList = try split(s) catch {
+      case e: IllegalArgumentException => throw ParseableException(s"ParseableStringList: cannot interpret '$s' as a List[String]", e)
+    }
   }
 
-  implicit object ParseableStringList$ extends ParseableStringList$
+  implicit object ParseableStringList extends ParseableStringList
 
   private val parser = new ListParser()
 
   def split(w: String): StringList = parser.parseAll(parser.list, w) match {
     case parser.Success(ws: StringList, _) => ws
-    case parser.Failure(msg, _) => throw ParserException(s"cannot split string '$w': $msg")
-    case parser.Error(msg, _) => throw ParserException(s"cannot split string '$w': $msg")
-    case _ => throw ParserException(s"cannot split string '$w'")
+    case parser.Failure(msg, _) => throw ParseableException(s"cannot split string '$w': $msg")
+    case parser.Error(msg, _) => throw ParseableException(s"cannot split string '$w': $msg")
+    case _ => throw ParseableException(s"cannot split string '$w'")
   }
 }
 
@@ -115,3 +127,5 @@ class ListParser() extends JavaTokenParsers {
 
   def list: Parser[StringList] = "{" ~> repsep("""[^\,\}]+""".r, ",") <~ "}"
 }
+
+case class ParseableException(msg: String, e: Throwable = null) extends Exception(msg, e)

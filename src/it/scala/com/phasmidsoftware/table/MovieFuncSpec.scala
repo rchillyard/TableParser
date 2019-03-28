@@ -15,7 +15,8 @@ class MovieFuncSpec extends FlatSpec with Matchers {
     x should matchPattern { case Success(TableWithoutHeader(_)) => }
     val mt = x.get
     println(s"Movie: successfully read ${mt.size} rows")
-    mt.size shouldBe 1450
+    mt.size shouldBe 1484
+    mt take 10 foreach println
   }
 
 }

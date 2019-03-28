@@ -48,8 +48,8 @@ and where _T_ is the type to be constructed:
  
 Typically, the function _f_ is the _apply_ method of the case class _T_,
 although you may have to explicitly refer to a particular function/method with a specific signature.
-When you have created a companion object to the case class, you will simply use the method name as in
-_Reviews.apply_ (see example below).
+When you have created a companion object to the case class, you will simply use the method name (typically _apply_) as in
+_Name.apply_ (see example below).
 If you have created additional apply methods, you will need to define a function similar
 to the _fRating_ function (see example below).  
 
@@ -130,14 +130,14 @@ The _MovieFormat_ object looks like this:
         implicit val listFormat: CellParser[StringList] = cellReader(Parseable.split)
         val fRating: String => Rating = Rating.apply
         implicit val ratingFormat: CellParser[Rating] = cellReader(fRating)
-        implicit val formatFormat: CellParser[Format] = cellReader4(Format.apply)
-        implicit val productionFormat: CellParser[Production] = cellReader4(Production.apply)
-        val fPrincipal: (String, Int) => Principal = Principal.apply
-        implicit val principalFormat: CellParser[Principal] = cellReader2(fPrincipal)
-        implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews.apply)
+        implicit val formatFormat: CellParser[Format] = cellReader4(Format)
+        implicit val productionFormat: CellParser[Production] = cellReader4(Production)
+        implicit val nameFormat: CellParser[Name] = cellReader(Name.apply)
+        implicit val principalFormat: CellParser[Principal] = cellReader2(Principal)
+        implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews)
         val fAttributes: String => AttributeSet = AttributeSet.apply
         implicit val attributesFormat: CellParser[AttributeSet] = cellReader(fAttributes)
-        implicit val movieFormat: CellParser[Movie] = cellReader11(Movie.apply)
+        implicit val movieFormat: CellParser[Movie] = cellReader11(Movie)
         implicit object MovieConfig extends DefaultRowConfig {
           override val string: Regex = """[^\,]*""".r
           override val delimiter: Regex = """,""".r

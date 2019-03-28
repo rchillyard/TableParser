@@ -33,10 +33,10 @@ case class Movie(title: String, format: Format, production: Production, reviews:
   *
   * @param color       whether filmed in color
   * @param language    the native language of the characters
-  * @param aspectRatio the aspect ratio of the film
-  * @param duration    its length in minutes
+  * @param aspectRatio the aspect ratio of the film (optional)
+  * @param duration    its length in minutes (optional)
   */
-case class Format(color: String, language: String, aspectRatio: Double, duration: Int) {
+case class Format(color: String, language: String, aspectRatio: Option[Double], duration: Option[Int]) {
   override def toString: String = {
     s"$color,$language,$aspectRatio,$duration"
   }
@@ -46,11 +46,11 @@ case class Format(color: String, language: String, aspectRatio: Double, duration
   * The production: its country, year, and financials
   *
   * @param country   country of origin
-  * @param budget    production budget in US dollars
-  * @param gross     gross earnings (?)
+  * @param budget    (optional) production budget in US dollars
+  * @param gross     (optional) gross earnings (?)
   * @param titleYear the year the title was registered (?)
   */
-case class Production(country: String, budget: Option[Int], gross: Int, titleYear: Int) {
+case class Production(country: String, budget: Option[Int], gross: Option[Int], titleYear: Option[Int]) {
   def isKiwi: Boolean = this match {
     case Production("New Zealand", _, _, _) => true
     case _ => false
@@ -131,14 +131,14 @@ object MovieFormat extends Formats {
   implicit val listFormat: CellParser[StringList] = cellReader(Parseable.split)
   val fRating: String => Rating = Rating.apply
   implicit val ratingFormat: CellParser[Rating] = cellReader(fRating)
-  implicit val formatFormat: CellParser[Format] = cellReader4(Format.apply)
-  implicit val productionFormat: CellParser[Production] = cellReader4(Production.apply)
-  val fPrincipal: (String, Int) => Principal = Principal.apply
-  implicit val principalFormat: CellParser[Principal] = cellReader2(fPrincipal)
-  implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews.apply)
+  implicit val formatFormat: CellParser[Format] = cellReader4(Format)
+  implicit val productionFormat: CellParser[Production] = cellReader4(Production)
+  implicit val nameFormat: CellParser[Name] = cellReader(Name.apply)
+  implicit val principalFormat: CellParser[Principal] = cellReader2(Principal)
+  implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews)
   val fAttributes: String => AttributeSet = AttributeSet.apply
   implicit val attributesFormat: CellParser[AttributeSet] = cellReader(fAttributes)
-  implicit val movieFormat: CellParser[Movie] = cellReader11(Movie.apply)
+  implicit val movieFormat: CellParser[Movie] = cellReader11(Movie)
 
   implicit object MovieConfig extends DefaultRowConfig {
     override val string: Regex = """[^\,]*""".r
@@ -161,27 +161,6 @@ object MovieFormat extends Formats {
   }
 }
 
-object Format {
-  def apply(params: List[String]): Format = params match {
-    case color :: language :: aspectRatio :: duration :: Nil => apply(color, language, aspectRatio.toDouble, duration.toInt)
-    case _ => throw new Exception(s"logic error in Format: $params")
-  }
-}
-
-object Production {
-  def apply(params: List[String]): Production = params match {
-    case country :: budget :: gross :: titleYear :: Nil => apply(country, Try(budget.toInt).toOption, gross.toInt, titleYear.toInt)
-    case _ => throw new Exception(s"logic error in Production: $params")
-  }
-}
-
-object Reviews {
-  def apply(params: List[String]): Reviews = params match {
-    case imdbScore :: facebookLikes :: contentRating :: numUsersReview :: numUsersVoted :: numCriticReviews :: totalFacebookLikes :: Nil => apply(imdbScore.toDouble, facebookLikes.toInt, Rating(contentRating), numUsersReview.toInt, numUsersVoted.toInt, numCriticReviews.toInt, totalFacebookLikes.toInt)
-    case _ => throw new Exception(s"logic error in Reviews: $params")
-  }
-}
-
 object Name {
   // this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
   private val rName =
@@ -194,15 +173,6 @@ object Name {
     case rName(first, _, middle, last, _, suffix) => apply(first, Some(middle), last, Some(suffix))
     case _ => throw new Exception(s"parse error in Name: $name")
   }
-}
-
-object Principal {
-  def apply(params: List[String]): Principal = params match {
-    case name :: facebookLikes :: Nil => apply(name, facebookLikes.toInt)
-    case _ => throw new Exception(s"logic error in Principal: $params")
-  }
-
-  def apply(name: String, facebookLikes: Int): Principal = apply(Name(name), facebookLikes)
 }
 
 object Rating {

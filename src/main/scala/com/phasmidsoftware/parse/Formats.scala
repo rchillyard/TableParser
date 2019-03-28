@@ -436,7 +436,9 @@ trait Formats {
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
     //   println(s"readCell[${implicitly[ClassTag[T]].runtimeClass}](wo=$wo,...)($p) with cellParser=$cellParser, ids=$idx")
-    if (idx >= 0) cellParser.read(CellValue(row(idx)))
+    if (idx >= 0) try cellParser.read(CellValue(row(idx))) catch {
+      case e: Exception => throw ParserException(s"Problem reading value from $columnName in $row", e)
+    }
     else try cellParser.read(Some(columnName), row, columns) catch {
       case _: UnsupportedOperationException =>
         throw ParserException(s"unable to find value for column $columnName")

@@ -25,9 +25,16 @@ trait TableParser[Table] {
       for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs)
     }
 
+    def logException(e: Throwable): Unit = {
+      val string = s"${e.getLocalizedMessage}${
+        if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
+      }"
+      println(string)
+    }
+
     def logFailures(rys: Seq[Try[Row]]): Seq[Try[Row]] = {
       val (good, bad) = rys.partition(_.isSuccess)
-      bad.map(_.failed.get) foreach println
+      bad.map(_.failed.get) foreach (e => logException(e))
       good
     }
 

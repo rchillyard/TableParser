@@ -21,8 +21,11 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   def parseRow(w: String): Try[Seq[String]] = parseAll(row, w) match {
     case Success(s, _) => scala.util.Success(s)
-    case x => scala.util.Failure(ParserException(x.toString))
+    case Failure(x, _) => scala.util.Failure(formException(w, x))
+    case Error(x, _) => scala.util.Failure(formException(w, x))
   }
+
+  private def formException(row: String, x: String) = ParserException(s"Cannot parse row '$row' due to: $x")
 
   def row: Parser[Seq[String]] = rep1sep(cell, delimiter)
 
@@ -45,4 +48,4 @@ object LineParser {
   def apply(implicit c: RowConfig): LineParser = new LineParser(c.delimiter, c.string, c.listEnclosure, c.listSep, c.quote)
 }
 
-case class ParserException(msg: String) extends Exception(msg)
+case class ParserException(msg: String, e: Throwable = null) extends Exception(msg, e)
