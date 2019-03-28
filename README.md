@@ -98,8 +98,13 @@ in the _MovieFormat_ object.
 
 The _Movie_ class looks like this:
 
-    case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Principal, genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
+    case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
+Note that we make actor3 optional because some movies don't specify an actor3.
+Unlike with ordinary values such as Int, Double, we do have to add an additional implicit definition to accomplish this (see in example code below):
+ 
+    optionalPrincipalFormat: CellParser[Option[Principal]] = cellReaderOpt
+ 
 The other case classes look like this:
 
     case class Format(color: String, language: String, aspectRatio: Double, duration: Int)
@@ -138,12 +143,13 @@ The _MovieFormat_ object looks like this:
         val fAttributes: String => AttributeSet = AttributeSet.apply
         implicit val attributesFormat: CellParser[AttributeSet] = cellReader(fAttributes)
         implicit val movieFormat: CellParser[Movie] = cellReader11(Movie)
+        implicit val optionalPrincipalFormat: CellParser[Option[Principal]] = cellReaderOpt
         implicit object MovieConfig extends DefaultRowConfig {
           override val string: Regex = """[^\,]*""".r
           override val delimiter: Regex = """,""".r
           override val listEnclosure: String = ""
         }
-        implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie](LineParser.apply)
+        implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
         implicit object MovieTableParser extends TableParser[Table[Movie]] {
           type Row = Movie
           def hasHeader: Boolean = true

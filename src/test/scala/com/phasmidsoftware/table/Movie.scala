@@ -26,7 +26,7 @@ import scala.util.matching.Regex
   * I will suggest you only focus on each TO BE IMPLEMENTED in the assignments.
   *
   */
-case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Principal, genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
+case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
 /**
   * The movie format (including language and duration).
@@ -60,7 +60,7 @@ case class Production(country: String, budget: Option[Int], gross: Option[Int], 
 /**
   * Information about various forms of review, including the content rating.
   */
-case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating, numUsersReview: Int, numUsersVoted: Int, numCriticReviews: Int, totalFacebookLikes: Int)
+case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating, numUsersReview: Option[Int], numUsersVoted: Int, numCriticReviews: Option[Int], totalFacebookLikes: Int)
 
 /**
   * A cast or crew principal
@@ -138,15 +138,16 @@ object MovieFormat extends Formats {
   implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews)
   val fAttributes: String => AttributeSet = AttributeSet.apply
   implicit val attributesFormat: CellParser[AttributeSet] = cellReader(fAttributes)
+  implicit val optionalPrincipalFormat: CellParser[Option[Principal]] = cellReaderOpt
   implicit val movieFormat: CellParser[Movie] = cellReader11(Movie)
 
   implicit object MovieConfig extends DefaultRowConfig {
-    override val string: Regex = """[^\,]*""".r
+    override val string: Regex = """[^,]*""".r
     override val delimiter: Regex = """,""".r
     override val listEnclosure: String = ""
   }
 
-  implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie](LineParser.apply)
+  implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
 
   implicit object MovieTableParser extends TableParser[Table[Movie]] {
     type Row = Movie
