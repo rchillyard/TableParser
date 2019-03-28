@@ -10,7 +10,7 @@ class MovieSpec extends FlatSpec with Matchers {
 
   behavior of "Movie table"
 
-  it should "read the first movie from the IMDB dataset" in {
+  it should "parse the first movie from the IMDB dataset" in {
     import MovieParser._
 
     val movies = Seq(
@@ -21,13 +21,13 @@ class MovieSpec extends FlatSpec with Matchers {
     val x: Try[Table[Movie]] = Table.parse(movies)
     x should matchPattern { case Success(TableWithoutHeader(_)) => }
     val mt = x.get
-    println(s"Movie: successfully read ${mt.size} rows")
+    println(s"Movie: successfully parsed ${mt.size} rows")
     println(mt)
     mt.size shouldBe 1
   }
 
   // TODO rework this test to be more significant
-  it should "read the first (edited) movie from the IMDB dataset" in {
+  it should "parse the first (edited) movie from the IMDB dataset" in {
     import MovieParser._
 
     val movies = Seq(
@@ -41,7 +41,7 @@ class MovieSpec extends FlatSpec with Matchers {
   }
 
   // TODO rework this test
-  ignore should "fail to read the first (edited) movie from the IMDB dataset" in {
+  ignore should "fail to parse the first (edited) movie from the IMDB dataset" in {
     import MovieParser._
 
     implicit object MovieTableParser extends TableParser[Table[Movie]] {
@@ -66,7 +66,7 @@ class MovieSpec extends FlatSpec with Matchers {
   }
 
   // FIXME
-  ignore should "read all the following rows" in {
+  ignore should "parse all the following rows" in {
     import MovieParser._
 
     implicit object MovieTableParser extends TableParser[Table[Movie]] {

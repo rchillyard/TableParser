@@ -8,7 +8,7 @@ import scala.util.Try
 /**
   * Trait to define the various parsers for reading case classes and their parameters from table rows.
   *
-  * NOTE In each of these cellParser methods, the CellParser has a read method which ignores the columns.
+  * NOTE In each of these cellParser methods, the CellParser has a parse method which ignores the columns.
   *
   */
 trait CellParsers {
@@ -24,7 +24,8 @@ trait CellParsers {
   def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = {
     new MultiCellParser[Seq[P]] {
       override def toString: String = "MultiCellParser: cellParserSeq"
-      def read(w: Option[String], row: Row, columns: Header): Seq[P] = for (w <- row.ws) yield implicitly[CellParser[P]].read(CellValue(w))
+
+      def parse(w: Option[String], row: Row, columns: Header): Seq[P] = for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w))
     }
   }
 
@@ -38,9 +39,9 @@ trait CellParsers {
     new SingleCellParser[Option[P]] {
       override def toString: String = "cellParserOption"
 
-      def convertString(w: String): Option[P] = Try(implicitly[CellParser[P]].read(CellValue(w))).toOption
+      def convertString(w: String): Option[P] = Try(implicitly[CellParser[P]].parse(CellValue(w))).toOption
 
-      override def read(wo: Option[String], row: Row, columns: Header): Option[P] = Try(implicitly[CellParser[P]].read(wo, row, columns)).toOption
+      override def parse(wo: Option[String], row: Row, columns: Header): Option[P] = Try(implicitly[CellParser[P]].parse(wo, row, columns)).toOption
 
     }
   }
@@ -56,7 +57,8 @@ trait CellParsers {
   def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = {
     new SingleCellParser[T] {
       override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
-      def convertString(w: String): T = construct(implicitly[CellParser[P]].read(CellValue(w)))
+
+      def convertString(w: String): T = construct(implicitly[CellParser[P]].parse(CellValue(w)))
     }
   }
 
@@ -76,7 +78,8 @@ trait CellParsers {
     val Array(p1) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser1 for $tc"
-      def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         construct(p1V)
       }
@@ -97,7 +100,8 @@ trait CellParsers {
     val Array(p1, p2) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser2 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         construct(p1V, p2V)
@@ -120,7 +124,8 @@ trait CellParsers {
     val Array(p1, p2, p3) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser3 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -145,7 +150,8 @@ trait CellParsers {
     val Array(p1, p2, p3, p4) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser4 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -172,7 +178,8 @@ trait CellParsers {
     val Array(p1, p2, p3, p4, p5) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser5 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -201,7 +208,8 @@ trait CellParsers {
     val Array(p1, p2, p3, p4, p5, p6) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser6 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -232,7 +240,8 @@ trait CellParsers {
     val Array(p1, p2, p3, p4, p5, p6, p7) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser7 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -265,7 +274,8 @@ trait CellParsers {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser8 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -300,7 +310,8 @@ trait CellParsers {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser9 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -337,7 +348,8 @@ trait CellParsers {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser10 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -376,7 +388,8 @@ trait CellParsers {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser11 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -417,7 +430,8 @@ trait CellParsers {
     val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = CellParsers.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser12 for $tc"
-      override def read(wo: Option[String], row: Row, columns: Header): T = {
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
         val p3V = readCell[T, P3](wo, row, columns)(p3)
@@ -452,10 +466,10 @@ trait CellParsers {
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
     //   println(s"readCell[${implicitly[ClassTag[T]].runtimeClass}](wo=$wo,...)($p) with cellParser=$cellParser, ids=$idx")
-    if (idx >= 0) try cellParser.read(CellValue(row(idx))) catch {
+    if (idx >= 0) try cellParser.parse(CellValue(row(idx))) catch {
       case e: Exception => throw ParserException(s"Problem reading value from $columnName in $row", e)
     }
-    else try cellParser.read(Some(columnName), row, columns) catch {
+    else try cellParser.parse(Some(columnName), row, columns) catch {
       case _: UnsupportedOperationException =>
         throw ParserException(s"unable to find value for column $columnName")
     }

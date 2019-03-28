@@ -13,19 +13,19 @@ trait CellParser[T] {
   def convertString(w: String): T
 
   // CONSIDER renaming this as parse
-  def read(value: Convertible): T = value match {
+  def parse(value: Convertible): T = value match {
     case CellValue(w) => convertString(w)
-    case RowValues(row, columns) => read(None, row, columns)
+    case RowValues(row, columns) => parse(None, row, columns)
     case _ => throw ParsersException(s"CellParser: cannot convert value $value of type ${value.getClass}")
   }
 
   // CONSIDER do we actually need the Header parameter here?
   // CONSIDER renaming as parse
-  def read(w: Option[String], row: Row, columns: Header): T
+  def parse(w: Option[String], row: Row, columns: Header): T
 }
 
 trait SingleCellParser[T] extends CellParser[T] {
-  def read(w: Option[String], row: Row, columns: Header): T = throw new UnsupportedOperationException
+  def parse(w: Option[String], row: Row, columns: Header): T = throw new UnsupportedOperationException
 
   override def toString: String = "SingleCellParser"
 }
@@ -43,7 +43,7 @@ trait MultiCellParser[T] extends CellParser[T] {
 }
 
 sealed abstract class Convertible {
-  def convertTo[T: CellParser]: Try[T] = Try(cellReader.read(this))
+  def convertTo[T: CellParser]: Try[T] = Try(cellReader.parse(this))
 }
 
 case class CellValue(w: String) extends Convertible

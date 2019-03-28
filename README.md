@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/rchillyard/TableParser.svg?style=svg)](https://circleci.com/gh/rchillyard/TableParser)
+
 # TableParser
 A functional parser of tables implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.

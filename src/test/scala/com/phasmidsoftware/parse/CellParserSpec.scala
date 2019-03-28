@@ -9,23 +9,23 @@ class CellParserSpec extends FlatSpec with Matchers {
   private val intCellParser = new CellParser[Int] {
     def convertString(w: String): Int = w.toInt
 
-    def read(w: Option[String], row: Row, columns: Header): Int = throw ParserException(s"intCellParser does not implement read method")
+    def parse(w: Option[String], row: Row, columns: Header): Int = throw ParserException(s"intCellParser does not implement parse method")
   }
 
   private val booleanCellParser = new CellParser[Boolean] {
     def convertString(w: String): Boolean = w.toBoolean
 
-    def read(w: Option[String], row: Row, columns: Header): Boolean = throw ParserException(s"booleanCellParser does not implement read method")
+    def parse(w: Option[String], row: Row, columns: Header): Boolean = throw ParserException(s"booleanCellParser does not implement parse method")
   }
 
   behavior of "CellParser"
 
-  it should "read Int" in {
-    intCellParser.read(CellValue("1")) shouldBe 1
+  it should "parse Int" in {
+    intCellParser.parse(CellValue("1")) shouldBe 1
   }
 
-  it should "read Boolean" in {
-    booleanCellParser.read(CellValue("true")) shouldBe true
+  it should "parse Boolean" in {
+    booleanCellParser.parse(CellValue("true")) shouldBe true
   }
 
 }
