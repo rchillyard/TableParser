@@ -44,7 +44,7 @@ This is achieved via invoking a method (from object Parsers) of the following fo
 where _f_ is a function which which takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
 and where _T_ is the type to be constructed:
 
-    cellReaderN[T,P1,P2,...Pn](f)
+    cellParserN[T,P1,P2,...Pn](f)
  
 Typically, the function _f_ is the _apply_ method of the case class _T_,
 although you may have to explicitly refer to a particular function/method with a specific signature.
@@ -168,7 +168,7 @@ Note that _principalColumnHelper_ has an extra parameter at the start of the par
     
 which is an (optional) formatter for the purpose of prefixing a string to column names.
 That's because there are several "Principal" parameters in a _Movie_, and each one has its own set of attributes. 
-In this format parameter, $x is substituted by the prefix (the optional value passed into the lookup method)
+In this format parameter, "$x" is substituted by the prefix (the optional value passed into the lookup method)
 while $c represents the translated column name.
 
 Even when there is no name translation necessary, we still have to provide a columnHelper, as in:
