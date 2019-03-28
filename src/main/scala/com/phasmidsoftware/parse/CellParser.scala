@@ -12,13 +12,15 @@ trait CellParser[T] {
   // TODO Need to define this better so that we don't have any non-implemented methods.
   def convertString(w: String): T
 
+  // CONSIDER renaming this as parse
   def read(value: Convertible): T = value match {
     case CellValue(w) => convertString(w)
     case RowValues(row, columns) => read(None, row, columns)
-    case _ => throw FormatsException(s"CellParser: cannot convert value $value of type ${value.getClass}")
+    case _ => throw ParsersException(s"CellParser: cannot convert value $value of type ${value.getClass}")
   }
 
   // CONSIDER do we actually need the Header parameter here?
+  // CONSIDER renaming as parse
   def read(w: Option[String], row: Row, columns: Header): T
 }
 

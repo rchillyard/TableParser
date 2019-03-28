@@ -12,16 +12,16 @@ class RowParserSpec extends FlatSpec with Matchers {
 
   val header: Header = Header.create("species", "count")
 
-  object HawkCountFormat extends Formats {
+  object HawkCountParser extends CellParsers {
 
     implicit val hawkCountColumnHelper: ColumnHelper[HawkCount] = columnHelper()
-    implicit val hawkCountFormat: CellParser[HawkCount] = cellReader2(HawkCount)
+    implicit val hawkCountParser: CellParser[HawkCount] = cellParser2(HawkCount)
   }
 
   behavior of "RowParser"
 
   it should "parse regex string" in {
-    import HawkCountFormat._
+    import HawkCountParser._
     trait HawkCountRowConfig extends DefaultRowConfig {
       override val string: Regex = """[a-zA-Z0-9 -]*""".r
     }
@@ -33,7 +33,7 @@ class RowParserSpec extends FlatSpec with Matchers {
   }
 
   it should "parse quoted string" in {
-    import HawkCountFormat._
+    import HawkCountParser._
     val parser = StandardRowParser[HawkCount](LineParser.apply)
     val hawkCount: Try[HawkCount] = parser.parse(""""Red-tailed Hawk",1027""")(header)
     hawkCount shouldBe Success(HawkCount("Red-tailed Hawk", 1027))

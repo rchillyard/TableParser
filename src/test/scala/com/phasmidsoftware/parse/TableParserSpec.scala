@@ -69,18 +69,18 @@ class TableParserSpec extends FlatSpec with Matchers {
   object DailyRaptorReport {
     val header: Seq[String] = Seq("date", "weather", "bw", "ri")
 
-    object DailyRaptorReportFormat extends Formats {
+    object DailyRaptorReportParser extends CellParsers {
 
       private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
 
       def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 
-      implicit val dateFormat: CellParser[LocalDate] = cellReader(parseDate)
+      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
       implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
-      implicit val dailyRaptorReportFormat: CellParser[DailyRaptorReport] = cellReader4(DailyRaptorReport.apply)
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser4(DailyRaptorReport.apply)
     }
 
-    import DailyRaptorReportFormat._
+    import DailyRaptorReportParser._
 
     trait DailyRaptorReportConfig extends DefaultRowConfig {
       override val string: Regex = """[\w\/\-\ ]+""".r

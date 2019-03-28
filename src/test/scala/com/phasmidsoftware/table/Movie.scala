@@ -109,7 +109,7 @@ case class Rating(code: String, age: Option[Int]) {
   })
 }
 
-object MovieFormat extends Formats {
+object MovieParser extends CellParsers {
 
   def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
 
@@ -128,18 +128,18 @@ object MovieFormat extends Formats {
   implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
   implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
   // CONSIDER can we use ParseableStringList here?
-  implicit val listFormat: CellParser[StringList] = cellReader(Parseable.split)
+  implicit val listParser: CellParser[StringList] = cellParser(Parseable.split)
   val fRating: String => Rating = Rating.apply
-  implicit val ratingFormat: CellParser[Rating] = cellReader(fRating)
-  implicit val formatFormat: CellParser[Format] = cellReader4(Format)
-  implicit val productionFormat: CellParser[Production] = cellReader4(Production)
-  implicit val nameFormat: CellParser[Name] = cellReader(Name.apply)
-  implicit val principalFormat: CellParser[Principal] = cellReader2(Principal)
-  implicit val reviewsFormat: CellParser[Reviews] = cellReader7(Reviews)
+  implicit val ratingParser: CellParser[Rating] = cellParser(fRating)
+  implicit val formatParser: CellParser[Format] = cellParser4(Format)
+  implicit val productionParser: CellParser[Production] = cellParser4(Production)
+  implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
+  implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
+  implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
   val fAttributes: String => AttributeSet = AttributeSet.apply
-  implicit val attributesFormat: CellParser[AttributeSet] = cellReader(fAttributes)
-  implicit val optionalPrincipalFormat: CellParser[Option[Principal]] = cellReaderOpt
-  implicit val movieFormat: CellParser[Movie] = cellReader11(Movie)
+  implicit val attributesParser: CellParser[AttributeSet] = cellParser(fAttributes)
+  implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
+  implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
 
   implicit object MovieConfig extends DefaultRowConfig {
     override val string: Regex = """[^,]*""".r

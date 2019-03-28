@@ -11,7 +11,7 @@ class MovieSpec extends FlatSpec with Matchers {
   behavior of "Movie table"
 
   it should "read the first movie from the IMDB dataset" in {
-    import MovieFormat._
+    import MovieParser._
 
     val movies = Seq(
       "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
@@ -28,7 +28,7 @@ class MovieSpec extends FlatSpec with Matchers {
 
   // TODO rework this test to be more significant
   it should "read the first (edited) movie from the IMDB dataset" in {
-    import MovieFormat._
+    import MovieParser._
 
     val movies = Seq(
       "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
@@ -42,7 +42,7 @@ class MovieSpec extends FlatSpec with Matchers {
 
   // TODO rework this test
   ignore should "fail to read the first (edited) movie from the IMDB dataset" in {
-    import MovieFormat._
+    import MovieParser._
 
     implicit object MovieTableParser extends TableParser[Table[Movie]] {
       type Row = Movie
@@ -67,7 +67,7 @@ class MovieSpec extends FlatSpec with Matchers {
 
   // FIXME
   ignore should "read all the following rows" in {
-    import MovieFormat._
+    import MovieParser._
 
     implicit object MovieTableParser extends TableParser[Table[Movie]] {
       type Row = Movie
