@@ -9,9 +9,9 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.Success
 
-class CellParsersSpec extends FlatSpec with Matchers {
+case class MyNumber(x: Int)
 
-  case class MyNumber(x: Int)
+class CellParsersSpec extends FlatSpec with Matchers {
 
   object MyNumberParser extends CellParsers {
 
@@ -149,18 +149,23 @@ class CellParsersSpec extends FlatSpec with Matchers {
     implicitly[CellParser[Option[Int]]].convertString("1") shouldBe Some(1)
   }
 
-  // FIXME this one really should be fixed.
-  ignore should "parse Option[MyNumber]" in {
-    object X extends CellParsers {
+  object X extends CellParsers {
 
-      import MyNumberParser._
+    import MyNumberParser._
 
-      implicit val optionalPrincipalParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
-    }
+    implicit val optionalMyNumberParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
+  }
+
+  it should "parse blank as None" in {
     import X._
     implicitly[CellParser[Option[MyNumber]]].convertString("") shouldBe None
-    implicitly[CellParser[Option[MyNumber]]].convertString("1") shouldBe Some(1)
-    println("done")
+  }
+
+  it should "parse 1 as 1" in {
+    import X._
+    val cellParser = implicitly[CellParser[Option[MyNumber]]]
+    println(cellParser)
+    cellParser.convertString("1") shouldBe Some(MyNumber(1))
   }
 
 }

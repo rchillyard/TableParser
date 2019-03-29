@@ -65,8 +65,7 @@ class MovieSpec extends FlatSpec with Matchers {
     x should matchPattern { case Failure(_) => }
   }
 
-  // FIXME
-  ignore should "parse all the following rows" in {
+  it should "parse all the following rows" in {
     import MovieParser._
 
     implicit object MovieTableParser extends TableParser[Table[Movie]] {

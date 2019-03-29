@@ -37,11 +37,13 @@ trait CellParsers {
     */
   def cellParserOption[P: CellParser]: CellParser[Option[P]] = {
     new SingleCellParser[Option[P]] {
-      override def toString: String = "cellParserOption"
+      override def toString: String = s"cellParserOption with $cp"
 
-      def convertString(w: String): Option[P] = Try(implicitly[CellParser[P]].parse(CellValue(w))).toOption
+      private val cp: CellParser[P] = implicitly[CellParser[P]]
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Option[P] = Try(implicitly[CellParser[P]].parse(wo, row, columns)).toOption
+      def convertString(w: String): Option[P] = Try(cp.parse(CellValue(w))).toOption
+
+      override def parse(wo: Option[String], row: Row, columns: Header): Option[P] = Try(cp.parse(wo, row, columns)).toOption
 
     }
   }
@@ -67,6 +69,7 @@ trait CellParsers {
     *
     * NOTE: be careful using this method it only applies where T is a 1-tuple (e.g. a case class with one field).
     * It probably shouldn't ever be used in practice. It can cause strange initialization errors!
+    * This note may be irrelevant now that we have overridden convertString to fix issue #1.
     *
     * @param construct a function P => T, usually the apply method of a case class.
     * @tparam P1 the type of the (single) field of the Product type T.
@@ -83,6 +86,10 @@ trait CellParsers {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         construct(p1V)
       }
+
+      // We need to allow for a single-parameter conversion of String => T via P1
+      // This fixes issue #1
+      override def convertString(w: String): T = construct(implicitly[CellParser[P1]].convertString(w))
     }
   }
 

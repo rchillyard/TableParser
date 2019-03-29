@@ -44,7 +44,7 @@ There are object methods to parse most forms of text: _File, Resource, InputStre
 
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
 an implicit ionstance of _CellParser[T]_ must be in scope.
-This is achieved via invoking a method (from object Parsers) of the following form:
+This is achieved via invoking a method (from object _Parsers_) of the following form:
 where _f_ is a function which which takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
 and where _T_ is the type to be constructed:
 
@@ -60,7 +60,7 @@ to the _fRating_ function (see example below).
 Note that _P1_, _P2_, ... _Pn_ each hava a context bound on _CellParser_ (that's to say, there is implicit
 evidence of type _CellParser[P]_).
 This is the mechanism which saves the programmer from having to specify explicit conversions.
-_T_ is a subtype of _Product_ and has two context bounds: _ClassTag_ and _ColumnHelper_.
+_T_ is bound to be a subtype of _Product_ and has two context bounds: _ClassTag_ and _ColumnHelper_.
 
 Table
 =====
@@ -89,7 +89,8 @@ The following object methods are available for parsing text:
 Example
 =======
 
-The basic structure of application code will look something like this:
+In this example, we parse the IMDB Movie dataset from Kaggle.
+The basic structure of the application code will look something like this:
 
         import MovieParser._
     
@@ -104,8 +105,8 @@ The _Movie_ class looks like this:
 
     case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
-Note that we make actor3 optional because some movies don't specify an actor3.
-Unlike with ordinary values such as Int, Double, we do have to add an additional implicit definition to accomplish this (see in example code below):
+Note that we make _actor3_ optional because some movies don't specify an "actor3".
+Unlike with ordinary values such as _Int_, _Double_, we do have to add an additional implicit definition to accomplish this (see in example code below):
  
     implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
  
