@@ -1,6 +1,6 @@
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.{RowParser, TableParser}
+import com.phasmidsoftware.parse.{CellParser, RowParser, TableParser}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util._
@@ -85,7 +85,16 @@ class MovieSpec extends FlatSpec with Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    Table.parse(movies) should matchPattern { case Success(TableWithoutHeader(_)) => }
+    val mty = Table.parse(movies)
+    mty should matchPattern { case Success(TableWithoutHeader(_)) => }
+    mty.get.size shouldBe 1
   }
 
+  behavior of "Name"
+  it should "parse Philip Michael Thomas" in {
+    import MovieParser._
+    implicitly[CellParser[Name]].convertString("Philip Thomas") shouldBe Name("Philip", None, "Thomas", None)
+    implicitly[CellParser[Name]].convertString("Philip Michael Thomas") shouldBe Name("Philip", Some("Michael"), "Thomas", None)
+
+  }
 }

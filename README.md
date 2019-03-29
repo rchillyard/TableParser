@@ -54,8 +54,8 @@ Typically, the function _f_ is the _apply_ method of the case class _T_,
 although you may have to explicitly refer to a particular function/method with a specific signature.
 When you have created a companion object to the case class, you will simply use the method name (typically _apply_) as in
 _Name.apply_ (see example below).
-If you have created additional apply methods, you will need to define a function similar
-to the _fRating_ function (see example below).  
+If you have created additional apply methods, you will need to define a function of a specific type and pass that in.
+Or, more simply, do as for _ratingParser_ in the example below.
 
 Note that _P1_, _P2_, ... _Pn_ each hava a context bound on _CellParser_ (that's to say, there is implicit
 evidence of type _CellParser[P]_).
@@ -85,6 +85,30 @@ The following object methods are available for parsing text:
 *  def parse[T: TableParser](i: InputStream): Try[T]
 *  def parse[T: TableParser](f: File): Try[T]
 *  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass): Try[T]
+
+TableParser
+===========
+
+_TableParser_ is also the name of a trait which takes a parametric type called "Table" in its definition.
+It is defined thus:
+
+    trait TableParser[Table] {
+      type Row
+      def hasHeader: Boolean
+      def forgiving: Boolean = false
+      def rowParser: RowParser[Row]
+      def builder(rows: Seq[Row]): Table
+      def parse(ws: Seq[String]): Try[Table] = ...
+}
+
+The type _Row_ defines the specific row type (for example, _Movie_, in the example below).
+_hasHeader_ is used to define if there is a header row in the first line of the file (or sequence of strings) to be parsed.
+_forgiving_, which defaults to _false_, can be set to _true_ if you expect that some rows will not parse, but where this
+will not invalidate your dataset as a whole.
+In forgiving mode, any exceptions thrown in the parsing of a row are collected and then printed to _System.err_ at the conclusion of the parsing of the table.
+_rowParser_ is the specific parser for the _Row_ type.
+_builder_ is used by the _parse_ method.
+_parse_ is the main method of _TableParser_ and takes a _Seq[String]_ and yields a _Try[Table]_.
 
 Example
 =======
@@ -137,15 +161,13 @@ The _MovieParser_ object looks like this:
       implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
       implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
       implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
-      val fRating: String => Rating = Rating.apply
-      implicit val ratingParser: CellParser[Rating] = cellParser(fRating)
+      implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
       implicit val formatParser: CellParser[Format] = cellParser4(Format)
       implicit val productionParser: CellParser[Production] = cellParser4(Production)
       implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
       implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
       implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
-      val fAttributes: String => AttributeSet = AttributeSet.apply
-      implicit val attributesParser: CellParser[AttributeSet] = cellParser(fAttributes)
+      implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
       implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
       implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
       implicit object MovieConfig extends DefaultRowConfig {

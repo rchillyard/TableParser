@@ -474,11 +474,10 @@ trait CellParsers {
     val idx = row.getIndex(columnName)
     //   println(s"readCell[${implicitly[ClassTag[T]].runtimeClass}](wo=$wo,...)($p) with cellParser=$cellParser, ids=$idx")
     if (idx >= 0) try cellParser.parse(CellValue(row(idx))) catch {
-      case e: Exception => throw ParserException(s"Problem reading value from $columnName in $row", e)
+      case e: Exception => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
     }
     else try cellParser.parse(Some(columnName), row, columns) catch {
-      case _: UnsupportedOperationException =>
-        throw ParserException(s"unable to find value for column $columnName")
+      case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column $columnName")
     }
   }
 }

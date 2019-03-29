@@ -9,9 +9,9 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.Success
 
-case class MyNumber(x: Int)
-
 class CellParsersSpec extends FlatSpec with Matchers {
+
+  case class MyNumber(x: Int)
 
   object MyNumberParser extends CellParsers {
 
@@ -149,23 +149,26 @@ class CellParsersSpec extends FlatSpec with Matchers {
     implicitly[CellParser[Option[Int]]].convertString("1") shouldBe Some(1)
   }
 
-  object X extends CellParsers {
-
+  it should "parse optional MyNumber as None" in {
     import MyNumberParser._
 
     implicit val optionalMyNumberParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
-  }
-
-  it should "parse blank as None" in {
-    import X._
     implicitly[CellParser[Option[MyNumber]]].convertString("") shouldBe None
   }
 
-  it should "parse 1 as 1" in {
-    import X._
+  it should "parse optional MyNumber(1)" in {
+    import MyNumberParser._
+
+    implicit val optionalMyNumberParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
     val cellParser = implicitly[CellParser[Option[MyNumber]]]
-    println(cellParser)
     cellParser.convertString("1") shouldBe Some(MyNumber(1))
+  }
+
+  it should "parse optional PhoneNumber" in {
+    import PhoneNumberParser._
+    implicit val optionalPhoneNumberParser: CellParser[Option[PhoneNumber]] = cellParserOption[PhoneNumber]
+    val r = RowValues(Row(Seq("Robin", "6171234567"), Header.create("name", "x")))
+    r.convertTo[Option[PhoneNumber]] shouldBe Success(Some(PhoneNumber("Robin", 6171234567L)))
   }
 
 }
