@@ -23,6 +23,18 @@ trait Parseable[T] {
 
 object Parseable {
 
+  /**
+    * Parser of non-empty strings.
+    * The exception is useful for ensuring a None in the case of an optional String.
+    * CONSIDER possibly a better way to do it.
+    */
+  trait ParseableString extends Parseable[String] {
+
+    override def parse(s: String): String = if (s.isEmpty) throw ParseableException("empty String") else s
+  }
+
+  implicit object ParseableString extends ParseableString
+
   trait ParseableBoolean extends Parseable[Boolean] {
     override def parse(s: String): Boolean = try s.toBoolean catch {
       case _: IllegalArgumentException => throw ParseableException(s"ParseableBoolean: cannot interpret '$s' as a Boolean")
@@ -113,6 +125,8 @@ abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
 }
 
 object ParseableOption {
+
+  implicit object ParseableOptionString extends ParseableOption[String]
 
   implicit object ParseableOptionBoolean extends ParseableOption[Boolean]
 

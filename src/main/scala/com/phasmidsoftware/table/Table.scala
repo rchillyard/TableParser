@@ -5,7 +5,7 @@ import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, TableParser}
 
-import scala.io.Source
+import scala.io.{Codec, Source}
 import scala.util.{Failure, Try}
 
 /**
@@ -38,11 +38,17 @@ object Table {
 
   def parse[T: TableParser](x: Source): Try[T] = parse(x.getLines())
 
-  def parse[T: TableParser](u: URI): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
+  def parse[T: TableParser](u: URI, enc: String): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
+
+  def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
+
+  def parse[T: TableParser](u: URL, enc: String): Try[T] = for (s <- Try(Source.fromURL(u, enc)); t <- parse(s)) yield t
 
   def parse[T: TableParser](u: URL): Try[T] = parse(u.toURI)
 
-  def parse[T: TableParser](i: InputStream): Try[T] = for (s <- Try(Source.fromInputStream(i)); t <- parse(s)) yield t
+  def parse[T: TableParser](i: InputStream, enc: String): Try[T] = for (s <- Try(Source.fromInputStream(i, enc)); t <- parse(s)) yield t
+
+  def parse[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromInputStream(i)); t <- parse(s)) yield t
 
   def parse[T: TableParser](f: File): Try[T] = for (s <- Try(Source.fromFile(f)); t <- parse(s)) yield t
 

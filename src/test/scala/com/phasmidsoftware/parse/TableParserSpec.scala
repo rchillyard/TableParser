@@ -145,4 +145,13 @@ class TableParserSpec extends FlatSpec with Matchers {
 
   }
 
+  it should "parse empty sequence" in {
+    import DailyRaptorReport._
+
+    val raw = Seq("Date\tWeather\tWnd Dir\tWnd Spd\tBV\tTV\tUV\tOS\tBE\tNH\tSS\tCH\tGO\tUA\tRS\tBW\tRT\tRL\tUB\tGE\tUE\tAK\tM\tP\tUF\tUR\tOth\tTot",
+      "")
+    val x = for (r <- Table.parse(raw)) yield r
+    x should matchPattern { case Failure(_) => }
+  }
+
 }

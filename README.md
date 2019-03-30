@@ -22,7 +22,9 @@ strings and delimiters, also to vary the quote character.
 User Guide
 ==========
 
-Current version: 1.0.0.
+Current version: 1.0.1.
+
+See release notes below for history.
 
 The _Table_ trait expresses the result of parsing from a representation of a table.
 Each row is represented by a parametric type _Row_.
@@ -218,3 +220,9 @@ A parameter can be optional, for example, in the _Movie_ example, the _Productio
     
 In this case, some of the movies do not have a budget provided.
 All you have to do is declare it optional in the case class and _TableParser_ will specify it as _Some(x)_ if valid, else _None_.
+
+Release Notes
+=============
+
+V1.0.0 -> V.1.0.1
+* Fixed Issue #1
