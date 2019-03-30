@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2019. Phasmid Software
+ */
+
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.MovieParser.columnHelper
