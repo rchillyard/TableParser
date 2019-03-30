@@ -45,7 +45,7 @@ The result of parsing a table file (CSV, etc.) will be a _Table[Row]_, wrapped i
 There are object methods to parse most forms of text: _File, Resource, InputStream, URL, Seq[String]_, etc. (see _Table_ below).
 
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
-an implicit ionstance of _CellParser[T]_ must be in scope.
+an implicit instance of _CellParser[T]_ must be in scope.
 This is achieved via invoking a method (from object _Parsers_) of the following form:
 where _f_ is a function which which takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
 and where _T_ is the type to be constructed:
@@ -108,9 +108,38 @@ _hasHeader_ is used to define if there is a header row in the first line of the 
 _forgiving_, which defaults to _false_, can be set to _true_ if you expect that some rows will not parse, but where this
 will not invalidate your dataset as a whole.
 In forgiving mode, any exceptions thrown in the parsing of a row are collected and then printed to _System.err_ at the conclusion of the parsing of the table.
-_rowParser_ is the specific parser for the _Row_ type.
+_rowParser_ is the specific parser for the _Row_ type (see below).
 _builder_ is used by the _parse_ method.
 _parse_ is the main method of _TableParser_ and takes a _Seq[String]_ and yields a _Try[Table]_.
+
+RowParser
+=========
+_RowParser_ is a trait which defines how a line of text is to be parsed as a _Row_.
+_Row_ is a parametric type which is context-bound to _CellParser_.
+Typically, the _StandardRowParser_ is used, which takes as its constructor parameter a _LineParser_.
+This _LineParser_ takes five parameters: two regexes, a String and two Chars.
+These define, respectively, the delimiter regex, the string regex, list enclosures, the list separator, and the quote character.
+Rather than invoke the constructor directly, it is easier to invoke the companion object's _apply_ method, which takes a single implicit parameter: a _RowConfig_.
+
+The methods of _RowParser_ are:
+
+    def parse(w: String)(header: Header): Try[Row]
+
+    def parseHeader(w: String): Try[Header]
+
+
+StringsParser
+=========
+_StringsParser_ is a trait which defines an alternative mechanism for converting a line of text to a _Row_.
+As with the _RowParser_, _Row_ is a parametric type which is context-bound to _CellParser_.
+_StringsParser_ is useful when the individual columns have already been split into elements of a sequence.
+Typically, the _StandardStringsParser_ is used.
+
+The methods of _StringsParser_ are:
+
+    def parse(ws: Seq[String])(header: Header): Try[Row]
+
+    def parseHeader(ws: Seq[String]): Try[Header]
 
 Example
 =======

@@ -26,10 +26,10 @@ trait RowParser[Row] {
   def parse(w: String)(header: Header): Try[Row]
 
   /**
-    * Parse the String, resulting in a Seq[String]
+    * Parse the String, resulting in a Try[Header]
     *
     * @param w the String to be parsed: always the first line of a CSV file.
-    * @return a Try[Seq[String]
+    * @return a Try[Header]
     */
   def parseHeader(w: String): Try[Header]
 }
