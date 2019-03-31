@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.{CellParser, RowParser, TableParser}
+import com.phasmidsoftware.parse.{CellParser, RowParser, StringTableParser}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util._
@@ -48,14 +48,14 @@ class MovieSpec extends FlatSpec with Matchers {
   ignore should "fail to parse the first (edited) movie from the IMDB dataset" in {
     import MovieParser._
 
-    implicit object MovieTableParser extends TableParser[Table[Movie]] {
+    implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
 
       def hasHeader: Boolean = true
 
       override def forgiving: Boolean = false
 
-      def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
+      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
       def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
     }
@@ -72,14 +72,14 @@ class MovieSpec extends FlatSpec with Matchers {
   it should "parse all the following rows" in {
     import MovieParser._
 
-    implicit object MovieTableParser extends TableParser[Table[Movie]] {
+    implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
 
       def hasHeader: Boolean = true
 
       override def forgiving: Boolean = false
 
-      def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
+      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
       def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
     }

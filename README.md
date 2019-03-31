@@ -11,7 +11,10 @@ Introduction
 _TableParser_ aims to make it as simple as possible to ingest a fully-typed dataset.
 The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
 All conversions from strings to standard types are performed automatically.
-For non-standard types, it suffices simple to provide an implicit converter of the form _String=>T_.
+For non-standard types, it suffices simply to provide an implicit converter of the form _String=>T_.
+
+It is possible to parse sequences of _String_ (one per row)--the typical situation for a CSV file--or sequences of sequences of _String_
+(where the table corresponds to a matrix of cells).
  
 This library makes extensive use of type classes and other implicit mechanisms.
 Indeed, it is implemented very similarly to JSON readers.
@@ -82,11 +85,15 @@ The following object methods are available for parsing text:
 *  def parse[T: TableParser](ws: Seq[String]): Try[T]
 *  def parse[T: TableParser](ws: Iterator[String]): Try[T]
 *  def parse[T: TableParser](x: Source): Try[T]
-*  def parse[T: TableParser](u: URI): Try[T]
+*  def parse[T: TableParser](u: URI, enc: String): Try[T]
+*  def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T]
+*  def parse[T: TableParser](u: URL, enc: String): Try[T]
 *  def parse[T: TableParser](u: URL): Try[T]
-*  def parse[T: TableParser](i: InputStream): Try[T]
+*  def parse[T: TableParser](i: InputStream, enc: String): Try[T]
+*  def parse[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T]
 *  def parse[T: TableParser](f: File): Try[T]
 *  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass): Try[T]
+*  def parseSequence[T: TableParser](wss: Seq[Seq[String]]): Try[T]
 
 TableParser
 ===========
@@ -115,7 +122,8 @@ _parse_ is the main method of _TableParser_ and takes a _Seq[String]_ and yields
 RowParser
 =========
 _RowParser_ is a trait which defines how a line of text is to be parsed as a _Row_.
-_Row_ is a parametric type which is context-bound to _CellParser_.
+_Row_ is a parametric type which, in subtypes of _RowParser_, is context-bound to _CellParser_.
+A second parametric type _Input_ is defined: this will take on values of _String_ or _Seq[String]_, according to the form of input.
 Typically, the _StandardRowParser_ is used, which takes as its constructor parameter a _LineParser_.
 This _LineParser_ takes five parameters: two regexes, a String and two Chars.
 These define, respectively, the delimiter regex, the string regex, list enclosures, the list separator, and the quote character.

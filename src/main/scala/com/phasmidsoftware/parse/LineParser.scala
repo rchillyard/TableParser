@@ -23,7 +23,7 @@ import scala.util.parsing.combinator.JavaTokenParsers
 class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char) extends JavaTokenParsers {
   override def skipWhitespace: Boolean = false
 
-  def parseRow(w: String): Try[Seq[String]] = parseAll(row, w) match {
+  def parseRow(w: String): Try[Strings] = parseAll(row, w) match {
     case Success(s, _) => scala.util.Success(s)
     case Failure(x, _) => scala.util.Failure(formException(w, x))
     case Error(x, _) => scala.util.Failure(formException(w, x))
@@ -31,7 +31,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   private def formException(row: String, x: String) = ParserException(s"Cannot parse row '$row' due to: $x")
 
-  def row: Parser[Seq[String]] = rep1sep(cell, delimiter)
+  def row: Parser[Strings] = rep1sep(cell, delimiter)
 
   def cell: Parser[String] = quotedString | list | string | failure("invalid string")
 

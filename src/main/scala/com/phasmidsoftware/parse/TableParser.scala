@@ -12,23 +12,54 @@ trait TableParser[Table] {
 
   type Row
 
+  type Input
+
   def hasHeader: Boolean
 
   def forgiving: Boolean = false
 
-  def rowParser: RowParser[Row]
+  def rowParser: RowParser[Row, Input]
 
   def builder(rows: Seq[Row]): Table
+}
 
+abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
-  // CONSIDER returning Table unwrapped and using lifted conversion functions
-  def parse(ws: Seq[String]): Try[Table] = {
-    // CONSIDER swap order of params
-    def parseRows(header: Header, ws1: Seq[String]): Try[Table] = {
-      val rys = for (w <- ws1) yield rowParser.parse(w)(header)
-      for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs)
+  /**
+    * Abstract method to parse a sequence of Inputs, with a given header.
+    *
+    * @param xs     the sequence of Inputs, one for each row
+    * @param header the header to be used.
+    * @return a Try[Table]
+    */
+  def parseRows(xs: Seq[Input], header: Header): Try[Table]
+
+  /**
+    * Method to parse a table based on a sequence of Inputs.
+    *
+    * @param xs the sequence of Inputs, one for each row
+    * @return a Try[Table]
+    */
+  def parse(xs: Seq[Input]): Try[Table] = {
+    def separateHeaderAndRows(h: Input, t: Seq[Input]): Try[Table] = for (ws <- rowParser.parseHeader(h); rs <- parseRows(t, ws)) yield rs
+
+    if (rowParser == null)
+      Failure(ParserException("implicit RowParser[Row] is undefined"))
+    else if (hasHeader) xs match {
+      case h #:: t => separateHeaderAndRows(h, t)
+      case h :: t => separateHeaderAndRows(h, t)
+      case _ => Failure(ParserException("no rows to parse"))
     }
+    else parseRows(xs, Header(Nil))
+  }
 
+  /**
+    * Method to log any failures (only in forgiving mode).
+    *
+    * @param rys the sequence of Try[Row]
+    * @return a sequence of Try[Row] which will all be of type Success.
+    */
+  def logFailures(rys: Seq[Try[Row]]): Seq[Try[Row]] = {
     def logException(e: Throwable): Unit = {
       val string = s"${e.getLocalizedMessage}${
         if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
@@ -37,21 +68,38 @@ trait TableParser[Table] {
       System.err.println(string)
     }
 
-    def logFailures(rys: Seq[Try[Row]]): Seq[Try[Row]] = {
-      val (good, bad) = rys.partition(_.isSuccess)
-      bad.map(_.failed.get) foreach (e => logException(e))
-      good
-    }
+    val (good, bad) = rys.partition(_.isSuccess)
+    bad.map(_.failed.get) foreach (e => logException(e))
+    good
+  }
 
-    def separateHeaderAndRows(h: String, t: Seq[String]) = for (ws <- rowParser.parseHeader(h); rs <- parseRows(ws, t)) yield rs
+}
 
-    if (rowParser == null) Failure(ParserException("implicit RowParser[Row] is undefined"))
+/**
+  * Abstract class to extend AbstractTableParser but with Input = String
+  *
+  * @tparam Table the table type.
+  */
+abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
+  type Input = String
 
-    else if (hasHeader) ws match {
-      case h #:: t => separateHeaderAndRows(h, t)
-      case h :: t => separateHeaderAndRows(h, t)
-      case _ => Failure(ParserException("no rows to parse"))
-    }
-    else parseRows(Header(Nil), ws)
+  def parseRows(xs: Strings, header: Header): Try[Table] = {
+    val rys = for (w <- xs) yield rowParser.parse(w)(header)
+    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs)
+  }
+
+}
+
+/**
+  * Abstract class to extend AbstractTableParser but with Input = Strings
+  *
+  * @tparam Table the table type.
+  */
+abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
+  type Input = Strings
+
+  def parseRows(xs: Seq[Strings], header: Header): Try[Table] = {
+    val rys = for (w <- xs) yield rowParser.parse(w)(header)
+    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs)
   }
 }

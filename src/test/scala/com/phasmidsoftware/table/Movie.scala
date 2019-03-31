@@ -149,14 +149,14 @@ object MovieParser extends CellParsers {
 
   implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
 
-  implicit object MovieTableParser extends TableParser[Table[Movie]] {
+  implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
     type Row = Movie
 
     def hasHeader: Boolean = true
 
     override def forgiving: Boolean = true
 
-    def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
+    def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
     def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
   }

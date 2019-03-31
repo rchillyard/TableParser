@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.{RowParser, TableParser}
+import com.phasmidsoftware.parse.{RowParser, StringParser, StringTableParser}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
@@ -25,7 +25,7 @@ class TableSpec extends FlatSpec with Matchers {
 
     val intPairParser = new IntPairParser
 
-    trait IntPairRowParser extends RowParser[IntPair] {
+    trait IntPairRowParser extends StringParser[IntPair] {
       override def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
         case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse $w"))
@@ -37,12 +37,12 @@ class TableSpec extends FlatSpec with Matchers {
 
     implicit object IntPairRowParser extends IntPairRowParser
 
-    trait IntPairTableParser extends TableParser[Table[IntPair]] {
+    trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
       def hasHeader: Boolean = false
 
-      def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
+      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
       def builder(rows: Seq[Row]): Table[IntPair] = TableWithoutHeader(rows)
     }

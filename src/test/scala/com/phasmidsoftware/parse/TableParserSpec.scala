@@ -29,7 +29,7 @@ class TableParserSpec extends FlatSpec with Matchers {
 
     val intPairParser = new IntPairParser
 
-    trait IntPairRowParser extends RowParser[IntPair] {
+    trait IntPairRowParser extends StringParser[IntPair] {
       override def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
         case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse $w"))
@@ -41,12 +41,12 @@ class TableParserSpec extends FlatSpec with Matchers {
 
     implicit object IntPairRowParser extends IntPairRowParser
 
-    trait IntPairTableParser extends TableParser[Table[IntPair]] {
+    trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
       def hasHeader: Boolean = false
 
-      def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
+      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
       def builder(rows: Seq[Row]): Table[IntPair] = TableWithoutHeader(rows)
     }
@@ -95,12 +95,12 @@ class TableParserSpec extends FlatSpec with Matchers {
 
     implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
 
-    trait DailyRaptorReportTableParser extends TableParser[Table[DailyRaptorReport]] {
+    trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
       def hasHeader: Boolean = true
 
-      def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
+      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
       def builder(rows: Seq[Row]): Table[DailyRaptorReport] = TableWithoutHeader(rows)
     }
@@ -114,7 +114,7 @@ class TableParserSpec extends FlatSpec with Matchers {
   it should "parse regex string" in {
     import DailyRaptorReport._
 
-    val rowParser = implicitly[RowParser[DailyRaptorReport]]
+    val rowParser = implicitly[RowParser[DailyRaptorReport, String]]
     val firstRow = "Date\tWeather\tWnd Dir\tWnd Spd\tBV\tTV\tUV\tOS\tBE\tNH\tSS\tCH\tGO\tUA\tRS\tBW\tRT\tRL\tUB\tGE\tUE\tAK\tM\tP\tUF\tUR\tOth\tTot"
     val row = "09/16/2018\tPartly Cloudy\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410"
     val Success(header) = rowParser.parseHeader(firstRow)
@@ -141,7 +141,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     val raw = Seq("Date\tWeather\tWnd Dir\tWnd Spd\tBV\tTV\tUV\tOS\tBE\tNH\tSS\tCH\tGO\tUA\tRS\tBW\tRT\tRL\tUB\tGE\tUE\tAK\tM\tP\tUF\tUR\tOth\tTot",
       "09/16/2018\tPartly Cloudy\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410",
       "09/19/2018\tOvercast/Mostly cloudy/Partly cloudy/Clear\tNW\t4-7\t0\t0\t0\t47\t12\t0\t84\t10\t0\t0\t1\t821\t4\t0\t1\t0\t0\t27\t4\t1\t0\t2\t0\t1014")
-    val x = for (r <- Table.parse(raw)) yield r
+    val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parse(raw)) yield r
     x should matchPattern { case Success(TableWithoutHeader(_)) => }
     x.get.rows.size shouldBe 2
     //noinspection ScalaDeprecation
@@ -157,5 +157,59 @@ class TableParserSpec extends FlatSpec with Matchers {
     val x = for (r <- Table.parse(raw)) yield r
     x should matchPattern { case Failure(_) => }
   }
+
+  object DailyRaptorReportSeq {
+    val header: Seq[String] = Seq("date", "weather", "bw", "ri")
+
+    object DailyRaptorReportParser extends CellParsers {
+
+      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+
+      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
+
+      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
+      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser4(DailyRaptorReport.apply)
+    }
+
+    import DailyRaptorReportParser._
+
+    trait DailyRaptorReportConfig extends DefaultRowConfig {
+      override val string: Regex = """[\w\/\-\ ]+""".r
+      override val delimiter: Regex = """\t""".r
+    }
+
+    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+
+    implicit val parser: StandardStringsParser[DailyRaptorReport] = StandardStringsParser[DailyRaptorReport]()
+
+    trait DailyRaptorReportStringsTableParser extends StringsTableParser[Table[DailyRaptorReport]] {
+      type Row = DailyRaptorReport
+
+      def hasHeader: Boolean = true
+
+      def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+
+      def builder(rows: Seq[Row]): Table[DailyRaptorReport] = TableWithoutHeader(rows)
+    }
+
+    implicit object DailyRaptorReportStringsTableParser extends DailyRaptorReportStringsTableParser
+
+  }
+
+  it should "parse raptors from Seq[Seq[String]]" in {
+    import DailyRaptorReportSeq._
+
+    val raw = Seq(Seq("Date", "Weather", "Wnd Dir", "Wnd Spd", "BV", "TV", "UV", "OS", "BE", "NH", "SS", "CH", "GO", "UA", "RS", "BW", "RT", "RL", "UB", "GE", "UE", "AK", "M", "P", "UF", "UR", "Oth", "Tot"),
+      Seq("09/16/2018", "Partly Cloudy", "SE", "6-12", "0", "0", "0", "4", "19", "3", "30", "2", "0", "0", "2", "3308", "5", "0", "0", "0", "0", "27", "8", "1", "0", "1", "0", "3410"),
+      Seq("09/19/2018", "Overcast/Mostly cloudy/Partly cloudy/Clear", "NW", "4-7", "0", "0", "0", "47", "12", "0", "84", "10", "0", "0", "1", "821", "4", "0", "1", "0", "0", "27", "4", "1", "0", "2", "0", "1014"))
+    val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parseSequence(raw)) yield r
+    x should matchPattern { case Success(TableWithoutHeader(_)) => }
+    x.get.rows.size shouldBe 2
+    //noinspection ScalaDeprecation
+    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5)
+
+  }
+
 
 }

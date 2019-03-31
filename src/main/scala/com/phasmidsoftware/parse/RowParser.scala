@@ -14,25 +14,29 @@ import scala.util.matching.Regex
   *
   * @tparam Row the (parametric) Row type for which there must be evidence of a CellParser[Row].
   */
-trait RowParser[Row] {
+trait RowParser[Row, Input] {
 
   /**
-    * Parse the String w, resulting in a Try[Row]
+    * Parse the Input, resulting in a Try[Row]
     *
-    * @param w      the String to be parsed.
+    * @param x      the Input to be parsed.
     * @param header the header already parsed.
     * @return a Try[Row].
     */
-  def parse(w: String)(header: Header): Try[Row]
+  def parse(x: Input)(header: Header): Try[Row]
 
   /**
-    * Parse the String, resulting in a Try[Header]
+    * Parse the Input, resulting in a Try[Header]
     *
-    * @param w the String to be parsed: always the first line of a CSV file.
+    * CONSIDER making this share the same signature as parse but for different Row type.
+    *
+    * @param x the Input to be parsed.
     * @return a Try[Header]
     */
-  def parseHeader(w: String): Try[Header]
+  def parseHeader(x: Input): Try[Header]
 }
+
+trait StringParser[Row] extends RowParser[Row, String]
 
 /**
   * StandardRowParser: a parser which extends RowParser[Row] and will yield a Try[Row] from a String representing a line of a table.
@@ -40,7 +44,7 @@ trait RowParser[Row] {
   * @param parser the LineParser to use
   * @tparam Row the (parametric) Row type for which there must be evidence of a CellParser[Row].
   */
-case class StandardRowParser[Row: CellParser](parser: LineParser) extends RowParser[Row] {
+case class StandardRowParser[Row: CellParser](parser: LineParser) extends StringParser[Row] {
 
   override def parse(w: String)(header: Header): Try[Row] = for (ws <- parser.parseRow(w); r <- RowValues(Row(ws, header)).convertTo[Row]) yield r
 
@@ -55,59 +59,22 @@ object StandardRowParser {
     StandardRowParser(new LineParser(delimiter, string, enclosures, listSeparator, quote))
 }
 
-trait RowConfig {
-  /**
-    * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
-    */
-  val delimiter: Regex
-  /**
-    * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
-    */
-  val string: Regex
-  /**
-    * the "listSep" character (see LineParser). defaults to "|"
-    */
-  val listSep: Char
-  /**
-    * the "listEnclosure" characters (see LineParser). defaults to "{}"
-    */
-  val listEnclosure: String
-  /**
-    * the "quote" Char (see LineParser). defaults to ".
-    */
-  val quote: Char
-
-  override def toString: String = s"RowConfig: delimiter='$delimiter', string='$string', listSep='$listSep', listEnclosure='$listEnclosure', $quote='$quote'"
-}
-
-trait DefaultRowConfig extends RowConfig {
-  /**
-    * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
-    */
-  val delimiter: Regex = ", *".r
-  /**
-    * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
-    * CONSIDER making the string regex derive from the delimiter
-    */
-  val string: Regex = """[^\,]*""".r
-
-  /**
-    * the "listSep" character (see LineParser). defaults to "|"
-    */
-  override val listSep: Char = '|'
-  /**
-    * the "listEnclosure" characters (see LineParser). defaults to "{}"
-    */
-  override val listEnclosure: String = "{}"
-  /**
-    * the "quote" Char (see LineParser). defaults to ".
-    */
-  val quote: Char = '"'
-}
+/**
+  * Trait to describe a parser which will yield a Try[Row] from a sequence of Strings representing a row of a table.
+  *
+  * @tparam Row the (parametric) Row type for which there must be evidence of a CellParser[Row].
+  */
+trait StringsParser[Row] extends RowParser[Row, Strings]
 
 
-object RowConfig {
+/**
+  * StandardRowParser: a parser which extends RowParser[Row] and will yield a Try[Row] from a String representing a line of a table.
+  *
+  * @tparam Row the (parametric) Row type for which there must be evidence of a CellParser[Row].
+  */
+case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
 
-  implicit object defaultRowConfig extends DefaultRowConfig
+  override def parse(ws: Strings)(header: Header): Try[Row] = RowValues(Row(ws, header)).convertTo[Row]
 
+  override def parseHeader(ws: Strings): Try[Header] = Try(Header(ws map (_.toUpperCase())))
 }
