@@ -18,6 +18,23 @@ import scala.util.Try
 trait CellParsers {
 
   /**
+    * Method to return a CellParser[Seq[P] from a potentially unlimited set of P objects.
+    * The counting of the elements starts at start (defaults to 1).
+    *
+    * @tparam P the underlying type of the result
+    * @return a MultiCellParser[Seq[P]
+    */
+  def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
+    override def toString: String = "MultiCellParser: cellParserRepetition"
+
+    def parse(wo: Option[String], row: Row, columns: Header): Seq[P] = {
+      def getP(i: Int): Try[P] = Try(implicitly[CellParser[P]].parse(Some(s"$i"), row, columns))
+
+      Stream.from(start).map(getP).takeWhile(_.isSuccess).map(_.get).toList
+    }
+  }
+
+  /**
     * Method to return a CellParser[Seq[P].
     * This is used only by unit tests.
     * CONSIDER eliminating this; only used in unit tests
@@ -25,12 +42,10 @@ trait CellParsers {
     * @tparam P the underlying type of the result
     * @return a MultiCellParser[Seq[P]
     */
-  def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = {
-    new MultiCellParser[Seq[P]] {
-      override def toString: String = "MultiCellParser: cellParserSeq"
+  def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
+    override def toString: String = "MultiCellParser: cellParserSeq"
 
-      def parse(w: Option[String], row: Row, columns: Header): Seq[P] = for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w))
-    }
+    def parse(wo: Option[String], row: Row, columns: Header): Seq[P] = for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w))
   }
 
   /**
@@ -39,17 +54,15 @@ trait CellParsers {
     * @tparam P the underlying type of the result
     * @return a MultiCellParser[Option[P]
     */
-  def cellParserOption[P: CellParser]: CellParser[Option[P]] = {
-    new SingleCellParser[Option[P]] {
-      override def toString: String = s"cellParserOption with $cp"
+  def cellParserOption[P: CellParser]: CellParser[Option[P]] = new SingleCellParser[Option[P]] {
+    override def toString: String = s"cellParserOption with $cp"
 
-      private val cp: CellParser[P] = implicitly[CellParser[P]]
+    private val cp: CellParser[P] = implicitly[CellParser[P]]
 
-      def convertString(w: String): Option[P] = Try(cp.parse(CellValue(w))).toOption
+    def convertString(w: String): Option[P] = Try(cp.parse(CellValue(w))).toOption
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Option[P] = Try(cp.parse(wo, row, columns)).toOption
+    override def parse(wo: Option[String], row: Row, columns: Header): Option[P] = Try(cp.parse(wo, row, columns)).toOption
 
-    }
   }
 
   /**
@@ -60,12 +73,10 @@ trait CellParsers {
     * @tparam T the underlying type of the result.
     * @return a SingleCellParser which converts a String into the intermediate type P and thence into a T
     */
-  def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = {
-    new SingleCellParser[T] {
-      override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
+  def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = new SingleCellParser[T] {
+    override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
 
-      def convertString(w: String): T = construct(implicitly[CellParser[P]].parse(CellValue(w)))
-    }
+    def convertString(w: String): T = construct(implicitly[CellParser[P]].parse(CellValue(w)))
   }
 
   /**

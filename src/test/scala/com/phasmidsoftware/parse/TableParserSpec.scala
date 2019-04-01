@@ -211,5 +211,53 @@ class TableParserSpec extends FlatSpec with Matchers {
 
   }
 
+  behavior of "StringsParser"
+
+  behavior of "Table"
+
+  case class Question(question_ID: String, question: String, answer: Option[String], possible_points: Int, auto_score: Option[Double], manual_score: Option[Double])
+
+  case class Submission(username: String, last_name: String, first_name: String, questions: Seq[Question])
+
+  object Submissions extends CellParsers {
+
+    def baseColumnNameMapper(w: String): String = w.replaceAll("(_)", " ")
+
+    implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(baseColumnNameMapper _)
+    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"))
+    implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
+    implicit val questionParser: CellParser[Question] = cellParser6(Question)
+    implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
+    implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
+    implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
+
+    implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
+      type Row = Submission
+
+      def hasHeader: Boolean = true
+
+      override def forgiving: Boolean = false
+
+      def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+
+      def builder(rows: Seq[Row]): Table[Submission] = TableWithoutHeader(rows)
+    }
+
+  }
+
+  it should "parse Submission" in {
+
+    val rows: Seq[Seq[String]] = Seq(
+      Seq("Username", "Last Name", "First Name", "Question ID 1", "Question 1", "Answer 1", "Possible Points 1", "Auto Score 1", "Manual Score 1"),
+      Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
+    )
+
+    import Submissions._
+    val qty: Try[Table[Submission]] = Table.parseSequence(rows)
+    qty should matchPattern { case Success(_) => }
+    qty.get.size shouldBe 1
+    println(qty.get.head)
+  }
+
 
 }

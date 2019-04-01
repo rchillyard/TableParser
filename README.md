@@ -67,6 +67,8 @@ evidence of type _CellParser[P]_).
 This is the mechanism which saves the programmer from having to specify explicit conversions.
 _T_ is bound to be a subtype of _Product_ and has two context bounds: _ClassTag_ and _ColumnHelper_.
 
+See section on _CellParsers_ below.
+
 Table
 =====
 
@@ -137,7 +139,7 @@ The methods of _RowParser_ are:
 
 
 StringsParser
-=========
+=============
 _StringsParser_ is a trait which defines an alternative mechanism for converting a line of text to a _Row_.
 As with the _RowParser_, _Row_ is a parametric type which is context-bound to _CellParser_.
 _StringsParser_ is useful when the individual columns have already been split into elements of a sequence.
@@ -149,8 +151,20 @@ The methods of _StringsParser_ are:
 
     def parseHeader(ws: Seq[String]): Try[Header]
 
-Example
-=======
+CellParsers
+===========
+
+There are a number of methods which return an instance of _CellParser_ for various situations:
+
+* def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]]
+* def cellParserSeq[P: CellParser]: CellParser[Seq[P]]
+* def cellParserOption[P: CellParser]: CellParser[Option[P]]
+* def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T]
+* def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T): CellParser[T]
+* etc. through cellParser12...
+
+Example: Movie
+==============
 
 In this example, we parse the IMDB Movie dataset from Kaggle.
 The basic structure of the application code will look something like this:
@@ -258,8 +272,54 @@ A parameter can be optional, for example, in the _Movie_ example, the _Productio
 In this case, some of the movies do not have a budget provided.
 All you have to do is declare it optional in the case class and _TableParser_ will specify it as _Some(x)_ if valid, else _None_.
 
+Example: Submissions
+====================
+
+This example has two variations on the earlier theme of the _Movies_ example:
+(1) each row (a Submission) has an unknown number of _Question_ parameters;
+(2) instead of reading each row from a single String, we read each row from a sequence of Strings, each corresponding to a cell.
+
+The example comes from a report on the submissions to a Scala exam. Only one question is included in this example.
+
+      case class Question(question_ID: String, question: String, answer: Option[String], possible_points: Int, auto_score: Option[Double], manual_score: Option[Double])
+      case class Submission(username: String, last_name: String, first_name: String, questions: Seq[Question])
+      object Submissions extends CellParsers {
+        def baseColumnNameMapper(w: String): String = w.replaceAll("(_)", " ")
+        implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(baseColumnNameMapper _)
+        implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"))
+        implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
+        implicit val questionParser: CellParser[Question] = cellParser6(Question)
+        implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
+        implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
+        implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
+        implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
+          type Row = Submission
+          def hasHeader: Boolean = true
+          override def forgiving: Boolean = false
+          def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+          def builder(rows: Seq[Row]): Table[Submission] = TableWithoutHeader(rows)
+        }
+      }
+      val rows: Seq[Seq[String]] = Seq(
+          Seq("Username", "Last Name", "First Name", "Question ID 1", "Question 1", "Answer 1", "Possible Points 1", "Auto Score 1", "Manual Score 1"),
+          Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
+        )
+
+      import Submissions._
+      val qty: Try[Table[Submission]] = Table.parseSequence(rows)
+
+Note the use of _cellParserRepetition_. The parameter allows the programmer to define the start value of the sequence number for the columns.
+In this case, we use the default value: 1 and so don't have to explicitly specify it.
+Also, note that the instance of _ColumnHelper_ defined here has the formatter defined as "$c $x" which is in the opposite order from the Movie example.
+
 Release Notes
 =============
 
 V1.0.0 -> V.1.0.1
-* Fixed Issue #1
+* Fixed Issue #1;
+* Added parsing of Seq[Seq[String]];
+* Added cellParserRepetition;
+* Implemented closing of Source in Table.parse methods;
+* Added encoding parameters to Table.parse methods.
+
+
