@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2019. Phasmid Software
+ */
+
 package com.phasmidsoftware.parse
 
 import org.scalatest.{FlatSpec, Matchers}
@@ -5,6 +9,10 @@ import org.scalatest.{FlatSpec, Matchers}
 class ParseableSpec extends FlatSpec with Matchers {
 
   behavior of "Parseable"
+
+  it should "parse Hello" in {
+    implicitly[Parseable[String]].parse("Hello") shouldBe "Hello"
+  }
 
   it should "parse true" in {
     implicitly[Parseable[Boolean]].parse("true") shouldBe true
@@ -40,7 +48,13 @@ class ParseableSpec extends FlatSpec with Matchers {
   }
 
   behavior of "OptionParser"
-  it should "parse an optional value" in {
+  it should "parse an optional String value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[String]]].parse("Hello") shouldBe Some("Hello")
+    implicitly[Parseable[Option[String]]].parse("") shouldBe None
+  }
+
+  it should "parse an optional Int value" in {
     import ParseableOption._
     implicitly[Parseable[Option[Int]]].parse("1") shouldBe Some(1)
     implicitly[Parseable[Option[Int]]].parse("") shouldBe None

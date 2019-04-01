@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2019. Phasmid Software
+ */
+
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table._
@@ -14,6 +18,23 @@ import scala.util.Try
 trait CellParsers {
 
   /**
+    * Method to return a CellParser[Seq[P] from a potentially unlimited set of P objects.
+    * The counting of the elements starts at start (defaults to 1).
+    *
+    * @tparam P the underlying type of the result
+    * @return a MultiCellParser[Seq[P]
+    */
+  def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
+    override def toString: String = "MultiCellParser: cellParserRepetition"
+
+    def parse(wo: Option[String], row: Row, columns: Header): Seq[P] = {
+      def getP(i: Int): Try[P] = Try(implicitly[CellParser[P]].parse(Some(s"$i"), row, columns))
+
+      Stream.from(start).map(getP).takeWhile(_.isSuccess).map(_.get).toList
+    }
+  }
+
+  /**
     * Method to return a CellParser[Seq[P].
     * This is used only by unit tests.
     * CONSIDER eliminating this; only used in unit tests
@@ -21,12 +42,10 @@ trait CellParsers {
     * @tparam P the underlying type of the result
     * @return a MultiCellParser[Seq[P]
     */
-  def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = {
-    new MultiCellParser[Seq[P]] {
-      override def toString: String = "MultiCellParser: cellParserSeq"
+  def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
+    override def toString: String = "MultiCellParser: cellParserSeq"
 
-      def parse(w: Option[String], row: Row, columns: Header): Seq[P] = for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w))
-    }
+    def parse(wo: Option[String], row: Row, columns: Header): Seq[P] = for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w))
   }
 
   /**
@@ -35,15 +54,15 @@ trait CellParsers {
     * @tparam P the underlying type of the result
     * @return a MultiCellParser[Option[P]
     */
-  def cellParserOption[P: CellParser]: CellParser[Option[P]] = {
-    new SingleCellParser[Option[P]] {
-      override def toString: String = "cellParserOption"
+  def cellParserOption[P: CellParser]: CellParser[Option[P]] = new SingleCellParser[Option[P]] {
+    override def toString: String = s"cellParserOption with $cp"
 
-      def convertString(w: String): Option[P] = Try(implicitly[CellParser[P]].parse(CellValue(w))).toOption
+    private val cp: CellParser[P] = implicitly[CellParser[P]]
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Option[P] = Try(implicitly[CellParser[P]].parse(wo, row, columns)).toOption
+    def convertString(w: String): Option[P] = Try(cp.parse(CellValue(w))).toOption
 
-    }
+    override def parse(wo: Option[String], row: Row, columns: Header): Option[P] = Try(cp.parse(wo, row, columns)).toOption
+
   }
 
   /**
@@ -54,12 +73,10 @@ trait CellParsers {
     * @tparam T the underlying type of the result.
     * @return a SingleCellParser which converts a String into the intermediate type P and thence into a T
     */
-  def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = {
-    new SingleCellParser[T] {
-      override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
+  def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = new SingleCellParser[T] {
+    override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
 
-      def convertString(w: String): T = construct(implicitly[CellParser[P]].parse(CellValue(w)))
-    }
+    def convertString(w: String): T = construct(implicitly[CellParser[P]].parse(CellValue(w)))
   }
 
   /**
@@ -67,6 +84,7 @@ trait CellParsers {
     *
     * NOTE: be careful using this method it only applies where T is a 1-tuple (e.g. a case class with one field).
     * It probably shouldn't ever be used in practice. It can cause strange initialization errors!
+    * This note may be irrelevant now that we have overridden convertString to fix issue #1.
     *
     * @param construct a function P => T, usually the apply method of a case class.
     * @tparam P1 the type of the (single) field of the Product type T.
@@ -83,6 +101,10 @@ trait CellParsers {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         construct(p1V)
       }
+
+      // We need to allow for a single-parameter conversion of String => T via P1
+      // This fixes issue #1
+      override def convertString(w: String): T = construct(implicitly[CellParser[P1]].convertString(w))
     }
   }
 
@@ -467,11 +489,10 @@ trait CellParsers {
     val idx = row.getIndex(columnName)
     //   println(s"readCell[${implicitly[ClassTag[T]].runtimeClass}](wo=$wo,...)($p) with cellParser=$cellParser, ids=$idx")
     if (idx >= 0) try cellParser.parse(CellValue(row(idx))) catch {
-      case e: Exception => throw ParserException(s"Problem reading value from $columnName in $row", e)
+      case e: Exception => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
     }
     else try cellParser.parse(Some(columnName), row, columns) catch {
-      case _: UnsupportedOperationException =>
-        throw ParserException(s"unable to find value for column $columnName")
+      case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column $columnName")
     }
   }
 }

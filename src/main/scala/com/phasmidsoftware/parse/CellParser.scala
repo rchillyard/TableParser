@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2019. Phasmid Software
+ */
+
 package com.phasmidsoftware.parse
 
 import java.io.File
@@ -12,7 +16,6 @@ trait CellParser[T] {
   // TODO Need to define this better so that we don't have any non-implemented methods.
   def convertString(w: String): T
 
-  // CONSIDER renaming this as parse
   def parse(value: Convertible): T = value match {
     case CellValue(w) => convertString(w)
     case RowValues(row, columns) => parse(None, row, columns)
@@ -20,7 +23,6 @@ trait CellParser[T] {
   }
 
   // CONSIDER do we actually need the Header parameter here?
-  // CONSIDER renaming as parse
   def parse(w: Option[String], row: Row, columns: Header): T
 }
 

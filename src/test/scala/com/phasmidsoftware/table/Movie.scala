@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2019. Phasmid Software
+ */
+
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse._
@@ -127,15 +131,13 @@ object MovieParser extends CellParsers {
   implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
   implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
   implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
-  val fRating: String => Rating = Rating.apply
-  implicit val ratingParser: CellParser[Rating] = cellParser(fRating)
+  implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
   implicit val formatParser: CellParser[Format] = cellParser4(Format)
   implicit val productionParser: CellParser[Production] = cellParser4(Production)
   implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
   implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
   implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
-  val fAttributes: String => AttributeSet = AttributeSet.apply
-  implicit val attributesParser: CellParser[AttributeSet] = cellParser(fAttributes)
+  implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
   implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
   implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
 
@@ -147,14 +149,14 @@ object MovieParser extends CellParsers {
 
   implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
 
-  implicit object MovieTableParser extends TableParser[Table[Movie]] {
+  implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
     type Row = Movie
 
     def hasHeader: Boolean = true
 
     override def forgiving: Boolean = true
 
-    def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
+    def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
     def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
   }
@@ -163,7 +165,7 @@ object MovieParser extends CellParsers {
 object Name {
   // this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
   private val rName =
-    """^([\p{L}\-\']+\.?)\s*(([\p{L}\-]+\.)\s)?([\p{L}\-\']+\.?)(\s([\p{L}\-]+\.?))?$""".r
+    """^([\p{L}\-\']+\.?)\s*(([\p{L}\-]+\.?)\s)?([\p{L}\-\']+\.?)(\s([\p{L}\-]+\.?))?$""".r
 
   def apply(name: String): Name = name match {
     case rName(first, _, null, last, _, null) => apply(first, None, last, None)

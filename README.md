@@ -11,7 +11,10 @@ Introduction
 _TableParser_ aims to make it as simple as possible to ingest a fully-typed dataset.
 The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
 All conversions from strings to standard types are performed automatically.
-For non-standard types, it suffices simple to provide an implicit converter of the form _String=>T_.
+For non-standard types, it suffices simply to provide an implicit converter of the form _String=>T_.
+
+It is possible to parse sequences of _String_ (one per row)--the typical situation for a CSV file--or sequences of sequences of _String_
+(where the table corresponds to a matrix of cells).
  
 This library makes extensive use of type classes and other implicit mechanisms.
 Indeed, it is implemented very similarly to JSON readers.
@@ -22,7 +25,9 @@ strings and delimiters, also to vary the quote character.
 User Guide
 ==========
 
-Current version: 1.0.0.
+Current version: 1.0.1.
+
+See release notes below for history.
 
 The _Table_ trait expresses the result of parsing from a representation of a table.
 Each row is represented by a parametric type _Row_.
@@ -43,8 +48,8 @@ The result of parsing a table file (CSV, etc.) will be a _Table[Row]_, wrapped i
 There are object methods to parse most forms of text: _File, Resource, InputStream, URL, Seq[String]_, etc. (see _Table_ below).
 
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
-an implicit ionstance of _CellParser[T]_ must be in scope.
-This is achieved via invoking a method (from object Parsers) of the following form:
+an implicit instance of _CellParser[T]_ must be in scope.
+This is achieved via invoking a method (from object _Parsers_) of the following form:
 where _f_ is a function which which takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
 and where _T_ is the type to be constructed:
 
@@ -54,13 +59,15 @@ Typically, the function _f_ is the _apply_ method of the case class _T_,
 although you may have to explicitly refer to a particular function/method with a specific signature.
 When you have created a companion object to the case class, you will simply use the method name (typically _apply_) as in
 _Name.apply_ (see example below).
-If you have created additional apply methods, you will need to define a function similar
-to the _fRating_ function (see example below).  
+If you have created additional apply methods, you will need to define a function of a specific type and pass that in.
+Or, more simply, do as for _ratingParser_ in the example below.
 
 Note that _P1_, _P2_, ... _Pn_ each hava a context bound on _CellParser_ (that's to say, there is implicit
 evidence of type _CellParser[P]_).
 This is the mechanism which saves the programmer from having to specify explicit conversions.
-_T_ is a subtype of _Product_ and has two context bounds: _ClassTag_ and _ColumnHelper_.
+_T_ is bound to be a subtype of _Product_ and has two context bounds: _ClassTag_ and _ColumnHelper_.
+
+See section on _CellParsers_ below.
 
 Table
 =====
@@ -80,16 +87,87 @@ The following object methods are available for parsing text:
 *  def parse[T: TableParser](ws: Seq[String]): Try[T]
 *  def parse[T: TableParser](ws: Iterator[String]): Try[T]
 *  def parse[T: TableParser](x: Source): Try[T]
-*  def parse[T: TableParser](u: URI): Try[T]
+*  def parse[T: TableParser](u: URI, enc: String): Try[T]
+*  def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T]
+*  def parse[T: TableParser](u: URL, enc: String): Try[T]
 *  def parse[T: TableParser](u: URL): Try[T]
-*  def parse[T: TableParser](i: InputStream): Try[T]
+*  def parse[T: TableParser](i: InputStream, enc: String): Try[T]
+*  def parse[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T]
 *  def parse[T: TableParser](f: File): Try[T]
 *  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass): Try[T]
+*  def parseSequence[T: TableParser](wss: Seq[Seq[String]]): Try[T]
 
-Example
-=======
+TableParser
+===========
 
-The basic structure of application code will look something like this:
+_TableParser_ is also the name of a trait which takes a parametric type called "Table" in its definition.
+It is defined thus:
+
+    trait TableParser[Table] {
+      type Row
+      def hasHeader: Boolean
+      def forgiving: Boolean = false
+      def rowParser: RowParser[Row]
+      def builder(rows: Seq[Row]): Table
+      def parse(ws: Seq[String]): Try[Table] = ...
+}
+
+The type _Row_ defines the specific row type (for example, _Movie_, in the example below).
+_hasHeader_ is used to define if there is a header row in the first line of the file (or sequence of strings) to be parsed.
+_forgiving_, which defaults to _false_, can be set to _true_ if you expect that some rows will not parse, but where this
+will not invalidate your dataset as a whole.
+In forgiving mode, any exceptions thrown in the parsing of a row are collected and then printed to _System.err_ at the conclusion of the parsing of the table.
+_rowParser_ is the specific parser for the _Row_ type (see below).
+_builder_ is used by the _parse_ method.
+_parse_ is the main method of _TableParser_ and takes a _Seq[String]_ and yields a _Try[Table]_.
+
+RowParser
+=========
+_RowParser_ is a trait which defines how a line of text is to be parsed as a _Row_.
+_Row_ is a parametric type which, in subtypes of _RowParser_, is context-bound to _CellParser_.
+A second parametric type _Input_ is defined: this will take on values of _String_ or _Seq[String]_, according to the form of input.
+Typically, the _StandardRowParser_ is used, which takes as its constructor parameter a _LineParser_.
+This _LineParser_ takes five parameters: two regexes, a String and two Chars.
+These define, respectively, the delimiter regex, the string regex, list enclosures, the list separator, and the quote character.
+Rather than invoke the constructor directly, it is easier to invoke the companion object's _apply_ method, which takes a single implicit parameter: a _RowConfig_.
+
+The methods of _RowParser_ are:
+
+    def parse(w: String)(header: Header): Try[Row]
+
+    def parseHeader(w: String): Try[Header]
+
+
+StringsParser
+=============
+_StringsParser_ is a trait which defines an alternative mechanism for converting a line of text to a _Row_.
+As with the _RowParser_, _Row_ is a parametric type which is context-bound to _CellParser_.
+_StringsParser_ is useful when the individual columns have already been split into elements of a sequence.
+Typically, the _StandardStringsParser_ is used.
+
+The methods of _StringsParser_ are:
+
+    def parse(ws: Seq[String])(header: Header): Try[Row]
+
+    def parseHeader(ws: Seq[String]): Try[Header]
+
+CellParsers
+===========
+
+There are a number of methods which return an instance of _CellParser_ for various situations:
+
+* def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]]
+* def cellParserSeq[P: CellParser]: CellParser[Seq[P]]
+* def cellParserOption[P: CellParser]: CellParser[Option[P]]
+* def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T]
+* def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T): CellParser[T]
+* etc. through cellParser12...
+
+Example: Movie
+==============
+
+In this example, we parse the IMDB Movie dataset from Kaggle.
+The basic structure of the application code will look something like this:
 
         import MovieParser._
     
@@ -104,8 +182,8 @@ The _Movie_ class looks like this:
 
     case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
-Note that we make actor3 optional because some movies don't specify an actor3.
-Unlike with ordinary values such as Int, Double, we do have to add an additional implicit definition to accomplish this (see in example code below):
+Note that we make _actor3_ optional because some movies don't specify an "actor3".
+Unlike with ordinary values such as _Int_, _Double_, we do have to add an additional implicit definition to accomplish this (see in example code below):
  
     implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
  
@@ -136,15 +214,13 @@ The _MovieParser_ object looks like this:
       implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
       implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
       implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
-      val fRating: String => Rating = Rating.apply
-      implicit val ratingParser: CellParser[Rating] = cellParser(fRating)
+      implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
       implicit val formatParser: CellParser[Format] = cellParser4(Format)
       implicit val productionParser: CellParser[Production] = cellParser4(Production)
       implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
       implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
       implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
-      val fAttributes: String => AttributeSet = AttributeSet.apply
-      implicit val attributesParser: CellParser[AttributeSet] = cellParser(fAttributes)
+      implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
       implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
       implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
       implicit object MovieConfig extends DefaultRowConfig {
@@ -195,3 +271,55 @@ A parameter can be optional, for example, in the _Movie_ example, the _Productio
     
 In this case, some of the movies do not have a budget provided.
 All you have to do is declare it optional in the case class and _TableParser_ will specify it as _Some(x)_ if valid, else _None_.
+
+Example: Submissions
+====================
+
+This example has two variations on the earlier theme of the _Movies_ example:
+(1) each row (a Submission) has an unknown number of _Question_ parameters;
+(2) instead of reading each row from a single String, we read each row from a sequence of Strings, each corresponding to a cell.
+
+The example comes from a report on the submissions to a Scala exam. Only one question is included in this example.
+
+      case class Question(question_ID: String, question: String, answer: Option[String], possible_points: Int, auto_score: Option[Double], manual_score: Option[Double])
+      case class Submission(username: String, last_name: String, first_name: String, questions: Seq[Question])
+      object Submissions extends CellParsers {
+        def baseColumnNameMapper(w: String): String = w.replaceAll("(_)", " ")
+        implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(baseColumnNameMapper _)
+        implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"))
+        implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
+        implicit val questionParser: CellParser[Question] = cellParser6(Question)
+        implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
+        implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
+        implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
+        implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
+          type Row = Submission
+          def hasHeader: Boolean = true
+          override def forgiving: Boolean = false
+          def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+          def builder(rows: Seq[Row]): Table[Submission] = TableWithoutHeader(rows)
+        }
+      }
+      val rows: Seq[Seq[String]] = Seq(
+          Seq("Username", "Last Name", "First Name", "Question ID 1", "Question 1", "Answer 1", "Possible Points 1", "Auto Score 1", "Manual Score 1"),
+          Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
+        )
+
+      import Submissions._
+      val qty: Try[Table[Submission]] = Table.parseSequence(rows)
+
+Note the use of _cellParserRepetition_. The parameter allows the programmer to define the start value of the sequence number for the columns.
+In this case, we use the default value: 1 and so don't have to explicitly specify it.
+Also, note that the instance of _ColumnHelper_ defined here has the formatter defined as "$c $x" which is in the opposite order from the Movie example.
+
+Release Notes
+=============
+
+V1.0.0 -> V.1.0.1
+* Fixed Issue #1;
+* Added parsing of Seq[Seq[String]];
+* Added cellParserRepetition;
+* Implemented closing of Source in Table.parse methods;
+* Added encoding parameters to Table.parse methods.
+
+

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2019. Phasmid Software
+ */
+
 package com.phasmidsoftware.parse
 
 import java.util.Date
@@ -149,18 +153,26 @@ class CellParsersSpec extends FlatSpec with Matchers {
     implicitly[CellParser[Option[Int]]].convertString("1") shouldBe Some(1)
   }
 
-  // FIXME this one really should be fixed.
-  ignore should "parse Option[MyNumber]" in {
-    object X extends CellParsers {
+  it should "parse optional MyNumber as None" in {
+    import MyNumberParser._
 
-      import MyNumberParser._
-
-      implicit val optionalPrincipalParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
-    }
-    import X._
+    implicit val optionalMyNumberParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
     implicitly[CellParser[Option[MyNumber]]].convertString("") shouldBe None
-    implicitly[CellParser[Option[MyNumber]]].convertString("1") shouldBe Some(1)
-    println("done")
+  }
+
+  it should "parse optional MyNumber(1)" in {
+    import MyNumberParser._
+
+    implicit val optionalMyNumberParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
+    val cellParser = implicitly[CellParser[Option[MyNumber]]]
+    cellParser.convertString("1") shouldBe Some(MyNumber(1))
+  }
+
+  it should "parse optional PhoneNumber" in {
+    import PhoneNumberParser._
+    implicit val optionalPhoneNumberParser: CellParser[Option[PhoneNumber]] = cellParserOption[PhoneNumber]
+    val r = RowValues(Row(Seq("Robin", "6171234567"), Header.create("name", "x")))
+    r.convertTo[Option[PhoneNumber]] shouldBe Success(Some(PhoneNumber("Robin", 6171234567L)))
   }
 
 }

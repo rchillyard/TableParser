@@ -1,12 +1,16 @@
+/*
+ * Copyright (c) 2019. Phasmid Software
+ */
+
 package com.phasmidsoftware.table
 
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 
-import com.phasmidsoftware.parse.{ParserException, TableParser}
+import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 
-import scala.io.Source
-import scala.util.{Failure, Try}
+import scala.io.{Codec, Source}
+import scala.util.{Failure, Success, Try}
 
 /**
   * A Table of Rows.
@@ -32,25 +36,145 @@ trait Table[Row] extends Iterable[Row] {
 
 object Table {
 
-  def parse[T: TableParser](ws: Seq[String]): Try[T] = implicitly[TableParser[T]].parse(ws)
+  /**
+    * Method to parse a table from a Seq of String.
+    *
+    * @param ws the Strings.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](ws: Seq[String]): Try[T] = {
+    val tableParser = implicitly[TableParser[T]]
+    tableParser match {
+      case parser: StringTableParser[T] => parser.parse(ws)
+      case _ => Failure(ParserException(s"parse method incompatible with tableParser: $tableParser"))
+    }
+  }
 
+  /**
+    * Method to parse a table from an Iterator of String.
+    *
+    * @param ws the iterator.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parse[T: TableParser](ws: Iterator[String]): Try[T] = parse(ws.toSeq)
 
-  def parse[T: TableParser](x: Source): Try[T] = parse(x.getLines())
+  /**
+    * Method to parse a table from a Source.
+    * The Source will close itself after extracting the lines.
+    *
+    * @param x the Source.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](x: Source): Try[T] = {
+    val result = parse(x.getLines())
+    result match {
+      case Success(t) => x.close()
+      case _ =>
+    }
+    result
+  }
 
-  def parse[T: TableParser](u: URI): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
+  /**
+    * Method to parse a table from a URI with an explicit encoding.
+    *
+    * @param u   the URI.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](u: URI, enc: String): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
 
+  /**
+    * Method to parse a table from a URI with an implicit encoding.
+    *
+    * CONSIDER closing the Source.
+    *
+    * @param u     the URI.
+    * @param codec (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
+
+  /**
+    * Method to parse a table from a URL with an explicit encoding.
+    *
+    * @param u   the URL.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](u: URL, enc: String): Try[T] = for (s <- Try(Source.fromURL(u, enc)); t <- parse(s)) yield t
+
+  /**
+    * Method to parse a table from a URL.
+    *
+    * @param u the URI.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parse[T: TableParser](u: URL): Try[T] = parse(u.toURI)
 
-  def parse[T: TableParser](i: InputStream): Try[T] = for (s <- Try(Source.fromInputStream(i)); t <- parse(s)) yield t
+  /**
+    * Method to parse a table from an InputStream with an explicit encoding.
+    *
+    * @param i   the InputStream.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](i: InputStream, enc: String): Try[T] = for (s <- Try(Source.fromInputStream(i, enc)); t <- parse(s)) yield t
 
+  /**
+    * Method to parse a table from an InputStream with an implicit encoding.
+    *
+    * @param i     the InputStream.
+    * @param codec (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromInputStream(i)); t <- parse(s)) yield t
+
+  /**
+    * Method to parse a table from an File.
+    *
+    * @param f the File.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parse[T: TableParser](f: File): Try[T] = for (s <- Try(Source.fromFile(f)); t <- parse(s)) yield t
 
+  /**
+    * Method to parse a table from an File.
+    *
+    * @param s     the resource name.
+    * @param clazz the class for which the resource should be sought.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass): Try[T] =
     clazz.getResource(s) match {
       case null => Failure(ParserException(s"Table.getResource: $s does not exist for $clazz"))
       case u => parse(u)
     }
+
+  /**
+    * Method to parse a table from a Seq of Seq of String.
+    *
+    * @param wss the Sequence of Strings.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseSequence[T: TableParser](wss: Seq[Seq[String]]): Try[T] = {
+    val tableParser = implicitly[TableParser[T]]
+    tableParser match {
+      case parser: StringsTableParser[T] => parser.parse(wss)
+      case _ => Failure(ParserException(s"parse method incompatible with tableParser: $tableParser"))
+    }
+  }
 }
 
 case class Header(xs: Seq[String]) {
