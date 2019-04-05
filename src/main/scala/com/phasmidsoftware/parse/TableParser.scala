@@ -6,8 +6,10 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.Header
 
+import scala.annotation.implicitNotFound
 import scala.util.{Failure, Try}
 
+@implicitNotFound(msg = "Cannot find an implicit instance of TableParser[${Table}]. Typically, you should define an instance of StringTableParser or StringsTableParser.")
 trait TableParser[Table] {
 
   type Row

@@ -25,7 +25,7 @@ strings and delimiters, also to vary the quote character.
 User Guide
 ==========
 
-Current version: 1.0.2.
+Current version: 1.0.3.
 
 See release notes below for history.
 
@@ -320,6 +320,9 @@ Also, note that the instance of _ColumnHelper_ defined here has the formatter de
 
 Release Notes
 =============
+
+V1.0.2 -> V1.0.3
+* Added no implicit warnings
 
 V1.0.1 -> V1.0.2
 * Added self-checking of LineParser;

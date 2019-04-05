@@ -104,7 +104,9 @@ case class Name(first: String, middle: Option[String], last: String, suffix: Opt
 }
 
 /**
-  * The US rating
+  * The US rating.
+  * NOTE: this definition does not cover all of the ratings in the IMDB movie dataset.
+  * That's OK--this is just an examplar.
   */
 case class Rating(code: String, age: Option[Int]) {
   override def toString: String = code + (age match {
@@ -126,11 +128,9 @@ object MovieParser extends CellParsers {
     "numUsersVoted" -> "num_voted_users",
     "numCriticReviews" -> "num_critic_for_reviews",
     "totalFacebookLikes" -> "cast_total_facebook_likes")
-  implicit val ratingColumnHelper: ColumnHelper[Rating] = columnHelper()
   implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelCaseColumnNameMapper _)
   implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
   implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
-  implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
   implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
   implicit val formatParser: CellParser[Format] = cellParser4(Format)
   implicit val productionParser: CellParser[Production] = cellParser4(Production)

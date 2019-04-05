@@ -10,8 +10,10 @@ import java.net.URL
 import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
 
+import scala.annotation.implicitNotFound
 import scala.util.Try
 
+@implicitNotFound(msg = "Cannot find an implicit instance of CellParser[${T}]. Typically, you should invoke a suitable method from CellParsers.")
 trait CellParser[T] {
   // TODO Need to define this better so that we don't have any non-implemented methods.
   def convertString(w: String): T
