@@ -85,6 +85,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
 
   def parseRows(xs: Strings, header: Header): Try[Table] = {
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
+    //		System.err.println(s"StringTableParser: parsed ${rys.size} of ${xs.size} rows")
     for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs)
   }
 
@@ -100,6 +101,7 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
 
   def parseRows(xs: Seq[Strings], header: Header): Try[Table] = {
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
+    //		System.err.println(s"StringsTableParser: parsed ${rys.size} of ${xs.size} rows")
     for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs)
   }
 }

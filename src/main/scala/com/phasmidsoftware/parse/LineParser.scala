@@ -21,7 +21,7 @@ import scala.util.parsing.combinator.JavaTokenParsers
   *                      there can be any number of any character (other than quote).
   * @param verbose       will print the various parameters.
   */
-class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char, verbose: Boolean = true) extends JavaTokenParsers {
+class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char, verbose: Boolean = false) extends JavaTokenParsers {
 
   if (verbose) println(s"delimiter: '${delimiter.regex}', string: '${string.regex}', enclosures: '$enclosures', quote: '$quote', listSeparator: '$listSeparator', ")
   runChecks()
@@ -109,7 +109,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
         check(quotedString,s"""${quote}Hello${getDelimiterChar}Goodbye$quote""",s"""Hello${getDelimiterChar}Goodbye""")
       ).squawk()
   }
-  
+
 }
 
 object LineParser {

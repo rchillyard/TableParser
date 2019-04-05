@@ -10,7 +10,7 @@ import java.net.{URI, URL}
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 
 import scala.io.{Codec, Source}
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
   * A Table of Rows.
@@ -70,22 +70,15 @@ object Table {
     */
   def parse[T: TableParser](x: Source): Try[T] = {
     val result = parse(x.getLines())
-		//    result match {
-		//      case Success(_) => try {x.close(); result} catch { case e: Exception => Failure(e)}
-		//      case _ => result
-		//    }
-		result
-  }
-
-  /**
-    * Method to parse a table from a URI with an explicit encoding.
-    *
-    * @param u   the URI.
-    * @param enc the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
-	def parse[T: TableParser](u: URI, enc: String): Try[T] = for (s <- Try(Source.fromURI(u)(Codec(enc))); t <- parse(s)) yield t
+		result match {
+			case Success(_) => try {
+				x.close(); result
+			} catch {
+				case e: Exception => Failure(e)
+			}
+			case _ => result
+		}
+	}
 
   /**
     * Method to parse a table from a URI with an implicit encoding.
@@ -99,7 +92,20 @@ object Table {
     */
   def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
 
-  /**
+	/**
+		* Method to parse a table from a URI with an explicit encoding.
+		*
+		* @param u   the URI.
+		* @param enc the encoding.
+		* @tparam T the type of the resulting table.
+		* @return a Try[T]
+		*/
+	def parse[T: TableParser](u: URI, enc: String): Try[T] = {
+		implicit val codec: Codec = Codec(enc)
+		parse(u)
+	}
+
+	/**
     * Method to parse a table from a URL with an explicit encoding.
     *
     * @param u   the URL.
@@ -116,7 +122,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-	def parse[T: TableParser](u: URL)(implicit codec: Codec): Try[T] = parse(u.toURI)
+	def parse[T: TableParser](u: URL)(implicit codec: Codec): Try[T] = for (uri <- Try(u.toURI); t <- parse(uri)) yield t
 
   /**
     * Method to parse a table from an InputStream with an explicit encoding.
@@ -126,7 +132,10 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](i: InputStream, enc: String): Try[T] = for (s <- Try(Source.fromInputStream(i, enc)); t <- parse(s)) yield t
+	def parse[T: TableParser](i: InputStream, enc: String): Try[T] = {
+		implicit val codec: Codec = Codec(enc)
+		parse(i)
+	}
 
   /**
     * Method to parse a table from an InputStream with an implicit encoding.
