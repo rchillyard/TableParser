@@ -5,6 +5,7 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.Header
+import com.phasmidsoftware.util.FP
 
 import scala.annotation.implicitNotFound
 import scala.util.{Failure, Try}

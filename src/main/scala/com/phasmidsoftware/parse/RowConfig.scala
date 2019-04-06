@@ -59,6 +59,7 @@ trait DefaultRowConfig extends RowConfig {
 
 object RowConfig {
 
+	// CONSIDER removing this default row configuration. It might be better to have the compiler issue a warning when it's missing.
   implicit object defaultRowConfig extends DefaultRowConfig
 
 }

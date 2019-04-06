@@ -2,7 +2,7 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.parse
+package com.phasmidsoftware.util
 
 import scala.util.Try
 

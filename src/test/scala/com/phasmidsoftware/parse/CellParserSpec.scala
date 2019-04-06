@@ -4,28 +4,35 @@
 
 package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.render.TreeWriter
 import com.phasmidsoftware.table.{Header, Row}
 import org.scalatest.{FlatSpec, Matchers}
 
 //noinspection NotImplementedCode
 class CellParserSpec extends FlatSpec with Matchers {
 
-  private val intCellParser = new CellParser[Int] {
+  private val intCellParser: CellParser[Int] = new CellParser[Int] {
     def convertString(w: String): Int = w.toInt
 
     def parse(w: Option[String], row: Row, columns: Header): Int = throw ParserException(s"intCellParser does not implement parse method")
+
+    def render[U: TreeWriter](t: Int): U = implicitly[TreeWriter[U]].node(t, None)
   }
 
-  private val booleanCellParser = new CellParser[Boolean] {
+  private val booleanCellParser: CellParser[Boolean] = new CellParser[Boolean] {
     def convertString(w: String): Boolean = w.toBoolean
 
     def parse(w: Option[String], row: Row, columns: Header): Boolean = throw ParserException(s"booleanCellParser does not implement parse method")
+
+    def render[U: TreeWriter](t: Boolean): U = implicitly[TreeWriter[U]].node(t, None)
   }
 
-  private val stringCellParser = new CellParser[String] {
+  private val stringCellParser: CellParser[String] = new CellParser[String] {
     def convertString(w: String): String = w
 
     def parse(w: Option[String], row: Row, columns: Header): String = throw ParserException(s"booleanCellParser does not implement parse method")
+
+    def render[U: TreeWriter](t: String): U = implicitly[TreeWriter[U]].node(t, None)
   }
 
   behavior of "CellParser"

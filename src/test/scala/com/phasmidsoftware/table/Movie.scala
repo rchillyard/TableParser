@@ -163,7 +163,7 @@ object MovieParser extends CellParsers {
 }
 
 object Name {
-  // this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
+  // NOTE: this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
   private val rName =
     """^([\p{L}\-\']+\.?)\s*(([\p{L}\-]+\.?)\s)?([\p{L}\-\']+\.?)(\s([\p{L}\-]+\.?))?$""".r
 
