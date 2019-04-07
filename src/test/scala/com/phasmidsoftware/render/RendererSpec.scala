@@ -10,12 +10,12 @@ class RendererSpec extends FlatSpec with Matchers {
 
 	case class Complex(r: Double, i: Double)
 
-	case class HTML(x: String, ao: Option[String], hs: Seq[HTML])
+	case class HTML(tag: String, content: Option[String], attributes: Seq[String], hs: Seq[HTML])
 
 	object HTML {
-		def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, hs)
+		def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Nil, hs)
 
-		def apply(x: String, ao: Option[String]): HTML = apply(x, ao, Nil)
+		def apply(x: String, ao: Option[String]): HTML = apply(x, ao, Nil, Nil)
 
 		def apply(x: String): HTML = apply(x, None)
 	}
@@ -23,15 +23,10 @@ class RendererSpec extends FlatSpec with Matchers {
 	case class Complicated(name: String, count: Int, open: Boolean, maybePhone: Option[Long], aliases: Seq[String])
 
 	object Complex1 extends Renderers {
-		implicit val complexRenderer: Renderer[Complex] = renderer2(Complex.apply)
+		implicit val complexRenderer: Renderer[Complex] = renderer2("complex")(Complex.apply)
 
 		trait TreeWriterString$ extends TreeWriter[String] {
-			def subtree(us: Seq[String], ao: Option[String]): String = us mkString("(", ",", ")")
-
-			def node[T: Renderer](t: T, ao: Option[String]): String = implicitly[Renderer[T]].render(t)(this)
-
-			def leaf(t: Any, ao: Option[String]): String = t.toString
-
+			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[String]): String = s"""<$tag>: "${content.getOrElse("")}" ${attributes.mkString("(", ",", ")")} ${children.mkString("[", ",", "]")} """
 		}
 
 		implicit object TreeWriterString$ extends TreeWriterString$
@@ -39,15 +34,10 @@ class RendererSpec extends FlatSpec with Matchers {
 	}
 
 	object Complex2 extends Renderers {
-		implicit val complexRenderer: Renderer[Complex] = renderer2(Complex.apply)
+		implicit val complexRenderer: Renderer[Complex] = renderer2("complex")(Complex.apply)
 
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
-			def subtree(us: Seq[HTML], ao: Option[String]): HTML = HTML("", ao, us)
-
-			def node[T: Renderer](t: T, ao: Option[String]): HTML = implicitly[Renderer[T]].render(t, ao)(this)
-
-			def leaf(t: Any, ao: Option[String]): HTML = HTML(t.toString, ao)
-
+			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
@@ -57,14 +47,10 @@ class RendererSpec extends FlatSpec with Matchers {
 	object Complicated extends Renderers {
 		implicit val optionLongRenderer: Renderer[Option[Long]] = optionRenderer
 		implicit val sequenceStringRenderer: Renderer[Seq[String]] = sequenceRenderer
-		implicit val complicatedRenderer: Renderer[Complicated] = renderer5(Complicated.apply)
+		implicit val complicatedRenderer: Renderer[Complicated] = renderer5("x")(Complicated.apply)
 
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
-			def subtree(us: Seq[HTML], ao: Option[String]): HTML = HTML("", ao, us)
-
-			def node[T: Renderer](t: T, ao: Option[String]): HTML = implicitly[Renderer[T]].render(t, ao)(this)
-
-			def leaf(t: Any, ao: Option[String]): HTML = HTML(t.toString, ao)
+			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
@@ -76,20 +62,21 @@ class RendererSpec extends FlatSpec with Matchers {
 	it should "render Complex as sequence of numbers" in {
 		import Complex1._
 		val z = Complex(0, 1)
-		Renderer.render(z) shouldBe "(0.0,1.0)"
+		Renderer.render(z) shouldBe "<complex>: \"\" () [<>: \"0.0\" (r) [] ,<>: \"1.0\" (i) [] ] "
 	}
 
 	it should "render Complex as an HTML" in {
 		import Complex2._
 		val z = Complex(0, 1)
-		Renderer.render(z) shouldBe HTML("", Seq(HTML("0.0", Some("r")), HTML("1.0", Some("i"))))
+		Renderer.render(z) shouldBe HTML("complex", None, List(), List(HTML("", Some("0.0"), List("r"), List()), HTML("", Some("1.0"), List("i"), List())))
 	}
 
 	it should "render Complicated as an HTML" in {
 		import Complicated._
 		val z = Complicated("strange", 42, open = false, Some(6175551234L), Seq("Tom", "Dick", "Harry"))
-		Renderer.render(z) shouldBe HTML("", Seq(HTML("strange", Some("name")), HTML("42", Some("count")), HTML("false", Some("open")), HTML("", Some("maybePhone"), List(HTML("6175551234"))), HTML("", Some("aliases"), List(HTML("Tom"), HTML("Dick"), HTML("Harry")))))
-		Renderer.render(z, "Complicated") shouldBe HTML("", Some("Complicated"), Seq(HTML("strange", Some("name")), HTML("42", Some("count")), HTML("false", Some("open")), HTML("", Some("maybePhone"), List(HTML("6175551234"))), HTML("", Some("aliases"), List(HTML("Tom"), HTML("Dick"), HTML("Harry")))))
+		Renderer.render(z) shouldBe HTML("x", None, List(), List(HTML("", Some("strange"), List("name"), List()), HTML("", Some("42"), List("count"), List()), HTML("", Some("false"), List("open"), List()), HTML("", None, List("maybePhone"), List(HTML("", Some("6175551234"), List(), List()))), HTML("", None, List("aliases"), List(HTML("", Some("Tom"), List(), List()), HTML("", Some("Dick"), List(), List()), HTML("", Some("Harry"), List(), List())))))
+		Renderer.render(z, "Complicated") shouldBe
+			HTML("x", None, List("Complicated"), List(HTML("", Some("strange"), List("name"), List()), HTML("", Some("42"), List("count"), List()), HTML("", Some("false"), List("open"), List()), HTML("", None, List("maybePhone"), List(HTML("", Some("6175551234"), List(), List()))), HTML("", None, List("aliases"), List(HTML("", Some("Tom"), List(), List()), HTML("", Some("Dick"), List(), List()), HTML("", Some("Harry"), List(), List())))))
 	}
 
 }

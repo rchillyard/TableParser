@@ -4,7 +4,6 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.render.TreeWriter
 import com.phasmidsoftware.table.{Header, Row}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -16,7 +15,6 @@ class CellParserSpec extends FlatSpec with Matchers {
 
     def parse(w: Option[String], row: Row, columns: Header): Int = throw ParserException(s"intCellParser does not implement parse method")
 
-    def render[U: TreeWriter](t: Int): U = implicitly[TreeWriter[U]].node(t, None)
   }
 
   private val booleanCellParser: CellParser[Boolean] = new CellParser[Boolean] {
@@ -24,7 +22,6 @@ class CellParserSpec extends FlatSpec with Matchers {
 
     def parse(w: Option[String], row: Row, columns: Header): Boolean = throw ParserException(s"booleanCellParser does not implement parse method")
 
-    def render[U: TreeWriter](t: Boolean): U = implicitly[TreeWriter[U]].node(t, None)
   }
 
   private val stringCellParser: CellParser[String] = new CellParser[String] {
@@ -32,7 +29,6 @@ class CellParserSpec extends FlatSpec with Matchers {
 
     def parse(w: Option[String], row: Row, columns: Header): String = throw ParserException(s"booleanCellParser does not implement parse method")
 
-    def render[U: TreeWriter](t: String): U = implicitly[TreeWriter[U]].node(t, None)
   }
 
   behavior of "CellParser"

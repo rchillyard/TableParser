@@ -5,6 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.{RowParser, StringParser, StringTableParser}
+import com.phasmidsoftware.render.{Renderer, Renderers, TreeWriter}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
@@ -117,5 +118,39 @@ class TableSpec extends FlatSpec with Matchers {
     iIty should matchPattern { case Success(_) => }
     iIty.get.flatMap(f).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
   }
+
+  case class HTML(x: String, ao: Option[String], attr: Seq[String], hs: Seq[HTML])
+
+  object HTML {
+    def apply(x: String): HTML = apply(x, None, Nil, Nil)
+
+    def apply(x: String, a: String): HTML = apply(x, Some(a), Nil, Nil)
+
+    def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Nil, hs)
+
+  }
+
+  object IntPairHTML extends Renderers {
+
+    trait HTMLTreeWriter extends TreeWriter[HTML] {
+      def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML =
+        HTML(tag, content, attributes, children)
+    }
+
+    implicit object HTMLTreeWriter extends HTMLTreeWriter
+
+    implicit val intPairRenderer: Renderer[IntPair] = renderer2("IntPair")(IntPair.apply)
+
+  }
+
+  it should "render the parsed table" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    import IntPairHTML._
+    val hy = iIty map (_.render)
+    hy should matchPattern { case Success(_) => }
+    hy foreach println
+  }
+
 
 }

@@ -31,12 +31,6 @@ class LineParserSpec extends FlatSpec with Matchers {
     p1.parseAll(p1.cell, helloQuoteGoodbye) should matchPattern { case p1.Success("""Hello "Goodbye""", _) => }
   }
 
-  //  it should "fail cell" in {
-  //    println(p1.parseAll(p1.cell, "Hello|"))
-  //    p1.parseAll(p1.cell, "Hello|") should matchPattern { case p1.Failure(_, _) => }
-  //    p2.parseAll(p2.cell, "Hello|") should matchPattern { case p2.Failure(_, _) => }
-  //  }
-
   it should "parse quotedStringWithQuotesAsList" in {
     p1.parseAll(p1.quotedStringWithQuotesAsList, helloQuoteGoodbye) should matchPattern { case p1.Success(Seq("Hello ", "Goodbye"), _) => }
 

@@ -8,6 +8,7 @@ import java.io.{File, InputStream}
 import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
+import com.phasmidsoftware.render.{Renderer, Renderers, TreeWriter}
 
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
@@ -19,19 +20,29 @@ import scala.util.{Failure, Success, Try}
   */
 trait Table[Row] extends Iterable[Row] {
 
-  def maybeHeader: Option[Header]
+	def maybeHeader: Option[Header]
 
-  def map[S](f: Row => S): Table[S] = unit(rows map f, maybeHeader)
+	def map[S](f: Row => S): Table[S] = unit(rows map f, maybeHeader)
 
-  def flatMap[U](f: Row => Table[U]): Table[U] = (rows map f).foldLeft(unit[U](Nil, None))(_ ++ _)
+	def flatMap[U](f: Row => Table[U]): Table[U] = (rows map f).foldLeft(unit[U](Nil, None))(_ ++ _)
 
-  def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S]
+	def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S]
 
-  def ++[U >: Row](table: Table[U]): Table[U] = unit[U](rows ++ table.rows, for (h1 <- maybeHeader; h2 <- table.maybeHeader) yield h1 ++ h2)
+	def ++[U >: Row](table: Table[U]): Table[U] = unit[U](rows ++ table.rows, for (h1 <- maybeHeader; h2 <- table.maybeHeader) yield h1 ++ h2)
 
-  def rows: Seq[Row]
+	def rows: Seq[Row]
 
-  def iterator: Iterator[Row] = rows.iterator
+	def iterator: Iterator[Row] = rows.iterator
+
+	def render[U: TreeWriter](implicit rr: Renderer[Row]): U = {
+		object TableRenderers extends Renderers {
+			val tableRenderer: Renderer[Seq[Row]] = sequenceRenderer[Row]
+		}
+		import TableRenderers._
+		tableRenderer.render(rows)
+
+
+	}
 }
 
 object Table {
