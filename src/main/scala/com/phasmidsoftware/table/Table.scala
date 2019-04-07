@@ -34,12 +34,12 @@ trait Table[Row] extends Iterable[Row] {
 
 	def iterator: Iterator[Row] = rows.iterator
 
-	def render[U: TreeWriter](implicit rr: Renderer[Row]): U = {
+	def render[U: TreeWriter](style: String)(implicit rr: Renderer[Row]): U = {
 		object TableRenderers extends Renderers {
-			val tableRenderer: Renderer[Seq[Row]] = sequenceRenderer[Row]
+			val tableRenderer: Renderer[Seq[Row]] = sequenceRenderer[Row](style)
 		}
 		import TableRenderers._
-		tableRenderer.render(rows)
+		tableRenderer.render(rows, None)
 
 
 	}

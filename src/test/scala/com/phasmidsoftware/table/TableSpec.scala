@@ -133,6 +133,10 @@ class TableSpec extends FlatSpec with Matchers {
   object IntPairHTML extends Renderers {
 
     trait HTMLTreeWriter extends TreeWriter[HTML] {
+      def addChild(parent: HTML, child: HTML): HTML = parent match {
+        case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
+      }
+
       def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML =
         HTML(tag, content, attributes, children)
     }
@@ -147,9 +151,9 @@ class TableSpec extends FlatSpec with Matchers {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
     import IntPairHTML._
-    val hy = iIty map (_.render)
+    val hy = iIty map (_.render("table"))
     hy should matchPattern { case Success(_) => }
-    hy foreach println
+    hy.get shouldBe HTML("table", None, List(), List(HTML("IntPair", None, List(), List(HTML("", Some("1"), List("a"), List()), HTML("", Some("2"), List("b"), List()))), HTML("IntPair", None, List(), List(HTML("", Some("42"), List("a"), List()), HTML("", Some("99"), List("b"), List())))))
   }
 
 

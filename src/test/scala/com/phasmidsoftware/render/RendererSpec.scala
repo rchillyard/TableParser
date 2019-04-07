@@ -26,35 +26,44 @@ class RendererSpec extends FlatSpec with Matchers {
 		implicit val complexRenderer: Renderer[Complex] = renderer2("complex")(Complex.apply)
 
 		trait TreeWriterString$ extends TreeWriter[String] {
+
+			override def addChild(parent: String, child: String): String = parent + ", " + child
+
 			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[String]): String = s"""<$tag>: "${content.getOrElse("")}" ${attributes.mkString("(", ",", ")")} ${children.mkString("[", ",", "]")} """
 		}
 
 		implicit object TreeWriterString$ extends TreeWriterString$
-
 	}
 
 	object Complex2 extends Renderers {
 		implicit val complexRenderer: Renderer[Complex] = renderer2("complex")(Complex.apply)
 
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
+			def addChild(parent: HTML, child: HTML): HTML = parent match {
+				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
+			}
+
 			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
-
 	}
 
 	object Complicated extends Renderers {
+		implicit val elementRenderer: Renderer[String] = renderer("element")
 		implicit val optionLongRenderer: Renderer[Option[Long]] = optionRenderer
-		implicit val sequenceStringRenderer: Renderer[Seq[String]] = sequenceRenderer
+		implicit val sequenceStringRenderer: Renderer[Seq[String]] = sequenceRenderer("")
 		implicit val complicatedRenderer: Renderer[Complicated] = renderer5("x")(Complicated.apply)
 
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
+			def addChild(parent: HTML, child: HTML): HTML = parent match {
+				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
+			}
+
 			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
-
 	}
 
 	behavior of "Renderer.render"
@@ -74,9 +83,9 @@ class RendererSpec extends FlatSpec with Matchers {
 	it should "render Complicated as an HTML" in {
 		import Complicated._
 		val z = Complicated("strange", 42, open = false, Some(6175551234L), Seq("Tom", "Dick", "Harry"))
-		Renderer.render(z) shouldBe HTML("x", None, List(), List(HTML("", Some("strange"), List("name"), List()), HTML("", Some("42"), List("count"), List()), HTML("", Some("false"), List("open"), List()), HTML("", None, List("maybePhone"), List(HTML("", Some("6175551234"), List(), List()))), HTML("", None, List("aliases"), List(HTML("", Some("Tom"), List(), List()), HTML("", Some("Dick"), List(), List()), HTML("", Some("Harry"), List(), List())))))
+		Renderer.render(z) shouldBe HTML("x", None, List(), List(HTML("element", Some("strange"), List("name"), List()), HTML("", Some("42"), List("count"), List()), HTML("", Some("false"), List("open"), List()), HTML("", None, List("maybePhone"), List(HTML("", Some("6175551234"), List(), List()))), HTML("", None, List("aliases"), List(HTML("element", Some("Tom"), List(), List()), HTML("element", Some("Dick"), List(), List()), HTML("element", Some("Harry"), List(), List())))))
 		Renderer.render(z, "Complicated") shouldBe
-			HTML("x", None, List("Complicated"), List(HTML("", Some("strange"), List("name"), List()), HTML("", Some("42"), List("count"), List()), HTML("", Some("false"), List("open"), List()), HTML("", None, List("maybePhone"), List(HTML("", Some("6175551234"), List(), List()))), HTML("", None, List("aliases"), List(HTML("", Some("Tom"), List(), List()), HTML("", Some("Dick"), List(), List()), HTML("", Some("Harry"), List(), List())))))
+			HTML("x", None, List("Complicated"), List(HTML("element", Some("strange"), List("name"), List()), HTML("", Some("42"), List("count"), List()), HTML("", Some("false"), List("open"), List()), HTML("", None, List("maybePhone"), List(HTML("", Some("6175551234"), List(), List()))), HTML("", None, List("aliases"), List(HTML("element", Some("Tom"), List(), List()), HTML("element", Some("Dick"), List(), List()), HTML("element", Some("Harry"), List(), List())))))
 	}
 
 }

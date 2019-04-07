@@ -22,8 +22,8 @@ trait Renderers {
 		* @tparam P the type of the result.
 		* @return a new instance of U.
 		*/
-	def sequenceRenderer[P: Renderer]: Renderer[Seq[P]] = new Renderer[Seq[P]] {
-		def render[U: TreeWriter](ps: Seq[P], ao: Option[String]): U = implicitly[TreeWriter[U]].node("", None, ao.toSeq, ps map (implicitly[Renderer[P]].render(_)))
+	def sequenceRenderer[P: Renderer](style: String): Renderer[Seq[P]] = new TaggedRenderer[Seq[P]](style) {
+		override def render[U: TreeWriter](ps: Seq[P], ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), ps map (implicitly[Renderer[P]].render(_, None)))
 	}
 
 	/**
@@ -35,8 +35,41 @@ trait Renderers {
 		* @tparam P the type of the result.
 		* @return a new instance of U.
 		*/
-	def optionRenderer[P: Renderer]: Renderer[Option[P]] = new Renderer[Option[P]] {
-		def render[U: TreeWriter](po: Option[P], ao: Option[String]): U = implicitly[TreeWriter[U]].node("", None, ao.toSeq, po.toSeq map (implicitly[Renderer[P]].render(_)))
+	def optionRenderer[P: Renderer]: Renderer[Option[P]] = new UntaggedRenderer[Option[P]] {
+		override def render[U: TreeWriter](po: Option[P], ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), po.toSeq map (implicitly[Renderer[P]].render(_, None)))
+	}
+
+	/**
+		* Method to return a Renderer[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
+		*
+		* NOTE: be careful using this method it only applies where T is a 1-tuple (e.g. a case class with one field).
+		* It probably shouldn't ever be used in practice. It can cause strange initialization errors!
+		* This note may be irrelevant now that we have overridden convertString to fix issue #1.
+		*
+		* @param style the style of the resulting renderer.
+		* @tparam T the type of the element to be rendered.
+		* @return a Renderer which converts an instance of T into an instance of U.
+		*/
+	def renderer[T: Renderer](style: String): Renderer[T] = new TaggedRenderer[T](style) {}
+
+	/**
+		* Method to return a Renderer[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
+		*
+		* NOTE: be careful using this method it only applies where T is a 1-tuple (e.g. a case class with one field).
+		* It probably shouldn't ever be used in practice. It can cause strange initialization errors!
+		* This note may be irrelevant now that we have overridden convertString to fix issue #1.
+		*
+		* @param style the String which will be used for the "tag" parameter of U's node method.
+		* @param f     the rendering function to transform a T into a String (overrides the default render method).
+		* @param g     the rendering function to transform a Option[String] into a Seq[String] (overrides the default render method).
+		* @tparam T the type of the element to be rendered.
+		* @return a Renderer which converts an instance of T into an instance of U.
+		*/
+	def renderer[T: Renderer](style: String)(f: T => String, g: Option[String] => Seq[String]): Renderer[T] = new TaggedRenderer[T](style) {
+
+		override def render(t: T): String = f(t)
+
+		override def render(ao: Option[String]): Seq[String] = g(ao)
 	}
 
 	/**
@@ -51,14 +84,12 @@ trait Renderers {
 		* @tparam T  the underlying type of the result, a Product.
 		* @return a Renderer which converts a String from a Row into the field type P and thence into a T
 		*/
-	def renderer1[P1: Renderer, T <: Product : ClassTag](style: String)(construct: P1 => T): Renderer[T] = new Renderer[T] {
+	def renderer1[P1: Renderer, T <: Product : ClassTag](style: String)(construct: P1 => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 		))
-
-		//		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 	}
 
 	/**
@@ -70,10 +101,10 @@ trait Renderers {
 		* @tparam T  the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1 and P2 and thence into a T
 		*/
-	def renderer2[P1: Renderer, P2: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2) => T): Renderer[T] = new Renderer[T] {
+	def renderer2[P1: Renderer, P2: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 		))
@@ -89,10 +120,10 @@ trait Renderers {
 		* @tparam T  the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2 and P3 and thence into a T
 		*/
-	def renderer3[P1: Renderer, P2: Renderer, P3: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3) => T): Renderer[T] = new Renderer[T] {
+	def renderer3[P1: Renderer, P2: Renderer, P3: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))
@@ -110,10 +141,10 @@ trait Renderers {
 		* @tparam T  the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2, P3 and P4 and thence into a T
 		*/
-	def renderer4[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4) => T): Renderer[T] = new Renderer[T] {
+	def renderer4[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3, p4) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))
@@ -133,10 +164,10 @@ trait Renderers {
 		* @tparam T  the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2, P3, P4 and P5 and thence into a T
 		*/
-	def renderer5[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5) => T): Renderer[T] = new Renderer[T] {
+	def renderer5[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3, p4, p5) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))
@@ -158,10 +189,10 @@ trait Renderers {
 		* @tparam T  the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2, P3, P4, P5 and P6 and thence into a T
 		*/
-	def renderer6[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6) => T): Renderer[T] = new Renderer[T] {
+	def renderer6[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3, p4, p5, p6) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))
@@ -185,10 +216,10 @@ trait Renderers {
 		* @tparam T  the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6 and P7 and thence into a T
 		*/
-	def renderer7[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7) => T): Renderer[T] = new Renderer[T] {
+	def renderer7[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3, p4, p5, p6, p7) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))
@@ -214,10 +245,10 @@ trait Renderers {
 		* @tparam T  the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7 and P8 and thence into a T
 		*/
-	def renderer8[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T): Renderer[T] = new Renderer[T] {
+	def renderer8[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3, p4, p5, p6, p7, p8) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))
@@ -245,10 +276,10 @@ trait Renderers {
 		* @tparam T  the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8 and P9 and thence into a T
 		*/
-	def renderer9[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T): Renderer[T] = new Renderer[T] {
+	def renderer9[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))
@@ -278,10 +309,10 @@ trait Renderers {
 		* @tparam T   the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9 and P10 and thence into a T
 		*/
-	def renderer10[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, P10: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T): Renderer[T] = new Renderer[T] {
+	def renderer10[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, P10: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))
@@ -313,10 +344,10 @@ trait Renderers {
 		* @tparam T   the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9, P10 and P11 and thence into a T
 		*/
-	def renderer11[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, P10: Renderer, P11: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T): Renderer[T] = new Renderer[T] {
+	def renderer11[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, P10: Renderer, P11: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))
@@ -350,10 +381,10 @@ trait Renderers {
 		* @tparam T   the underlying type of the result, a Product.
 		* @return a Renderer which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11 and P12 and thence into a T
 		*/
-	def renderer12[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, P10: Renderer, P11: Renderer, P12: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T): Renderer[T] = new Renderer[T] {
+	def renderer12[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, P10: Renderer, P11: Renderer, P12: Renderer, T <: Product : ClassTag](style: String)(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T): Renderer[T] = new TaggedRenderer[T](style) {
 		val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
 
-		def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, ao.toSeq, Seq(
+		override def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, None, render(ao), Seq(
 			implicitly[Renderer[P1]].render(t.productElement(0).asInstanceOf[P1], Some(p1))
 			, implicitly[Renderer[P2]].render(t.productElement(1).asInstanceOf[P2], Some(p2))
 			, implicitly[Renderer[P3]].render(t.productElement(2).asInstanceOf[P3], Some(p3))

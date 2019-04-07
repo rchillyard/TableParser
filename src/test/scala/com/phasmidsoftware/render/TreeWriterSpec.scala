@@ -11,15 +11,21 @@ class TreeWriterSpec extends FlatSpec with Matchers {
 	case class HTML(x: String, ao: Option[String], attrs: Seq[String], hs: Seq[HTML])
 
 	object HTML {
-		def apply(x: String): HTML = apply(x, None, Nil, Nil)
+		def apply(x: String): HTML = apply(x, None, Nil)
 
 		def apply(x: String, a: String): HTML = apply(x, Some(a), Nil, Nil)
+
+		def apply(x: String, ao: Option[String], as: Seq[String]): HTML = apply(x, ao, as, Nil)
 
 		def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Nil, hs)
 
 		trait HTMLTreeWriter extends TreeWriter[HTML] {
 
-			override def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML =
+			def addChild(parent: HTML, child: HTML): HTML = parent match {
+				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
+			}
+
+			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML =
 				HTML(tag, content map (_.toString), attributes, children)
 		}
 
@@ -32,8 +38,8 @@ class TreeWriterSpec extends FlatSpec with Matchers {
 	import HTML._
 
 	it should "implement node correctly for 1" in {
-		implicitly[TreeWriter[HTML]].node("1", None, Nil, Nil) shouldBe HTML("1")
-		implicitly[TreeWriter[HTML]].node("1", None, Seq("x"), Nil) shouldBe HTML("1", None, Seq("x"), Nil)
+		implicitly[TreeWriter[HTML]].node("1", None, Nil) shouldBe HTML("1")
+		implicitly[TreeWriter[HTML]].node("1", None, Seq("x")) shouldBe HTML("1", None, Seq("x"))
 	}
 
 

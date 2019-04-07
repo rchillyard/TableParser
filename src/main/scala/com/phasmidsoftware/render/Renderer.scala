@@ -17,72 +17,87 @@ import scala.annotation.implicitNotFound
 	*/
 @implicitNotFound(msg = "Cannot find an implicit instance of Renderer[${T}].")
 trait Renderer[T] {
+
 	/**
 		* Render an instance of T as a U.
 		*
 		* @param t  the input parameter, i.e. the object to be rendered.
-		* @param ao an optional String which can be used to identify a particular node within a tree.
+		* @param ao an optional String which can be used to identify a particular node within a tree,
+		*           and is interpreted as an attribute.
 		* @tparam U the type of the result.
 		* @return a new instance of U.
 		*/
-	def render[U: TreeWriter](t: T, ao: Option[String]): U
+	def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, Some(render(t)), render(ao))
 
 	/**
-		* Render an instance of T as a U.
+		* Method to render content as a String.
+		* This method is invoked only when T is not a Product, sequence or Option.
+		* Normally, the default method is what is required, but it might be necessary to override
+		* in some situations.
+		* This method does not apply to style or attribute values.
 		*
-		* @param t the input parameter, i.e. the object to be rendered.
-		* @tparam U the type of the result.
-		* @return a new instance of U.
+		* @param t the content value.
+		* @return a String corresponding to t.
 		*/
-	def render[U: TreeWriter](t: T): U = render(t, None)
+	def render(t: T): String = t.toString
 
+	/**
+		* Method to render the optional String (typically the field/parameter name of a case class)
+		* as a sequence of Strings which will be appear as attributes in an instance of TreeWriter[U].
+		*
+		* If there are any T-dependent attributes that an application requires, then they should be introduced here.
+		* Normally, the default method is sufficient.
+		*
+		* @param ao an optional String.
+		* @return a sequence of Strings.
+		*/
+	def render(ao: Option[String]): Seq[String] = ao.toSeq
+
+	/**
+		* Defines the default style for type T.
+		*/
+	val style: String
 }
+
+trait UntaggedRenderer[T] extends Renderer[T] {
+	val style: String = ""
+}
+
+abstract class TaggedRenderer[T](val style: String) extends Renderer[T]
 
 object Renderer {
 
-	def render[T: Renderer, U: TreeWriter](t: T): U = implicitly[Renderer[T]].render(t)
+	// NOTE: this is only used in unit tests
+	def render[T: Renderer, U: TreeWriter](t: T): U = implicitly[Renderer[T]].render(t, None)
 
+	// NOTE: this is only used in unit tests
 	def render[T: Renderer, U: TreeWriter](t: T, a: String): U = implicitly[Renderer[T]].render(t, Some(a))
 
-	trait StringRenderer extends Renderer[String] {
-		def render[U: TreeWriter](t: String, ao: Option[String]): U = implicitly[TreeWriter[U]].node("", Some(t), ao.toSeq, Nil)
-	}
+	trait StringRenderer extends UntaggedRenderer[String]
 
 	implicit object StringRenderer extends StringRenderer
 
-	trait BooleanRenderer extends Renderer[Boolean] {
-		def render[U: TreeWriter](t: Boolean, ao: Option[String]): U = implicitly[TreeWriter[U]].node("", Some(t.toString), ao.toSeq, Nil)
-	}
+	trait BooleanRenderer extends UntaggedRenderer[Boolean]
 
 	implicit object BooleanRenderer extends BooleanRenderer
 
-	trait IntRenderer extends Renderer[Int] {
-		def render[U: TreeWriter](t: Int, ao: Option[String]): U = implicitly[TreeWriter[U]].node("", Some(t.toString), ao.toSeq, Nil)
-	}
+	trait IntRenderer extends UntaggedRenderer[Int]
 
 	implicit object IntRenderer extends IntRenderer
 
-	trait LongRenderer extends Renderer[Long] {
-		def render[U: TreeWriter](t: Long, ao: Option[String]): U = implicitly[TreeWriter[U]].node("", Some(t.toString), ao.toSeq, Nil)
-	}
+	trait LongRenderer extends UntaggedRenderer[Long]
 
 	implicit object LongRenderer extends LongRenderer
 
-	trait BigIntRenderer extends Renderer[BigInt] {
-		def render[U: TreeWriter](t: BigInt, ao: Option[String]): U = implicitly[TreeWriter[U]].node("", Some(t.toString), ao.toSeq, Nil)
-	}
+	trait BigIntRenderer extends UntaggedRenderer[BigInt]
 
 	implicit object BigIntRenderer extends BigIntRenderer
 
-	trait DoubleRenderer extends Renderer[Double] {
-		def render[U: TreeWriter](t: Double, ao: Option[String]): U = implicitly[TreeWriter[U]].node("", Some(t.toString), ao.toSeq, Nil)
-	}
+	trait DoubleRenderer extends UntaggedRenderer[Double]
 
 	implicit object DoubleRenderer extends DoubleRenderer
 
-	trait LocalDateRenderer extends Renderer[LocalDate] {
-		def render[U: TreeWriter](t: LocalDate, ao: Option[String]): U = implicitly[TreeWriter[U]].node("", Some(t.toString), ao.toSeq, Nil)
-	}
+	trait LocalDateRenderer extends UntaggedRenderer[LocalDate]
 
 	implicit object LocalDateRenderer extends LocalDateRenderer
 

@@ -7,7 +7,7 @@ package com.phasmidsoftware.render
 import scala.annotation.implicitNotFound
 
 /**
-	* This trait defines the behavior of a hierarchical writer of object.
+	* This trait defines the behavior of a hierarchical writer of objects.
 	* For example, U might be defined as an HTML or XML document.
 	* TreeWriter is of course typically used as a type class.
 	*
@@ -20,4 +20,8 @@ trait TreeWriter[U] {
 
 	def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[U]): U
 
+	def node(tag: String, content: Option[String], attributes: Seq[String]): U = node(tag, content, attributes, Nil)
+
+	def addChild(parent: U, child: U): U
 }
+
