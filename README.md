@@ -378,11 +378,9 @@ If you need to set HTML attributes for a specific type, for example a row in the
 Release Notes
 =============
 
-V1.0.3 -> V1.0.4
-* Created mechanism for rendering the result of parsing in a hierarchical structure.
-
 V1.0.2 -> V1.0.3
 * Added no implicit warnings
+* Created mechanism for rendering the result of parsing in a hierarchical structure.
 
 V1.0.1 -> V1.0.2
 * Added self-checking of LineParser;
