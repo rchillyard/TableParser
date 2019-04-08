@@ -9,6 +9,7 @@ import java.net.URL
 
 import org.joda.time.LocalDate
 
+import scala.annotation.implicitNotFound
 import scala.util.Try
 import scala.util.parsing.combinator.JavaTokenParsers
 
@@ -17,6 +18,7 @@ import scala.util.parsing.combinator.JavaTokenParsers
   *
   * @tparam T the resulting type.
   */
+@implicitNotFound(msg = "Cannot find an implicit instance of Parseable[${T}]. This is unusual when your application types are all case classes. Most of the standard types are supported in the Parseable companion object. Take a look and define something similar that works for your type, or consider redefining your type as a case class.")
 trait Parseable[T] {
 
   def parse(s: String): T

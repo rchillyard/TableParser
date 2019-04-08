@@ -59,4 +59,12 @@ class ParseableSpec extends FlatSpec with Matchers {
     implicitly[Parseable[Option[Int]]].parse("1") shouldBe Some(1)
     implicitly[Parseable[Option[Int]]].parse("") shouldBe None
   }
+
+  // NOTE: please leave this comment here in order to enable testing of the implicitNotFound message
+//  class NotACaseCLass(val x: Int)
+//
+//  behavior of "non-case-classes"
+//  it should "cause a warning message in the compiler" in {
+//    implicitly[Parseable[NotACaseCLass]].parse(1) shouldBe 1
+//  }
 }

@@ -4,6 +4,9 @@
 
 package com.phasmidsoftware.parse
 
+import scala.annotation.implicitNotFound
+
+@implicitNotFound(msg = "Cannot find an implicit instance of ColumnHelper[${T}]. If ${T} is a case class, you will normally need to provide some help translating column names.")
 trait ColumnHelper[T] {
   /**
     * This is the format for the prefix of a name, where "x" represents the value, if any, of the optional string.

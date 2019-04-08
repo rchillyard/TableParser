@@ -6,14 +6,17 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{Header, Row}
 
+import scala.annotation.implicitNotFound
 import scala.util.Try
 import scala.util.matching.Regex
 
 /**
   * Trait to describe a parser which will yield a Try[Row] from a String representing a line of a table.
   *
-  * @tparam Row the (parametric) Row type for which there must be evidence of a CellParser[Row].
+  * @tparam Row the (parametric) Row type for which there must be evidence of a RowParser[Row, Input].
+  * @tparam Input the (parametric) Input type for which there must be evidence of a RowParser[Row, Input].
   */
+@implicitNotFound(msg = "Cannot find an implicit instance of RowParser[${Row}, ${Input}]. Typically, you might define a StandardRowParser or StandardStringsParser")
 trait RowParser[Row, Input] {
 
   /**

@@ -5,6 +5,7 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table._
+import com.phasmidsoftware.util.Reflection
 
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -93,7 +94,7 @@ trait CellParsers {
     */
   def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1) = CellParsers.extractFieldNames(tc)
+    val Array(p1) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser1 for $tc"
 
@@ -102,9 +103,10 @@ trait CellParsers {
         construct(p1V)
       }
 
-      // We need to allow for a single-parameter conversion of String => T via P1
+      // TODO We need to allow for a single-parameter conversion of String => T via P1
       // This fixes issue #1
       override def convertString(w: String): T = construct(implicitly[CellParser[P1]].convertString(w))
+
     }
   }
 
@@ -119,7 +121,7 @@ trait CellParsers {
     */
   def cellParser2[P1: CellParser, P2: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser2 for $tc"
 
@@ -143,7 +145,7 @@ trait CellParsers {
     */
   def cellParser3[P1: CellParser, P2: CellParser, P3: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser3 for $tc"
 
@@ -169,7 +171,7 @@ trait CellParsers {
     */
   def cellParser4[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser4 for $tc"
 
@@ -197,7 +199,7 @@ trait CellParsers {
     */
   def cellParser5[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser5 for $tc"
 
@@ -227,7 +229,7 @@ trait CellParsers {
     */
   def cellParser6[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser6 for $tc"
 
@@ -259,7 +261,7 @@ trait CellParsers {
     */
   def cellParser7[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser7 for $tc"
 
@@ -293,7 +295,7 @@ trait CellParsers {
     */
   def cellParser8[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser8 for $tc"
 
@@ -329,7 +331,7 @@ trait CellParsers {
     */
   def cellParser9[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser9 for $tc"
 
@@ -367,7 +369,7 @@ trait CellParsers {
     */
   def cellParser10[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser10 for $tc"
 
@@ -407,7 +409,7 @@ trait CellParsers {
     */
   def cellParser11[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser11 for $tc"
 
@@ -449,7 +451,7 @@ trait CellParsers {
     */
   def cellParser12[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, P12: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = CellParsers.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = Reflection.extractFieldNames(tc)
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser12 for $tc"
 
@@ -487,7 +489,6 @@ trait CellParsers {
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
-    //   println(s"readCell[${implicitly[ClassTag[T]].runtimeClass}](wo=$wo,...)($p) with cellParser=$cellParser, ids=$idx")
     if (idx >= 0) try cellParser.parse(CellValue(row(idx))) catch {
       case e: Exception => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
     }
@@ -501,35 +502,7 @@ trait CellParsers {
   * This companion object comprises CellParser[T] objects which represent conversions that are fixed,
   * i.e. they don't depend on some other parameter such as the formatter in DateTime conversions.
   */
-object CellParsers {
-
-  private def extractFieldNames(classTag: ClassTag[_]): Array[String] = {
-    import java.lang.reflect.Modifier
-
-    import scala.util.control.NonFatal
-
-    val clazz = classTag.runtimeClass
-    try {
-      // copy methods have the form copy$default$N(), we need to sort them in order, but must account for the fact
-      // that lexical sorting of ...8(), ...9(), ...10() is not correct, so we extract N and sort by N.toInt
-      val copyDefaultMethods = clazz.getMethods.filter(_.getName.startsWith("copy$default$")).sortBy(
-        _.getName.drop("copy$default$".length).takeWhile(_ != '(').toInt)
-      val fields = clazz.getDeclaredFields.filterNot { f =>
-        import Modifier._
-        (f.getModifiers & (TRANSIENT | STATIC | 0x1000 /* SYNTHETIC*/)) > 0
-      }
-      if (copyDefaultMethods.length != fields.length)
-        sys.error("Case class " + clazz.getName + " declares additional fields")
-      if (fields.zip(copyDefaultMethods).exists { case (f, m) => f.getType != m.getReturnType })
-        sys.error("Cannot determine field order of case class " + clazz.getName)
-      fields.map(f => f.getName)
-    } catch {
-      case NonFatal(ex) => throw new RuntimeException("Cannot automatically determine case class field names and order " +
-        "for '" + clazz.getName + "', please use the 'jsonFormat' overload with explicit field name specification", ex)
-    }
-  }
-
-}
+object CellParsers
 
 case class ParsersException(w: String) extends Exception(w)
 
