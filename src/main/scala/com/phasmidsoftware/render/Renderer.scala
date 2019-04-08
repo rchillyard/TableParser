@@ -21,13 +21,12 @@ trait Renderer[T] {
 	/**
 		* Render an instance of T as a U.
 		*
-		* @param t  the input parameter, i.e. the object to be rendered.
-		* @param ao an optional String which can be used to identify a particular node within a tree,
-		*           and is interpreted as an attribute.
+		* @param t     the input parameter, i.e. the object to be rendered.
+		* @param attrs a map of attributes for this value of U.
 		* @tparam U the type of the result.
 		* @return a new instance of U.
 		*/
-	def render[U: TreeWriter](t: T, ao: Option[String]): U = implicitly[TreeWriter[U]].node(style, Some(render(t)), render(ao))
+	def render[U: TreeWriter](t: T, attrs: Map[String, String]): U = implicitly[TreeWriter[U]].node(style, Some(render(t)), baseAttrs ++ attrs)
 
 	/**
 		* Method to render content as a String.
@@ -42,36 +41,34 @@ trait Renderer[T] {
 	def render(t: T): String = t.toString
 
 	/**
-		* Method to render the optional String (typically the field/parameter name of a case class)
-		* as a sequence of Strings which will be appear as attributes in an instance of TreeWriter[U].
-		*
-		* If there are any T-dependent attributes that an application requires, then they should be introduced here.
-		* Normally, the default method is sufficient.
-		*
-		* @param ao an optional String.
-		* @return a Map of [String,String]s.
-		*/
-	def render(ao: Option[String]): Map[String, String] = ao.toSeq.map(s => "name" -> s).toMap
-
-	/**
 		* Defines the default style for type T.
 		*/
 	val style: String
+
+	/**
+		* Defines the base attribute set for type T.
+		*/
+	val baseAttrs: Map[String, String] = Map()
 }
 
+/**
+	* CONSIDER having style defined as an Option[String]
+	*
+	* @tparam T the type of object to be rendered.
+	*/
 trait UntaggedRenderer[T] extends Renderer[T] {
 	val style: String = ""
 }
 
-abstract class TaggedRenderer[T](val style: String) extends Renderer[T]
+abstract class TaggedRenderer[T](val style: String, override val baseAttrs: Map[String, String] = Map()) extends Renderer[T]
 
 object Renderer {
 
 	// NOTE: this is only used in unit tests
-	def render[T: Renderer, U: TreeWriter](t: T): U = implicitly[Renderer[T]].render(t, None)
+	def render[T: Renderer, U: TreeWriter](t: T): U = implicitly[Renderer[T]].render(t, Map())
 
 	// NOTE: this is only used in unit tests
-	def render[T: Renderer, U: TreeWriter](t: T, a: String): U = implicitly[Renderer[T]].render(t, Some(a))
+	def render[T: Renderer, U: TreeWriter](t: T, a: String): U = implicitly[Renderer[T]].render(t, Map("name" ->a))
 
 	trait StringRenderer extends UntaggedRenderer[String]
 

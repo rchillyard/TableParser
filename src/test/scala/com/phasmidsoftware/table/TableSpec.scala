@@ -151,7 +151,7 @@ class TableSpec extends FlatSpec with Matchers {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
     import IntPairHTML._
-    val hy = iIty map (_.render("table"))
+		val hy = iIty map (_.render("table", Map()))
     hy should matchPattern { case Success(_) => }
     hy.get shouldBe HTML("table", None, Map(), List(HTML("IntPair", None, Map.empty, List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))
   }

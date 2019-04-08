@@ -1,14 +1,12 @@
 [![CircleCI](https://circleci.com/gh/rchillyard/TableParser.svg?style=svg)](https://circleci.com/gh/rchillyard/TableParser)
 
-# TableParser
+# Introduction to TableParser
+
 A functional parser of tables implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.
 But other formats are perfectly possible to parse.
 
-Introduction
-============
-
-_TableParser_ aims to make it as simple as possible to ingest a fully-typed dataset.
+_TableParser_ aims to make it as simple as possible to ingest a fully-typed tabular dataset.
 The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
 All conversions from strings to standard types are performed automatically.
 For non-standard types, it suffices simply to provide an implicit converter of the form _String=>T_.
@@ -22,12 +20,19 @@ There is a row-parser configuration mechanism which allows
 the programmer to vary the regular expressions for recognizing
 strings and delimiters, also to vary the quote character.
 
-User Guide
-==========
+In addition to parsing, _TableParser_ provides a mechanism for rendering a table in _hierarchical_ form (for example for
+XML or HTML).
+An output structure which is itself tabular or sequence-oriented can be generated quite easily using the rows of the table,
+together with something like, for instance, a Json writer.
+
+# User Guide
 
 Current version: 1.0.3.
 
 See release notes below for history.
+
+Parsing
+=======
 
 The _Table_ trait expresses the result of parsing from a representation of a table.
 Each row is represented by a parametric type _Row_.
@@ -69,8 +74,7 @@ _T_ is bound to be a subtype of _Product_ and has two context bounds: _ClassTag_
 
 See section on _CellParsers_ below.
 
-Table
-=====
+## Table
 
 The _Table_ class has several methods for manipulation:
 *  def iterator: Iterator[Row]
@@ -98,8 +102,7 @@ The following object methods are available for parsing text:
 *  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T]
 *  def parseSequence[T: TableParser](wss: Seq[Seq[String]]): Try[T]
 
-TableParser
-===========
+## TableParser
 
 _TableParser_ is also the name of a trait which takes a parametric type called "Table" in its definition.
 It is defined thus:
@@ -122,8 +125,8 @@ _rowParser_ is the specific parser for the _Row_ type (see below).
 _builder_ is used by the _parse_ method.
 _parse_ is the main method of _TableParser_ and takes a _Seq[String]_ and yields a _Try[Table]_.
 
-RowParser
-=========
+## RowParser
+
 _RowParser_ is a trait which defines how a line of text is to be parsed as a _Row_.
 _Row_ is a parametric type which, in subtypes of _RowParser_, is context-bound to _CellParser_.
 A second parametric type _Input_ is defined: this will take on values of _String_ or _Seq[String]_, according to the form of input.
@@ -135,8 +138,8 @@ The methods of _RowParser_ are:
 
     def parseHeader(w: String): Try[Header]
 
-LineParser
-----------
+## LineParser
+
 The _LineParser_ takes five parameters: two regexes, a String and two Chars.
 These define, respectively, the delimiter regex, the string regex, list enclosures, the list separator, and the quote character.
 Rather than invoke the constructor directly, it is easier to invoke the companion object's _apply_ method, which takes a single implicit parameter: a _RowConfig_.
@@ -144,8 +147,8 @@ Two consecutive quote characters, within a quoted string, will be parsed as a si
 The _LineParser_ constructor will perform some basic checks that its parameters are consistent.
 
 
-StringsParser
-=============
+## StringsParser
+
 _StringsParser_ is a trait which defines an alternative mechanism for converting a line of text to a _Row_.
 As with the _RowParser_, _Row_ is a parametric type which is context-bound to _CellParser_.
 _StringsParser_ is useful when the individual columns have already been split into elements of a sequence.
@@ -157,8 +160,7 @@ The methods of _StringsParser_ are:
 
     def parseHeader(ws: Seq[String]): Try[Header]
 
-CellParsers
-===========
+## CellParsers
 
 There are a number of methods which return an instance of _CellParser_ for various situations:
 
@@ -169,8 +171,7 @@ There are a number of methods which return an instance of _CellParser_ for vario
 * def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T): CellParser[T]
 * etc. through cellParser12...
 
-Example: Movie
-==============
+## Example: Movie
 
 In this example, we parse the IMDB Movie dataset from Kaggle.
 The basic structure of the application code will look something like this:
@@ -278,8 +279,7 @@ A parameter can be optional, for example, in the _Movie_ example, the _Productio
 In this case, some of the movies do not have a budget provided.
 All you have to do is declare it optional in the case class and _TableParser_ will specify it as _Some(x)_ if valid, else _None_.
 
-Example: Submissions
-====================
+## Example: Submissions
 
 This example has two variations on the earlier theme of the _Movies_ example:
 (1) each row (a Submission) has an unknown number of _Question_ parameters;
@@ -318,8 +318,68 @@ Note the use of _cellParserRepetition_. The parameter allows the programmer to d
 In this case, we use the default value: 1 and so don't have to explicitly specify it.
 Also, note that the instance of _ColumnHelper_ defined here has the formatter defined as "$c $x" which is in the opposite order from the Movie example.
 
+Rendering
+=========
+
+TableParser provides a mechanism for rendering a table to a hierarchical (i.e. tree-structured) output.
+
+A type class called _TreeWriter_ is the main type for rendering.
+One of the instance methods of _Table[Row]_ is a method as follows:
+
+    def render[U: TreeWriter](style: String)(implicit rr: Renderer[Row]): U
+    
+Providing that you have defined an implicit object of type _TreeWriter[U]_ and a _Renderer[Row]_,
+then the _render_ method will produce an instance of _U_ which will be a tree containing all of the rows of this table.
+
+What sort of type is _U_?
+An XML node would be appropriate.
+The specifications use a type called HTML which is provided in package _parse.render.tag_ more as an examplar rather than something definitive.
+
+    case class HTML(tag: String, content: Option[String], attributes: Map[String, String], hs: Seq[HTML])
+
+The example _TreeWriter_ for this type is reproduced here:
+
+    trait TreeWriterHTML$ extends TreeWriter[HTML] {
+    	def addChild(parent: HTML, child: HTML): HTML = parent match {
+    		case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
+    	}
+    	def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
+    	
+    implicit object TreeWriterHTML$ extends TreeWriterHTML$
+
+If we have a row type as for example:
+
+	case class Complex(r: Double, i: Double)
+	
+Then, we should define appropriate renderers something like as follows:
+
+	implicit val valueRenderer: Renderer[Double] = renderer("td")
+	implicit val complexRenderer: Renderer[Complex] = renderer2("tr")(Complex)
+
+We can then write something like:
+
+	val table = TableWithoutHeader(Seq(Complex(0, 1), Complex(-1, 0)))
+	val h = table.render("table", Map("border"->"1"))
+	 
+The result of this will be an HTML tree which can be written out thus as a string:
+	 
+	 <table border="1">
+     <tr>
+     <td name="r">0.0</td>
+     <td name="i">1.0</td></tr>
+     <tr>
+     <td name="r">-1.0</td>
+     <td name="i">0.0</td></tr></table>
+
+As with the parsing methods, the conversion between instances of types (especially case classes) and Strings is hierarchical (recursive).
+
+If you need to set HTML attributes for a specific type, for example a row in the above example, then an attribute map can be defined for the _renderer2_ method.
+
 Release Notes
 =============
+
+V1.0.3 -> V1.0.4
+* Created mechanism for rendering the result of parsing in a hierarchical structure.
 
 V1.0.2 -> V1.0.3
 * Added no implicit warnings
