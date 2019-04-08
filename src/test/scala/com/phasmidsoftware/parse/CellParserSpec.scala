@@ -22,6 +22,12 @@ class CellParserSpec extends FlatSpec with Matchers {
     def parse(w: Option[String], row: Row, columns: Header): Boolean = throw ParserException(s"booleanCellParser does not implement parse method")
   }
 
+  private val stringCellParser = new CellParser[String] {
+    def convertString(w: String): String = w
+
+    def parse(w: Option[String], row: Row, columns: Header): String = throw ParserException(s"booleanCellParser does not implement parse method")
+  }
+
   behavior of "CellParser"
 
   it should "parse Int" in {
@@ -30,6 +36,12 @@ class CellParserSpec extends FlatSpec with Matchers {
 
   it should "parse Boolean" in {
     booleanCellParser.parse(CellValue("true")) shouldBe true
+  }
+
+  it should "parse String" in {
+    stringCellParser.parse(CellValue("Hello")) shouldBe "Hello"
+    stringCellParser.parse(CellValue(""""Hello"""")) shouldBe """"Hello""""
+    //    stringCellParser.parse(CellValue(""""Hello with internal "" Goodbye"""")) shouldBe """"Hello with internal " Goodbye""""
   }
 
 }

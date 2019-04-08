@@ -11,6 +11,7 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -257,6 +258,49 @@ class TableParserSpec extends FlatSpec with Matchers {
     qty should matchPattern { case Success(_) => }
     qty.get.size shouldBe 1
     println(qty.get.head)
+  }
+
+
+  behavior of "submissions from file"
+
+  object Submissions1 extends CellParsers {
+
+    def baseColumnNameMapper(w: String): String = w.replaceAll("(_)", " ")
+
+    implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(baseColumnNameMapper _)
+    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"))
+    implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
+    implicit val questionParser: CellParser[Question] = cellParser6(Question)
+    implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
+    implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
+
+    implicit object SubmissionConfig extends DefaultRowConfig {
+      override val string: Regex = """[^\t]*""".r
+      override val delimiter: Regex = """\t""".r
+    }
+
+    implicit val parser: StandardRowParser[Submission] = StandardRowParser[Submission]
+
+    implicit object SubmissionTableParser extends StringTableParser[Table[Submission]] {
+      type Row = Submission
+
+      def hasHeader: Boolean = true
+
+      override def forgiving: Boolean = true
+
+      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+
+      def builder(rows: Seq[Row]): Table[Submission] = TableWithoutHeader(rows)
+    }
+
+  }
+
+  it should "parse sample.csv with Submission1" in {
+    import Submissions1._
+    implicit val codec: Codec = Codec("UTF-16")
+    val qty: Try[Table[Submission]] = Table.parseResource("submissions.csv", classOf[TableParserSpec])
+    qty should matchPattern { case Success(_) => }
+    qty.get.size shouldBe 1
   }
 
 

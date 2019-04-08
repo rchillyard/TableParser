@@ -25,7 +25,7 @@ strings and delimiters, also to vary the quote character.
 User Guide
 ==========
 
-Current version: 1.0.1.
+Current version: 1.0.2.
 
 See release notes below for history.
 
@@ -87,14 +87,15 @@ The following object methods are available for parsing text:
 *  def parse[T: TableParser](ws: Seq[String]): Try[T]
 *  def parse[T: TableParser](ws: Iterator[String]): Try[T]
 *  def parse[T: TableParser](x: Source): Try[T]
-*  def parse[T: TableParser](u: URI, enc: String): Try[T]
 *  def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T]
+*  def parse[T: TableParser](u: URI, enc: String): Try[T]
 *  def parse[T: TableParser](u: URL, enc: String): Try[T]
-*  def parse[T: TableParser](u: URL): Try[T]
+*  def parse[T: TableParser](u: URL)(implicit codec: Codec): Try[T]
 *  def parse[T: TableParser](i: InputStream, enc: String): Try[T]
 *  def parse[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T]
-*  def parse[T: TableParser](f: File): Try[T]
-*  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass): Try[T]
+*  def parse[T: TableParser](f: File)(implicit codec: Codec): Try[T]
+*  def parse[T: TableParser](f: File, enc: String): Try[T]
+*  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T]
 *  def parseSequence[T: TableParser](wss: Seq[Seq[String]]): Try[T]
 
 TableParser
@@ -127,15 +128,20 @@ _RowParser_ is a trait which defines how a line of text is to be parsed as a _Ro
 _Row_ is a parametric type which, in subtypes of _RowParser_, is context-bound to _CellParser_.
 A second parametric type _Input_ is defined: this will take on values of _String_ or _Seq[String]_, according to the form of input.
 Typically, the _StandardRowParser_ is used, which takes as its constructor parameter a _LineParser_.
-This _LineParser_ takes five parameters: two regexes, a String and two Chars.
-These define, respectively, the delimiter regex, the string regex, list enclosures, the list separator, and the quote character.
-Rather than invoke the constructor directly, it is easier to invoke the companion object's _apply_ method, which takes a single implicit parameter: a _RowConfig_.
 
 The methods of _RowParser_ are:
 
     def parse(w: String)(header: Header): Try[Row]
 
     def parseHeader(w: String): Try[Header]
+
+LineParser
+----------
+The _LineParser_ takes five parameters: two regexes, a String and two Chars.
+These define, respectively, the delimiter regex, the string regex, list enclosures, the list separator, and the quote character.
+Rather than invoke the constructor directly, it is easier to invoke the companion object's _apply_ method, which takes a single implicit parameter: a _RowConfig_.
+Two consecutive quote characters, within a quoted string, will be parsed as a single quote character.
+The _LineParser_ constructor will perform some basic checks that its parameters are consistent.
 
 
 StringsParser
@@ -314,6 +320,13 @@ Also, note that the instance of _ColumnHelper_ defined here has the formatter de
 
 Release Notes
 =============
+
+V1.0.1 -> V1.0.2
+* Added self-checking of LineParser;
+* Able to parse two quote-chars together in a quotation as one quote char;
+* Added enc and codec params as apporpriate to Table.parse methods.
+* Added stringCellParser;
+* Now, properly closes source in Table.parse methods.
 
 V1.0.0 -> V.1.0.1
 * Fixed Issue #1;
