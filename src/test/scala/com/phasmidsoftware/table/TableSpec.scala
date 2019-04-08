@@ -119,14 +119,14 @@ class TableSpec extends FlatSpec with Matchers {
     iIty.get.flatMap(f).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
   }
 
-  case class HTML(x: String, ao: Option[String], attr: Seq[String], hs: Seq[HTML])
+  case class HTML(x: String, ao: Option[String], attr: Map[String, String], hs: Seq[HTML])
 
   object HTML {
-    def apply(x: String): HTML = apply(x, None, Nil, Nil)
+    def apply(x: String): HTML = apply(x, None, Map.empty, Nil)
 
-    def apply(x: String, a: String): HTML = apply(x, Some(a), Nil, Nil)
+    def apply(x: String, a: String): HTML = apply(x, Some(a), Map.empty, Nil)
 
-    def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Nil, hs)
+    def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Map.empty, hs)
 
   }
 
@@ -137,7 +137,7 @@ class TableSpec extends FlatSpec with Matchers {
         case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
       }
 
-      def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML =
+      def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML =
         HTML(tag, content, attributes, children)
     }
 
@@ -153,7 +153,7 @@ class TableSpec extends FlatSpec with Matchers {
     import IntPairHTML._
     val hy = iIty map (_.render("table"))
     hy should matchPattern { case Success(_) => }
-    hy.get shouldBe HTML("table", None, List(), List(HTML("IntPair", None, List(), List(HTML("", Some("1"), List("a"), List()), HTML("", Some("2"), List("b"), List()))), HTML("IntPair", None, List(), List(HTML("", Some("42"), List("a"), List()), HTML("", Some("99"), List("b"), List())))))
+    hy.get shouldBe HTML("table", None, Map(), List(HTML("IntPair", None, Map.empty, List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))
   }
 
 

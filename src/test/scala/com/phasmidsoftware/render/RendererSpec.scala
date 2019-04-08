@@ -10,12 +10,12 @@ class RendererSpec extends FlatSpec with Matchers {
 
 	case class Complex(r: Double, i: Double)
 
-	case class HTML(tag: String, content: Option[String], attributes: Seq[String], hs: Seq[HTML])
+	case class HTML(tag: String, content: Option[String], attributes: Map[String, String], hs: Seq[HTML])
 
 	object HTML {
-		def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Nil, hs)
+		def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Map.empty, hs)
 
-		def apply(x: String, ao: Option[String]): HTML = apply(x, ao, Nil, Nil)
+		def apply(x: String, ao: Option[String]): HTML = apply(x, ao, Map.empty, Nil)
 
 		def apply(x: String): HTML = apply(x, None)
 	}
@@ -29,7 +29,7 @@ class RendererSpec extends FlatSpec with Matchers {
 
 			override def addChild(parent: String, child: String): String = parent + ", " + child
 
-			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[String]): String = s"""<$tag>: "${content.getOrElse("")}" ${attributes.mkString("(", ",", ")")} ${children.mkString("[", ",", "]")} """
+			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[String]): String = s"""<$tag>: "${content.getOrElse("")}" ${attributes.mkString("(", ",", ")")} ${children.mkString("[", ",", "]")} """
 		}
 
 		implicit object TreeWriterString$ extends TreeWriterString$
@@ -43,7 +43,7 @@ class RendererSpec extends FlatSpec with Matchers {
 				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
 			}
 
-			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
+			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
@@ -60,7 +60,7 @@ class RendererSpec extends FlatSpec with Matchers {
 				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
 			}
 
-			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
+			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
@@ -71,21 +71,22 @@ class RendererSpec extends FlatSpec with Matchers {
 	it should "render Complex as sequence of numbers" in {
 		import Complex1._
 		val z = Complex(0, 1)
-		Renderer.render(z) shouldBe "<complex>: \"\" () [<>: \"0.0\" (r) [] ,<>: \"1.0\" (i) [] ] "
+		Renderer.render(z) shouldBe "<complex>: \"\" () [<>: \"0.0\" (name -> r) [] ,<>: \"1.0\" (name -> i) [] ] "
 	}
 
 	it should "render Complex as an HTML" in {
 		import Complex2._
 		val z = Complex(0, 1)
-		Renderer.render(z) shouldBe HTML("complex", None, List(), List(HTML("", Some("0.0"), List("r"), List()), HTML("", Some("1.0"), List("i"), List())))
+		Renderer.render(z) shouldBe HTML("complex", None, Map.empty, List(HTML("", Some("0.0"), Map("name" -> "r"), List()), HTML("", Some("1.0"), Map("name" -> "i"), List())))
 	}
 
 	it should "render Complicated as an HTML" in {
 		import Complicated._
 		val z = Complicated("strange", 42, open = false, Some(6175551234L), Seq("Tom", "Dick", "Harry"))
-		Renderer.render(z) shouldBe HTML("x", None, List(), List(HTML("element", Some("strange"), List("name"), List()), HTML("", Some("42"), List("count"), List()), HTML("", Some("false"), List("open"), List()), HTML("", None, List("maybePhone"), List(HTML("", Some("6175551234"), List(), List()))), HTML("", None, List("aliases"), List(HTML("element", Some("Tom"), List(), List()), HTML("element", Some("Dick"), List(), List()), HTML("element", Some("Harry"), List(), List())))))
-		Renderer.render(z, "Complicated") shouldBe
-			HTML("x", None, List("Complicated"), List(HTML("element", Some("strange"), List("name"), List()), HTML("", Some("42"), List("count"), List()), HTML("", Some("false"), List("open"), List()), HTML("", None, List("maybePhone"), List(HTML("", Some("6175551234"), List(), List()))), HTML("", None, List("aliases"), List(HTML("element", Some("Tom"), List(), List()), HTML("element", Some("Dick"), List(), List()), HTML("element", Some("Harry"), List(), List())))))
+		Renderer.render(z) shouldBe HTML("x", None, Map.empty, List(HTML("element", Some("strange"), Map("name" -> "name"), List()), HTML("", Some("42"), Map("name" -> "count"), List()), HTML("", Some("false"), Map("name" -> "open"), List()), HTML("", None, Map("name" -> "maybePhone"), List(HTML("", Some("6175551234"), Map.empty, List()))), HTML("", None, Map("name" -> "aliases"), List(HTML("element", Some("Tom"), Map.empty, List()), HTML("element", Some("Dick"), Map.empty, List()), HTML("element", Some("Harry"), Map.empty, List())))))
+
+		//		Renderer.render(z, "Complicated") shouldBe
+		//			Renderer.render(z) shouldBe HTML("x", None, Map("name"->"Complicated"), List(HTML("element", Some("strange"), Map("name"->"name"), List()), HTML("", Some("42"), Map("name"->"count"), List()), HTML("", Some("false"), Map("name"->"open"), List()), HTML("", None, Map("name"->"maybePhone"), List(HTML("", Some("6175551234"), Map.empty, List()))), HTML("", None, Map("name"->"aliases"), List(HTML("element", Some("Tom"), Map.empty, List()), HTML("element", Some("Dick"), Map.empty, List()), HTML("element", Some("Harry"), Map.empty, List())))))
 	}
 
 }

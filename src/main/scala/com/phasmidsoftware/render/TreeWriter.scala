@@ -18,9 +18,9 @@ import scala.annotation.implicitNotFound
 @implicitNotFound(msg = "Cannot find an implicit instance of TreeWriter[${U}].")
 trait TreeWriter[U] {
 
-	def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[U]): U
+	def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[U]): U
 
-	def node(tag: String, content: Option[String], attributes: Seq[String]): U = node(tag, content, attributes, Nil)
+	def node(tag: String, content: Option[String], attributes: Map[String, String]): U = node(tag, content, attributes, Nil)
 
 	def addChild(parent: U, child: U): U
 }

@@ -49,9 +49,9 @@ trait Renderer[T] {
 		* Normally, the default method is sufficient.
 		*
 		* @param ao an optional String.
-		* @return a sequence of Strings.
+		* @return a Map of [String,String]s.
 		*/
-	def render(ao: Option[String]): Seq[String] = ao.toSeq
+	def render(ao: Option[String]): Map[String, String] = ao.toSeq.map(s => "name" -> s).toMap
 
 	/**
 		* Defines the default style for type T.

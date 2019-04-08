@@ -65,11 +65,11 @@ trait Renderers {
 		* @tparam T the type of the element to be rendered.
 		* @return a Renderer which converts an instance of T into an instance of U.
 		*/
-	def renderer[T: Renderer](style: String)(f: T => String, g: Option[String] => Seq[String]): Renderer[T] = new TaggedRenderer[T](style) {
+	def rendererExplicit[T: Renderer](style: String)(f: T => String, g: Option[String] => Map[String, String]): Renderer[T] = new TaggedRenderer[T](style) {
 
 		override def render(t: T): String = f(t)
 
-		override def render(ao: Option[String]): Seq[String] = g(ao)
+		override def render(ao: Option[String]): Map[String, String] = g(ao)
 	}
 
 	/**

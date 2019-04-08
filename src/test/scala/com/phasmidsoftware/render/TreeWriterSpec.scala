@@ -8,16 +8,16 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class TreeWriterSpec extends FlatSpec with Matchers {
 
-	case class HTML(x: String, ao: Option[String], attrs: Seq[String], hs: Seq[HTML])
+	case class HTML(x: String, ao: Option[String], attrs: Map[String, String], hs: Seq[HTML])
 
 	object HTML {
-		def apply(x: String): HTML = apply(x, None, Nil)
+		def apply(x: String): HTML = apply(x, None, Map.empty)
 
-		def apply(x: String, a: String): HTML = apply(x, Some(a), Nil, Nil)
+		def apply(x: String, a: String): HTML = apply(x, Some(a), Map.empty, Nil)
 
-		def apply(x: String, ao: Option[String], as: Seq[String]): HTML = apply(x, ao, as, Nil)
+		def apply(x: String, ao: Option[String], as: Map[String, String]): HTML = apply(x, ao, as, Nil)
 
-		def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Nil, hs)
+		def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Map.empty, hs)
 
 		trait HTMLTreeWriter extends TreeWriter[HTML] {
 
@@ -25,7 +25,7 @@ class TreeWriterSpec extends FlatSpec with Matchers {
 				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
 			}
 
-			def node(tag: String, content: Option[String], attributes: Seq[String], children: Seq[HTML]): HTML =
+			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML =
 				HTML(tag, content map (_.toString), attributes, children)
 		}
 
@@ -38,8 +38,8 @@ class TreeWriterSpec extends FlatSpec with Matchers {
 	import HTML._
 
 	it should "implement node correctly for 1" in {
-		implicitly[TreeWriter[HTML]].node("1", None, Nil) shouldBe HTML("1")
-		implicitly[TreeWriter[HTML]].node("1", None, Seq("x")) shouldBe HTML("1", None, Seq("x"))
+		implicitly[TreeWriter[HTML]].node("1", None, Map.empty) shouldBe HTML("1")
+		implicitly[TreeWriter[HTML]].node("1", None, Map("name" -> "x")) shouldBe HTML("1", None, Map("name" -> "x"))
 	}
 
 
