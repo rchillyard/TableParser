@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.render
 
+import com.phasmidsoftware.table.Indexed
 import org.joda.time.LocalDate
 
 import scala.annotation.implicitNotFound
@@ -26,7 +27,7 @@ trait Renderer[T] {
 		* @tparam U the type of the result.
 		* @return a new instance of U.
 		*/
-	def render[U: TreeWriter](t: T, attrs: Map[String, String]): U = implicitly[TreeWriter[U]].node(style, Some(render(t)), baseAttrs ++ attrs)
+	def render[U: TreeWriter](t: T, attrs: Map[String, String]): U = implicitly[TreeWriter[U]].node(style, Some(asString(t)), baseAttrs ++ attrs)
 
 	/**
 		* Method to render content as a String.
@@ -38,7 +39,7 @@ trait Renderer[T] {
 		* @param t the content value.
 		* @return a String corresponding to t.
 		*/
-	def render(t: T): String = t.toString
+	def asString(t: T): String = t.toString
 
 	/**
 		* Defines the default style for type T.
@@ -61,6 +62,21 @@ trait UntaggedRenderer[T] extends Renderer[T] {
 }
 
 abstract class TaggedRenderer[T](val style: String, override val baseAttrs: Map[String, String] = Map()) extends Renderer[T]
+
+abstract class IndexedRenderer[T: Renderer](val style: String, override val baseAttrs: Map[String, String] = Map()) extends Renderer[Indexed[T]] {
+	/**
+		* Render an instance of Indexed[T] as a U.
+		*
+		* @param ti    the input parameter, i.e. the object to be rendered.
+		* @param attrs a map of attributes for this value of U.
+		* @tparam U the type of the result.
+		* @return a new instance of U.
+		*/
+	override def render[U: TreeWriter](ti: Indexed[T], attrs: Map[String, String]): U = {
+		val indexRenderer: Renderer[Int] = new TaggedRenderer[Int]("th") {}
+		implicitly[TreeWriter[U]].node(style, None, Map(), Seq(indexRenderer.render(ti.i, Map()), implicitly[Renderer[T]].render(ti.t, Map())))
+	}
+}
 
 object Renderer {
 

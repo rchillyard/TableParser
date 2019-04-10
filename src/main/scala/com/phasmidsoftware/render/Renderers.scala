@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.render
 
+import com.phasmidsoftware.table.{Header, Indexed}
 import com.phasmidsoftware.util.Reflection
 
 import scala.reflect.ClassTag
@@ -16,6 +17,21 @@ import scala.reflect.ClassTag
 trait Renderers {
 
 	/**
+		* Renderer for a header.
+		*
+		* CONSIDER using sequenceRenderer
+		*
+		* @param style the style for the header (e.g. "th" for an HTML table).
+		* @param attrs the attributes.
+		* @return a Renderer[Seq[String] ]
+		*/
+	def headerRenderer(style: String, attrs: Map[String, String] = Map())(stringRenderer: Renderer[String]): Renderer[Header] = new TaggedRenderer[Header](style, attrs) {
+		override def render[U: TreeWriter](h: Header, attrs: Map[String, String]): U = implicitly[TreeWriter[U]].node(style, None, attrs, h.xs.map((t: String) => stringRenderer.render(t, Map())))
+	}
+
+	//		sequenceRenderer(style, attrs).asInstanceOf[Renderer[Header]]
+
+	/**
 		* Render an sequence of P as a U.
 		* NOTE: there are no identifiers generated with this Renderer.
 		*
@@ -25,6 +41,15 @@ trait Renderers {
 	def sequenceRenderer[P: Renderer](style: String, attrs: Map[String, String] = Map()): Renderer[Seq[P]] = new TaggedRenderer[Seq[P]](style, attrs) {
 		override def render[U: TreeWriter](ps: Seq[P], attrs: Map[String, String]): U = implicitly[TreeWriter[U]].node(style, None, attrs, ps map ((t: P) => implicitly[Renderer[P]].render(t, Map())))
 	}
+
+	/**
+		* Render an sequence of P as a U.
+		* NOTE: there are no identifiers generated with this Renderer.
+		*
+		* @tparam P the type of the result.
+		* @return a new instance of U.
+		*/
+	def indexedRenderer[P: Renderer](style: String, attrs: Map[String, String] = Map()): Renderer[Indexed[P]] = new IndexedRenderer[P](style, attrs) {}
 
 	/**
 		* Render an option of P as a U.
@@ -68,7 +93,7 @@ trait Renderers {
 		*/
 	def rendererExplicit[T: Renderer](style: String, attrs: Map[String, String] = Map())(f: T => String): Renderer[T] = new TaggedRenderer[T](style, attrs) {
 
-		override def render(t: T): String = f(t)
+		override def asString(t: T): String = f(t)
 	}
 
 	/**

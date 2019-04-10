@@ -27,7 +27,7 @@ together with something like, for instance, a Json writer.
 
 # User Guide
 
-Current version: 1.0.3.
+Current version: 1.0.4.
 
 See release notes below for history.
 
