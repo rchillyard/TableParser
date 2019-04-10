@@ -20,7 +20,15 @@ trait TreeWriter[U] {
 
 	def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[U]): U
 
+	def node(tag: String, attributes: Map[String, String], children: Seq[U]): U = node(tag, None, attributes, children)
+
+	def node(tag: String, children: Seq[U]): U = node(tag, Map[String, String](), children)
+
 	def node(tag: String, content: Option[String], attributes: Map[String, String]): U = node(tag, content, attributes, Nil)
+
+	def node(tag: String, attributes: Map[String, String]): U = node(tag, None, attributes)
+
+	def node(tag: String): U = node(tag, Nil)
 
 	def addChild(parent: U, child: U): U
 }

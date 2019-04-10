@@ -97,10 +97,8 @@ trait Table[Row] extends Iterable[Row] {
 			val headerRenderer: Renderer[Header] = headerRenderer("th")(renderer("td", Map()))
 		}
 		import TableRenderers._
-		val q: Seq[Indexed[Row]] = Indexed.index(rows)
-		val z: U = rowsRenderer.render(q, Map())
-		val uo: Option[U] = maybeHeader map (headerRenderer.render(_, Map()))
-		implicitly[TreeWriter[U]].node(style, None, attributes, uo.toSeq ++ Seq(z))
+		val uo: Option[U] = maybeHeader map (headerRenderer.render(_))
+		implicitly[TreeWriter[U]].node(style, attributes, uo.toSeq ++ Seq(rowsRenderer.render(Indexed.index(rows))))
 	}
 }
 
