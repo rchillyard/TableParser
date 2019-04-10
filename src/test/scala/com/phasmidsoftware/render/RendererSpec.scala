@@ -40,7 +40,7 @@ class RendererSpec extends FlatSpec with Matchers {
 	object Complex2 extends Renderers {
 		implicit val valueRenderer: Renderer[Double] = renderer("td")
 		implicit val complexRenderer: Renderer[Complex] = renderer2("span")(Complex)
-		implicit val indexedRenderer: Renderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", Map())
+		implicit val indexedRenderer: Renderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th", Map())
 		//		val rowsRenderer: Renderer[Seq[Indexed[Complex]]] = sequenceRenderer[Indexed[Complex]]("span")
 
 

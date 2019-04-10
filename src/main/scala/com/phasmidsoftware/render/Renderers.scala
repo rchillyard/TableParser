@@ -47,7 +47,7 @@ trait Renderers {
 		* @tparam P the type of the result.
 		* @return a new instance of U.
 		*/
-	def indexedRenderer[P: Renderer](style: String, attrs: Map[String, String] = Map()): Renderer[Indexed[P]] = new IndexedRenderer[P](style, attrs) {}
+	def indexedRenderer[P: Renderer](style: String, indexStyle: String, attrs: Map[String, String] = Map()): Renderer[Indexed[P]] = new IndexedRenderer[P](style, indexStyle, attrs) {}
 
 	/**
 		* Render an option of P as a U.

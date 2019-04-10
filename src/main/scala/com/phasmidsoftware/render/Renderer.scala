@@ -80,7 +80,7 @@ abstract class ProductRenderer[T <: Product : ClassTag](val style: String, overr
 	protected def us[U: TreeWriter](t: T): Seq[U]
 }
 
-abstract class IndexedRenderer[T: Renderer](val style: String, override val baseAttrs: Map[String, String] = Map()) extends Renderer[Indexed[T]] {
+abstract class IndexedRenderer[T: Renderer](val style: String, indexStyle: String, override val baseAttrs: Map[String, String] = Map()) extends Renderer[Indexed[T]] {
 	/**
 		* Render an instance of Indexed[T] as a U.
 		*
@@ -90,8 +90,7 @@ abstract class IndexedRenderer[T: Renderer](val style: String, override val base
 		* @return a new instance of U.
 		*/
 	override def render[U: TreeWriter](ti: Indexed[T], attrs: Map[String, String]): U = {
-		// TODO specify style as header, but not with HTML-specific "th".
-		val indexRenderer: Renderer[Int] = new TaggedRenderer[Int]("th") {}
+		val indexRenderer: Renderer[Int] = new TaggedRenderer[Int](indexStyle) {}
 		implicitly[TreeWriter[U]].node(style, Seq(indexRenderer.render(ti.i), implicitly[Renderer[T]].render(ti.t)))
 	}
 }

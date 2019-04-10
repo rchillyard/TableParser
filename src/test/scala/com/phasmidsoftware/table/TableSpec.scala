@@ -144,7 +144,7 @@ class TableSpec extends FlatSpec with Matchers {
     implicit object HTMLTreeWriter extends HTMLTreeWriter
 
     implicit val intPairRenderer: Renderer[IntPair] = renderer2("IntPair")(IntPair.apply)
-    implicit val r: Renderer[Indexed[IntPair]] = indexedRenderer("", Map())
+    implicit val r: Renderer[Indexed[IntPair]] = indexedRenderer("", "th", Map())
 
   }
 
