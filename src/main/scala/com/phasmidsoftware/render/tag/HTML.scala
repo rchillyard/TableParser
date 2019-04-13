@@ -41,6 +41,6 @@ object HTML {
 
 	def apply(name: String, content: Option[String]): HTML = apply(name, Map.empty, content)
 
-	def defaultName(name: String): String = if (name == "") "span" else name
+	private def defaultName(name: String): String = if (name == "") "span" else name
 }
 

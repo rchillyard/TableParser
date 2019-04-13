@@ -5,7 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.{RowParser, StringParser, StringTableParser}
-import com.phasmidsoftware.render.{Renderer, Renderers, TreeWriter}
+import com.phasmidsoftware.render.{Node, Renderer, Renderers, TreeWriter}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
@@ -133,18 +133,13 @@ class TableSpec extends FlatSpec with Matchers {
   object IntPairHTML extends Renderers {
 
     trait HTMLTreeWriter extends TreeWriter[HTML] {
-      def addChild(parent: HTML, child: HTML): HTML = parent match {
-        case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
-      }
-
-      def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML =
-        HTML(tag, content, attributes, children)
+      def evaluate(node: Node): HTML = HTML(node.style, node.content map (_.toString), node.attributes, node.children map evaluate)
     }
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter
 
     implicit val intPairRenderer: Renderer[IntPair] = renderer2("IntPair")(IntPair.apply)
-    implicit val r: Renderer[Indexed[IntPair]] = indexedRenderer("", "th", Map())
+    implicit val r: Renderer[Indexed[IntPair]] = indexedRenderer("", "th")
 
   }
 

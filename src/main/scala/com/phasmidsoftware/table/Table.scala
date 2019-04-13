@@ -8,7 +8,7 @@ import java.io.{File, InputStream}
 import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
-import com.phasmidsoftware.render.{Renderer, Renderers, TreeWriter}
+import com.phasmidsoftware.render.{Node, Renderer, Renderers, TreeWriter}
 
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
@@ -91,14 +91,40 @@ trait Table[Row] extends Iterable[Row] {
 		* @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
 		* @return a new instance of U which represents this Table as a tree of some sort.
 		*/
-	def render[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Indexed[Row]]): U = {
+	def render[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Row]): U = {
 		object TableRenderers extends Renderers {
-			val rowsRenderer: Renderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("span")
-			val headerRenderer: Renderer[Header] = headerRenderer("th")(renderer("td", Map()))
+			val rowsRenderer: Renderer[Seq[Row]] = sequenceRenderer[Row]("tbody")
+			implicit val headerRenderer: Renderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
+			implicit val optionRenderer: Renderer[Option[Header]] = optionRenderer[Header]("thead", Map())
 		}
 		import TableRenderers._
-		val uo: Option[U] = maybeHeader map (headerRenderer.render(_))
-		implicitly[TreeWriter[U]].node(style, attributes, uo.toSeq ++ Seq(rowsRenderer.render(Indexed.index(rows))))
+		val node: Node = implicitly[Renderer[Option[Header]]].render(maybeHeader)
+		implicitly[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows))))
+	}
+
+	/**
+		* Method to render a table in a hierarchical fashion.
+		*
+		* NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
+		* outputting each row as you go.
+		*
+		* @param style      the "style" to be used for the node which will represent this table.
+		* @param attributes the attributes to be applied to the top level node for this table.
+		* @param rr         an (implicit) Renderer[ Indexed [ Row ] ]
+		* @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
+		* @return a new instance of U which represents this Table as a tree of some sort.
+		*/
+	def renderSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Indexed[Row]]): U = {
+		object TableRenderers extends Renderers {
+			val rowsRenderer: Renderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("tbody")
+			implicit val headerRenderer: Renderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
+			implicit val optionRenderer: Renderer[Option[Header]] = optionRenderer[Header]("thead", Map())
+		}
+		import TableRenderers._
+		val headerNode: Node = implicitly[Renderer[Option[Header]]].render(maybeHeader)
+		val tableNode = Node(style, attributes, headerNode +: Seq(rowsRenderer.render(Indexed.index(rows))))
+		val trimmed = tableNode.trim
+		implicitly[TreeWriter[U]].evaluate(trimmed)
 	}
 }
 
@@ -268,6 +294,7 @@ object Table {
       case _ => Failure(ParserException(s"parse method incompatible with tableParser: $tableParser"))
     }
   }
+
 }
 
 case class Header(xs: Seq[String]) {

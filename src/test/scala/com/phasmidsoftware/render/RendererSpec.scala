@@ -28,29 +28,21 @@ class RendererSpec extends FlatSpec with Matchers {
 		implicit val complexRenderer: Renderer[Complex] = renderer2("complex")(Complex.apply)
 
 		trait TreeWriterString$ extends TreeWriter[String] {
-
-			override def addChild(parent: String, child: String): String = parent + ", " + child
-
-			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[String]): String = s"""<$tag>: "${content.getOrElse("")}" ${attributes.mkString("(", ",", ")")} ${children.mkString("[", ",", "]")} """
+			def evaluate(node: Node): String = s"""<${node.style}>: "${node.content.getOrElse("")}" ${node.attributes.mkString("(", ",", ")")} ${node.children.map(evaluate).mkString("[", ",", "]")} """
 		}
-
 		implicit object TreeWriterString$ extends TreeWriterString$
 	}
 
 	object Complex2 extends Renderers {
 		implicit val valueRenderer: Renderer[Double] = renderer("td")
-		implicit val complexRenderer: Renderer[Complex] = renderer2("span")(Complex)
-		implicit val indexedRenderer: Renderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th", Map())
+		implicit val complexRenderer: Renderer[Complex] = renderer2("")(Complex)
+		implicit val indexedRenderer: Renderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th")
 		//		val rowsRenderer: Renderer[Seq[Indexed[Complex]]] = sequenceRenderer[Indexed[Complex]]("span")
 
 
 		import HTML._
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
-			def addChild(parent: HTML, child: HTML): HTML = parent match {
-				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
-			}
-
-			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML = HTML(tag, attributes.toSeq.map(kv => Attribute(kv)), content, children)
+			def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children map evaluate)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
@@ -64,11 +56,7 @@ class RendererSpec extends FlatSpec with Matchers {
 
 		import HTML._
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
-			def addChild(parent: HTML, child: HTML): HTML = parent match {
-				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
-			}
-
-			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML = HTML(tag, attributes.toSeq.map(kv => Attribute(kv)), content, children)
+			def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children map evaluate)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
@@ -76,16 +64,12 @@ class RendererSpec extends FlatSpec with Matchers {
 
 	object Complicated extends Renderers {
 		implicit val elementRenderer: Renderer[String] = renderer("element")
-		implicit val optionLongRenderer: Renderer[Option[Long]] = optionRenderer
+		implicit val optionLongRenderer: Renderer[Option[Long]] = optionRenderer("", Map())
 		implicit val sequenceStringRenderer: Renderer[Seq[String]] = sequenceRenderer("")
 		implicit val complicatedRenderer: Renderer[Complicated] = renderer5("x")(Complicated.apply)
 
 		trait TreeWriterHTML$ extends TreeWriter[SimpleHTML] {
-			def addChild(parent: SimpleHTML, child: SimpleHTML): SimpleHTML = parent match {
-				case SimpleHTML(t, co, as, hs) => SimpleHTML(t, co, as, hs :+ child)
-			}
-
-			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[SimpleHTML]): SimpleHTML = SimpleHTML(tag, content, attributes, children)
+			def evaluate(node: Node): SimpleHTML = SimpleHTML(node.style, node.content, node.attributes, node.children map evaluate)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
@@ -96,37 +80,60 @@ class RendererSpec extends FlatSpec with Matchers {
 	it should "render Complex as sequence of numbers" in {
 		import Complex1._
 		val z = Complex(0, 1)
-		Renderer.render(z) shouldBe "<complex>: \"\" () [<>: \"0.0\" (name -> r) [] ,<>: \"1.0\" (name -> i) [] ] "
+		val node = implicitly[Renderer[Complex]].render(z)
+		implicitly[TreeWriter[String]].evaluate(node) shouldBe "<complex>: \"\" () [<>: \"0.0\" (name -> r) [] ,<>: \"1.0\" (name -> i) [] ] "
 	}
 
 	it should "render Complex as an HTML" in {
 		import Complex3._
 		val z = Complex(0, 1)
 		import HTML._
-		Renderer.render(z) shouldBe HTML("tr", Nil, None, List(HTML("td", Seq(Attribute("name" -> "r")), Some("0.0"), Nil), HTML("td", Seq(Attribute("name" -> "i")), Some("1.0"), Nil)))
+		val node = implicitly[Renderer[Complex]].render(z)
+		implicitly[TreeWriter[HTML]].evaluate(node) shouldBe HTML("tr", Nil, None, List(HTML("td", Seq(Attribute("name" -> "r")), Some("0.0"), Nil), HTML("td", Seq(Attribute("name" -> "i")), Some("1.0"), Nil)))
 	}
 
 	it should "render Complicated as an SimpleHTML" in {
 		import Complicated._
 		val z = Complicated("strange", 42, open = false, Some(6175551234L), Seq("Tom", "Dick", "Harry"))
-		Renderer.render(z) shouldBe SimpleHTML("x", None, Map.empty, List(SimpleHTML("element", Some("strange"), Map("name" -> "name"), List()), SimpleHTML("", Some("42"), Map("name" -> "count"), List()), SimpleHTML("", Some("false"), Map("name" -> "open"), List()), SimpleHTML("", None, Map("name" -> "maybePhone"), List(SimpleHTML("", Some("6175551234"), Map.empty, List()))), SimpleHTML("", None, Map("name" -> "aliases"), List(SimpleHTML("element", Some("Tom"), Map.empty, List()), SimpleHTML("element", Some("Dick"), Map.empty, List()), SimpleHTML("element", Some("Harry"), Map.empty, List())))))
-
-		//		Renderer.render(z, "Complicated") shouldBe
-		//			Renderer.render(z) shouldBe SimpleHTML("x", None, Map("name"->"Complicated"), List(SimpleHTML("element", Some("strange"), Map("name"->"name"), List()), SimpleHTML("", Some("42"), Map("name"->"count"), List()), SimpleHTML("", Some("false"), Map("name"->"open"), List()), SimpleHTML("", None, Map("name"->"maybePhone"), List(SimpleHTML("", Some("6175551234"), Map.empty, List()))), SimpleHTML("", None, Map("name"->"aliases"), List(SimpleHTML("element", Some("Tom"), Map.empty, List()), SimpleHTML("element", Some("Dick"), Map.empty, List()), SimpleHTML("element", Some("Harry"), Map.empty, List())))))
+		val node = implicitly[Renderer[Complicated]].render(z)
+		implicitly[TreeWriter[SimpleHTML]].evaluate(node) shouldBe SimpleHTML("x", None, Map.empty, List(SimpleHTML("element", Some("strange"), Map("name" -> "name"), List()), SimpleHTML("", Some("42"), Map("name" -> "count"), List()), SimpleHTML("", Some("false"), Map("name" -> "open"), List()), SimpleHTML("", None, Map("name" -> "maybePhone"), List(SimpleHTML("", Some("6175551234"), Map.empty, List()))), SimpleHTML("", None, Map("name" -> "aliases"), List(SimpleHTML("element", Some("Tom"), Map.empty, List()), SimpleHTML("element", Some("Dick"), Map.empty, List()), SimpleHTML("element", Some("Harry"), Map.empty, List())))))
 	}
 
 	it should "render a table of Complexes in HTML without a header" in {
-		import Complex2._
+		import Complex1._
 		val table = TableWithoutHeader(Seq(Complex(0, 1), Complex(-1, 0)))
 		val h = table.render("table", Map("border" -> "1"))
-		println(h)
+		h.toString shouldBe "<table>: \"\" (border -> 1) [<>: \"\" () [] ,<tbody>: \"\" () [<complex>: \"\" () [<>: \"0.0\" (name -> r) [] ,<>: \"1.0\" (name -> i) [] ] ,<complex>: \"\" () [<>: \"-1.0\" (name -> r) [] ,<>: \"0.0\" (name -> i) [] ] ] ] "
 	}
 
-	it should "render a table of Complexes in HTML with a header" in {
+	it should "render a table of sequenced Complexes in HTML without a header" in {
+		import Complex2._
+		val table = TableWithoutHeader(Seq(Complex(0, 1), Complex(-1, 0)))
+		val h = table.renderSequenced("table", Map("border" -> "1"))
+		h.toString shouldBe "\n<table border=\"1\">\n<tbody>\n<tr>\n<th>0</th>\n<td name=\"r\">0.0</td>\n<td name=\"i\">1.0</td></tr>\n<tr>\n<th>1</th>\n<td name=\"r\">-1.0</td>\n<td name=\"i\">0.0</td></tr></tbody></table>"
+	}
+
+	it should "render a table of sequenced Complexes in HTML with a header" in {
 		import Complex2._
 		val table = TableWithHeader(Seq(Complex(0, 1), Complex(-1, 0)), Header(Seq("real", "imaginary")))
-		val h = table.render("table", Map("border" -> "1"))
-		println(h)
+		val h = table.renderSequenced("table", Map("border" -> "1"))
+		h.toString shouldBe
+			"""
+<table border="1">
+<thead>
+<tr>
+<th></th>
+<th>real</th>
+<th>imaginary</th></tr></thead>
+<tbody>
+<tr>
+<th>0</th>
+<td name="r">0.0</td>
+<td name="i">1.0</td></tr>
+<tr>
+<th>1</th>
+<td name="r">-1.0</td>
+<td name="i">0.0</td></tr></tbody></table>"""
 	}
 
 }
