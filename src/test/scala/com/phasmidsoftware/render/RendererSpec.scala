@@ -5,7 +5,7 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.render.tag.{Attribute, HTML}
-import com.phasmidsoftware.table.TableWithoutHeader
+import com.phasmidsoftware.table.{Header, Indexed, TableWithHeader, TableWithoutHeader}
 import org.scalatest.{FlatSpec, Matchers}
 
 class RendererSpec extends FlatSpec with Matchers {
@@ -39,7 +39,28 @@ class RendererSpec extends FlatSpec with Matchers {
 
 	object Complex2 extends Renderers {
 		implicit val valueRenderer: Renderer[Double] = renderer("td")
+		implicit val complexRenderer: Renderer[Complex] = renderer2("span")(Complex)
+		implicit val indexedRenderer: Renderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th", Map())
+		//		val rowsRenderer: Renderer[Seq[Indexed[Complex]]] = sequenceRenderer[Indexed[Complex]]("span")
+
+
+		import HTML._
+		trait TreeWriterHTML$ extends TreeWriter[HTML] {
+			def addChild(parent: HTML, child: HTML): HTML = parent match {
+				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
+			}
+
+			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML = HTML(tag, attributes.toSeq.map(kv => Attribute(kv)), content, children)
+		}
+
+		implicit object TreeWriterHTML$ extends TreeWriterHTML$
+	}
+
+	object Complex3 extends Renderers {
+		implicit val valueRenderer: Renderer[Double] = renderer("td")
 		implicit val complexRenderer: Renderer[Complex] = renderer2("tr")(Complex)
+		//		val rowsRenderer: Renderer[Seq[Indexed[Complex]]] = sequenceRenderer[Indexed[Complex]]("span")
+
 
 		import HTML._
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
@@ -79,7 +100,7 @@ class RendererSpec extends FlatSpec with Matchers {
 	}
 
 	it should "render Complex as an HTML" in {
-		import Complex2._
+		import Complex3._
 		val z = Complex(0, 1)
 		import HTML._
 		Renderer.render(z) shouldBe HTML("tr", Nil, None, List(HTML("td", Seq(Attribute("name" -> "r")), Some("0.0"), Nil), HTML("td", Seq(Attribute("name" -> "i")), Some("1.0"), Nil)))
@@ -94,9 +115,16 @@ class RendererSpec extends FlatSpec with Matchers {
 		//			Renderer.render(z) shouldBe SimpleHTML("x", None, Map("name"->"Complicated"), List(SimpleHTML("element", Some("strange"), Map("name"->"name"), List()), SimpleHTML("", Some("42"), Map("name"->"count"), List()), SimpleHTML("", Some("false"), Map("name"->"open"), List()), SimpleHTML("", None, Map("name"->"maybePhone"), List(SimpleHTML("", Some("6175551234"), Map.empty, List()))), SimpleHTML("", None, Map("name"->"aliases"), List(SimpleHTML("element", Some("Tom"), Map.empty, List()), SimpleHTML("element", Some("Dick"), Map.empty, List()), SimpleHTML("element", Some("Harry"), Map.empty, List())))))
 	}
 
-	it should "render a table of Complexes in HTML" in {
+	it should "render a table of Complexes in HTML without a header" in {
 		import Complex2._
 		val table = TableWithoutHeader(Seq(Complex(0, 1), Complex(-1, 0)))
+		val h = table.render("table", Map("border" -> "1"))
+		println(h)
+	}
+
+	it should "render a table of Complexes in HTML with a header" in {
+		import Complex2._
+		val table = TableWithHeader(Seq(Complex(0, 1), Complex(-1, 0)), Header(Seq("real", "imaginary")))
 		val h = table.render("table", Map("border" -> "1"))
 		println(h)
 	}

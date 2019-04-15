@@ -49,3 +49,18 @@ case class Row(ws: Seq[String], hdr: Header) extends (String => String) {
 
   override def toString(): String = s"""Row: ${ws.mkString("[", ",", "]")} with header=$hdr"""
 }
+
+/**
+  * A wrapper class to index a T.
+  *
+  * @param i the index (ordinal value).
+  * @param t the instance of T.
+  * @tparam T the underlying type.
+  */
+case class Indexed[T](i: Int, t: T)
+
+object Indexed {
+  def apply[T](tuple: (T, Int)): Indexed[T] = Indexed(tuple._2, tuple._1)
+
+  def index[T](rows: Seq[T]): Seq[Indexed[T]] = rows.zipWithIndex.map(Indexed(_))
+}

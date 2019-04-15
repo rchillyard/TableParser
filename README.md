@@ -27,7 +27,7 @@ together with something like, for instance, a Json writer.
 
 # User Guide
 
-Current version: 1.0.3.
+Current version: 1.0.4.
 
 See release notes below for history.
 
@@ -377,6 +377,9 @@ If you need to set HTML attributes for a specific type, for example a row in the
 
 Release Notes
 =============
+
+V1.0.3 -> V1.0.4
+* Added the ability to add header row and header column for tables (NOTE: not finalized yet, but functional).
 
 V1.0.2 -> V1.0.3
 * Added no implicit warnings

@@ -38,8 +38,8 @@ class TreeWriterSpec extends FlatSpec with Matchers {
 	import HTML._
 
 	it should "implement node correctly for 1" in {
-		implicitly[TreeWriter[HTML]].node("1", None, Map.empty) shouldBe HTML("1")
-		implicitly[TreeWriter[HTML]].node("1", None, Map("name" -> "x")) shouldBe HTML("1", None, Map("name" -> "x"))
+		implicitly[TreeWriter[HTML]].node("1") shouldBe HTML("1")
+		implicitly[TreeWriter[HTML]].node("1", Map("name" -> "x")) shouldBe HTML("1", None, Map("name" -> "x"))
 	}
 
 

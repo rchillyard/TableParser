@@ -91,12 +91,14 @@ trait Table[Row] extends Iterable[Row] {
 		* @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
 		* @return a new instance of U which represents this Table as a tree of some sort.
 		*/
-	def render[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Row]): U = {
+	def render[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Indexed[Row]]): U = {
 		object TableRenderers extends Renderers {
-			val tableRenderer: Renderer[Seq[Row]] = sequenceRenderer[Row](style)
+			val rowsRenderer: Renderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("span")
+			val headerRenderer: Renderer[Header] = headerRenderer("th")(renderer("td", Map()))
 		}
 		import TableRenderers._
-		tableRenderer.render(rows, attributes)
+		val uo: Option[U] = maybeHeader map (headerRenderer.render(_))
+		implicitly[TreeWriter[U]].node(style, attributes, uo.toSeq ++ Seq(rowsRenderer.render(Indexed.index(rows))))
 	}
 }
 
