@@ -30,7 +30,9 @@ class RendererSpec extends FlatSpec with Matchers {
 		trait TreeWriterString$ extends TreeWriter[String] {
 			def evaluate(node: Node): String = s"""<${node.style}>: "${node.content.getOrElse("")}" ${node.attributes.mkString("(", ",", ")")} ${node.children.map(evaluate).mkString("[", ",", "]")} """
 		}
+
 		implicit object TreeWriterString$ extends TreeWriterString$
+
 	}
 
 	object Complex2 extends Renderers {
@@ -39,11 +41,13 @@ class RendererSpec extends FlatSpec with Matchers {
 		implicit val indexedRenderer: Renderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th")
 
 		import HTML._
+
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
 			def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children map evaluate)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
+
 	}
 
 	object Complex3 extends Renderers {
@@ -52,11 +56,13 @@ class RendererSpec extends FlatSpec with Matchers {
 
 
 		import HTML._
+
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
 			def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children map evaluate)
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
+
 	}
 
 	object Complicated extends Renderers {
@@ -70,6 +76,7 @@ class RendererSpec extends FlatSpec with Matchers {
 		}
 
 		implicit object TreeWriterHTML$ extends TreeWriterHTML$
+
 	}
 
 	behavior of "Renderer.render"

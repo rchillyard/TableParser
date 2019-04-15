@@ -12,93 +12,93 @@ import scala.util._
 //noinspection SpellCheckingInspection
 class MovieSpec extends FlatSpec with Matchers {
 
-  behavior of "Movie table"
+	behavior of "Movie table"
 
-  it should "parse the first movie from the IMDB dataset" in {
-    import MovieParser._
+	it should "parse the first movie from the IMDB dataset" in {
+		import MovieParser._
 
-    val movies = Seq(
-      "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
-      "Color,James Cameron,723,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,237000000,2009,936,7.9,1.78,33000"
-    )
+		val movies = Seq(
+			"color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
+			"Color,James Cameron,723,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,237000000,2009,936,7.9,1.78,33000"
+		)
 
-    val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Success(TableWithHeader(_, _)) => }
-    val mt = x.get
-    println(s"Movie: successfully parsed ${mt.size} rows")
-    println(mt)
-    mt.size shouldBe 1
-  }
+		val x: Try[Table[Movie]] = Table.parse(movies)
+		x should matchPattern { case Success(TableWithHeader(_, _)) => }
+		val mt = x.get
+		println(s"Movie: successfully parsed ${mt.size} rows")
+		println(mt)
+		mt.size shouldBe 1
+	}
 
-  // TODO rework this test to be more significant
-  it should "parse the first (edited) movie from the IMDB dataset" in {
-    import MovieParser._
+	// TODO rework this test to be more significant
+	it should "parse the first (edited) movie from the IMDB dataset" in {
+		import MovieParser._
 
-    val movies = Seq(
-      "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
-      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
-    )
+		val movies = Seq(
+			"color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
+			"Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
+		)
 
-    val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Success(TableWithHeader(_, _)) => }
-    x.get.size shouldBe 1
-  }
+		val x: Try[Table[Movie]] = Table.parse(movies)
+		x should matchPattern { case Success(TableWithHeader(_, _)) => }
+		x.get.size shouldBe 1
+	}
 
-  // TODO rework this test
-  ignore should "fail to parse the first (edited) movie from the IMDB dataset" in {
-    import MovieParser._
+	// TODO rework this test
+	ignore should "fail to parse the first (edited) movie from the IMDB dataset" in {
+		import MovieParser._
 
-    implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
-      type Row = Movie
+		implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+			type Row = Movie
 
-      def hasHeader: Boolean = true
+			def hasHeader: Boolean = true
 
-      override def forgiving: Boolean = false
+			override def forgiving: Boolean = false
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+			def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
-    }
+			override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+		}
 
-    val movies = Seq(
-      "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
-      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
-    )
+		val movies = Seq(
+			"color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
+			"Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
+		)
 
-    val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Failure(_) => }
-  }
+		val x: Try[Table[Movie]] = Table.parse(movies)
+		x should matchPattern { case Failure(_) => }
+	}
 
-  it should "parse all the following rows" in {
-    import MovieParser._
+	it should "parse all the following rows" in {
+		import MovieParser._
 
-    implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
-      type Row = Movie
+		implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+			type Row = Movie
 
-      def hasHeader: Boolean = true
+			def hasHeader: Boolean = true
 
-      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+			override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
 
-      override def forgiving: Boolean = false
+			override def forgiving: Boolean = false
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-    }
+			def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+		}
 
-    val movies = Seq(
-      "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
-      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
-    )
+		val movies = Seq(
+			"color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes",
+			",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+		)
 
-    val mty = Table.parse(movies)
-    mty should matchPattern { case Success(TableWithHeader(_, _)) => }
-    mty.get.size shouldBe 1
-  }
+		val mty = Table.parse(movies)
+		mty should matchPattern { case Success(TableWithHeader(_, _)) => }
+		mty.get.size shouldBe 1
+	}
 
-  behavior of "Name"
-  it should "parse Philip Michael Thomas" in {
-    import MovieParser._
-    implicitly[CellParser[Name]].convertString("Philip Thomas") shouldBe Name("Philip", None, "Thomas", None)
-    implicitly[CellParser[Name]].convertString("Philip Michael Thomas") shouldBe Name("Philip", Some("Michael"), "Thomas", None)
+	behavior of "Name"
+	it should "parse Philip Michael Thomas" in {
+		import MovieParser._
+		implicitly[CellParser[Name]].convertString("Philip Thomas") shouldBe Name("Philip", None, "Thomas", None)
+		implicitly[CellParser[Name]].convertString("Philip Michael Thomas") shouldBe Name("Philip", Some("Michael"), "Thomas", None)
 
-  }
+	}
 }

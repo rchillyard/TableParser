@@ -22,6 +22,7 @@ class TreeWriterSpec extends FlatSpec with Matchers {
 		trait HTMLTreeWriter extends TreeWriter[HTML] {
 			def evaluate(node: Node): HTML = HTML(node.style, node.content map (_.toString), node.attributes, node.children map evaluate)
 		}
+
 		implicit object HTMLTreeWriter extends HTMLTreeWriter
 
 	}

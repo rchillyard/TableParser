@@ -6,12 +6,18 @@ package com.phasmidsoftware.render.tag
 
 import scala.language.implicitConversions
 
+/**
+	* Case class defining an attribute.
+	* @param key the attribute's key.
+	* @param value the attribute's value.
+	*/
 case class Attribute(key: String, value: String) {
 	override def toString: String = s"""$key="$value""""
 }
 
 /**
-	* Trait Tag to model an Markup Language-type document.
+	* Trait Tag to model a tagged (i.e. Markup Language-type) document.
+	* Examples of a tagged document would be XML or HTML.
 	*/
 trait Tag {
 
@@ -59,6 +65,14 @@ trait Tag {
 	def \\ : Seq[String] = name +: (for (t <- tags; x <- t.\\) yield x)
 }
 
+/**
+	* Abstract class representing a base tag.
+	* @param name the name of the tag.
+	* @param attributes the attributes as a sequence.
+	* @param content an optional content.
+	* @param tags the children tags.
+	* @param rules an implicit set of rules (like a DTD).
+	*/
 abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(implicit rules: TagRules) extends Tag {
 
 	override def toString: String = s"""\n${tagString()}$contentString$tagsString${tagString(true)}"""
