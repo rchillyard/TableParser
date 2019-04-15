@@ -11,31 +11,31 @@ import scala.util.{Success, Try}
 
 class StringsParserSpec extends FlatSpec with Matchers {
 
-	case class HawkCount(species: String, count: Int)
+  case class HawkCount(species: String, count: Int)
 
-	val header: Header = Header.create("species", "count")
+  val header: Header = Header.create("species", "count")
 
-	object HawkCountParser extends CellParsers {
+  object HawkCountParser extends CellParsers {
 
-		implicit val hawkCountColumnHelper: ColumnHelper[HawkCount] = columnHelper()
-		implicit val hawkCountParser: CellParser[HawkCount] = cellParser2(HawkCount)
-	}
+    implicit val hawkCountColumnHelper: ColumnHelper[HawkCount] = columnHelper()
+    implicit val hawkCountParser: CellParser[HawkCount] = cellParser2(HawkCount)
+  }
 
-	behavior of "RowParser"
+  behavior of "RowParser"
 
-	it should "parse regex string" in {
-		import HawkCountParser._
+  it should "parse regex string" in {
+    import HawkCountParser._
 
-		val parser = StandardStringsParser[HawkCount]()
-		val hawkCount: Try[HawkCount] = parser.parse(Seq("Red-tailed Hawk", "1027"))(header)
-		hawkCount shouldBe Success(HawkCount("Red-tailed Hawk", 1027))
-	}
+    val parser = StandardStringsParser[HawkCount]()
+    val hawkCount: Try[HawkCount] = parser.parse(Seq("Red-tailed Hawk", "1027"))(header)
+    hawkCount shouldBe Success(HawkCount("Red-tailed Hawk", 1027))
+  }
 
-	it should "parse quoted string" in {
-		import HawkCountParser._
-		val parser = StandardStringsParser[HawkCount]()
-		val hawkCount: Try[HawkCount] = parser.parse(Seq(""""Red-tailed Hawk"""", "1027"))(header)
-		hawkCount shouldBe Success(HawkCount(""""Red-tailed Hawk"""", 1027))
-	}
+  it should "parse quoted string" in {
+    import HawkCountParser._
+    val parser = StandardStringsParser[HawkCount]()
+    val hawkCount: Try[HawkCount] = parser.parse(Seq(""""Red-tailed Hawk"""", "1027"))(header)
+    hawkCount shouldBe Success(HawkCount(""""Red-tailed Hawk"""", 1027))
+  }
 
 }
