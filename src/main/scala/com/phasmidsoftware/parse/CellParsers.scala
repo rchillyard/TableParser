@@ -103,10 +103,7 @@ trait CellParsers {
         construct(p1V)
       }
 
-      // TODO We need to allow for a single-parameter conversion of String => T via P1
-      // This fixes issue #1
       override def convertString(w: String): T = construct(implicitly[CellParser[P1]].convertString(w))
-
     }
   }
 

@@ -106,10 +106,6 @@ class TableSpec extends FlatSpec with Matchers {
     iIty.get.map(f).rows shouldBe Seq(IntPair(2, 4), IntPair(84, 198))
   }
 
-  it should "$plus$plus" in {
-    // TODO implement this test
-  }
-
   it should "flatMap" in {
     val f: IntPair => Table[IntPair] = p => TableWithoutHeader(Seq(p))
 
@@ -159,15 +155,13 @@ class TableSpec extends FlatSpec with Matchers {
     sy.get.toString shouldBe "1|2\n42|99\n"
   }
 
-
-  // FIXME
   it should "render the parsed table with TreeWriter" in {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
     import IntPairHTML._
 		val hy = iIty map (_.render("table", Map()))
     hy should matchPattern { case Success(_) => }
-    //    hy.get shouldBe HTML("table", None, Map(), List(HTML("span",None,Map(),List(HTML("IntPair", None, Map.empty, List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
+    hy.get shouldBe HTML("table", None, Map(), List(HTML("",None,Map(),List()), HTML("tbody",None,Map(),List(HTML("IntPair",None,Map(),List(HTML("",Some("1"),Map("name" -> "a"),List()), HTML("",Some("2"),Map("name" -> "b"),List()))), HTML("IntPair",None,Map(),List(HTML("",Some("42"),Map("name" -> "a"),List()), HTML("",Some("99"),Map("name" -> "b"),List())))))))
   }
 
 

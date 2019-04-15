@@ -56,10 +56,6 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
 
 object StandardRowParser {
   def apply[Row: CellParser](implicit rowConfig: RowConfig): StandardRowParser[Row] = StandardRowParser(LineParser.apply)
-
-  // CONSIDER eliminating as this is never used.
-  def apply[Row: CellParser](delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char): StandardRowParser[Row] =
-    StandardRowParser(new LineParser(delimiter, string, enclosures, listSeparator, quote))
 }
 
 /**

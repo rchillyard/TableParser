@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019. Phasmid Software
+ * This module derives from Spray.
  */
 
 package com.phasmidsoftware.util
@@ -9,7 +9,7 @@ import scala.reflect.ClassTag
 object Reflection {
 
 	/**
-		* This method is borrowed directly from Spray JsonReader
+		* This method is borrowed directly from Spray JsonReader.
 		*
 		* @param classTag rhw class tag.
 		* @return an Array of String.
