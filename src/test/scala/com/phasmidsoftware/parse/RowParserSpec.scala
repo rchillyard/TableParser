@@ -17,8 +17,6 @@ class RowParserSpec extends FlatSpec with Matchers {
   val header: Header = Header.create("species", "count")
 
   object HawkCountParser extends CellParsers {
-
-    implicit val hawkCountColumnHelper: ColumnHelper[HawkCount] = columnHelper()
     implicit val hawkCountParser: CellParser[HawkCount] = cellParser2(HawkCount)
   }
 

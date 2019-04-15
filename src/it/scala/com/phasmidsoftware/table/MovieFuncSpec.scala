@@ -17,7 +17,7 @@ class MovieFuncSpec extends FlatSpec with Matchers {
     import MovieParser._
 
     val x: Try[Table[Movie]] = Table.parseResource("movie_metadata.csv")
-    x should matchPattern { case Success(TableWithoutHeader(_)) => }
+    x should matchPattern { case Success(TableWithHeader(_,_)) => }
     val mt = x.get
     println(s"Movie: successfully read ${mt.size} rows")
     mt.size shouldBe 1567
