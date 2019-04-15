@@ -8,7 +8,7 @@ import java.io.{File, InputStream}
 import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
-import com.phasmidsoftware.render.{Node, Renderer, Renderers, TreeWriter}
+import com.phasmidsoftware.render._
 
 import scala.io.{Codec, Source}
 import scala.util.{Failure, Success, Try}
@@ -78,6 +78,25 @@ trait Table[Row] extends Iterable[Row] {
 		* @return the rows in the form of Iterator[Row]
 		*/
 	def iterator: Iterator[Row] = rows.iterator
+
+	/**
+		* Method to render a table in a sequential (serialized) fashion.
+		*
+		* @tparam O a type which supports Writable (via evidence of type Writable[O])
+		* @return a new (or possibly old) instance of O.
+		*/
+	def render[O: Writable]: O = {
+		val ww = implicitly[Writable[O]]
+		val o1 = ww.unit
+		val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
+		rows map {
+			case p: Product => ww.writeRow(o2)(p)
+			case xs: Seq[Any] => ww.writeRowElements(o2)(xs)
+			case xs: Array[Any] => ww.writeRowElements(o2)(xs)
+			case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
+		}
+		o1
+	}
 
 	/**
 		* Method to render a table in a hierarchical fashion.
@@ -318,6 +337,15 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
   self =>
 }
 
+/**
+	* Concrete case class implementing BaseTable with a Header.
+	*
+	* CONSIDER merging the two cases.
+	*
+	* @param rows   the rows of the table.
+	* @param header the header.
+	* @tparam Row the underlying type of each Row
+	*/
 case class TableWithHeader[Row](rows: Seq[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
   override def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
     case Some(h) => TableWithHeader(rows, h);
@@ -325,6 +353,14 @@ case class TableWithHeader[Row](rows: Seq[Row], header: Header) extends BaseTabl
   }
 }
 
+/**
+	* Concrete case class implementing BaseTable without a Header.
+	*
+	* CONSIDER merging the two cases.
+	*
+	* @param rows the rows of the table.
+	* @tparam Row the underlying type of each Row
+	*/
 case class TableWithoutHeader[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None) {
   override def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
     case None => TableWithoutHeader(rows);

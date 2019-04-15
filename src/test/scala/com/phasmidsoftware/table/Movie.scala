@@ -158,7 +158,7 @@ object MovieParser extends CellParsers {
 
     def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
+		def builder(rows: Seq[Movie], maybeHeader: Option[Header]): Table[Movie] = TableWithoutHeader(rows)
   }
 }
 

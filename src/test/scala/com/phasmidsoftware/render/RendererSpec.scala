@@ -37,8 +37,6 @@ class RendererSpec extends FlatSpec with Matchers {
 		implicit val valueRenderer: Renderer[Double] = renderer("td")
 		implicit val complexRenderer: Renderer[Complex] = renderer2("")(Complex)
 		implicit val indexedRenderer: Renderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th")
-		//		val rowsRenderer: Renderer[Seq[Indexed[Complex]]] = sequenceRenderer[Indexed[Complex]]("span")
-
 
 		import HTML._
 		trait TreeWriterHTML$ extends TreeWriter[HTML] {
@@ -51,7 +49,6 @@ class RendererSpec extends FlatSpec with Matchers {
 	object Complex3 extends Renderers {
 		implicit val valueRenderer: Renderer[Double] = renderer("td")
 		implicit val complexRenderer: Renderer[Complex] = renderer2("tr")(Complex)
-		//		val rowsRenderer: Renderer[Seq[Indexed[Complex]]] = sequenceRenderer[Indexed[Complex]]("span")
 
 
 		import HTML._

@@ -5,7 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.{RowParser, StringParser, StringTableParser}
-import com.phasmidsoftware.render.{Node, Renderer, Renderers, TreeWriter}
+import com.phasmidsoftware.render._
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
@@ -45,7 +45,7 @@ class TableSpec extends FlatSpec with Matchers {
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      def builder(rows: Seq[Row]): Table[IntPair] = TableWithoutHeader(rows)
+      def builder(rows: Seq[IntPair], maybeHeader: Option[Header]): Table[IntPair] = TableWithoutHeader(rows)
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -143,8 +143,25 @@ class TableSpec extends FlatSpec with Matchers {
 
   }
 
+  it should "render the parsed table to CSV" in {
+    import IntPair._
+    val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
+    implicit object StringBuilderWriteable extends Writable[StringBuilder] {
+      override def unit: StringBuilder = new StringBuilder
+
+      override def delimiter: CharSequence = "|"
+
+      override def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
+    }
+
+    val sy = iIty map (_.render)
+    sy should matchPattern { case Success(_) => }
+    sy.get.toString shouldBe "1|2\n42|99\n"
+  }
+
+
   // FIXME
-  it should "render the parsed table" in {
+  it should "render the parsed table with TreeWriter" in {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
     import IntPairHTML._
