@@ -20,15 +20,8 @@ class TreeWriterSpec extends FlatSpec with Matchers {
 		def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Map.empty, hs)
 
 		trait HTMLTreeWriter extends TreeWriter[HTML] {
-
-			def addChild(parent: HTML, child: HTML): HTML = parent match {
-				case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
-			}
-
-			def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML =
-				HTML(tag, content map (_.toString), attributes, children)
+			def evaluate(node: Node): HTML = HTML(node.style, node.content map (_.toString), node.attributes, node.children map evaluate)
 		}
-
 		implicit object HTMLTreeWriter extends HTMLTreeWriter
 
 	}
@@ -38,8 +31,8 @@ class TreeWriterSpec extends FlatSpec with Matchers {
 	import HTML._
 
 	it should "implement node correctly for 1" in {
-		implicitly[TreeWriter[HTML]].node("1") shouldBe HTML("1")
-		implicitly[TreeWriter[HTML]].node("1", Map("name" -> "x")) shouldBe HTML("1", None, Map("name" -> "x"))
+		implicitly[TreeWriter[HTML]].evaluate(Node("1")) shouldBe HTML("1")
+		implicitly[TreeWriter[HTML]].evaluate(Node("1", Map("name" -> "x"))) shouldBe HTML("1", None, Map("name" -> "x"))
 	}
 
 

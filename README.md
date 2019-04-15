@@ -27,7 +27,7 @@ together with something like, for instance, a Json writer.
 
 # User Guide
 
-Current version: 1.0.4.
+Current version: 1.0.5.
 
 See release notes below for history.
 
@@ -120,6 +120,7 @@ The type _Row_ defines the specific row type (for example, _Movie_, in the examp
 _hasHeader_ is used to define if there is a header row in the first line of the file (or sequence of strings) to be parsed.
 _forgiving_, which defaults to _false_, can be set to _true_ if you expect that some rows will not parse, but where this
 will not invalidate your dataset as a whole.
+
 In forgiving mode, any exceptions thrown in the parsing of a row are collected and then printed to _System.err_ at the conclusion of the parsing of the table.
 _rowParser_ is the specific parser for the _Row_ type (see below).
 _builder_ is used by the _parse_ method.
@@ -321,7 +322,38 @@ Also, note that the instance of _ColumnHelper_ defined here has the formatter de
 Rendering
 =========
 
-TableParser provides a mechanism for rendering a table to a hierarchical (i.e. tree-structured) output.
+_TableParser_ provides two mechanisms for rendering a table:
+* one to a straight serialized output, for example, when rendering a table as a CSV file.
+* the other to a hierarchical (i.e. tree-structured) output, such as an HTML file.
+
+## Non-hierarchical output
+
+For this type of output, the application programmer must provide an instance of _Writer[O]_ where is, for example a _StringBuilder_,
+_BufferedOutput_, or perhaps an I/O Monad.
+
+The non-hierarchical output does not support the same customization of renderings as does the hierarchical output.
+It's intended more as a straight, quick-and-dirty output mechanism to a CSV file.
+
+Here, for example, is an appropriate definition.
+
+	implicit object StringBuilderWriteable extends Writable[StringBuilder] {
+		override def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
+		override def unit: StringBuilder = new StringBuilder
+		override def delimiter: CharSequence = "|"
+	}
+	
+The default _delimiter_ is ", ".
+You can override the _newline_ and _quote_ methods too if you don't want the defaults.	
+
+And then, folllowing this, you will write something like the following code:
+
+    print(table.render.toString)
+
+The _Writable_ object will take care of inserting the delimiter and quotes as appropriate.
+Columns will appear in the same order as the parameters of _Row_ type (which must be either a _Product_, such as a case class, or an _Array_ or a _Seq_).
+If you need to change the order of the rows, you will need to override the _writeRow_ method of _Writable_.
+ 
+## Hierarchical output
 
 A type class called _TreeWriter_ is the main type for rendering.
 One of the instance methods of _Table[Row]_ is a method as follows:
@@ -378,6 +410,9 @@ If you need to set HTML attributes for a specific type, for example a row in the
 Release Notes
 =============
 
+V1.0.4 -> V1.0.5
+* Added a convenient way of rendering a table as a non-hierarchical structure. In other words, serialization to a CSV file.
+
 V1.0.3 -> V1.0.4
 * Added the ability to add header row and header column for tables (NOTE: not finalized yet, but functional).
 
@@ -396,7 +431,7 @@ V1.0.0 -> V.1.0.1
 * Fixed Issue #1;
 * Added parsing of Seq[Seq[String]];
 * Added cellParserRepetition;
-* Implemented closing of Source in Table.parse methods;
-* Added encoding parameters to Table.parse methods.
+* Implemented closing of Source in _Table.parse_ methods;
+* Added encoding parameters to _Table.parse_ methods.
 
 

@@ -10,20 +10,53 @@ import com.phasmidsoftware.util.FP
 import scala.annotation.implicitNotFound
 import scala.util.{Failure, Try}
 
+/**
+  * Type class to parse a set of rows as a Table.
+  *
+  * @tparam Table the Table type.
+  */
 @implicitNotFound(msg = "Cannot find an implicit instance of TableParser[${Table}]. Typically, you should define an instance of StringTableParser or StringsTableParser.")
 trait TableParser[Table] {
 
+  /**
+    * The row type.
+    */
   type Row
 
+  /**
+    * The input type.
+    */
   type Input
 
+  /**
+    * NOTE: this method must be consistent with the builder method.
+    *
+    * @return true if this table parser should provide a header.
+    */
   def hasHeader: Boolean
 
+  /**
+    * NOTE: this method must be consistent with the hasHeader method.
+    *
+    * @param rows        the rows which will make up the table.
+    * @param maybeHeader an optional Header.
+    * @return an instance of Table.
+    */
+  def builder(rows: Seq[Row], maybeHeader: Option[Header]): Table
+
+  /**
+    * Method to determine how errors are handled.
+    *
+    * @return true if individual errors are logged but do not cause parsing to fail.
+    */
   def forgiving: Boolean = false
 
+  /**
+    * Method to define a row parser.
+    *
+    * @return a RowParser[Row, Input].
+    */
   def rowParser: RowParser[Row, Input]
-
-  def builder(rows: Seq[Row]): Table
 }
 
 abstract class AbstractTableParser[Table] extends TableParser[Table] {
@@ -89,7 +122,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
   def parseRows(xs: Strings, header: Header): Try[Table] = {
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
     //		System.err.println(s"StringTableParser: parsed ${rys.size} of ${xs.size} rows")
-    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs)
+    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, Some(header))
   }
 
 }
@@ -105,6 +138,7 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
   def parseRows(xs: Seq[Strings], header: Header): Try[Table] = {
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
     //		System.err.println(s"StringsTableParser: parsed ${rys.size} of ${xs.size} rows")
-    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs)
+    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, Some(header))
   }
+
 }

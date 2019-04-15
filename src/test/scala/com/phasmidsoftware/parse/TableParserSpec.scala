@@ -6,7 +6,7 @@ package com.phasmidsoftware.parse
 
 import java.util.Date
 
-import com.phasmidsoftware.table.{Header, Table, TableException, TableWithoutHeader}
+import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}
@@ -49,7 +49,7 @@ class TableParserSpec extends FlatSpec with Matchers {
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      def builder(rows: Seq[Row]): Table[IntPair] = TableWithoutHeader(rows)
+      def builder(rows: Seq[IntPair], maybeHeader: Option[Header]): Table[IntPair] = TableWithoutHeader(rows)
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -103,7 +103,7 @@ class TableParserSpec extends FlatSpec with Matchers {
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      def builder(rows: Seq[Row]): Table[DailyRaptorReport] = TableWithoutHeader(rows)
+      def builder(rows: Seq[DailyRaptorReport], maybeHeader: Option[Header]): Table[DailyRaptorReport] = TableWithoutHeader(rows)
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
@@ -191,7 +191,10 @@ class TableParserSpec extends FlatSpec with Matchers {
 
       def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
-      def builder(rows: Seq[Row]): Table[DailyRaptorReport] = TableWithoutHeader(rows)
+      def builder(rows: Seq[DailyRaptorReport], maybeHeader: Option[Header]): Table[DailyRaptorReport] = maybeHeader match {
+        case Some(h) if hasHeader => TableWithHeader(rows, h)
+        case None => TableWithoutHeader(rows)
+      }
     }
 
     implicit object DailyRaptorReportStringsTableParser extends DailyRaptorReportStringsTableParser
@@ -205,7 +208,7 @@ class TableParserSpec extends FlatSpec with Matchers {
       Seq("09/16/2018", "Partly Cloudy", "SE", "6-12", "0", "0", "0", "4", "19", "3", "30", "2", "0", "0", "2", "3308", "5", "0", "0", "0", "0", "27", "8", "1", "0", "1", "0", "3410"),
       Seq("09/19/2018", "Overcast/Mostly cloudy/Partly cloudy/Clear", "NW", "4-7", "0", "0", "0", "47", "12", "0", "84", "10", "0", "0", "1", "821", "4", "0", "1", "0", "0", "27", "4", "1", "0", "2", "0", "1014"))
     val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parseSequence(raw)) yield r
-    x should matchPattern { case Success(TableWithoutHeader(_)) => }
+    x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 2
     //noinspection ScalaDeprecation
     x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5)
@@ -237,11 +240,11 @@ class TableParserSpec extends FlatSpec with Matchers {
 
       def hasHeader: Boolean = true
 
+      def builder(rows: Seq[Row], maybeHeader: Option[Header]): Table[Submission] = TableWithHeader(rows, maybeHeader.get)
+
       override def forgiving: Boolean = false
 
       def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
-
-      def builder(rows: Seq[Row]): Table[Submission] = TableWithoutHeader(rows)
     }
 
   }
@@ -283,6 +286,8 @@ class TableParserSpec extends FlatSpec with Matchers {
 
     implicit object SubmissionTableParser extends StringTableParser[Table[Submission]] {
       type Row = Submission
+
+      override def builder(rows: Seq[Row], maybeHeader: Option[Header]): Table[Submission] = TableWithHeader(rows, maybeHeader.get)
 
       def hasHeader: Boolean = true
 

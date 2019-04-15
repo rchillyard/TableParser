@@ -44,6 +44,7 @@ class CellParserSpec extends FlatSpec with Matchers {
   it should "parse String" in {
     stringCellParser.parse(CellValue("Hello")) shouldBe "Hello"
     stringCellParser.parse(CellValue(""""Hello"""")) shouldBe """"Hello""""
+    // CONSIDER re-instate this test
     //    stringCellParser.parse(CellValue(""""Hello with internal "" Goodbye"""")) shouldBe """"Hello with internal " Goodbye""""
   }
 

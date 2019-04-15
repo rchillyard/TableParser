@@ -57,7 +57,7 @@ class MovieSpec extends FlatSpec with Matchers {
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
+      def builder(rows: Seq[Movie], maybeHeader: Option[Header]): Table[Movie] = TableWithoutHeader(rows)
     }
 
     val movies = Seq(
@@ -77,11 +77,11 @@ class MovieSpec extends FlatSpec with Matchers {
 
       def hasHeader: Boolean = true
 
+      def builder(rows: Seq[Movie], maybeHeader: Option[Header]): Table[Movie] = TableWithHeader(rows, maybeHeader.get)
+
       override def forgiving: Boolean = false
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-      def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
     }
 
     val movies = Seq(
@@ -90,7 +90,7 @@ class MovieSpec extends FlatSpec with Matchers {
     )
 
     val mty = Table.parse(movies)
-    mty should matchPattern { case Success(TableWithoutHeader(_)) => }
+    mty should matchPattern { case Success(TableWithHeader(_, _)) => }
     mty.get.size shouldBe 1
   }
 

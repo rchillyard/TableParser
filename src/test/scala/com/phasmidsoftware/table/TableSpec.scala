@@ -5,7 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.{RowParser, StringParser, StringTableParser}
-import com.phasmidsoftware.render.{Renderer, Renderers, TreeWriter}
+import com.phasmidsoftware.render._
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
@@ -45,7 +45,7 @@ class TableSpec extends FlatSpec with Matchers {
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      def builder(rows: Seq[Row]): Table[IntPair] = TableWithoutHeader(rows)
+      def builder(rows: Seq[IntPair], maybeHeader: Option[Header]): Table[IntPair] = TableWithoutHeader(rows)
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -106,10 +106,6 @@ class TableSpec extends FlatSpec with Matchers {
     iIty.get.map(f).rows shouldBe Seq(IntPair(2, 4), IntPair(84, 198))
   }
 
-  it should "$plus$plus" in {
-    // TODO implement this test
-  }
-
   it should "flatMap" in {
     val f: IntPair => Table[IntPair] = p => TableWithoutHeader(Seq(p))
 
@@ -133,29 +129,39 @@ class TableSpec extends FlatSpec with Matchers {
   object IntPairHTML extends Renderers {
 
     trait HTMLTreeWriter extends TreeWriter[HTML] {
-      def addChild(parent: HTML, child: HTML): HTML = parent match {
-        case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
-      }
-
-      def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML =
-        HTML(tag, content, attributes, children)
+      def evaluate(node: Node): HTML = HTML(node.style, node.content map (_.toString), node.attributes, node.children map evaluate)
     }
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter
 
     implicit val intPairRenderer: Renderer[IntPair] = renderer2("IntPair")(IntPair.apply)
-    implicit val r: Renderer[Indexed[IntPair]] = indexedRenderer("", "th", Map())
+    implicit val r: Renderer[Indexed[IntPair]] = indexedRenderer("", "th")
 
   }
 
-  // FIXME
-  it should "render the parsed table" in {
+  it should "render the parsed table to CSV" in {
+    import IntPair._
+    val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
+    implicit object StringBuilderWriteable extends Writable[StringBuilder] {
+      override def unit: StringBuilder = new StringBuilder
+
+      override def delimiter: CharSequence = "|"
+
+      override def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
+    }
+
+    val sy = iIty map (_.render)
+    sy should matchPattern { case Success(_) => }
+    sy.get.toString shouldBe "1|2\n42|99\n"
+  }
+
+  it should "render the parsed table with TreeWriter" in {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
     import IntPairHTML._
 		val hy = iIty map (_.render("table", Map()))
     hy should matchPattern { case Success(_) => }
-    //    hy.get shouldBe HTML("table", None, Map(), List(HTML("span",None,Map(),List(HTML("IntPair", None, Map.empty, List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
+    hy.get shouldBe HTML("table", None, Map(), List(HTML("",None,Map(),List()), HTML("tbody",None,Map(),List(HTML("IntPair",None,Map(),List(HTML("",Some("1"),Map("name" -> "a"),List()), HTML("",Some("2"),Map("name" -> "b"),List()))), HTML("IntPair",None,Map(),List(HTML("",Some("42"),Map("name" -> "a"),List()), HTML("",Some("99"),Map("name" -> "b"),List())))))))
   }
 
 
