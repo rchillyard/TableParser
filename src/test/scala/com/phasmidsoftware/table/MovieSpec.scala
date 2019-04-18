@@ -23,7 +23,7 @@ class MovieSpec extends FlatSpec with Matchers {
     )
 
     val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Success(TableWithoutHeader(_)) => }
+    x should matchPattern { case Success(TableWithHeader(_, _)) => }
     val mt = x.get
     println(s"Movie: successfully parsed ${mt.size} rows")
     println(mt)
@@ -40,7 +40,7 @@ class MovieSpec extends FlatSpec with Matchers {
     )
 
     val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Success(TableWithoutHeader(_)) => }
+    x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.size shouldBe 1
   }
 
@@ -57,7 +57,7 @@ class MovieSpec extends FlatSpec with Matchers {
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      def builder(rows: Seq[Movie], maybeHeader: Option[Header]): Table[Movie] = TableWithoutHeader(rows)
+      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
     }
 
     val movies = Seq(
@@ -77,7 +77,7 @@ class MovieSpec extends FlatSpec with Matchers {
 
       def hasHeader: Boolean = true
 
-      def builder(rows: Seq[Movie], maybeHeader: Option[Header]): Table[Movie] = TableWithHeader(rows, maybeHeader.get)
+      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
 
       override def forgiving: Boolean = false
 

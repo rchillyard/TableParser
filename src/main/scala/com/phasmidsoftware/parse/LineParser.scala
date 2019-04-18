@@ -105,7 +105,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
     (
       check(cell, "Hello", "Hello") &&
-//        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
+        //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
         check(quotedString,s"""${quote}Hello${getDelimiterChar}Goodbye$quote""",s"""Hello${getDelimiterChar}Goodbye""")
       ).squawk()
   }
@@ -113,10 +113,11 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 }
 
 object LineParser {
-	def apply(implicit c: RowConfig): LineParser = {
-		println(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
-		new LineParser(c.delimiter, c.string, c.listEnclosure, c.listSep, c.quote)
-	}
+  def apply(implicit c: RowConfig): LineParser = {
+    // TODO should be logged.
+    //		println(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
+    new LineParser(c.delimiter, c.string, c.listEnclosure, c.listSep, c.quote)
+  }
 }
 
 case class ParserException(msg: String, e: Throwable = null) extends Exception(msg, e)

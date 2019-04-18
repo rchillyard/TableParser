@@ -29,20 +29,43 @@ trait TableParser[Table] {
   type Input
 
   /**
-    * NOTE: this method must be consistent with the builder method.
+    * Default method to create a new table.
+    * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
+    *
+    * @param rows        the rows which will make up the table.
+    * @param maybeHeader an optional Header.
+    * @return an instance of Table.
+    */
+  def builder(rows: Seq[Row], maybeHeader: Option[Header]): Table = if (hasHeader)
+    builderWithHeader(rows, maybeHeader.getOrElse(Header(Nil)))
+  else
+    builderWithoutHeader(rows)
+
+  /**
+    * NOTE: this method must be consistent with the builder methods below.
     *
     * @return true if this table parser should provide a header.
     */
   def hasHeader: Boolean
 
   /**
-    * NOTE: this method must be consistent with the hasHeader method.
+    * NOTE: if hasHeader yields true, this method MUST be overridden and implemented.
     *
-    * @param rows        the rows which will make up the table.
-    * @param maybeHeader an optional Header.
-    * @return an instance of Table.
+    * @param rows   the rows to beuild into the table.
+    * @param header the header to use for the table.
+    * @return a new instance of Table.
     */
-  def builder(rows: Seq[Row], maybeHeader: Option[Header]): Table
+  def builderWithHeader(rows: Seq[Row], header: Header): Table = throw ParserException(s"No builderWithHeader method implemented for this TableParser with hasHeader=true")
+
+  /**
+    * NOTE: if hasHeader yields false, this method MUST be overridden and implemented.
+    *
+    * NOTE: even if hasHeader yields true, it may be that a table has no header.
+    *
+    * @param rows the rows to beuild into the table.
+    * @return a new instance of Table.
+    */
+  def builderWithoutHeader(rows: Seq[Row]): Table = throw ParserException(s"No builderWithoutHeader method implemented for this TableParser with hasHeader=false")
 
   /**
     * Method to determine how errors are handled.

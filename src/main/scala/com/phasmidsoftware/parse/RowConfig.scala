@@ -6,6 +6,9 @@ package com.phasmidsoftware.parse
 
 import scala.util.matching.Regex
 
+/**
+  * Trait to define the configuration for parsing a row.
+  */
 trait RowConfig {
   /**
     * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
@@ -31,6 +34,9 @@ trait RowConfig {
   override def toString: String = s"RowConfig: delimiter='$delimiter', string='$string', listSep='$listSep', listEnclosure='$listEnclosure', $quote='$quote'"
 }
 
+/**
+  * Default RowConfig trait.
+  */
 trait DefaultRowConfig extends RowConfig {
   /**
     * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
@@ -40,8 +46,8 @@ trait DefaultRowConfig extends RowConfig {
     * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
     * CONSIDER making the string regex derive from the delimiter
     */
-  val string: Regex = """[^\,]*""".r
-
+  val string: Regex =
+    """[^\,]*""".r
   /**
     * the "listSep" character (see LineParser). defaults to "|"
     */
@@ -56,10 +62,12 @@ trait DefaultRowConfig extends RowConfig {
   val quote: Char = '"'
 }
 
-
+/**
+  * Companion object to RowConfig.
+  */
 object RowConfig {
 
-	// CONSIDER removing this default row configuration. It might be better to have the compiler issue a warning when it's missing.
+  // CONSIDER removing this default row configuration. It might be better to have the compiler issue a warning when it's missing.
   implicit object defaultRowConfig extends DefaultRowConfig
 
 }

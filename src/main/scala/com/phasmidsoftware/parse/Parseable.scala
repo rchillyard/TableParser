@@ -21,9 +21,24 @@ import scala.util.parsing.combinator.JavaTokenParsers
 @implicitNotFound(msg = "Cannot find an implicit instance of Parseable[${T}]. This is unusual when your application types are all case classes. Most of the standard types are supported in the Parseable companion object. Take a look and define something similar that works for your type, or consider redefining your type as a case class.")
 trait Parseable[T] {
 
+  /**
+    * Parse a String as a T.
+    *
+    * TODO replace calls to parse with tryParse.
+    *
+    * @param s the String to be parsed.
+    * @return the corresponding value of type T.
+    */
   def parse(s: String): T
 
-  // NOTE not currently used
+  /**
+    * Parse a String as a Try[T].
+    *
+    * NOTE not currently used.
+    *
+    * @param s the String to be parsed.
+    * @return the corresponding value of type T, wrapped in Try.
+    */
   def tryParse(s: String): Try[T] = Try(parse(s))
 }
 

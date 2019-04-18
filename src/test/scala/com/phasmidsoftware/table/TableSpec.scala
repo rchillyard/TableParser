@@ -45,7 +45,7 @@ class TableSpec extends FlatSpec with Matchers {
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      def builder(rows: Seq[IntPair], maybeHeader: Option[Header]): Table[IntPair] = TableWithoutHeader(rows)
+      override def builderWithoutHeader(rows: Seq[Row]): Table[Row] = TableWithoutHeader(rows)
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -159,9 +159,9 @@ class TableSpec extends FlatSpec with Matchers {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
     import IntPairHTML._
-		val hy = iIty map (_.render("table", Map()))
+    val hy = iIty map (_.render("table", Map()))
     hy should matchPattern { case Success(_) => }
-    hy.get shouldBe HTML("table", None, Map(), List(HTML("",None,Map(),List()), HTML("tbody",None,Map(),List(HTML("IntPair",None,Map(),List(HTML("",Some("1"),Map("name" -> "a"),List()), HTML("",Some("2"),Map("name" -> "b"),List()))), HTML("IntPair",None,Map(),List(HTML("",Some("42"),Map("name" -> "a"),List()), HTML("",Some("99"),Map("name" -> "b"),List())))))))
+    hy.get shouldBe HTML("table", None, Map(), List(HTML("", None, Map(), List()), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
   }
 
 

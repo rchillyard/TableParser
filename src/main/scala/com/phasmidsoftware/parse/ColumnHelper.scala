@@ -6,6 +6,11 @@ package com.phasmidsoftware.parse
 
 import scala.annotation.implicitNotFound
 
+/**
+  * Type class representing a mapping from a case class parameter to the corresponding column header.
+  *
+  * @tparam T the type of the object being helped.
+  */
 @implicitNotFound(msg = "Cannot find an implicit instance of ColumnHelper[${T}]. If ${T} is a case class, you will normally need to provide some help translating column names.")
 trait ColumnHelper[T] {
   /**

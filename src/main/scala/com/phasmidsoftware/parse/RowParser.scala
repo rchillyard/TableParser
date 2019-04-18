@@ -8,12 +8,11 @@ import com.phasmidsoftware.table.{Header, Row}
 
 import scala.annotation.implicitNotFound
 import scala.util.Try
-import scala.util.matching.Regex
 
 /**
-  * Trait to describe a parser which will yield a Try[Row] from a String representing a line of a table.
+  * Trait to describe a parser which will yield a Try[Row] from a String representing a row of a table.
   *
-  * @tparam Row the (parametric) Row type for which there must be evidence of a RowParser[Row, Input].
+  * @tparam Row   the (parametric) Row type for which there must be evidence of a RowParser[Row, Input].
   * @tparam Input the (parametric) Input type for which there must be evidence of a RowParser[Row, Input].
   */
 @implicitNotFound(msg = "Cannot find an implicit instance of RowParser[${Row}, ${Input}]. Typically, you might define a StandardRowParser or StandardStringsParser")
@@ -39,6 +38,11 @@ trait RowParser[Row, Input] {
   def parseHeader(x: Input): Try[Header]
 }
 
+/**
+  * A RowParser whose input type is String.
+  *
+  * @tparam Row the (parametric) Row type for which there must be evidence of a RowParser[Row, Input].
+  */
 trait StringParser[Row] extends RowParser[Row, String]
 
 /**
@@ -49,8 +53,21 @@ trait StringParser[Row] extends RowParser[Row, String]
   */
 case class StandardRowParser[Row: CellParser](parser: LineParser) extends StringParser[Row] {
 
+  /**
+    * Method to parse a String and return a Try[Row].
+    *
+    * @param w      the row as a String.
+    * @param header the header already parsed.
+    * @return a Try[Row].
+    */
   override def parse(w: String)(header: Header): Try[Row] = for (ws <- parser.parseRow(w); r <- RowValues(Row(ws, header)).convertTo[Row]) yield r
 
+  /**
+    * Method to parse a String as a Try[Header].
+    *
+    * @param w the header row as a String.
+    * @return a Try[Header].
+    */
   override def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow(w.toUpperCase)) yield Header(ws)
 }
 
@@ -73,7 +90,20 @@ trait StringsParser[Row] extends RowParser[Row, Strings]
   */
 case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
 
+  /**
+    * Method to parse a sequence of String into a Try[Row].
+    *
+    * @param ws     a sequence of Strings.
+    * @param header the header already parsed.
+    * @return a Try[Row].
+    */
   override def parse(ws: Strings)(header: Header): Try[Row] = RowValues(Row(ws, header)).convertTo[Row]
 
+  /**
+    * Method to parse a sequence of Strings as a Try[Header].
+    *
+    * @param ws the header row as a sequence of Strings.
+    * @return a Try[Header].
+    */
   override def parseHeader(ws: Strings): Try[Header] = Try(Header(ws map (_.toUpperCase())))
 }

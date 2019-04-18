@@ -13,21 +13,53 @@ import org.joda.time.LocalDate
 import scala.annotation.implicitNotFound
 import scala.util.Try
 
+/**
+  * Type class trait CellParser[T].
+  * This trait has methods to parse and to convert from String to T.
+  *
+  * TODO Need to define this better so that we don't have any non-implemented methods.
+  *
+  * @tparam T the type of the resulting object.
+  */
 @implicitNotFound(msg = "Cannot find an implicit instance of CellParser[${T}]. Typically, you should invoke a suitable method from CellParsers.")
 trait CellParser[T] {
-  // TODO Need to define this better so that we don't have any non-implemented methods.
+  /**
+    * Convert a String into a T.
+    *
+    * @param w the String to be converted.
+    * @return a new instance of T.
+    */
   def convertString(w: String): T
 
+  /**
+    * Parse a Convertible value into a T.
+    *
+    * @param value the Convertible value.
+    * @return a new instance of T.
+    */
   def parse(value: Convertible): T = value match {
     case CellValue(w) => convertString(w)
     case RowValues(row, columns) => parse(None, row, columns)
     case _ => throw ParsersException(s"CellParser: cannot convert value $value of type ${value.getClass}")
   }
 
-  // CONSIDER do we actually need the Header parameter here?
-  def parse(w: Option[String], row: Row, columns: Header): T
+  /**
+    * Method to parse an Option[String] to a T.
+    *
+    * @param wo      an optional String.
+    * @param row     a Row of values.
+    * @param columns the column names.
+    *                CONSIDER do we actually need the Header parameter here?
+    * @return a new instance of T.
+    */
+  def parse(wo: Option[String], row: Row, columns: Header): T
 }
 
+/**
+  * Trait SingleCellParser, which extends CellParser[T].
+  *
+  * @tparam T the type of the resulting object.
+  */
 trait SingleCellParser[T] extends CellParser[T] {
   def parse(w: Option[String], row: Row, columns: Header): T = throw new UnsupportedOperationException
 
@@ -35,9 +67,9 @@ trait SingleCellParser[T] extends CellParser[T] {
 }
 
 /**
-  * CONSIDER renaming this to something like RowParser, or RawRowParser
+  * CONSIDER renaming this to something like RowParser, or RawRowParser.
   *
-  * @tparam T the type of the result
+  * @tparam T the type of the result.
   */
 trait MultiCellParser[T] extends CellParser[T] {
   //noinspection NotImplementedCode
@@ -46,13 +78,29 @@ trait MultiCellParser[T] extends CellParser[T] {
   override def toString: String = "MultiCellParser"
 }
 
+/**
+  * Abstract class Convertible.
+  *
+  * CONSIDER making this a trait since it takes no value paramters.
+  */
 sealed abstract class Convertible {
   def convertTo[T: CellParser]: Try[T] = Try(cellReader.parse(this))
 }
 
+/**
+  * A concrete Convertible corresponding to a cell value.
+  *
+  * @param w the String contained by a cell.
+  */
 case class CellValue(w: String) extends Convertible
 
-case class RowValues(row: Row, ws: Header) extends Convertible
+/**
+  * A concrete Convertible corresponding to a row.
+  *
+  * @param row    the Row containing several values.
+  * @param header the Header.
+  */
+case class RowValues(row: Row, header: Header) extends Convertible
 
 object RowValues {
   def apply(row: Row): RowValues = RowValues(row, row.hdr)
@@ -98,6 +146,7 @@ object CellParser {
 
   implicit object DateTimeParser$ extends SingleCellParser[LocalDate] {
     override def toString: String = "DateTimeParser$"
+
     override def convertString(w: String): LocalDate = implicitly[Parseable[LocalDate]].parse(w)
   }
 
