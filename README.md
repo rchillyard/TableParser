@@ -25,9 +25,11 @@ XML or HTML).
 An output structure which is itself tabular or sequence-oriented can be generated quite easily using the rows of the table,
 together with something like, for instance, a Json writer.
 
+For an introduction to _TableParser_ with a very simple use case, please see my blog at: https://scalaprof.blogspot.com/2019/04/new-projects.html 
+
 # User Guide
 
-Current version: 1.0.5.
+Current version: 1.0.6.
 
 See release notes below for history.
 
@@ -409,6 +411,9 @@ If you need to set HTML attributes for a specific type, for example a row in the
 
 Release Notes
 =============
+
+V1.0.5 -> V1.0.6
+* Added a standard implicit value of ColumnHelper for situations that don't need extra help.
 
 V1.0.4 -> V1.0.5
 * Added a convenient way of rendering a table as a non-hierarchical structure. In other words, serialization to a CSV file.
