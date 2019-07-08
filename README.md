@@ -239,12 +239,15 @@ The _MovieParser_ object looks like this:
         override val listEnclosure: String = ""
       }
       implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
-      implicit object MovieTableParser extends TableParser[Table[Movie]] {
+      implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
         type Row = Movie
         def hasHeader: Boolean = true
         override def forgiving: Boolean = true
-        def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
-        def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
+        def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+
+        override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+
+        //def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
       }
     }
 
@@ -330,7 +333,7 @@ _TableParser_ provides two mechanisms for rendering a table:
 
 ## Non-hierarchical output
 
-For this type of output, the application programmer must provide an instance of _Writer[O]_ where is, for example a _StringBuilder_,
+For this type of output, the application programmer must provide an instance of _Writer[O]_ which is, for example a _StringBuilder_,
 _BufferedOutput_, or perhaps an I/O Monad.
 
 The non-hierarchical output does not support the same customization of renderings as does the hierarchical output.

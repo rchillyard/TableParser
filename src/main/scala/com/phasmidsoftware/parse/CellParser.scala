@@ -22,7 +22,7 @@ import scala.util.Try
   * @tparam T the type of the resulting object.
   */
 @implicitNotFound(msg = "Cannot find an implicit instance of CellParser[${T}]. Typically, you should invoke a suitable method from CellParsers.")
-trait CellParser[T] {
+trait CellParser[+T] {
   /**
     * Convert a String into a T.
     *
