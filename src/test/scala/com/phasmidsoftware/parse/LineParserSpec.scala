@@ -13,15 +13,14 @@ class LineParserSpec extends FlatSpec with Matchers {
   val hgTabbed = "Hello\tGoodbye"
   val hgSerial = "Hello, Goodbye"
   val hgSerialWithList = "Hello, Goodbye|From|Me"
-  private val helloQuoteGoodbye = """"Hello ""Goodbye""""
+  val p1 = new LineParser(", *".r, """[^,]*""".r, "{}", ',', quote = '"')
 
   behavior of "LineParser"
-
-  val p1 = new LineParser(", *".r, """[^,]*""".r, "{}", ',', quote = '"')
   // TODO fix deprecation of syntax (next two lines).
   val p2 = new LineParser("""\t""".r, """[^\t]*""".r, "", '|', quote = ''')
   val p3 = new LineParser(", *".r, """[\w_\?:=\.\/]+""".r, "", '|', quote = ''')
   val p4 = new LineParser("|".r, """[^|]*""".r, "{}", ',', quote = '"')
+  private val helloQuoteGoodbye = """"Hello ""Goodbye""""
 
   it should "parse cell" in {
     p1.parseAll(p1.cell, "Hello") should matchPattern { case p1.Success("Hello", _) => }

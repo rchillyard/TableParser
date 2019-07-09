@@ -53,7 +53,7 @@ trait CellParsers {
     * Method to return a CellParser[Option[P].
     *
     * @tparam P the underlying type of the result
-    * @return a MultiCellParser[Option[P]
+    * @return a SingleCellParser[Option[P]
     */
   def cellParserOption[P: CellParser]: CellParser[Option[P]] = new SingleCellParser[Option[P]] {
     override def toString: String = s"cellParserOption with $cp"
@@ -63,7 +63,25 @@ trait CellParsers {
     def convertString(w: String): Option[P] = Try(cp.parse(CellValue(w))).toOption
 
     override def parse(wo: Option[String], row: Row, columns: Header): Option[P] = Try(cp.parse(wo, row, columns)).toOption
+  }
 
+  /**
+    * Method to return a CellParser[Option[String].
+    *
+    * @return a SingleCellParser[Option[String]
+    */
+  def cellParserOptionNonEmptyString: CellParser[Option[String]] = new SingleCellParser[Option[String]] {
+    override def toString: String = s"cellParserOptionNonEmptyString"
+
+    private val cp: CellParser[String] = new CellParser[String]() {
+      override def convertString(w: String): String = if (w.isEmpty) null else w
+
+      override def parse(wo: Option[String], row: Row, columns: Header): String = throw new UnsupportedOperationException
+    }
+
+    def convertString(w: String): Option[String] = Option(cp.convertString(w))
+
+    override def parse(wo: Option[String], row: Row, columns: Header): Option[String] = Try(cp.parse(wo, row, columns)).toOption
   }
 
   /**
@@ -92,9 +110,13 @@ trait CellParsers {
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts a String from a Row into the field type P and thence into a T
     */
-  def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T): CellParser[T] = {
+  def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1) = Reflection.extractFieldNames(tc)
+    val Array(p1) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
+
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser1 for $tc"
 
@@ -116,15 +138,50 @@ trait CellParsers {
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1 and P2 and thence into a T
     */
-  def cellParser2[P1: CellParser, P2: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2) => T): CellParser[T] = {
+  def cellParser2[P1: CellParser, P2: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser2 for $tc"
 
       override def parse(wo: Option[String], row: Row, columns: Header): T = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
         val p2V = readCell[T, P2](wo, row, columns)(p2)
+        construct(p1V, p2V)
+      }
+    }
+  }
+
+  /**
+    * Method to return a CellParser[T] where T is a 2-ary Product and which is based on a function to convert a (K,P) into a T.
+    * This method differs from cellParser2 in that the parser of P (a CellParser[P]) is not found implicitly, but rather is looked up
+    * dynamically depending on the value of the first parameter (of type K).
+    *
+    * @param construct a function (K,P) => T, usually the apply method of a case class.
+    * @param parsers   a Map[K, CellParser[P] ] which determines which particular parser of P will be used.
+    *                  The key value looked up is the value of the first (K) field.
+    * @tparam K the type of the conditional lookup key, which is also the type of the first field of T.
+    *           Typically, this will be a String, but it could also be an Int or something more exotic.
+    * @tparam P the type of the second field of the Product type T.
+    * @tparam T the underlying type of the result, a Product.
+    * @return a MultiCellParser which converts Strings from a Row into the field types K and P and thence into a T.
+    * @throws NoSuchElementException if the key (from the first K-type parameter) is not present in the map given by parsers.
+    */
+  def cellParser2Conditional[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map[K, CellParser[P]], fields: Seq[String] = Nil): CellParser[T] = {
+    val tc = implicitly[ClassTag[T]]
+    val Array(p1, p2) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
+    new MultiCellParser[T] {
+      override def toString: String = s"MultiCellParser: cellParser2 for $tc"
+
+      override def parse(wo: Option[String], row: Row, columns: Header): T = {
+        val p1V: K = readCell[T, K](wo, row, columns)(p1)
+        val p2V = readCell[T, P](wo, row, columns)(p2)(tc, implicitly[ColumnHelper[T]], parsers(p1V))
         construct(p1V, p2V)
       }
     }
@@ -140,9 +197,12 @@ trait CellParsers {
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2 and P3 and thence into a T
     */
-  def cellParser3[P1: CellParser, P2: CellParser, P3: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3) => T): CellParser[T] = {
+  def cellParser3[P1: CellParser, P2: CellParser, P3: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser3 for $tc"
 
@@ -166,9 +226,12 @@ trait CellParsers {
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3 and P4 and thence into a T
     */
-  def cellParser4[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4) => T): CellParser[T] = {
+  def cellParser4[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser4 for $tc"
 
@@ -194,9 +257,12 @@ trait CellParsers {
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4 and P5 and thence into a T
     */
-  def cellParser5[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5) => T): CellParser[T] = {
+  def cellParser5[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser5 for $tc"
 
@@ -224,9 +290,12 @@ trait CellParsers {
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5 and P6 and thence into a T
     */
-  def cellParser6[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6) => T): CellParser[T] = {
+  def cellParser6[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser6 for $tc"
 
@@ -256,9 +325,12 @@ trait CellParsers {
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6 and P7 and thence into a T
     */
-  def cellParser7[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7) => T): CellParser[T] = {
+  def cellParser7[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser7 for $tc"
 
@@ -290,9 +362,12 @@ trait CellParsers {
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7 and P8 and thence into a T
     */
-  def cellParser8[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T): CellParser[T] = {
+  def cellParser8[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser8 for $tc"
 
@@ -326,9 +401,12 @@ trait CellParsers {
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8 and P9 and thence into a T
     */
-  def cellParser9[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T): CellParser[T] = {
+  def cellParser9[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser9 for $tc"
 
@@ -364,9 +442,12 @@ trait CellParsers {
     * @tparam T   the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9 and P10 and thence into a T
     */
-  def cellParser10[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T): CellParser[T] = {
+  def cellParser10[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser10 for $tc"
 
@@ -404,9 +485,12 @@ trait CellParsers {
     * @tparam T   the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9, P10 and P11 and thence into a T
     */
-  def cellParser11[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T): CellParser[T] = {
+  def cellParser11[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser11 for $tc"
 
@@ -446,9 +530,12 @@ trait CellParsers {
     * @tparam T   the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11 and P12 and thence into a T
     */
-  def cellParser12[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, P12: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T): CellParser[T] = {
+  def cellParser12[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, P12: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T, fields: Seq[String] = Nil): CellParser[T] = {
     val tc = implicitly[ClassTag[T]]
-    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = Reflection.extractFieldNames(tc)
+    val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = fields match {
+      case Nil => Reflection.extractFieldNames(tc)
+      case ps => ps.toArray
+    }
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser12 for $tc"
 
@@ -471,6 +558,24 @@ trait CellParsers {
   }
 
   /**
+    * Method to yield a ColumnHelper[T] based on an optional prefix, and some number of explicit aliases,
+    *
+    * @param maybePrefix an optional prefix for the column name.
+    * @param aliases     a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
+    * @tparam T the underlying type of the resulting ColumnHelper
+    * @return a new instance of ColumnHelper[T]
+    */
+  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, maybePrefix, aliases: _*)  /**
+    * Method to yield a ColumnHelper[T] based on a column name mapper, and some number of explicit aliases,
+    *
+    * @param columnNameMapper a mapper of String=>String which will translate case class parameter names into column names.
+    * @param aliases          a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
+    * @tparam T the underlying type of the resulting ColumnHelper
+    * @return a new instance of ColumnHelper[T]
+    */
+  def columnHelper[T](columnNameMapper: String => String, aliases: (String, String)*): ColumnHelper[T] = columnHelper(columnNameMapper, None, aliases: _*)
+
+  /**
     * Method to yield a ColumnHelper[T] based on a column name mapper, an optional prefix, and some number of explicit aliases,
     *
     * @param columnNameMapper a mapper of String=>String which will translate case class parameter names into column names.
@@ -484,26 +589,6 @@ trait CellParsers {
     override val _aliases: Seq[(String, String)] = aliases
     override val _columnNameMapper: String => String = columnNameMapper
   }
-
-  /**
-    * Method to yield a ColumnHelper[T] based on a column name mapper, and some number of explicit aliases,
-    *
-    * @param columnNameMapper a mapper of String=>String which will translate case class parameter names into column names.
-    * @param aliases          a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
-    * @tparam T the underlying type of the resulting ColumnHelper
-    * @return a new instance of ColumnHelper[T]
-    */
-  def columnHelper[T](columnNameMapper: String => String, aliases: (String, String)*): ColumnHelper[T] = columnHelper(columnNameMapper, None, aliases: _*)
-
-  /**
-    * Method to yield a ColumnHelper[T] based on an optional prefix, and some number of explicit aliases,
-    *
-    * @param maybePrefix an optional prefix for the column name.
-    * @param aliases     a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
-    * @tparam T the underlying type of the resulting ColumnHelper
-    * @return a new instance of ColumnHelper[T]
-    */
-  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, maybePrefix, aliases: _*)
 
   /**
     * Method to yield a ColumnHelper[T] based on  some number of explicit aliases,

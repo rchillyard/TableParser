@@ -39,6 +39,14 @@ trait RowConfig {
   */
 trait DefaultRowConfig extends RowConfig {
   /**
+    * the "listSep" character (see LineParser). defaults to "|"
+    */
+  override val listSep: Char = '|'
+  /**
+    * the "listEnclosure" characters (see LineParser). defaults to "{}"
+    */
+  override val listEnclosure: String = "{}"
+  /**
     * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
     */
   val delimiter: Regex = ", *".r
@@ -48,14 +56,6 @@ trait DefaultRowConfig extends RowConfig {
     */
   val string: Regex =
     """[^\,]*""".r
-  /**
-    * the "listSep" character (see LineParser). defaults to "|"
-    */
-  override val listSep: Char = '|'
-  /**
-    * the "listEnclosure" characters (see LineParser). defaults to "{}"
-    */
-  override val listEnclosure: String = "{}"
   /**
     * the "quote" Char (see LineParser). defaults to ".
     */

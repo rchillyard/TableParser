@@ -79,21 +79,22 @@ abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option
 
   override def toString: String = s"""\n${tagString()}$contentString$tagsString${tagString(true)}"""
 
-  private def attributeString(close: Boolean) = if (close || attributes.isEmpty) "" else " " + attributes.mkString(" ")
-
   private def tagsString = if (tags.isEmpty) "" else tags mkString ""
-
-  private def nameString(close: Boolean = false) = (if (close) "/" else "") + name
 
   private def contentString: String = content.getOrElse("")
 
   private def tagString(close: Boolean = false) = s"<${nameString(close)}${attributeString(close)}>"
+
+  private def attributeString(close: Boolean) = if (close || attributes.isEmpty) "" else " " + attributes.mkString(" ")
+
+  private def nameString(close: Boolean = false) = (if (close) "/" else "") + name
 }
 
 object Attribute {
-  def apply(kv: (String, String)): Attribute = convertFromTuple(kv)
 
   def mapToAttributes(m: Map[String, String]): Seq[Attribute] = m.toSeq.map(apply)
+
+  def apply(kv: (String, String)): Attribute = convertFromTuple(kv)
 
   implicit def convertFromTuple(kv: (String, String)): Attribute = Attribute(kv._1, kv._2)
 }

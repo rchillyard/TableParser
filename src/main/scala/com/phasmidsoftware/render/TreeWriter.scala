@@ -64,25 +64,15 @@ case class Node(style: String, content: Option[String], attributes: Map[String, 
 object Node {
 
   /**
-    * Create a Node with no content.
+    * Create a content-less leaf Node (with no children).
+    * NOTE: I'm not sure if this makes sense and is only used by unit tests.
     *
     * @param style      a label that characterizes a particular node type.
     *                   This will typically be translated directly into the "tag" parameter of the corresponding U type.
     * @param attributes the attributes of this Node (may be empty).
-    * @param children   the children of this Node (may be empty).
     * @return a new Node.
     */
-  def apply(style: String, attributes: Map[String, String], children: Seq[Node]): Node = apply(style, None, attributes, children)
-
-  /**
-    * Create a Node with only style and children.
-    *
-    * @param style    a label that characterizes a particular node type.
-    *                 This will typically be translated directly into the "tag" parameter of the corresponding U type.
-    * @param children the children of this Node (may be empty).
-    * @return a new Node.
-    */
-  def apply(style: String, children: Seq[Node]): Node = apply(style, Map[String, String](), children)
+  def apply(style: String, attributes: Map[String, String]): Node = apply(style, None, attributes)
 
   /**
     * Create a leaf Node (with no children).
@@ -96,17 +86,6 @@ object Node {
   def apply(style: String, content: Option[String], attributes: Map[String, String]): Node = apply(style, content, attributes, Nil)
 
   /**
-    * Create a content-less leaf Node (with no children).
-    * NOTE: I'm not sure if this makes sense and is only used by unit tests.
-    *
-    * @param style      a label that characterizes a particular node type.
-    *                   This will typically be translated directly into the "tag" parameter of the corresponding U type.
-    * @param attributes the attributes of this Node (may be empty).
-    * @return a new Node.
-    */
-  def apply(style: String, attributes: Map[String, String]): Node = apply(style, None, attributes)
-
-  /**
     * Create a content-less, no-attribute, leaf Node (with no children).
     * NOTE: I'm not sure if this makes sense and is only used by unit tests.
     *
@@ -115,6 +94,27 @@ object Node {
     * @return a new Node.
     */
   def apply(style: String): Node = apply(style, Nil)
+
+  /**
+    * Create a Node with only style and children.
+    *
+    * @param style    a label that characterizes a particular node type.
+    *                 This will typically be translated directly into the "tag" parameter of the corresponding U type.
+    * @param children the children of this Node (may be empty).
+    * @return a new Node.
+    */
+  def apply(style: String, children: Seq[Node]): Node = apply(style, Map[String, String](), children)
+
+  /**
+    * Create a Node with no content.
+    *
+    * @param style      a label that characterizes a particular node type.
+    *                   This will typically be translated directly into the "tag" parameter of the corresponding U type.
+    * @param attributes the attributes of this Node (may be empty).
+    * @param children   the children of this Node (may be empty).
+    * @return a new Node.
+    */
+  def apply(style: String, attributes: Map[String, String], children: Seq[Node]): Node = apply(style, None, attributes, children)
 
   /**
     * TODO can eliminate

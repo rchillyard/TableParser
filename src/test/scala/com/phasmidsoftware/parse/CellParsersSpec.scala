@@ -17,21 +17,26 @@ class CellParsersSpec extends FlatSpec with Matchers {
 
   case class MyNumber(x: Int)
 
+  case class PhoneNumber(name: String, x: Long)
+
+  case class MyDate(day: Int, month: String, year: Int)
+
+  case class FourTuple(s: String, x: Int, w: String, y: Int)
+
+  case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
+
   object MyNumberParser extends CellParsers {
 
     implicit val myNumberColumnHelper: ColumnHelper[MyNumber] = columnHelper()
     implicit val myNumberParser: CellParser[MyNumber] = cellParser1(MyNumber)
   }
 
-  case class PhoneNumber(name: String, x: Long)
-
   object PhoneNumberParser extends CellParsers {
 
     implicit val phoneNumberColumnHelper: ColumnHelper[PhoneNumber] = columnHelper()
     implicit val phoneNumberParser: CellParser[PhoneNumber] = cellParser2(PhoneNumber)
+    val phoneNumberParserAlt: CellParser[PhoneNumber] = cellParser2(PhoneNumber, Seq("name", "x"))
   }
-
-  case class MyDate(day: Int, month: String, year: Int)
 
   object MyDateParser extends CellParsers {
 
@@ -39,15 +44,11 @@ class CellParsersSpec extends FlatSpec with Matchers {
     implicit val myDateParser: CellParser[MyDate] = cellParser3(MyDate)
   }
 
-  case class FourTuple(s: String, x: Int, w: String, y: Int)
-
   object FourTupleParser extends CellParsers {
 
     implicit val fourTupleColumnHelper: ColumnHelper[FourTuple] = columnHelper()
     implicit val fourTupleParser: CellParser[FourTuple] = cellParser4(FourTuple)
   }
-
-  case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
 
   object DailyRaptorReportParser extends CellParsers {
 
@@ -96,6 +97,11 @@ class CellParsersSpec extends FlatSpec with Matchers {
     val r = RowValues(Row(Seq("Robin", "6171234567"), Header.create("name", "x")))
     import PhoneNumberParser._
     r.convertTo[PhoneNumber] shouldBe Success(PhoneNumber("Robin", 6171234567L))
+  }
+
+  it should "convertTo PhoneNumber (alt)" in {
+    val r = RowValues(Row(Seq("Robin", "6171234567"), Header.create("name", "x")))
+    r.convertTo[PhoneNumber](PhoneNumberParser.phoneNumberParserAlt) shouldBe Success(PhoneNumber("Robin", 6171234567L))
   }
 
   it should "convertTo MyDate" in {
@@ -176,4 +182,28 @@ class CellParsersSpec extends FlatSpec with Matchers {
     r.convertTo[Option[PhoneNumber]] shouldBe Success(Some(PhoneNumber("Robin", 6171234567L)))
   }
 
+  it should "parse optional non-empty String" in {
+    val parser = new CellParsers {}.cellParserOptionNonEmptyString
+    parser.convertString("Hello") shouldBe Some("Hello")
+    parser.convertString("") shouldBe None
+  }
+
+  it should "conditionally parse" in {
+    trait IsInt {
+      val x: Int
+    }
+    case class Int1(x: Int) extends IsInt
+    case class Int2(x: Int) extends IsInt
+    case class MyInt(s: Int, z: IsInt)
+    val cellParsers = new CellParsers {}
+    implicit val int1ColumnHelper: ColumnHelper[Int1] = cellParsers.columnHelper()
+    implicit val int2ColumnHelper: ColumnHelper[Int2] = cellParsers.columnHelper()
+    implicit val myIntColumnHelper: ColumnHelper[MyInt] = cellParsers.columnHelper()
+    implicit val int1Parser: CellParser[IsInt] = cellParsers.cellParser1(Int1)
+    implicit val int2Parser: CellParser[IsInt] = cellParsers.cellParser1(Int2)
+    implicit val parser: CellParser[MyInt] = cellParsers.cellParser2Conditional(MyInt.apply, Map(1 -> int1Parser, 2 -> int2Parser))
+
+    RowValues(Row(Seq("1", "2"), Header.create("s", "z"))).convertTo[MyInt].get.z shouldBe Int1(2)
+    RowValues(Row(Seq("2", "2"), Header.create("s", "z"))).convertTo[MyInt].get.z shouldBe Int2(2)
+  }
 }

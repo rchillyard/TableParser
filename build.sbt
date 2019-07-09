@@ -2,9 +2,9 @@ organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-version := "1.0.6"
+version := "1.0.7"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
 
 lazy val scalaModules = "org.scala-lang.modules"
 

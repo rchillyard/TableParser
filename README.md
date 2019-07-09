@@ -54,6 +54,9 @@ The _ColumnHelper_ class is available to manage the mapping between parameters a
 The result of parsing a table file (CSV, etc.) will be a _Table[Row]_, wrapped in _Try_.
 There are object methods to parse most forms of text: _File, Resource, InputStream, URL, Seq[String]_, etc. (see _Table_ below).
 
+The parser responsible for parsing the contents of a cell is called _CellParser[T]_ where T is the type of the value in the cell in question.
+T is covariant so that if you have alternative parsers which generate different sub-classes of trait, for instance, this can be done.
+
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
 an implicit instance of _CellParser[T]_ must be in scope.
 This is achieved via invoking a method (from object _Parsers_) of the following form:
@@ -170,9 +173,24 @@ There are a number of methods which return an instance of _CellParser_ for vario
 * def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]]
 * def cellParserSeq[P: CellParser]: CellParser[Seq[P]]
 * def cellParserOption[P: CellParser]: CellParser[Option[P]]
+* def cellParserOptionNonEmptyString: CellParser[Option[String]]
 * def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T]
-* def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T): CellParser[T]
+* def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T, fields: Seq[String] = Nil): CellParser[T]
 * etc. through cellParser12...
+* def cellParser2Conditional[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map[K, CellParser[P]], fields: Seq[String] = Nil): CellParser[T]
+
+The methods of form _cellParserN_ are the parsers which are used to parse into case classes.
+Ensure that you have the correct number for N: the number of fields/parameters in the case class you are instantiating.
+In some situations, the reflection code is unable to get the field names in order (for example when there are public
+lazy vals).
+In such a case, add the second parameter to _explicitly_ give the field names in order.
+Normally, of course, you can leave this parameter unset.
+
+There is one additional method to handle the situation where you want to vary the parser for a set of cells according
+to the value in another (key) column: _cellParser2Conditional_.
+In this case, you must supply a _Map_ which specifies which parser is to be used for each possible value of the key column.
+If the value in that column is not one of the keys of the map, an exception will be thrown.
+For an example of this, please see the example in _CellParsersSpec_ ("conditionally parse").
 
 ## Example: Movie
 
@@ -239,12 +257,13 @@ The _MovieParser_ object looks like this:
         override val listEnclosure: String = ""
       }
       implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
-      implicit object MovieTableParser extends TableParser[Table[Movie]] {
+      implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
         type Row = Movie
         def hasHeader: Boolean = true
         override def forgiving: Boolean = true
-        def rowParser: RowParser[Row] = implicitly[RowParser[Row]]
-        def builder(rows: Seq[Row]): Table[Movie] = TableWithoutHeader(rows)
+        def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+
+        override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
       }
     }
 
@@ -330,7 +349,7 @@ _TableParser_ provides two mechanisms for rendering a table:
 
 ## Non-hierarchical output
 
-For this type of output, the application programmer must provide an instance of _Writer[O]_ where is, for example a _StringBuilder_,
+For this type of output, the application programmer must provide an instance of _Writer[O]_ which is, for example a _StringBuilder_,
 _BufferedOutput_, or perhaps an I/O Monad.
 
 The non-hierarchical output does not support the same customization of renderings as does the hierarchical output.
@@ -412,6 +431,15 @@ If you need to set HTML attributes for a specific type, for example a row in the
 Release Notes
 =============
 
+V1.0.6 -> V1.0.7
+* build.sbt: changed scalaVersion to 2.12.8
+* CellParser: parametric type T is now covariant;
+* CellParsers: added new method cellParserOptionNonEmptyString;
+    then for each of the cellParserN methods, the signature has had an optional fields parameter to allow explicit field naming;
+* Reflection: changed the message to refer to the cellParserN signatures;
+* README.md: fixed some issues with the doc regarding the MovieTableParser;
+    added new features above.
+    
 V1.0.5 -> V1.0.6
 * Added a standard implicit value of ColumnHelper for situations that don't need extra help.
 

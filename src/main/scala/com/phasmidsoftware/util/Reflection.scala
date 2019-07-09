@@ -36,7 +36,7 @@ object Reflection {
       fields.map(f => f.getName)
     } catch {
       case NonFatal(ex) => throw new RuntimeException("Cannot automatically determine case class field names and order " +
-        "for '" + clazz.getName + "', please use the 'jsonFormat' overload with explicit field name specification", ex)
+        "for '" + clazz.getName + "', please use the 'cellParser'N signature with explicit field name specification", ex)
     }
   }
 

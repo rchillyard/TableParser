@@ -20,13 +20,13 @@ import scala.reflect.ClassTag
 trait Renderer[T] {
 
   /**
-    * Render an instance of T as a U.
-    *
-    * @param t     the input parameter, i.e. the object to be rendered.
-    * @param attrs a map of attributes for this value of U.
-    * @return a new instance of U.
+    * Defines the default style for type T.
     */
-  def render(t: T, attrs: Map[String, String]): Node = Node(style, Some(asString(t)), baseAttrs ++ attrs)
+  val style: String
+  /**
+    * Defines the base attribute set for type T.
+    */
+  val baseAttrs: Map[String, String] = Map()
 
   /**
     * Render an instance of T as a U.
@@ -36,6 +36,15 @@ trait Renderer[T] {
     * @return a new instance of U.
     */
   def render(t: T): Node = render(t, Map())
+
+  /**
+    * Render an instance of T as a U.
+    *
+    * @param t     the input parameter, i.e. the object to be rendered.
+    * @param attrs a map of attributes for this value of U.
+    * @return a new instance of U.
+    */
+  def render(t: T, attrs: Map[String, String]): Node = Node(style, Some(asString(t)), baseAttrs ++ attrs)
 
   /**
     * Method to render content as a String.
@@ -48,16 +57,6 @@ trait Renderer[T] {
     * @return a String corresponding to t.
     */
   def asString(t: T): String = t.toString
-
-  /**
-    * Defines the default style for type T.
-    */
-  val style: String
-
-  /**
-    * Defines the base attribute set for type T.
-    */
-  val baseAttrs: Map[String, String] = Map()
 }
 
 /**
