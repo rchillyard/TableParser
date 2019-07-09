@@ -17,13 +17,19 @@ class CellParsersSpec extends FlatSpec with Matchers {
 
   case class MyNumber(x: Int)
 
+  case class PhoneNumber(name: String, x: Long)
+
+  case class MyDate(day: Int, month: String, year: Int)
+
+  case class FourTuple(s: String, x: Int, w: String, y: Int)
+
+  case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
+
   object MyNumberParser extends CellParsers {
 
     implicit val myNumberColumnHelper: ColumnHelper[MyNumber] = columnHelper()
     implicit val myNumberParser: CellParser[MyNumber] = cellParser1(MyNumber)
   }
-
-  case class PhoneNumber(name: String, x: Long)
 
   object PhoneNumberParser extends CellParsers {
 
@@ -32,23 +38,17 @@ class CellParsersSpec extends FlatSpec with Matchers {
     val phoneNumberParserAlt: CellParser[PhoneNumber] = cellParser2(PhoneNumber, Seq("name", "x"))
   }
 
-  case class MyDate(day: Int, month: String, year: Int)
-
   object MyDateParser extends CellParsers {
 
     implicit val myDateColumnHelper: ColumnHelper[MyDate] = columnHelper()
     implicit val myDateParser: CellParser[MyDate] = cellParser3(MyDate)
   }
 
-  case class FourTuple(s: String, x: Int, w: String, y: Int)
-
   object FourTupleParser extends CellParsers {
 
     implicit val fourTupleColumnHelper: ColumnHelper[FourTuple] = columnHelper()
     implicit val fourTupleParser: CellParser[FourTuple] = cellParser4(FourTuple)
   }
-
-  case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
 
   object DailyRaptorReportParser extends CellParsers {
 

@@ -558,6 +558,24 @@ trait CellParsers {
   }
 
   /**
+    * Method to yield a ColumnHelper[T] based on an optional prefix, and some number of explicit aliases,
+    *
+    * @param maybePrefix an optional prefix for the column name.
+    * @param aliases     a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
+    * @tparam T the underlying type of the resulting ColumnHelper
+    * @return a new instance of ColumnHelper[T]
+    */
+  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, maybePrefix, aliases: _*)  /**
+    * Method to yield a ColumnHelper[T] based on a column name mapper, and some number of explicit aliases,
+    *
+    * @param columnNameMapper a mapper of String=>String which will translate case class parameter names into column names.
+    * @param aliases          a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
+    * @tparam T the underlying type of the resulting ColumnHelper
+    * @return a new instance of ColumnHelper[T]
+    */
+  def columnHelper[T](columnNameMapper: String => String, aliases: (String, String)*): ColumnHelper[T] = columnHelper(columnNameMapper, None, aliases: _*)
+
+  /**
     * Method to yield a ColumnHelper[T] based on a column name mapper, an optional prefix, and some number of explicit aliases,
     *
     * @param columnNameMapper a mapper of String=>String which will translate case class parameter names into column names.
@@ -571,26 +589,6 @@ trait CellParsers {
     override val _aliases: Seq[(String, String)] = aliases
     override val _columnNameMapper: String => String = columnNameMapper
   }
-
-  /**
-    * Method to yield a ColumnHelper[T] based on a column name mapper, and some number of explicit aliases,
-    *
-    * @param columnNameMapper a mapper of String=>String which will translate case class parameter names into column names.
-    * @param aliases          a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
-    * @tparam T the underlying type of the resulting ColumnHelper
-    * @return a new instance of ColumnHelper[T]
-    */
-  def columnHelper[T](columnNameMapper: String => String, aliases: (String, String)*): ColumnHelper[T] = columnHelper(columnNameMapper, None, aliases: _*)
-
-  /**
-    * Method to yield a ColumnHelper[T] based on an optional prefix, and some number of explicit aliases,
-    *
-    * @param maybePrefix an optional prefix for the column name.
-    * @param aliases     a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
-    * @tparam T the underlying type of the resulting ColumnHelper
-    * @return a new instance of ColumnHelper[T]
-    */
-  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, maybePrefix, aliases: _*)
 
   /**
     * Method to yield a ColumnHelper[T] based on  some number of explicit aliases,

@@ -13,9 +13,9 @@ class TreeWriterSpec extends FlatSpec with Matchers {
   object HTML {
     def apply(x: String): HTML = apply(x, None, Map.empty)
 
-    def apply(x: String, a: String): HTML = apply(x, Some(a), Map.empty, Nil)
-
     def apply(x: String, ao: Option[String], as: Map[String, String]): HTML = apply(x, ao, as, Nil)
+
+    def apply(x: String, a: String): HTML = apply(x, Some(a), Map.empty, Nil)
 
     def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Map.empty, hs)
 

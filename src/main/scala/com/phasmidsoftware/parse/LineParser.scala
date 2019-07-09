@@ -52,13 +52,13 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   private def component: Parser[String] = s"""[^,$listSeparator}]+""".r
 
-  override def toString: String = s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
-
   private def getOpenChar: Parser[String] = if (enclosures.nonEmpty) enclosures.head + "" else ""
 
   private def getCloseChar: Parser[String] = if (enclosures.nonEmpty) enclosures.last + "" else ""
 
   private def formException(row: String, x: String) = ParserException(s"Cannot parse row '$row' due to: $x")
+
+  override def toString: String = s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 
   private def getDelimiterChar: Char = {
     def inner(w: Seq[Char], escaped: Boolean): Char =

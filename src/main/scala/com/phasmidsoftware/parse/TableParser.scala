@@ -42,13 +42,6 @@ trait TableParser[Table] {
     builderWithoutHeader(rows)
 
   /**
-    * NOTE: this method must be consistent with the builder methods below.
-    *
-    * @return true if this table parser should provide a header.
-    */
-  def hasHeader: Boolean
-
-  /**
     * NOTE: if hasHeader yields true, this method MUST be overridden and implemented.
     *
     * @param rows   the rows to beuild into the table.
@@ -66,6 +59,13 @@ trait TableParser[Table] {
     * @return a new instance of Table.
     */
   def builderWithoutHeader(rows: Seq[Row]): Table = throw ParserException(s"No builderWithoutHeader method implemented for this TableParser with hasHeader=false")
+
+  /**
+    * NOTE: this method must be consistent with the builder methods below.
+    *
+    * @return true if this table parser should provide a header.
+    */
+  def hasHeader: Boolean
 
   /**
     * Method to determine how errors are handled.

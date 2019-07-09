@@ -28,26 +28,13 @@ trait Writable[O] {
   def writeRaw(o: O)(x: CharSequence): O
 
   /**
-    * Method to write a character sequence to the given instance o, but within quotes.
-    * Any quote characters in x will be doubled.
-    *
-    * @param o the instance of O whither the parameter x should be written.
-    * @param x the character sequence to be written.
-    * @return an instance of O which represents the updated output structure.
-    */
-  def writeQuoted(o: O)(x: CharSequence): O = writeRaw(o)(quote + x.toString.replaceAll(quote.toString, quote + quote.toString) + quote)
-
-  /**
     * Method to write a value of type Any to the given instance o, possibly quoted.
     *
-    * @param o the instance of O whither the parameter x should be written.
-    * @param x the character sequence to be written.
+    * @param o the instance of O whither the xs values should be written.
+    * @param x the row instance to be written.
     * @return an instance of O which represents the updated output structure.
     */
-  def writeValue(o: O)(x: Any): O = if (x.toString.contains(delimiter.toString) || x.toString.contains(quote.toString))
-    writeQuoted(o)(x.toString)
-  else
-    writeRaw(o)(x.toString)
+  def writeRow[Row <: Product](o: O)(x: Row): O = writeRaw(writeRowElements(o)(x.productIterator.toSeq))(newline)
 
   /**
     * Method to write a value of type Any to the given instance o, possibly quoted.
@@ -68,11 +55,32 @@ trait Writable[O] {
   /**
     * Method to write a value of type Any to the given instance o, possibly quoted.
     *
-    * @param o the instance of O whither the xs values should be written.
-    * @param x the row instance to be written.
+    * @param o the instance of O whither the parameter x should be written.
+    * @param x the character sequence to be written.
     * @return an instance of O which represents the updated output structure.
     */
-  def writeRow[Row <: Product](o: O)(x: Row): O = writeRaw(writeRowElements(o)(x.productIterator.toSeq))(newline)
+  def writeValue(o: O)(x: Any): O = if (x.toString.contains(delimiter.toString) || x.toString.contains(quote.toString))
+    writeQuoted(o)(x.toString)
+  else
+    writeRaw(o)(x.toString)
+
+  /**
+    * Method to write a character sequence to the given instance o, but within quotes.
+    * Any quote characters in x will be doubled.
+    *
+    * @param o the instance of O whither the parameter x should be written.
+    * @param x the character sequence to be written.
+    * @return an instance of O which represents the updated output structure.
+    */
+  def writeQuoted(o: O)(x: CharSequence): O = writeRaw(o)(quote + x.toString.replaceAll(quote.toString, quote + quote.toString) + quote)
+
+  /**
+    * The default quote is one double-quote symbol
+    *
+    * @return "
+    */
+  def quote: CharSequence =
+    """""""
 
   /**
     * The default delimiter is a comma followed by a space.
@@ -87,12 +95,4 @@ trait Writable[O] {
     * @return \n
     */
   def newline: CharSequence = "\n"
-
-  /**
-    * The default quote is one double-quote symbol
-    *
-    * @return "
-    */
-  def quote: CharSequence =
-    """""""
 }

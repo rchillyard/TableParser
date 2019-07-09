@@ -15,18 +15,6 @@ import com.phasmidsoftware.parse.ParserException
 case class Row(ws: Seq[String], hdr: Header) extends (String => String) {
 
   /**
-    * Method to yield the xth element of this Row.
-    *
-    * @param x an index from 0 thru length-1.
-    * @return the value as a String.
-    * @throws ParserException if x is out of range.
-    */
-  def apply(x: Int): String = try ws(x) catch {
-    case e: IndexOutOfBoundsException if x == -1 => throw e
-    case _: IndexOutOfBoundsException => throw ParserException(s"Row: index out of range: $x (there are ${ws.size} elements)")
-  }
-
-  /**
     * Method to yield the value for a given column name
     *
     * NOTE this doesn't seem to be used.
@@ -37,6 +25,18 @@ case class Row(ws: Seq[String], hdr: Header) extends (String => String) {
     */
   def apply(w: String): String = try apply(hdr.getIndex(w)) catch {
     case _: IndexOutOfBoundsException => throw ParserException(s"Row: unknown column: $w")
+  }
+
+  /**
+    * Method to yield the xth element of this Row.
+    *
+    * @param x an index from 0 thru length-1.
+    * @return the value as a String.
+    * @throws ParserException if x is out of range.
+    */
+  def apply(x: Int): String = try ws(x) catch {
+    case e: IndexOutOfBoundsException if x == -1 => throw e
+    case _: IndexOutOfBoundsException => throw ParserException(s"Row: index out of range: $x (there are ${ws.size} elements)")
   }
 
   /**
@@ -60,7 +60,7 @@ case class Row(ws: Seq[String], hdr: Header) extends (String => String) {
 case class Indexed[T](i: Int, t: T)
 
 object Indexed {
-  def apply[T](tuple: (T, Int)): Indexed[T] = Indexed(tuple._2, tuple._1)
-
   def index[T](rows: Seq[T]): Seq[Indexed[T]] = rows.zipWithIndex.map(Indexed(_))
+
+  def apply[T](tuple: (T, Int)): Indexed[T] = Indexed(tuple._2, tuple._1)
 }

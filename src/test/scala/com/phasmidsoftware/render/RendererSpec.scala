@@ -14,15 +14,15 @@ class RendererSpec extends FlatSpec with Matchers {
 
   case class SimpleHTML(tag: String, content: Option[String], attributes: Map[String, String], hs: Seq[SimpleHTML])
 
+  case class Complicated(name: String, count: Int, open: Boolean, maybePhone: Option[Long], aliases: Seq[String])
+
   object SimpleHTML {
     def apply(x: String, hs: Seq[SimpleHTML]): SimpleHTML = apply(x, None, Map.empty, hs)
 
-    def apply(x: String, ao: Option[String]): SimpleHTML = apply(x, ao, Map.empty, Nil)
-
     def apply(x: String): SimpleHTML = apply(x, None)
-  }
 
-  case class Complicated(name: String, count: Int, open: Boolean, maybePhone: Option[Long], aliases: Seq[String])
+    def apply(x: String, ao: Option[String]): SimpleHTML = apply(x, ao, Map.empty, Nil)
+  }
 
   object Complex1 extends Renderers {
     implicit val complexRenderer: Renderer[Complex] = renderer2("complex")(Complex.apply)
