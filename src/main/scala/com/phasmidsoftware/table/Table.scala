@@ -247,12 +247,12 @@ object Table {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
       case parser: StringTableParser[T] => parser.parse(ws)
-      case _ => Failure(ParserException(s"parse method incompatible with tableParser: $tableParser"))
+      case _ => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $tableParser"))
     }
   }
 
   /**
-    * Method to parse a table from an File.
+    * Method to parse a table from a File.
     *
     * @param f   the File.
     * @param enc the encoding.
@@ -285,9 +285,9 @@ object Table {
     * @return a Try[T]
     */
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
-    clazz.getResource(s) match {
-      case null => Failure(ParserException(s"Table.getResource: $s does not exist for $clazz"))
-      case u => parse(u)
+    Option(clazz.getResource(s)) match {
+      case None => Failure(ParserException(s"Table.getResource: $s does not exist for $clazz"))
+      case Some(u) => parse(u)
     }
 
   /**
@@ -297,7 +297,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: URL)(implicit codec: Codec): Try[T] =
+  def parse[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] =
     for (uri <- Try(u.toURI); t <- parse(uri)) yield t
 
   /**
@@ -311,19 +311,29 @@ object Table {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
       case parser: StringsTableParser[T] => parser.parse(wss)
-      case _ => Failure(ParserException(s"parse method incompatible with tableParser: $tableParser"))
+      case _ => Failure(ParserException(s"parse method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
   }
 
 }
 
+/**
+  * Case class to represent a header.
+  * @param xs the sequence of column names.
+  */
 case class Header(xs: Seq[String]) {
+  def exists: Boolean = xs match {
+    case _ :: _ => true
+    case Nil => false
+  }
+
   def getIndex(w: String): Int = xs.indexOf(w.toUpperCase)
 
   def ++(other: Header): Header = Header(xs ++ other.xs)
 }
 
 object Header {
+  def apply(): Header = Header(Nil)
   def create(ws: String*): Header = apply(ws map (_.toUpperCase))
 }
 

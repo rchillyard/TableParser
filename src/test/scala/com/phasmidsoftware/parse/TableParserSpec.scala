@@ -4,9 +4,11 @@
 
 package com.phasmidsoftware.parse
 
+import java.net.URL
 import java.util.Date
 
 import com.phasmidsoftware.table._
+import com.phasmidsoftware.util.FP
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}
@@ -74,9 +76,9 @@ class TableParserSpec extends FlatSpec with Matchers {
   case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
 
   object DailyRaptorReport {
-    val header: Seq[String] = Seq("date", "weather", "bw", "ri")
-
     object DailyRaptorReportParser extends CellParsers {
+
+      override val header: Header = Header.create("date", "weather", "bw", "ri")
 
       private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
 
@@ -218,12 +220,12 @@ class TableParserSpec extends FlatSpec with Matchers {
 
   }
 
-  object DailyRaptorReportSeqNoHeader {
-    val header: Seq[String] = Seq("date", "weather", "bw", "ri")
+  object DailyRaptorReportNoHeader {
+    val header: Seq[String] = Seq("Date", "Weather", "Wnd Dir", "Wnd Spd", "BV", "TV", "UV", "OS", "BE", "NH", "SS", "CH", "GO", "UA", "RS", "BW", "RT", "RL", "UB", "GE", "UE", "AK", "M", "P", "UF", "UR", "Oth", "Tot")
 
     object DailyRaptorReportParser extends CellParsers {
 
-      private val raptorReportDateFormatter = DateTimeFormat.forPattern(dateFormatString)
+      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
 
       def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 
@@ -241,34 +243,36 @@ class TableParserSpec extends FlatSpec with Matchers {
 
     implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
 
-    implicit val parser: StandardStringsParser[DailyRaptorReport] = StandardStringsParser[DailyRaptorReport]()
+    implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
 
-    trait DailyRaptorReportStringsTableParser extends StringsTableParser[Table[DailyRaptorReport]] {
+    trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      def hasHeader: Boolean = true
+      def hasHeader: Boolean = false
 
-      def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+      override def builderWithoutHeader(rows: Seq[DailyRaptorReport]): Table[Row] = TableWithoutHeader(rows)
     }
 
-    implicit object DailyRaptorReportStringsTableParser extends DailyRaptorReportStringsTableParser
+    implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
 
   }
 
+
   it should "parse raptors without header" in {
-    import DailyRaptorReportSeqNoHeader._
+    import DailyRaptorReportNoHeader._
 
     val x: Try[Table[DailyRaptorReport]] =
-      for (r <- Table.parse(classOf[TableParserSpec].getResource("/table/noHeader.csv"))) yield r
-    x should matchPattern { case Success(TableWithHeader(_, _)) => }
+      for (r <- Table.parseResource("noHeader.csv", classOf[TableParserSpec])) yield r
+    x should matchPattern { case Success(TableWithoutHeader(_)) => }
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.
     //noinspection ScalaDeprecation
     x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 12)), "Dense Fog/Light Rain", 0, 0)
 
   }
+
 
   behavior of "StringsParser"
 

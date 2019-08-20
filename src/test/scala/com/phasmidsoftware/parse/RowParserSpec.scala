@@ -12,11 +12,11 @@ import scala.util.{Success, Try}
 
 class RowParserSpec extends FlatSpec with Matchers {
 
-  val header: Header = Header.create("species", "count")
-
   case class HawkCount(species: String, count: Int)
 
   object HawkCountParser extends CellParsers {
+    override val header: Header = Header.create("species", "count")
+
     implicit val hawkCountParser: CellParser[HawkCount] = cellParser2(HawkCount)
   }
 

@@ -19,6 +19,13 @@ import scala.util.Try
 trait CellParsers {
 
   /**
+    * This is the header that is defined by the program, rather than the data.
+    *
+    * CONSIDER if it is possible to mere this with the columns parameter in the parse method of a CellParser.
+    */
+  val header: Header = Header()
+
+  /**
     * Method to return a CellParser[Seq[P] from a potentially unlimited set of P objects.
     * The counting of the elements starts at start (defaults to 1).
     *
@@ -608,7 +615,11 @@ trait CellParsers {
     */
   implicit def defaultColumnHelper[T]: ColumnHelper[T] = columnHelper()
 
-  private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): P = {
+  private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): P = // if (columns.exists)
+    readCellWithHeader(wo, row, columns, p)
+//  else readCellWithoutHeader(wo, row, p)
+
+  private def readCellWithHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, columns: Header, p: String) = {
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
@@ -620,6 +631,17 @@ trait CellParsers {
     }
   }
 
+//  private def readCellWithoutHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, p: String) = {
+//    val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
+//    val cellParser = implicitly[CellParser[P]]
+//    val idx = row.getIndex(columnName)
+//    if (idx >= 0) try cellParser.parse(CellValue(row(idx))) catch {
+//      case e: Exception => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
+//    }
+//    else try cellParser.parse(Some(columnName), row, columns) catch {
+//      case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns")
+//    }
+//  }
 }
 
 /**

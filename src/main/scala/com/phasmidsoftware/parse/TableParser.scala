@@ -102,14 +102,16 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   def parse(xs: Seq[Input]): Try[Table] = {
     def separateHeaderAndRows(h: Input, t: Seq[Input]): Try[Table] = for (ws <- rowParser.parseHeader(h); rs <- parseRows(t, ws)) yield rs
 
-    if (rowParser == null)
+    if (rowParser == null) // XXX how can this happen?
       Failure(ParserException("implicit RowParser[Row] is undefined"))
-    else if (hasHeader) xs match {
+    else if (hasHeader)
+      xs match {
       case h #:: t => separateHeaderAndRows(h, t)
       case h :: t => separateHeaderAndRows(h, t)
       case _ => Failure(ParserException("no rows to parse"))
     }
-    else parseRows(xs, Header(Nil))
+    else // TODO need to introduce the coded header if there is one.
+      parseRows(xs, Header(Nil))
   }
 
   /**
@@ -135,7 +137,8 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 }
 
 /**
-  * Abstract class to extend AbstractTableParser but with Input = String
+  * Abstract class to extend AbstractTableParser but with Input = String.
+  * This is the normal situation where a file is a sequence of Strings, each representing one line.
   *
   * @tparam Table the table type.
   */
@@ -152,6 +155,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
 
 /**
   * Abstract class to extend AbstractTableParser but with Input = Strings
+  * This is the unuual situation where a file is a sequence of a sequence of Strings, each representing one value.
   *
   * @tparam Table the table type.
   */
