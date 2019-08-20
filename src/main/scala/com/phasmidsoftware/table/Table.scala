@@ -297,7 +297,8 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: URL)(implicit codec: Codec): Try[T] = for (uri <- Try(u.toURI); t <- parse(uri)) yield t
+  def parse[T: TableParser](u: URL)(implicit codec: Codec): Try[T] =
+    for (uri <- Try(u.toURI); t <- parse(uri)) yield t
 
   /**
     * Method to parse a table from a Seq of Seq of String.
