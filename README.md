@@ -29,7 +29,7 @@ For an introduction to _TableParser_ with a very simple use case, please see my 
 
 # User Guide
 
-Current version: 1.0.6.
+Current version: 1.0.8.
 
 See release notes below for history.
 
@@ -433,11 +433,11 @@ Release Notes
 
 V1.0.6 -> V1.0.7
 * build.sbt: changed scalaVersion to 2.12.8
-* CellParser: parametric type T is now covariant;
-* CellParsers: added new method cellParserOptionNonEmptyString;
-    then for each of the cellParserN methods, the signature has had an optional fields parameter to allow explicit field naming;
-* Reflection: changed the message to refer to the cellParserN signatures;
-* README.md: fixed some issues with the doc regarding the MovieTableParser;
+* CellParser: parametric type _T_ is now covariant;
+* CellParsers: added new method _cellParserOptionNonEmptyString_;
+    then for each of the _cellParserN_ methods, the signature has had an defaultable _fields_ parameter to allow explicit field naming;
+* Reflection: changed the message to refer to the _cellParserN_ signatures;
+* README.md: fixed some issues with the doc regarding the _MovieTableParser_;
     added new features above.
     
 V1.0.5 -> V1.0.6
