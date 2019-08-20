@@ -1,3 +1,4 @@
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/app/scalaprof/TableParser?utm_source=github.com&utm_medium=referral&utm_content=rchillyard/TableParser&utm_campaign=Badge_Grade_Settings)
 [![CircleCI](https://circleci.com/gh/rchillyard/TableParser.svg?style=svg)](https://circleci.com/gh/rchillyard/TableParser)
 
 # Introduction to TableParser
