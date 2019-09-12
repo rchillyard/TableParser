@@ -8,6 +8,7 @@ import com.phasmidsoftware.parse.{RowParser, StringParser, StringTableParser}
 import com.phasmidsoftware.render._
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -41,11 +42,14 @@ class TableSpec extends FlatSpec with Matchers {
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
+      val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
+
+
+      def builder(rows: Seq[IntPair], header: Header): Table[IntPair] = TableWithHeader(rows, Header[IntPair]())
+
       def hasHeader: Boolean = false
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-      override def builderWithoutHeader(rows: Seq[Row]): Table[Row] = TableWithoutHeader(rows)
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -107,7 +111,7 @@ class TableSpec extends FlatSpec with Matchers {
   }
 
   it should "flatMap" in {
-    val f: IntPair => Table[IntPair] = p => TableWithoutHeader(Seq(p))
+    val f: IntPair => Table[IntPair] = p => TableWithHeader(Seq(p), Header())
 
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
@@ -142,6 +146,8 @@ class TableSpec extends FlatSpec with Matchers {
   it should "render the parsed table to CSV" in {
     import IntPair._
     val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
+    iIty should matchPattern { case Success(_) => }
+
     implicit object StringBuilderWriteable extends Writable[StringBuilder] {
       override def unit: StringBuilder = new StringBuilder
 
@@ -152,7 +158,7 @@ class TableSpec extends FlatSpec with Matchers {
 
     val sy = iIty map (_.render)
     sy should matchPattern { case Success(_) => }
-    sy.get.toString shouldBe "1|2\n42|99\n"
+    sy.get.toString shouldBe "a|b\n1|2\n42|99\n"
   }
 
   it should "render the parsed table with TreeWriter" in {
@@ -161,7 +167,8 @@ class TableSpec extends FlatSpec with Matchers {
     import IntPairHTML._
     val hy = iIty map (_.render("table", Map()))
     hy should matchPattern { case Success(_) => }
-    hy.get shouldBe HTML("table", None, Map(), List(HTML("", None, Map(), List()), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
+    // CONSIDER why do we use ArrayBuffer here instead of List?
+    hy.get shouldBe HTML("table", None, Map(), List(HTML("thead", None, Map(), List(HTML("tr", None, Map(), ArrayBuffer(HTML("th", Some("a"), Map(), List()), HTML("th", Some("b"), Map(), List()))))), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
   }
 
 

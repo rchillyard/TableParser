@@ -29,36 +29,21 @@ trait TableParser[Table] {
   type Input
 
   /**
+    * This variable determines if there is a programmed header for the parser.
+    * If its value is None, it signifies that we must look to the first line of data
+    * for an appropriate header.
+    */
+  val maybeHeader: Option[Header]
+
+  /**
     * Default method to create a new table.
     * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
     *
-    * @param rows        the rows which will make up the table.
-    * @param maybeHeader an optional Header.
+    * @param rows   the rows which will make up the table.
+    * @param header the Header, derived either from the program or the data.
     * @return an instance of Table.
     */
-  def builder(rows: Seq[Row], maybeHeader: Option[Header]): Table = if (hasHeader)
-    builderWithHeader(rows, maybeHeader.getOrElse(Header(Nil)))
-  else
-    builderWithoutHeader(rows)
-
-  /**
-    * NOTE: if hasHeader yields true, this method MUST be overridden and implemented.
-    *
-    * @param rows   the rows to beuild into the table.
-    * @param header the header to use for the table.
-    * @return a new instance of Table.
-    */
-  def builderWithHeader(rows: Seq[Row], header: Header): Table = throw ParserException(s"No builderWithHeader method implemented for this TableParser with hasHeader=true")
-
-  /**
-    * NOTE: if hasHeader yields false, this method MUST be overridden and implemented.
-    *
-    * NOTE: even if hasHeader yields true, it may be that a table has no header.
-    *
-    * @param rows the rows to beuild into the table.
-    * @return a new instance of Table.
-    */
-  def builderWithoutHeader(rows: Seq[Row]): Table = throw ParserException(s"No builderWithoutHeader method implemented for this TableParser with hasHeader=false")
+  def builder(rows: Seq[Row], header: Header): Table
 
   /**
     * NOTE: this method must be consistent with the builder methods below.
@@ -104,14 +89,15 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
     if (rowParser == null) // XXX how can this happen?
       Failure(ParserException("implicit RowParser[Row] is undefined"))
-    else if (hasHeader)
+    else maybeHeader match {
+      case Some(h) => parseRows(xs, h)
+      case None => // NOTE: it is possible that we still don't really have a header encoded in the data either
       xs match {
       case h #:: t => separateHeaderAndRows(h, t)
       case h :: t => separateHeaderAndRows(h, t)
       case _ => Failure(ParserException("no rows to parse"))
     }
-    else // TODO need to introduce the coded header if there is one.
-      parseRows(xs, Header(Nil))
+    }
   }
 
   /**
@@ -145,10 +131,11 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
   type Input = String
 
+
   //noinspection DuplicatedCode
   def parseRows(xs: Strings, header: Header): Try[Table] = {
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
-    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, Some(header))
+    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
   }
 
 }
@@ -163,8 +150,9 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
   type Input = Strings
 
   def parseRows(xs: Seq[Strings], header: Header): Try[Table] = {
+    // TODO merge with repeated code at line 156
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
-    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, Some(header))
+    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
   }
 
 }

@@ -19,13 +19,6 @@ import scala.util.Try
 trait CellParsers {
 
   /**
-    * This is the header that is defined by the program, rather than the data.
-    *
-    * CONSIDER if it is possible to mere this with the columns parameter in the parse method of a CellParser.
-    */
-  val header: Header = Header()
-
-  /**
     * Method to return a CellParser[Seq[P] from a potentially unlimited set of P objects.
     * The counting of the elements starts at start (defaults to 1).
     *
@@ -146,6 +139,7 @@ trait CellParsers {
     * @return a MultiCellParser which converts Strings from a Row into the field types P1 and P2 and thence into a T
     */
   def cellParser2[P1: CellParser, P2: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2) => T, fields: Seq[String] = Nil): CellParser[T] = {
+    // CONSIDER refactoring all the repetitive code here (a macro, perhaps?)
     val tc = implicitly[ClassTag[T]]
     val Array(p1, p2) = fields match {
       case Nil => Reflection.extractFieldNames(tc)

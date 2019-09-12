@@ -53,13 +53,15 @@ class MovieSpec extends FlatSpec with Matchers {
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
 
+      val maybeHeader: Option[Header] = None
+
       def hasHeader: Boolean = true
 
       override def forgiving: Boolean = false
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+      override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
     }
 
     val movies = Seq(
@@ -77,9 +79,11 @@ class MovieSpec extends FlatSpec with Matchers {
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
 
+      val maybeHeader: Option[Header] = None
+
       def hasHeader: Boolean = true
 
-      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+      override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
 
       override def forgiving: Boolean = false
 

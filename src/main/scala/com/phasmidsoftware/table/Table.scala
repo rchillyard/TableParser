@@ -9,8 +9,10 @@ import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.render._
+import com.phasmidsoftware.util.Reflection
 
 import scala.io.{Codec, Source}
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -34,7 +36,7 @@ trait Table[Row] extends Iterable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] where each cell has value f(x) where x is the value of the corresponding cell in this.
     */
-  def map[S](f: Row => S): Table[S] = unit(rows map f, maybeHeader)
+  def map[S](f: Row => S): Table[S] = unit(rows map f)
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].
@@ -43,7 +45,7 @@ trait Table[Row] extends Iterable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] where each cell has value f(x) where x is the value of the corresponding cell in this.
     */
-  def flatMap[S](f: Row => Table[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil, None))(_ ++ _)
+  def flatMap[S](f: Row => Table[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))(_ ++ _)
 
   /**
     * Method to concatenate two Rows
@@ -52,18 +54,17 @@ trait Table[Row] extends Iterable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a new table, which is concatenated to this table, by rows.
     */
-  def ++[S >: Row](table: Table[S]): Table[S] = unit[S](rows ++ table.rows, for (h1 <- maybeHeader; h2 <- table.maybeHeader) yield h1 ++ h2)
+  def ++[S >: Row](table: Table[S]): Table[S] = unit[S](rows ++ table.rows)
 
   /**
     * Method to generate a Table[S] for a set of rows.
     * Although declared as an instance method, this method produces its result independent of this.
     *
     * @param rows        a sequence of S.
-    * @param maybeHeader an (optional) header.
     * @tparam S the underlying type of the rows and the result.
     * @return a new instance of Table[S].
     */
-  def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S]
+  def unit[S](rows: Seq[S]): Table[S]
 
   /**
     * Method to access the individual rows of this table.
@@ -333,8 +334,22 @@ case class Header(xs: Seq[String]) {
 }
 
 object Header {
-  def apply(): Header = Header(Nil)
+
+  /**
+    * This method constructs a new Header based on the fields of the class X.
+    * It should not be considered to be the normal method of generating the header for a table.
+    * It is mainly used by unit tests.
+    *
+    * NOTE: this method does NOT recurse into any fields which happen also to be a class with fields.
+    *
+    * @tparam X a class X which is not necessarily a Product.
+    * @return a List of field names.
+    */
+  def apply[X: ClassTag](): Header = Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList)
+
   def create(ws: String*): Header = apply(ws map (_.toUpperCase))
+
+
 }
 
 /**
@@ -358,25 +373,11 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
   * @tparam Row the underlying type of each Row
   */
 case class TableWithHeader[Row](rows: Seq[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
-  override def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => TableWithHeader(rows, h);
-    case _ => throw TableException("header is non-existent")
-  }
+  override def unit[S](rows: Seq[S]): Table[S] = TableWithHeader(rows, header)
 }
 
-/**
-  * Concrete case class implementing BaseTable without a Header.
-  *
-  * CONSIDER merging the two cases.
-  *
-  * @param rows the rows of the table.
-  * @tparam Row the underlying type of each Row
-  */
-case class TableWithoutHeader[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None) {
-  override def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case None => TableWithoutHeader(rows);
-    case _ => throw TableException("header should be non-existent")
-  }
+object TableWithHeader {
+  def apply[Row: ClassTag](rows: Seq[Row]): Table[Row] = TableWithHeader(rows, Header.apply[Row]())
 }
 
 case class TableException(w: String) extends Exception(w)

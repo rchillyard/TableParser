@@ -15,7 +15,7 @@ class RowParserSpec extends FlatSpec with Matchers {
   case class HawkCount(species: String, count: Int)
 
   object HawkCountParser extends CellParsers {
-    override val header: Header = Header.create("species", "count")
+    val header: Header = Header.create("species", "count") // TODO do we need this?
 
     implicit val hawkCountParser: CellParser[HawkCount] = cellParser2(HawkCount)
   }

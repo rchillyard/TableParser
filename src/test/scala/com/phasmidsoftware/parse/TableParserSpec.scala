@@ -4,11 +4,9 @@
 
 package com.phasmidsoftware.parse
 
-import java.net.URL
 import java.util.Date
 
 import com.phasmidsoftware.table._
-import com.phasmidsoftware.util.FP
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.{FlatSpec, Matchers}
@@ -24,6 +22,8 @@ class TableParserSpec extends FlatSpec with Matchers {
 
   case class IntPair(a: Int, b: Int)
 
+  //noinspection ScalaUnusedSymbol
+  // NOTE: unused
   private val dateFormatString = "MM/dd/yyyy"
 
   object IntPair {
@@ -47,13 +47,15 @@ class TableParserSpec extends FlatSpec with Matchers {
     implicit object IntPairRowParser extends IntPairRowParser
 
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
+      def builder(rows: Seq[IntPair], header: Header): Table[IntPair] = TableWithHeader(rows, header)
+
       type Row = IntPair
+
+      val maybeHeader: Option[Header] = Some(Header.create("x", "y"))
 
       def hasHeader: Boolean = false
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-      override def builderWithoutHeader(rows: Seq[Row]): Table[Row] = TableWithoutHeader(rows)
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -78,7 +80,6 @@ class TableParserSpec extends FlatSpec with Matchers {
   object DailyRaptorReport {
     object DailyRaptorReportParser extends CellParsers {
 
-      override val header: Header = Header.create("date", "weather", "bw", "ri")
 
       private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
 
@@ -92,7 +93,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     import DailyRaptorReportParser._
 
     trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w\/\-\ ]+""".r
+      override val string: Regex = """[\w/\- ]+""".r
       override val delimiter: Regex = """\t""".r
     }
 
@@ -103,11 +104,13 @@ class TableParserSpec extends FlatSpec with Matchers {
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
+      val maybeHeader: Option[Header] = None // Some(Header.create("date", "weather", "bw", "ri"))
+
       def hasHeader: Boolean = true
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+      override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
@@ -184,7 +187,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     import DailyRaptorReportParser._
 
     trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w\/\-\ ]+""".r
+      override val string: Regex = """[\w/\- ]+""".r
       override val delimiter: Regex = """\t""".r
     }
 
@@ -195,11 +198,13 @@ class TableParserSpec extends FlatSpec with Matchers {
     trait DailyRaptorReportStringsTableParser extends StringsTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
+      val maybeHeader: Option[Header] = None //Some(Header.create(header:_*))
+
       def hasHeader: Boolean = true
 
       def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
-      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+      override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
     }
 
     implicit object DailyRaptorReportStringsTableParser extends DailyRaptorReportStringsTableParser
@@ -237,7 +242,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     import DailyRaptorReportParser._
 
     trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w\/\-\ ]+""".r
+      override val string: Regex = """[\w/\- ]+""".r
       override val delimiter: Regex = """\t""".r
     }
 
@@ -248,11 +253,13 @@ class TableParserSpec extends FlatSpec with Matchers {
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
+      val maybeHeader: Option[Header] = Some(Header.create(header: _*))
+
       def hasHeader: Boolean = false
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      def builder(rows: Seq[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = TableWithHeader(rows, header)
 
-      override def builderWithoutHeader(rows: Seq[DailyRaptorReport]): Table[Row] = TableWithoutHeader(rows)
+      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
@@ -265,7 +272,7 @@ class TableParserSpec extends FlatSpec with Matchers {
 
     val x: Try[Table[DailyRaptorReport]] =
       for (r <- Table.parseResource("noHeader.csv", classOf[TableParserSpec])) yield r
-    x should matchPattern { case Success(TableWithoutHeader(_)) => }
+    x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.
     //noinspection ScalaDeprecation
@@ -297,9 +304,11 @@ class TableParserSpec extends FlatSpec with Matchers {
     implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
       type Row = Submission
 
+      val maybeHeader: Option[Header] = None // Some(header)
+
       def hasHeader: Boolean = true
 
-      override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+      override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
 
       override def forgiving: Boolean = false
 
@@ -316,6 +325,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     )
 
     import Submissions._
+    // TODO note that the column lookup isn't correct for Question ID 1
     val qty: Try[Table[Submission]] = Table.parseSequence(rows)
     qty should matchPattern { case Success(_) => }
     qty.get.size shouldBe 1
@@ -346,15 +356,15 @@ class TableParserSpec extends FlatSpec with Matchers {
     implicit object SubmissionTableParser extends StringTableParser[Table[Submission]] {
       type Row = Submission
 
-      override def builder(rows: Seq[Row], maybeHeader: Option[Header]): Table[Submission] = TableWithHeader(rows, maybeHeader.get)
+      override def builder(rows: Seq[Row], header: Header): Table[Submission] = TableWithHeader(rows, header)
+
+      val maybeHeader: Option[Header] = None // Some(header)
 
       def hasHeader: Boolean = true
 
       override def forgiving: Boolean = true
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-      def builder(rows: Seq[Row]): Table[Submission] = TableWithoutHeader(rows)
     }
 
   }

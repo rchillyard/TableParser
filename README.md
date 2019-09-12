@@ -431,6 +431,10 @@ If you need to set HTML attributes for a specific type, for example a row in the
 Release Notes
 =============
 
+V1.0.7 -> V1.0.8
+* build.sbt: changed scalaVersion to 2.12.9
+* refactored the concept of tables with/without headers in TableParser;
+
 V1.0.6 -> V1.0.7
 * build.sbt: changed scalaVersion to 2.12.8
 * CellParser: parametric type _T_ is now covariant;
