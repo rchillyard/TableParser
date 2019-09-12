@@ -47,8 +47,6 @@ class TableSpec extends FlatSpec with Matchers {
 
       def builder(rows: Seq[IntPair], header: Header): Table[IntPair] = TableWithHeader(rows, Header[IntPair]())
 
-      def hasHeader: Boolean = false
-
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 

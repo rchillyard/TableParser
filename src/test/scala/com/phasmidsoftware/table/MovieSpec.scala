@@ -55,8 +55,6 @@ class MovieSpec extends FlatSpec with Matchers {
 
       val maybeHeader: Option[Header] = None
 
-      def hasHeader: Boolean = true
-
       override def forgiving: Boolean = false
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
@@ -80,8 +78,6 @@ class MovieSpec extends FlatSpec with Matchers {
       type Row = Movie
 
       val maybeHeader: Option[Header] = None
-
-      def hasHeader: Boolean = true
 
       override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
 

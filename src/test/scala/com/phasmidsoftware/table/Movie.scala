@@ -152,16 +152,13 @@ object MovieParser extends CellParsers {
   implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
     type Row = Movie
 
-    def hasHeader: Boolean = true
-
     val maybeHeader: Option[Header] = None
 
     override def forgiving: Boolean = true
 
     def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
-
+    def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
   }
 
 }

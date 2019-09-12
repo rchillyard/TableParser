@@ -46,13 +46,6 @@ trait TableParser[Table] {
   def builder(rows: Seq[Row], header: Header): Table
 
   /**
-    * NOTE: this method must be consistent with the builder methods below.
-    *
-    * @return true if this table parser should provide a header.
-    */
-  def hasHeader: Boolean
-
-  /**
     * Method to determine how errors are handled.
     *
     * @return true if individual errors are logged but do not cause parsing to fail.
@@ -65,6 +58,23 @@ trait TableParser[Table] {
     * @return a RowParser[Row, Input].
     */
   def rowParser: RowParser[Row, Input]
+
+  /**
+    * Method to parse a table based on a sequence of Inputs.
+    *
+    * @param xs the sequence of Inputs, one for each row
+    * @return a Try[Table]
+    */
+  def parse(xs: Seq[Input]): Try[Table]
+
+  /**
+    * Method to log any failures (only in forgiving mode).
+    *
+    * @param rys the sequence of Try[Row]
+    * @return a sequence of Try[Row] which will all be of type Success.
+    */
+  def logFailures(rys: Seq[Try[Row]]): Seq[Try[Row]]
+
 }
 
 abstract class AbstractTableParser[Table] extends TableParser[Table] {
@@ -92,11 +102,11 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     else maybeHeader match {
       case Some(h) => parseRows(xs, h)
       case None => // NOTE: it is possible that we still don't really have a header encoded in the data either
-      xs match {
-      case h #:: t => separateHeaderAndRows(h, t)
-      case h :: t => separateHeaderAndRows(h, t)
-      case _ => Failure(ParserException("no rows to parse"))
-    }
+        xs match {
+          case h #:: t => separateHeaderAndRows(h, t)
+          case h :: t => separateHeaderAndRows(h, t)
+          case _ => Failure(ParserException("no rows to parse"))
+        }
     }
   }
 
@@ -150,7 +160,7 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
   type Input = Strings
 
   def parseRows(xs: Seq[Strings], header: Header): Try[Table] = {
-    // TODO merge with repeated code at line 156
+    // TODO merge with repeated code at line 147
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
     for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
   }
