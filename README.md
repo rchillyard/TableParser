@@ -434,6 +434,7 @@ Release Notes
 V1.0.7 -> V1.0.8
 * build.sbt: changed scalaVersion to 2.12.9
 * refactored the concept of tables with/without headers in TableParser;
+* enabled program-defined headers that match Excel-style numbers or letters.
 
 V1.0.6 -> V1.0.7
 * build.sbt: changed scalaVersion to 2.12.8
