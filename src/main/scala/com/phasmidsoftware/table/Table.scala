@@ -72,7 +72,6 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * @return the rows in the form of Iterator[Row]
     */
   def iterator: Iterator[Row] = rows.iterator
-
 }
 
 object Table {
@@ -242,7 +241,6 @@ object Table {
       case _ => Failure(ParserException(s"parse method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
   }
-
 }
 
 /**
@@ -261,6 +259,47 @@ case class Header(xs: Seq[String]) {
 }
 
 object Header {
+
+  // TODO come back and figure out why recursiveLetters (below) didn't work properly.
+  lazy val numbers: Stream[Int] = Stream.from(1)
+  lazy val generateNumbers: Stream[String] = numbers map (_.toString)
+  //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
+  //  lazy val generateLetters: Stream[String] = recursiveLetters
+  val alphabet: List[String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray.map(_.toString).toList
+
+  private def intToString(letters: Boolean)(n: Int): String = if (letters) {
+    @scala.annotation.tailrec
+    def inner(s: String, n: Int): String = {
+      if (n <= 0)
+        return s
+      val m = n % 26 match {
+        case 0 => 26
+        case other => other
+      }
+      inner((m + 64).toChar + s, (n - m) / 26)
+    }
+
+    inner("", n)
+  }
+  else n.toString
+
+  lazy val generateLetters: Stream[String] = numbers map intToString(letters = true)
+
+  def multiply(prefixes: List[String], strings: Stream[String]): Stream[String] = {
+    val wss: List[Stream[String]] = prefixes map (prepend(_, strings))
+    wss.foldLeft(Stream.empty[String])(_ #::: _)
+  }
+
+  def prepend(prefix: String, stream: Stream[String]): Stream[String] = stream map (prefix + _)
+
+  /**
+    * This method constructs a new Header based on Excel row/column names.
+    *
+    * @param letters true if we want the sequence A B C D E ... Z AA AB ... BA BB ...
+    *                false is we just want numbers.
+    * @return a
+    */
+  def apply(letters: Boolean, length: Int): Header = Header(numbers map intToString(letters) take length toList)
 
   /**
     * This method constructs a new Header based on the fields of the class X.

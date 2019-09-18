@@ -74,7 +74,6 @@ trait TableParser[Table] {
     * @return a sequence of Try[Row] which will all be of type Success.
     */
   def logFailures(rys: Seq[Try[Row]]): Seq[Try[Row]]
-
 }
 
 abstract class AbstractTableParser[Table] extends TableParser[Table] {
@@ -141,13 +140,11 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
   type Input = String
 
-
   //noinspection DuplicatedCode
   def parseRows(xs: Strings, header: Header): Try[Table] = {
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
     for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
   }
-
 }
 
 /**
@@ -164,5 +161,4 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
     for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
   }
-
 }

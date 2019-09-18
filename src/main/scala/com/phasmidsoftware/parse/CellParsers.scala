@@ -611,7 +611,6 @@ trait CellParsers {
 
   private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): P = // if (columns.exists)
     readCellWithHeader(wo, row, columns, p)
-//  else readCellWithoutHeader(wo, row, p)
 
   private def readCellWithHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, columns: Header, p: String) = {
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
@@ -624,18 +623,6 @@ trait CellParsers {
       case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns")
     }
   }
-
-//  private def readCellWithoutHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, p: String) = {
-//    val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
-//    val cellParser = implicitly[CellParser[P]]
-//    val idx = row.getIndex(columnName)
-//    if (idx >= 0) try cellParser.parse(CellValue(row(idx))) catch {
-//      case e: Exception => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
-//    }
-//    else try cellParser.parse(Some(columnName), row, columns) catch {
-//      case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns")
-//    }
-//  }
 }
 
 /**

@@ -169,5 +169,38 @@ class TableSpec extends FlatSpec with Matchers {
     hy.get shouldBe HTML("table", None, Map(), List(HTML("thead", None, Map(), List(HTML("tr", None, Map(), ArrayBuffer(HTML("th", Some("a"), Map(), List()), HTML("th", Some("b"), Map(), List()))))), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
   }
 
+  behavior of "Header"
+
+  import scala.language.postfixOps
+
+  it should "create with letters" in {
+    val header = Header(letters = true, 62)
+    header.xs.head shouldBe "A"
+    header.xs.last shouldBe "BJ"
+  }
+
+  it should "generateNumbers" in {
+    val xs: List[String] = Header.generateNumbers take 10 toList
+
+    xs shouldBe Seq("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+  }
+
+  it should "prepend" in {
+    val xs = Header.prepend("x", Header.alphabet.toStream).take(100).toList
+    xs shouldBe Seq("xA", "xB", "xC", "xD", "xE", "xF", "xG", "xH", "xI", "xJ", "xK", "xL", "xM", "xN", "xO", "xP", "xQ", "xR", "xS", "xT", "xU", "xV", "xW", "xX", "xY", "xZ")
+  }
+
+  it should "multiply" in {
+    val xs = Header.multiply(List("A", "B"), Header.alphabet.toStream)
+    xs shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", "AW", "AX", "AY", "AZ", "BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", "BM", "BN", "BO", "BP", "BQ", "BR", "BS", "BT", "BU", "BV", "BW", "BX", "BY", "BZ")
+  }
+
+  it should "generateLetters" in {
+    val xs: List[String] = Header.generateLetters take 100 toList
+
+    xs.take(26) shouldBe Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
+    xs.slice(26, 36) shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ")
+    xs.slice(52, 62) shouldBe Seq("BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ")
+  }
 
 }
