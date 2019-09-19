@@ -139,6 +139,7 @@ trait CellParsers {
     * @return a MultiCellParser which converts Strings from a Row into the field types P1 and P2 and thence into a T
     */
   def cellParser2[P1: CellParser, P2: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2) => T, fields: Seq[String] = Nil): CellParser[T] = {
+    // CONSIDER refactoring all the repetitive code here (a macro, perhaps?)
     val tc = implicitly[ClassTag[T]]
     val Array(p1, p2) = fields match {
       case Nil => Reflection.extractFieldNames(tc)
@@ -608,7 +609,10 @@ trait CellParsers {
     */
   implicit def defaultColumnHelper[T]: ColumnHelper[T] = columnHelper()
 
-  private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): P = {
+  private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): P = // if (columns.exists)
+    readCellWithHeader(wo, row, columns, p)
+
+  private def readCellWithHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, columns: Header, p: String) = {
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
@@ -619,7 +623,6 @@ trait CellParsers {
       case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns")
     }
   }
-
 }
 
 /**

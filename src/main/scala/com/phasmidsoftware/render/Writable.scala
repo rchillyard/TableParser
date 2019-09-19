@@ -11,6 +11,8 @@ package com.phasmidsoftware.render
   */
 trait Writable[O] {
 
+  // TODO create some off-the-shelf Writables
+
   /**
     * Method to return an empty (i.e. new) instance of O
     *

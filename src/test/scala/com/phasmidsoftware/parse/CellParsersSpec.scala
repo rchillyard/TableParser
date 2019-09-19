@@ -116,19 +116,20 @@ class CellParsersSpec extends FlatSpec with Matchers {
     r.convertTo[FourTuple] shouldBe Success(FourTuple("Thursday", 21, "March", 2019))
   }
 
+  private val partlyCloudy = "Partly Cloudy"
   it should "convertTo DailyRaptorReport" in {
-    val r = RowValues(Row(Seq("09/16/2018", "Partly Cloudy", "3308", "5"), Header.create("Date", "Weather", "BW", "RT")))
+    val r = RowValues(Row(Seq("09/16/2018", partlyCloudy, "3308", "5"), Header.create("Date", "Weather", "BW", "RT")))
     import DailyRaptorReportParser._
     // TODO fix deprecation here and 7 lines down.
     //noinspection ScalaDeprecation
-    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5))
+    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), partlyCloudy, 3308, 5))
   }
 
   it should "convertTo DailyRaptorReport in ISO date parse" in {
-    val r = RowValues(Row(Seq("2018-09-16", "Partly Cloudy", "3308", "5"), Header.create("Date", "Weather", "BW", "RT")))
+    val r = RowValues(Row(Seq("2018-09-16", partlyCloudy, "3308", "5"), Header.create("Date", "Weather", "BW", "RT")))
     import DailyRaptorReportParserISO._
     //noinspection ScalaDeprecation
-    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), "Partly Cloudy", 3308, 5))
+    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), partlyCloudy, 3308, 5))
   }
 
   it should "convertTo Seq[Int]" in {

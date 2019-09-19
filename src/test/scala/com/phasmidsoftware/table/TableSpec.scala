@@ -8,6 +8,7 @@ import com.phasmidsoftware.parse.{RowParser, StringParser, StringTableParser}
 import com.phasmidsoftware.render._
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -41,11 +42,12 @@ class TableSpec extends FlatSpec with Matchers {
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
-      def hasHeader: Boolean = false
+      val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
+
+
+      def builder(rows: Seq[IntPair], header: Header): Table[IntPair] = TableWithHeader(rows, Header[IntPair]())
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-      override def builderWithoutHeader(rows: Seq[Row]): Table[Row] = TableWithoutHeader(rows)
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -107,7 +109,7 @@ class TableSpec extends FlatSpec with Matchers {
   }
 
   it should "flatMap" in {
-    val f: IntPair => Table[IntPair] = p => TableWithoutHeader(Seq(p))
+    val f: IntPair => Table[IntPair] = p => TableWithHeader(Seq(p), Header())
 
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
@@ -142,6 +144,8 @@ class TableSpec extends FlatSpec with Matchers {
   it should "render the parsed table to CSV" in {
     import IntPair._
     val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
+    iIty should matchPattern { case Success(_) => }
+
     implicit object StringBuilderWriteable extends Writable[StringBuilder] {
       override def unit: StringBuilder = new StringBuilder
 
@@ -152,7 +156,7 @@ class TableSpec extends FlatSpec with Matchers {
 
     val sy = iIty map (_.render)
     sy should matchPattern { case Success(_) => }
-    sy.get.toString shouldBe "1|2\n42|99\n"
+    sy.get.toString shouldBe "a|b\n1|2\n42|99\n"
   }
 
   it should "render the parsed table with TreeWriter" in {
@@ -161,8 +165,42 @@ class TableSpec extends FlatSpec with Matchers {
     import IntPairHTML._
     val hy = iIty map (_.render("table", Map()))
     hy should matchPattern { case Success(_) => }
-    hy.get shouldBe HTML("table", None, Map(), List(HTML("", None, Map(), List()), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
+    // CONSIDER why do we use ArrayBuffer here instead of List?
+    hy.get shouldBe HTML("table", None, Map(), List(HTML("thead", None, Map(), List(HTML("tr", None, Map(), ArrayBuffer(HTML("th", Some("a"), Map(), List()), HTML("th", Some("b"), Map(), List()))))), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
   }
 
+  behavior of "Header"
+
+  import scala.language.postfixOps
+
+  it should "create with letters" in {
+    val header = Header(letters = true, 62)
+    header.xs.head shouldBe "A"
+    header.xs.last shouldBe "BJ"
+  }
+
+  it should "generateNumbers" in {
+    val xs: List[String] = Header.generateNumbers take 10 toList
+
+    xs shouldBe Seq("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+  }
+
+  it should "prepend" in {
+    val xs = Header.prepend("x", Header.alphabet.toStream).take(100).toList
+    xs shouldBe Seq("xA", "xB", "xC", "xD", "xE", "xF", "xG", "xH", "xI", "xJ", "xK", "xL", "xM", "xN", "xO", "xP", "xQ", "xR", "xS", "xT", "xU", "xV", "xW", "xX", "xY", "xZ")
+  }
+
+  it should "multiply" in {
+    val xs = Header.multiply(List("A", "B"), Header.alphabet.toStream)
+    xs shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", "AW", "AX", "AY", "AZ", "BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", "BM", "BN", "BO", "BP", "BQ", "BR", "BS", "BT", "BU", "BV", "BW", "BX", "BY", "BZ")
+  }
+
+  it should "generateLetters" in {
+    val xs: List[String] = Header.generateLetters take 100 toList
+
+    xs.take(26) shouldBe Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
+    xs.slice(26, 36) shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ")
+    xs.slice(52, 62) shouldBe Seq("BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ")
+  }
 
 }

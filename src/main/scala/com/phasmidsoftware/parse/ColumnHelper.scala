@@ -43,3 +43,9 @@ trait ColumnHelper[T] {
     (for (prfx <- _maybePrefix; s <- so) yield prfx.replace("$x", s).replace("$c", column)).getOrElse(column)
   }
 }
+
+object ColumnHelper {
+  def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+
+  def camelCaseColumnNameMapperSpace(w: String): String = w.replaceAll("([A-Z0-9])", " $1")
+}

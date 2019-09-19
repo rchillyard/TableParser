@@ -5,7 +5,7 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.render.tag.{Attribute, HTML}
-import com.phasmidsoftware.table.{Header, Indexed, TableWithHeader, TableWithoutHeader}
+import com.phasmidsoftware.table.{Header, Indexed, TableWithHeader}
 import org.scalatest.{FlatSpec, Matchers}
 
 class RendererSpec extends FlatSpec with Matchers {
@@ -105,16 +105,33 @@ class RendererSpec extends FlatSpec with Matchers {
 
   it should "render a table of Complexes in HTML without a header" in {
     import Complex1._
-    val table = TableWithoutHeader(Seq(Complex(0, 1), Complex(-1, 0)))
+    val table = TableWithHeader(Seq(Complex(0, 1), Complex(-1, 0)), Header.create("r", "i"))
     val h = table.render("table", Map("border" -> "1"))
-    h.toString shouldBe "<table>: \"\" (border -> 1) [<>: \"\" () [] ,<tbody>: \"\" () [<complex>: \"\" () [<>: \"0.0\" (name -> r) [] ,<>: \"1.0\" (name -> i) [] ] ,<complex>: \"\" () [<>: \"-1.0\" (name -> r) [] ,<>: \"0.0\" (name -> i) [] ] ] ] "
+    h.toString shouldBe """<table>: "" (border -> 1) [<thead>: "" () [<tr>: "" () [<th>: "R" () [] ,<th>: "I" () [] ] ] ,<tbody>: "" () [<complex>: "" () [<>: "0.0" (name -> r) [] ,<>: "1.0" (name -> i) [] ] ,<complex>: "" () [<>: "-1.0" (name -> r) [] ,<>: "0.0" (name -> i) [] ] ] ] """
   }
 
   it should "render a table of sequenced Complexes in HTML without a header" in {
     import Complex2._
-    val table = TableWithoutHeader(Seq(Complex(0, 1), Complex(-1, 0)))
+    val table = TableWithHeader(Seq(Complex(0, 1), Complex(-1, 0)), Header.create("r", "i"))
     val h = table.renderSequenced("table", Map("border" -> "1"))
-    h.toString shouldBe "\n<table border=\"1\">\n<tbody>\n<tr>\n<th>0</th>\n<td name=\"r\">0.0</td>\n<td name=\"i\">1.0</td></tr>\n<tr>\n<th>1</th>\n<td name=\"r\">-1.0</td>\n<td name=\"i\">0.0</td></tr></tbody></table>"
+    println(h.toString)
+    h.toString shouldBe
+      """
+<table border="1">
+<thead>
+<tr>
+<th></th>
+<th>R</th>
+<th>I</th></tr></thead>
+<tbody>
+<tr>
+<th>0</th>
+<td name="r">0.0</td>
+<td name="i">1.0</td></tr>
+<tr>
+<th>1</th>
+<td name="r">-1.0</td>
+<td name="i">0.0</td></tr></tbody></table>"""
   }
 
   it should "render a table of sequenced Complexes in HTML with a header" in {

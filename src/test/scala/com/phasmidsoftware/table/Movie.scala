@@ -152,14 +152,13 @@ object MovieParser extends CellParsers {
   implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
     type Row = Movie
 
-    def hasHeader: Boolean = true
+    val maybeHeader: Option[Header] = None
 
     override def forgiving: Boolean = true
 
     def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
-
+    def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
   }
 
 }
@@ -167,7 +166,7 @@ object MovieParser extends CellParsers {
 object Name {
   // NOTE: this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
   private val rName =
-    """^([\p{L}\-\']+\.?)\s*(([\p{L}\-]+\.?)\s)?([\p{L}\-\']+\.?)(\s([\p{L}\-]+\.?))?$""".r
+    """^([\p{L}\-']+\.?)\s*(([\p{L}\-]+\.?)\s)?([\p{L}\-']+\.?)(\s([\p{L}\-]+\.?))?$""".r
 
   def apply(name: String): Name = name match {
     case rName(first, _, null, last, _, null) => apply(first, None, last, None)
