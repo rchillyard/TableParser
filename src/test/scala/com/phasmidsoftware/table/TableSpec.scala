@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.{RowParser, StringParser, StringTableParser}
+import com.phasmidsoftware.parse.{RawParsers, RowParser, StringParser, StringTableParser}
 import com.phasmidsoftware.render._
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -42,7 +42,7 @@ class TableSpec extends FlatSpec with Matchers {
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
-      val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
+      val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
 
 
       def builder(rows: Seq[IntPair], header: Header): Table[IntPair] = TableWithHeader(rows, Header[IntPair]())
@@ -201,6 +201,27 @@ class TableSpec extends FlatSpec with Matchers {
     xs.take(26) shouldBe Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
     xs.slice(26, 36) shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ")
     xs.slice(52, 62) shouldBe Seq("BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ")
+  }
+
+  behavior of "transform"
+
+  private val movieHeader = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
+
+  it should "parse and transform the following rows with pushdown function" in {
+    import RawParsers.WithHeaderRow._
+
+    val rows = Seq(
+      movieHeader,
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+    )
+
+    val mty: Try[Table[Seq[String]]] = Table.parse(rows)
+    println(mty)
+    mty should matchPattern { case Success(TableWithHeader(_, _)) => }
+    val stringSeqTable: Table[Seq[String]] = mty.get
+    stringSeqTable.size shouldBe 1
+    stringSeqTable.head(1) shouldBe "Doug Walker"
+    println(stringSeqTable.maybeHeader)
   }
 
 }

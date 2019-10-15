@@ -53,7 +53,7 @@ class MovieSpec extends FlatSpec with Matchers {
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
 
-      val maybeHeader: Option[Header] = None
+      val maybeFixedHeader: Option[Header] = None
 
       override def forgiving: Boolean = false
 
@@ -77,7 +77,7 @@ class MovieSpec extends FlatSpec with Matchers {
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
 
-      val maybeHeader: Option[Header] = None
+      val maybeFixedHeader: Option[Header] = None
 
       override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
 
@@ -96,6 +96,34 @@ class MovieSpec extends FlatSpec with Matchers {
     mty.get.size shouldBe 1
   }
 
+  it should "parse and transform the following rows with simple map" in {
+    import MovieParser._
+
+    implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+      type Row = Movie
+
+      val maybeFixedHeader: Option[Header] = None
+
+      override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+
+      override def forgiving: Boolean = false
+
+      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    }
+
+    val movies = Seq(
+      movieHeader,
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+    )
+
+    val mty = Table.parse(movies)
+    mty should matchPattern { case Success(TableWithHeader(_, _)) => }
+    mty.get.size shouldBe 1
+    val z: Table[UnMovie] = mty.get.map[UnMovie](m => UnMovie(m.title.toLowerCase))
+    z.size shouldBe 1
+    z.head.title shouldBe "star wars: episode vii - the force awakens             "
+  }
+
   behavior of "Name"
   it should "parse Philip Michael Thomas" in {
     import MovieParser._
@@ -103,4 +131,7 @@ class MovieSpec extends FlatSpec with Matchers {
     implicitly[CellParser[Name]].convertString("Philip Michael Thomas") shouldBe Name("Philip", Some("Michael"), "Thomas", None)
 
   }
+
 }
+
+case class UnMovie(title: String)

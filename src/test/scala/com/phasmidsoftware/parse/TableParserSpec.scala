@@ -51,7 +51,7 @@ class TableParserSpec extends FlatSpec with Matchers {
 
       type Row = IntPair
 
-      val maybeHeader: Option[Header] = Some(Header.create("x", "y"))
+      val maybeFixedHeader: Option[Header] = Some(Header.create("x", "y"))
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -102,7 +102,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeHeader: Option[Header] = None
+      val maybeFixedHeader: Option[Header] = None
 
       def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
@@ -193,7 +193,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     trait DailyRaptorReportStringsTableParser extends StringsTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeHeader: Option[Header] = None
+      val maybeFixedHeader: Option[Header] = None
 
       def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
@@ -246,7 +246,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeHeader: Option[Header] = Some(Header.create(header: _*))
+      val maybeFixedHeader: Option[Header] = Some(Header.create(header: _*))
 
       def builder(rows: Seq[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = TableWithHeader(rows, header)
 
@@ -295,7 +295,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
       type Row = Submission
 
-      val maybeHeader: Option[Header] = None // Some(header)
+      val maybeFixedHeader: Option[Header] = None // Some(header)
 
       override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
 
@@ -347,7 +347,7 @@ class TableParserSpec extends FlatSpec with Matchers {
 
       override def builder(rows: Seq[Row], header: Header): Table[Submission] = TableWithHeader(rows, header)
 
-      val maybeHeader: Option[Header] = None // Some(header)
+      val maybeFixedHeader: Option[Header] = None // Some(header)
 
       override def forgiving: Boolean = true
 
