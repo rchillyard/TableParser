@@ -6,8 +6,6 @@ package com.phasmidsoftware.util
 
 import java.net.URL
 
-import com.phasmidsoftware.parse.ParserException
-
 import scala.util.{Failure, Success, Try}
 
 object FP {
@@ -31,8 +29,15 @@ object FP {
     */
   def getURLforResource(resourceName: String, clazz: Class[_] = getClass): Try[URL] = Option(clazz.getResource(resourceName)) match {
     case Some(u) => Success(u)
-    case None => Failure(ParserException(s"$resourceName is not a valid resource for ${clazz}"))
+    case None => Failure(TableParserException(s"$resourceName is not a valid resource for $clazz"))
+  }
+
+  def indexFound(w: String, i: Int): Try[Int] = i match {
+    case x if x >= 0 => Success(x)
+    case _ => Failure(TableParserException(s"Header column $w not found"))
   }
 
 
 }
+
+case class TableParserException(msg: String, e: Throwable = null) extends Exception(msg, e)

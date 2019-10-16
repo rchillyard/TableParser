@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.RawRow
 import com.phasmidsoftware.table.{Header, Table, TableWithHeader}
 
 /**
@@ -15,14 +16,12 @@ import com.phasmidsoftware.table.{Header, Table, TableWithHeader}
 abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean) extends CellParsers {
   self =>
 
-  type StringSeq = Seq[String]
+  implicit val stringSeqParser: CellParser[RawRow] = cellParserSeq
 
-  implicit val stringSeqParser: CellParser[StringSeq] = cellParserSeq
+  implicit val parser: StandardRowParser[RawRow] = StandardRowParser[RawRow]
 
-  implicit val parser: StandardRowParser[StringSeq] = StandardRowParser[StringSeq]
-
-  implicit object RawTableParser extends StringTableParser[Table[StringSeq]] {
-    type Row = StringSeq
+  implicit object RawTableParser extends StringTableParser[Table[RawRow]] {
+    type Row = RawRow
 
     val maybeFixedHeader: Option[Header] = maybeHeader
 

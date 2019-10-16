@@ -4,16 +4,38 @@
 
 package com.phasmidsoftware.table
 
+import com.phasmidsoftware.RawRow
+
 trait Transformation[X, Y] extends (X => Y) {
 
 }
 
-case class TableTransformation[Row1, Row2](f: Row1 => Row2)
+case class RawTableTransformation(transformers: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable] {
+  override def apply(t: RawTable): RawTable = {
+    val header = t.maybeHeader.get // there must be a header for a raw table.
+    // TODO fix this get
+    val xm: Map[Int, Transformation[String, String]] = for ((k, x) <- transformers; index = header.getIndex(k).get) yield (index, x)
+    t.map[RawRow](RawRowTransformation(xm))
+  }
+}
 
-//case class RowTransformation(transformers: Map[String, CellTransformation[_,_]]) extends Transformation[Row, Row] {
-//  override def apply(v1: Row): Row = v1.
-//}
+case class RawTableProjection(columns: Seq[String]) extends Transformation[RawTable, RawTable] {
+  override def apply(t: RawTable): RawTable = {
+    val header = t.maybeHeader.get // there must be a header for a raw table.
+    // TODO fix this get
+    val xs: Seq[Int] = for (k <- columns; index = header.getIndex(k).get) yield index
+    t.map[RawRow](RawRowProjection(xs))
+  }
+}
 
-case class CellTransformation[X, Y](column: String, f: X => Y) extends Transformation[X, Y] {
+case class RawRowTransformation(transformers: Map[Int, Transformation[String, String]]) extends Transformation[RawRow, RawRow] {
+  override def apply(xs: RawRow): RawRow = for ((x, i) <- xs.zipWithIndex; f = transformers.getOrElse(i, identity[String] _)) yield f(x)
+}
+
+case class RawRowProjection(columns: Seq[Int]) extends Transformation[RawRow, RawRow] {
+  override def apply(xs: RawRow): RawRow = for ((x, i) <- xs.zipWithIndex; if columns contains i) yield x
+}
+
+case class CellTransformation[X, Y](f: X => Y) extends Transformation[X, Y] {
   override def apply(x: X): Y = f(x)
 }

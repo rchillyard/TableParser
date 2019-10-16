@@ -215,13 +215,34 @@ class TableSpec extends FlatSpec with Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    val mty: Try[Table[Seq[String]]] = Table.parse(rows)
-    println(mty)
+    val mty: Try[RawTable] = Table.parse(rows)
     mty should matchPattern { case Success(TableWithHeader(_, _)) => }
-    val stringSeqTable: Table[Seq[String]] = mty.get
-    stringSeqTable.size shouldBe 1
-    stringSeqTable.head(1) shouldBe "Doug Walker"
-    println(stringSeqTable.maybeHeader)
+    val rawTable: RawTable = mty.get
+    rawTable.size shouldBe 1
+    rawTable.head(1) shouldBe "Doug Walker"
+
+    val f = RawTableTransformation(Map("MOVIE_TITLE" -> CellTransformation(_.toLowerCase)))
+    f.apply(rawTable).head(11) shouldBe "star wars: episode vii - the force awakens             "
+  }
+
+  behavior of "projection"
+
+  it should "parse and project the following rows" in {
+    import RawParsers.WithHeaderRow._
+
+    val rows = Seq(
+      movieHeader,
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+    )
+
+    val mty: Try[RawTable] = Table.parse(rows)
+    mty should matchPattern { case Success(TableWithHeader(_, _)) => }
+    val rawTable: RawTable = mty.get
+    rawTable.size shouldBe 1
+    rawTable.head(1) shouldBe "Doug Walker"
+
+    val f = RawTableProjection(Seq("MOVIE_TITLE"))
+    f.apply(rawTable).head.head shouldBe "Star Wars: Episode VII - The Force Awakens             "
   }
 
 }

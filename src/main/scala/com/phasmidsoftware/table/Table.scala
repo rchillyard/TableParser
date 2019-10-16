@@ -9,7 +9,7 @@ import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.render._
-import com.phasmidsoftware.util.Reflection
+import com.phasmidsoftware.util.{FP, Reflection}
 
 import scala.io.{Codec, Source}
 import scala.reflect.ClassTag
@@ -258,7 +258,7 @@ case class Header(xs: Seq[String]) {
     case Nil => false
   }
 
-  def getIndex(w: String): Int = xs.indexOf(w.toUpperCase)
+  def getIndex(w: String): Try[Int] = FP.indexFound(w, xs.indexOf(w.toUpperCase))
 
   def ++(other: Header): Header = Header(xs ++ other.xs)
 }

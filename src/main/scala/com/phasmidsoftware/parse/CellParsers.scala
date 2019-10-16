@@ -616,7 +616,8 @@ trait CellParsers {
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
-    if (idx >= 0) try cellParser.parse(CellValue(row(idx))) catch {
+    // TODO sort this out...
+    if (idx >= 0) try cellParser.parse(CellValue(row(idx).get)) catch {
       case e: Exception => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
     }
     else try cellParser.parse(Some(columnName), row, columns) catch {
