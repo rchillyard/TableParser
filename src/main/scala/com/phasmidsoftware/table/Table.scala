@@ -35,7 +35,7 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] where each cell has value f(x) where x is the value of the corresponding cell in this.
     */
-  def map[S](f: Row => S): Table[S] = unit(rows map f)
+  override def map[S](f: Row => S): Table[S] = unit(rows map f)
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].
@@ -269,8 +269,8 @@ case class Header(xs: Seq[String]) {
 object Header {
 
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
-  lazy val numbers: Stream[Int] = Stream.from(1)
-  lazy val generateNumbers: Stream[String] = numbers map (_.toString)
+  lazy val numbers: LazyList[Int] = LazyList.from(1)
+  lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
   //noinspection SpellCheckingInspection
   //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
   //  lazy val generateLetters: Stream[String] = recursiveLetters
@@ -285,21 +285,21 @@ object Header {
         case 0 => 26
         case other => other
       }
-      inner((m + 64).toChar + s, (n - m) / 26)
+      inner(s"${(m + 64).toChar}$s", (n - m) / 26)
     }
 
     inner("", n)
   }
   else n.toString
 
-  lazy val generateLetters: Stream[String] = numbers map intToString(letters = true)
+  lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
 
-  def multiply(prefixes: List[String], strings: Stream[String]): Stream[String] = {
-    val wss: List[Stream[String]] = prefixes map (prepend(_, strings))
-    wss.foldLeft(Stream.empty[String])(_ #::: _)
+  def multiply(prefixes: List[String], strings: LazyList[String]): LazyList[String] = {
+    val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
+    wss.foldLeft(LazyList.empty[String])(_ #::: _)
   }
 
-  def prepend(prefix: String, stream: Stream[String]): Stream[String] = stream map (prefix + _)
+  def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
 
   import scala.language.postfixOps
 

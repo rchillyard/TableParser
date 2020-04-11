@@ -5,12 +5,12 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.Header
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
 import scala.util.matching.Regex
 import scala.util.{Success, Try}
 
-class RowParserSpec extends FlatSpec with Matchers {
+class RowParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   case class HawkCount(species: String, count: Int)
 

@@ -9,14 +9,14 @@ import java.util.Date
 import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
 import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
-class TableParserSpec extends FlatSpec with Matchers {
+class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   behavior of "TableParser"
 
@@ -141,7 +141,8 @@ class TableParserSpec extends FlatSpec with Matchers {
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 12)), "Dense Fog/Light Rain", 0, 0)
+    val date = new LocalDate(2018, 9, 12)
+    x.get.rows.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
   }
 
   it should "parse raptors from Seq[String]" in {
@@ -154,7 +155,8 @@ class TableParserSpec extends FlatSpec with Matchers {
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 2
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), partlyCloudy, 3308, 5)
+    val date = new LocalDate(2018, 9, 16)
+    x.get.rows.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
 
   }
 
@@ -216,8 +218,8 @@ class TableParserSpec extends FlatSpec with Matchers {
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 2
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), partlyCloudy, 3308, 5)
-
+    val date = new LocalDate(2018, 9, 16)
+    x.get.rows.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
   }
 
   object DailyRaptorReportNoHeader {
@@ -268,8 +270,8 @@ class TableParserSpec extends FlatSpec with Matchers {
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.
-    //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 12)), "Dense Fog/Light Rain", 0, 0)
+    val date = new LocalDate(2018, 9, 12)
+    x.get.rows.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
 
   }
 

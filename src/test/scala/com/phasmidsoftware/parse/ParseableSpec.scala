@@ -4,9 +4,9 @@
 
 package com.phasmidsoftware.parse
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
-class ParseableSpec extends FlatSpec with Matchers {
+class ParseableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   behavior of "Parseable"
 

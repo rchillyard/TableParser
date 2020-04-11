@@ -4,16 +4,14 @@
 
 package com.phasmidsoftware.parse
 
-import java.util.Date
-
 import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
 import scala.util.Success
 
-class CellParsersSpec extends FlatSpec with Matchers {
+class CellParsersSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   case class MyNumber(x: Int)
 
@@ -121,15 +119,15 @@ class CellParsersSpec extends FlatSpec with Matchers {
     val r = RowValues(Row(Seq("09/16/2018", partlyCloudy, "3308", "5"), Header.create("Date", "Weather", "BW", "RT")))
     import DailyRaptorReportParser._
     // TODO fix deprecation here and 7 lines down.
-    //noinspection ScalaDeprecation
-    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), partlyCloudy, 3308, 5))
+    val date = new LocalDate(2018, 9, 16)
+    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(date, partlyCloudy, 3308, 5))
   }
 
   it should "convertTo DailyRaptorReport in ISO date parse" in {
     val r = RowValues(Row(Seq("2018-09-16", partlyCloudy, "3308", "5"), Header.create("Date", "Weather", "BW", "RT")))
     import DailyRaptorReportParserISO._
-    //noinspection ScalaDeprecation
-    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), partlyCloudy, 3308, 5))
+    val date = new LocalDate(2018, 9, 16)
+    r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(date, partlyCloudy, 3308, 5))
   }
 
   it should "convertTo Seq[Int]" in {
