@@ -76,6 +76,7 @@ class TableParserSpec extends FlatSpec with Matchers {
   case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
 
   object DailyRaptorReport {
+
     object DailyRaptorReportParser extends CellParsers {
 
 
@@ -110,6 +111,7 @@ class TableParserSpec extends FlatSpec with Matchers {
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
+
   }
 
   behavior of "RowParser.parse"
