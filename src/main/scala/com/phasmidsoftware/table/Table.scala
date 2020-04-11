@@ -12,6 +12,7 @@ import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.Reflection
 
 import scala.io.{Codec, Source}
+import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
@@ -53,7 +54,7 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * Method to generate a Table[S] for a set of rows.
     * Although declared as an instance method, this method produces its result independent of this.
     *
-    * @param rows        a sequence of S.
+    * @param rows a sequence of S.
     * @tparam S the underlying type of the rows and the result.
     * @return a new instance of Table[S].
     */
@@ -146,7 +147,8 @@ object Table {
     val result = parse(x.getLines())
     result match {
       case Success(_) => try {
-        x.close(); result
+        x.close()
+        result
       } catch {
         case e: Exception => Failure(e)
       }
@@ -245,6 +247,7 @@ object Table {
 
 /**
   * Case class to represent a header.
+  *
   * @param xs the sequence of column names.
   */
 case class Header(xs: Seq[String]) {
@@ -263,6 +266,7 @@ object Header {
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
   lazy val numbers: Stream[Int] = Stream.from(1)
   lazy val generateNumbers: Stream[String] = numbers map (_.toString)
+  //noinspection SpellCheckingInspection
   //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
   //  lazy val generateLetters: Stream[String] = recursiveLetters
   val alphabet: List[String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray.map(_.toString).toList
@@ -447,7 +451,7 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
   * NOTE: the existence or not of a Header in a BaseTable only affects how the table is rendered.
   * The parsing of a table always has a header of some sort.
   *
-  * @param rows   the rows of the table.
+  * @param rows the rows of the table.
   * @tparam Row the underlying type of each Row
   */
 case class TableWithoutHeader[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None) {

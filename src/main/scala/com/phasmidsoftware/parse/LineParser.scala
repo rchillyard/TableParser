@@ -61,6 +61,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   override def toString: String = s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 
   private def getDelimiterChar: Char = {
+    @scala.annotation.tailrec
     def inner(w: Seq[Char], escaped: Boolean): Char =
       w match {
         case h :: t =>
@@ -106,7 +107,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
     (
       check(cell, "Hello", "Hello") &&
         //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
-        check(quotedString,s"""${quote}Hello${getDelimiterChar}Goodbye$quote""",s"""Hello${getDelimiterChar}Goodbye""")
+        check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")
       ).squawk()
   }
 

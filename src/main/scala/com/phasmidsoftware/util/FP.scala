@@ -26,12 +26,12 @@ object FP {
     * Method to yield a Try[URL] for a resource name and a given class.
     *
     * @param resourceName the name of the resource.
-    * @param clazz the class, relative to which, the resource can be found.
+    * @param clazz        the class, relative to which, the resource can be found.
     * @return a Try[URL]
     */
-  def getURLforResource(resourceName: String, clazz: Class[_] = getClass): Try[URL] = Option(clazz.getResource(resourceName)) match {
+  def getURLForResource(resourceName: String, clazz: Class[_] = getClass): Try[URL] = Option(clazz.getResource(resourceName)) match {
     case Some(u) => Success(u)
-    case None => Failure(ParserException(s"$resourceName is not a valid resource for ${clazz}"))
+    case None => Failure(ParserException(s"$resourceName is not a valid resource for $clazz"))
   }
 
 
