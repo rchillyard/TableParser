@@ -566,7 +566,9 @@ trait CellParsers {
     * @tparam T the underlying type of the resulting ColumnHelper
     * @return a new instance of ColumnHelper[T]
     */
-  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, maybePrefix, aliases: _*)  /**
+  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, maybePrefix, aliases: _*)
+
+  /**
     * Method to yield a ColumnHelper[T] based on a column name mapper, and some number of explicit aliases,
     *
     * @param columnNameMapper a mapper of String=>String which will translate case class parameter names into column names.
