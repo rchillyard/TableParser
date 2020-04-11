@@ -636,10 +636,10 @@ object CellParsers
 
 case class ParsersException(w: String) extends Exception(w)
 
-
 /**
   * This class is used for the situation where a column in a table actually contains a set of
-  * attributes, typically separated by "|" and possibly bracketed by "{}"
+  * attributes, typically separated by "," and possibly bracketed by "{}".
+  * CONSIDER allowing "|" as a separator (as described previously in the documentation here).
   *
   * @param xs the attribute values.
   */

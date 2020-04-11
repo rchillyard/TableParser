@@ -301,8 +301,6 @@ object Header {
 
   def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
 
-  import scala.language.postfixOps
-
   /**
     * This method constructs a new Header based on Excel row/column names.
     *

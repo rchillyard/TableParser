@@ -205,4 +205,10 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
     RowValues(Row(Seq("1", "2"), Header.create("s", "z"))).convertTo[MyInt].get.z shouldBe Int1(2)
     RowValues(Row(Seq("2", "2"), Header.create("s", "z"))).convertTo[MyInt].get.z shouldBe Int2(2)
   }
+
+  behavior of "AttributeSet"
+  it should "behave" in {
+    AttributeSet("{x}").xs shouldBe List("x")
+    AttributeSet("{x,y}").xs shouldBe List("x", "y")
+  }
 }
