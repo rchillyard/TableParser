@@ -4,9 +4,9 @@
 
 package com.phasmidsoftware.render
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
-class TreeWriterSpec extends FlatSpec with Matchers {
+class TreeWriterSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   case class HTML(x: String, ao: Option[String], attrs: Map[String, String], hs: Seq[HTML])
 

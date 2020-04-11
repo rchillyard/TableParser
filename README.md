@@ -30,7 +30,7 @@ For an introduction to _TableParser_ with a very simple use case, please see my 
 
 # User Guide
 
-Current version: 1.0.8.
+Current version: 1.0.9.
 
 See release notes below for history.
 
@@ -431,6 +431,9 @@ If you need to set HTML attributes for a specific type, for example a row in the
 
 Release Notes
 =============
+
+V1.0.8 -> V1.0.9
+* build.sbt: changed scalaVersion to 2.12.10
 
 V1.0.7 -> V1.0.8
 * build.sbt: changed scalaVersion to 2.12.9

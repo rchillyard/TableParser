@@ -4,11 +4,11 @@
 
 package com.phasmidsoftware.parse
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
 import scala.util.Success
 
-class LineParserSpec extends FlatSpec with Matchers {
+class LineParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   val hgTabbed = "Hello\tGoodbye"
   val hgSerial = "Hello, Goodbye"
@@ -17,9 +17,9 @@ class LineParserSpec extends FlatSpec with Matchers {
 
   behavior of "LineParser"
   // TODO fix deprecation of syntax (next two lines).
-  val p2 = new LineParser("""\t""".r, """[^\t]*""".r, "", '|', quote = ''')
-  val p3 = new LineParser(", *".r, """[\w_?:=./]+""".r, "", '|', quote = ''')
-  val p4 = new LineParser("""\|""".r, """[^|]*""".r, "{}", ',', quote = '"')
+  val p2 = new LineParser("""\t""".r, """[^\t]*""".r, "", '|', quote = '\'')
+  val p3 = new LineParser(", *".r, """[\w_?:=./]+""".r, "", '|', quote = '\'')
+  val p4 = new LineParser("""\|""".r, """[^|]*""".r, "{}", ',', quote = '\"')
   private val helloQuoteGoodbye = """"Hello ""Goodbye""""
   private val HelloGoodbye = """Hello "Goodbye"""
   val HelloCommaGoodbye = """{Hello,Goodbye}"""

@@ -152,7 +152,7 @@ object MovieParser extends CellParsers {
   implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
     type Row = Movie
 
-    val maybeHeader: Option[Header] = None
+    val maybeFixedHeader: Option[Header] = None
 
     override def forgiving: Boolean = true
 

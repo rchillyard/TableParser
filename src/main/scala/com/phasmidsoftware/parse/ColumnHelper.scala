@@ -16,12 +16,12 @@ trait ColumnHelper[T] {
   /**
     * This is the format for the prefix of a name, where "x" represents the value, if any, of the optional string.
     */
-  val _maybePrefix: Option[String]
+  val maybePrefix_ : Option[String]
 
   /**
     * These are the alias mappings
     */
-  val _aliases: Seq[(String, String)]
+  val aliases_ : Seq[(String, String)]
 
   /**
     * This defines the default mapping between parameter names and column names.
@@ -29,7 +29,7 @@ trait ColumnHelper[T] {
     *
     * @return the mapper function.
     */
-  val _columnNameMapper: String => String
+  val columnNameMapper_ : String => String
 
   /**
     * This is the lookup function
@@ -39,8 +39,8 @@ trait ColumnHelper[T] {
     * @return a String which may include a prefix.
     */
   def lookup(so: Option[String], w: String): String = {
-    val column = _aliases.toMap.getOrElse(w, _columnNameMapper(w))
-    (for (prfx <- _maybePrefix; s <- so) yield prfx.replace("$x", s).replace("$c", column)).getOrElse(column)
+    val column = aliases_.toMap.getOrElse(w, columnNameMapper_(w))
+    (for (p <- maybePrefix_; s <- so) yield p.replace("$x", s).replace("$c", column)).getOrElse(column)
   }
 }
 

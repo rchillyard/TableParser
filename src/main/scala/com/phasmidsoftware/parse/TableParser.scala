@@ -29,11 +29,11 @@ trait TableParser[Table] {
   type Input
 
   /**
-    * This variable determines if there is a programmed header for the parser.
+    * This variable determines if there is a programmed, i.e. fixed, header for the parser.
     * If its value is None, it signifies that we must look to the first line of data
     * for an appropriate header.
     */
-  val maybeHeader: Option[Header]
+  val maybeFixedHeader: Option[Header]
 
   /**
     * Default method to create a new table.
@@ -98,12 +98,12 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
     if (rowParser == null) // XXX how can this happen?
       Failure(ParserException("implicit RowParser[Row] is undefined"))
-    else maybeHeader match {
+    else maybeFixedHeader match {
       case Some(h) => parseRows(xs, h)
       case None => // NOTE: it is possible that we still don't really have a header encoded in the data either
         xs match {
-          case h #:: t => separateHeaderAndRows(h, t)
           case h :: t => separateHeaderAndRows(h, t)
+          case LazyList.cons(h, t) => separateHeaderAndRows(h, t)
           case _ => Failure(ParserException("no rows to parse"))
         }
     }
@@ -149,7 +149,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
 
 /**
   * Abstract class to extend AbstractTableParser but with Input = Strings
-  * This is the unuual situation where a file is a sequence of a sequence of Strings, each representing one value.
+  * This is the unusual situation where a file is a sequence of a sequence of Strings, each representing one value.
   *
   * @tparam Table the table type.
   */

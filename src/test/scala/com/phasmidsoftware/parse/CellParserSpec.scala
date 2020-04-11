@@ -5,10 +5,10 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{Header, Row}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
 //noinspection NotImplementedCode
-class CellParserSpec extends FlatSpec with Matchers {
+class CellParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   private val intCellParser: CellParser[Int] = new CellParser[Int] {
     def convertString(w: String): Int = w.toInt

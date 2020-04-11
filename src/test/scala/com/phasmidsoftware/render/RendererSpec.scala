@@ -6,9 +6,9 @@ package com.phasmidsoftware.render
 
 import com.phasmidsoftware.render.tag.{Attribute, HTML}
 import com.phasmidsoftware.table.{Header, Indexed, TableWithHeader}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
-class RendererSpec extends FlatSpec with Matchers {
+class RendererSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   case class Complex(r: Double, i: Double)
 

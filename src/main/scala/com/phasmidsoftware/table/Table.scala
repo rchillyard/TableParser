@@ -9,11 +9,12 @@ import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.render._
-import com.phasmidsoftware.util.Reflection
+import com.phasmidsoftware.util.{FP, Reflection}
 
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -24,13 +25,18 @@ import scala.util.{Failure, Success, Try}
 trait Table[Row] extends Iterable[Row] with Renderable[Row] {
 
   /**
+    * Optional value of the Header of this Table, if there is one.
+    */
+  val maybeHeader: Option[Header]
+
+  /**
     * Transform (map) this Table[Row] into a Table[S].
     *
     * @param f a function which transforms a Row into an S.
     * @tparam S the type of the rows of the result.
     * @return a Table[S] where each cell has value f(x) where x is the value of the corresponding cell in this.
     */
-  def map[S](f: Row => S): Table[S] = unit(rows map f)
+  override def map[S](f: Row => S): Table[S] = unit(rows map f)
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].
@@ -150,7 +156,7 @@ object Table {
         x.close()
         result
       } catch {
-        case e: Exception => Failure(e)
+        case NonFatal(e) => Failure(e)
       }
       case _ => result
     }
@@ -256,7 +262,7 @@ case class Header(xs: Seq[String]) {
     case Nil => false
   }
 
-  def getIndex(w: String): Int = xs.indexOf(w.toUpperCase)
+  def getIndex(w: String): Try[Int] = FP.indexFound(w, xs.indexOf(w.toUpperCase))
 
   def ++(other: Header): Header = Header(xs ++ other.xs)
 }
@@ -264,8 +270,8 @@ case class Header(xs: Seq[String]) {
 object Header {
 
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
-  lazy val numbers: Stream[Int] = Stream.from(1)
-  lazy val generateNumbers: Stream[String] = numbers map (_.toString)
+  lazy val numbers: LazyList[Int] = LazyList.from(1)
+  lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
   //noinspection SpellCheckingInspection
   //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
   //  lazy val generateLetters: Stream[String] = recursiveLetters
@@ -274,27 +280,28 @@ object Header {
   private def intToString(letters: Boolean)(n: Int): String = if (letters) {
     @scala.annotation.tailrec
     def inner(s: String, n: Int): String = {
-      if (n <= 0)
-        return s
-      val m = n % 26 match {
-        case 0 => 26
-        case other => other
+      if (n <= 0) s
+      else {
+        val m = n % 26 match {
+          case 0 => 26
+          case other => other
+        }
+        inner(s"${(m + 64).toChar}$s", (n - m) / 26)
       }
-      inner((m + 64).toChar + s, (n - m) / 26)
     }
 
     inner("", n)
   }
   else n.toString
 
-  lazy val generateLetters: Stream[String] = numbers map intToString(letters = true)
+  lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
 
-  def multiply(prefixes: List[String], strings: Stream[String]): Stream[String] = {
-    val wss: List[Stream[String]] = prefixes map (prepend(_, strings))
-    wss.foldLeft(Stream.empty[String])(_ #::: _)
+  def multiply(prefixes: List[String], strings: LazyList[String]): LazyList[String] = {
+    val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
+    wss.foldLeft(LazyList.empty[String])(_ #::: _)
   }
 
-  def prepend(prefix: String, stream: Stream[String]): Stream[String] = stream map (prefix + _)
+  def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
 
   /**
     * This method constructs a new Header based on Excel row/column names.
@@ -320,51 +327,7 @@ object Header {
   def create(ws: String*): Header = apply(ws map (_.toUpperCase))
 }
 
-/**
-  * Trait to model behavior of something based on Rows and which is renderable.
-  *
-  * @tparam Row the underlying type of a row.
-  */
-trait Renderable[Row] {
 
-  /**
-    * Method to render a table in a sequential (serialized) fashion.
-    *
-    * CONSIDER does this belong here (it doesn't reference Row).
-    *
-    * @tparam O a type which supports Writable (via evidence of type Writable[O])
-    * @return a new (or possibly old) instance of O.
-    */
-  def render[O: Writable]: O
-
-  /**
-    * Method to render a table in a hierarchical fashion.
-    *
-    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
-    * outputting each row as you go.
-    *
-    * @param style      the "style" to be used for the node which will represent this table.
-    * @param attributes the attributes to be applied to the top level node for this table.
-    * @param rr         an (implicit) Renderer[Row]
-    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
-    * @return a new instance of U which represents this Table as a tree of some sort.
-    */
-  def render[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Row]): U
-
-  /**
-    * Method to render a table in a hierarchical fashion.
-    *
-    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
-    * outputting each row as you go.
-    *
-    * @param style      the "style" to be used for the node which will represent this table.
-    * @param attributes the attributes to be applied to the top level node for this table.
-    * @param rr         an (implicit) Renderer[ Indexed [ Row ] ]
-    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
-    * @return a new instance of U which represents this Table as a tree of some sort.
-    */
-  def renderSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Indexed[Row]]): U
-}
 
 /**
   * CONSIDER eliminating this base class
@@ -442,7 +405,6 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     val trimmed = tableNode.trim
     implicitly[TreeWriter[U]].evaluate(trimmed)
   }
-
 }
 
 /**

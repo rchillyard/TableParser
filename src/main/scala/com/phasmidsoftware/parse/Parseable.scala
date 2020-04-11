@@ -165,12 +165,15 @@ object ParseableOption {
 
 }
 
-
+/**
+  * This class is a parser of lists.
+  * A list is considered to be enclosed by {} and separated by commas.
+  */
 class ListParser() extends JavaTokenParsers {
 
   def list: Parser[StringList] = "{" ~> strings <~ "}" | singleton
 
-  def strings: Parser[StringList] = repsep("""[^\,\}]+""".r, ",")
+  def strings: Parser[StringList] = repsep("""[^,\}]+""".r, ",")
 
   def singleton: Parser[StringList] = """\w*""".r ^^ { w: String => List(w) }
 }

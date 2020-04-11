@@ -9,6 +9,7 @@ import com.phasmidsoftware.util.Reflection
 
 import scala.reflect.ClassTag
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
   * Trait to define the various parsers for reading case classes and their parameters from table rows.
@@ -31,7 +32,7 @@ trait CellParsers {
     def parse(wo: Option[String], row: Row, columns: Header): Seq[P] = {
       def getP(i: Int): Try[P] = Try(implicitly[CellParser[P]].parse(Some(s"$i"), row, columns))
 
-      Stream.from(start).map(getP).takeWhile(_.isSuccess).map(_.get).toList
+      LazyList.from(start).map(getP).takeWhile(_.isSuccess).map(_.get).toList
     }
   }
 
@@ -588,9 +589,9 @@ trait CellParsers {
     * @return a new instance of ColumnHelper[T]
     */
   def columnHelper[T](columnNameMapper: String => String, maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = new ColumnHelper[T] {
-    override val _maybePrefix: Option[String] = maybePrefix
-    override val _aliases: Seq[(String, String)] = aliases
-    override val _columnNameMapper: String => String = columnNameMapper
+    override val maybePrefix_ : Option[String] = maybePrefix
+    override val aliases_ : Seq[(String, String)] = aliases
+    override val columnNameMapper_ : String => String = columnNameMapper
   }
 
   /**
@@ -618,8 +619,9 @@ trait CellParsers {
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
-    if (idx >= 0) try cellParser.parse(CellValue(row(idx))) catch {
-      case e: Exception => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
+    // TODO sort this out...
+    if (idx >= 0) try cellParser.parse(CellValue(row(idx).get)) catch {
+      case NonFatal(e) => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
     }
     else try cellParser.parse(Some(columnName), row, columns) catch {
       case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns")
@@ -635,10 +637,10 @@ object CellParsers
 
 case class ParsersException(w: String) extends Exception(w)
 
-
 /**
   * This class is used for the situation where a column in a table actually contains a set of
-  * attributes, typically separated by "|" and possibly bracketed by "{}"
+  * attributes, typically separated by "," and possibly bracketed by "{}".
+  * CONSIDER allowing "|" as a separator (as described previously in the documentation here).
   *
   * @param xs the attribute values.
   */
