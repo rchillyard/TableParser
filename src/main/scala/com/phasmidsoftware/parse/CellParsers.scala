@@ -9,6 +9,7 @@ import com.phasmidsoftware.util.Reflection
 
 import scala.reflect.ClassTag
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
   * Trait to define the various parsers for reading case classes and their parameters from table rows.
@@ -588,9 +589,9 @@ trait CellParsers {
     * @return a new instance of ColumnHelper[T]
     */
   def columnHelper[T](columnNameMapper: String => String, maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = new ColumnHelper[T] {
-    override val _maybePrefix: Option[String] = maybePrefix
-    override val _aliases: Seq[(String, String)] = aliases
-    override val _columnNameMapper: String => String = columnNameMapper
+    override val maybePrefix_ : Option[String] = maybePrefix
+    override val aliases_ : Seq[(String, String)] = aliases
+    override val columnNameMapper_ : String => String = columnNameMapper
   }
 
   /**
@@ -620,7 +621,7 @@ trait CellParsers {
     val idx = row.getIndex(columnName)
     // TODO sort this out...
     if (idx >= 0) try cellParser.parse(CellValue(row(idx).get)) catch {
-      case e: Exception => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
+      case NonFatal(e) => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
     }
     else try cellParser.parse(Some(columnName), row, columns) catch {
       case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns")

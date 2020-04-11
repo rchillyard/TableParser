@@ -14,6 +14,7 @@ import com.phasmidsoftware.util.{FP, Reflection}
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -155,7 +156,7 @@ object Table {
         x.close()
         result
       } catch {
-        case e: Exception => Failure(e)
+        case NonFatal(e) => Failure(e)
       }
       case _ => result
     }
@@ -279,13 +280,14 @@ object Header {
   private def intToString(letters: Boolean)(n: Int): String = if (letters) {
     @scala.annotation.tailrec
     def inner(s: String, n: Int): String = {
-      if (n <= 0)
-        return s
-      val m = n % 26 match {
-        case 0 => 26
-        case other => other
+      if (n <= 0) s
+      else {
+        val m = n % 26 match {
+          case 0 => 26
+          case other => other
+        }
+        inner(s"${(m + 64).toChar}$s", (n - m) / 26)
       }
-      inner(s"${(m + 64).toChar}$s", (n - m) / 26)
     }
 
     inner("", n)
@@ -403,7 +405,6 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     val trimmed = tableNode.trim
     implicitly[TreeWriter[U]].evaluate(trimmed)
   }
-
 }
 
 /**
