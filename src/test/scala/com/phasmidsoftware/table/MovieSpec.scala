@@ -46,8 +46,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
     x.get.size shouldBe 1
   }
 
-  // TODO rework this test
-  ignore should "fail to parse the first (edited) movie from the IMDB dataset" in {
+  it should "fail to parse the first (edited) movie from the IMDB dataset" in {
     import MovieParser._
 
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
@@ -64,9 +63,8 @@ class MovieSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
     val movies = Seq(
       movieHeader,
-      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
+      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-,,2009,936,7.9,1.78,33000"
     )
-
     val x: Try[Table[Movie]] = Table.parse(movies)
     x should matchPattern { case Failure(_) => }
   }

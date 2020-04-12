@@ -4,8 +4,6 @@
 
 package com.phasmidsoftware.parse
 
-import java.util.Date
-
 import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
@@ -323,6 +321,25 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
     qty should matchPattern { case Success(_) => }
     qty.get.size shouldBe 1
     println(qty.get.head)
+  }
+
+  it should "fail on incompatible parser" in {
+    import Submissions._
+    val strings: Seq[String] = Nil
+    Table.parse(strings) match {
+      case Success(_) => fail("should fail")
+      case Failure(_) => succeed
+    }
+  }
+
+  it should "fail on empty rows" in {
+    import Submissions._
+    val rows: Seq[Seq[String]] = Nil
+    val qty: Try[Table[Submission]] = Table.parseSequence(rows)
+    qty match {
+      case Success(_) => fail("should fail")
+      case Failure(_) => succeed
+    }
   }
 
 
