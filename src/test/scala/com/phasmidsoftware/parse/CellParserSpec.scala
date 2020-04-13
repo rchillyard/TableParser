@@ -48,4 +48,30 @@ class CellParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers 
     //    stringCellParser.parse(CellValue(""""Hello with internal "" Goodbye"""")) shouldBe """"Hello with internal " Goodbye""""
   }
 
+  behavior of "Implicit parsers"
+
+  it should "parse String" in {
+    val p = implicitly[CellParser[String]]
+    p.convertString("") shouldBe ""
+    p.convertString("Hello") shouldBe "Hello"
+  }
+
+  it should "parse Int" in {
+    val p = implicitly[CellParser[Int]]
+    p.convertString("99") shouldBe 99
+    a[ParseableException] should be thrownBy p.convertString("")
+  }
+
+  it should "parse Boolean" in {
+    val p = implicitly[CellParser[Boolean]]
+    p.convertString("true") shouldBe true
+    a[ParseableException] should be thrownBy p.convertString("")
+  }
+
+  it should "parse Double" in {
+    val p = implicitly[CellParser[Double]]
+    p.convertString("3.1415927") shouldBe 3.1415927
+    a[ParseableException] should be thrownBy p.convertString("")
+  }
+
 }
