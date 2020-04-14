@@ -139,31 +139,31 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
   behavior of "CellParsers"
 
   it should "parse Int" in {
-    implicitly[CellParser[Int]].convertString("1") shouldBe 1
+    implicitly[CellParser[Int]].convertString("1") shouldBe Success(1)
   }
 
   it should "parse Double" in {
-    implicitly[CellParser[Double]].convertString("1") shouldBe 1.0
+    implicitly[CellParser[Double]].convertString("1") shouldBe Success(1.0)
   }
 
   it should "parse Long" in {
-    implicitly[CellParser[Long]].convertString("99") shouldBe 99L
+    implicitly[CellParser[Long]].convertString("99") shouldBe Success(99L)
   }
 
   it should "parse BigInt" in {
-    implicitly[CellParser[BigInt]].convertString("999999999999") shouldBe BigInt("999999999999")
+    implicitly[CellParser[BigInt]].convertString("999999999999") shouldBe Success(BigInt("999999999999"))
   }
 
   it should "parse Option[Int]" in {
-    implicitly[CellParser[Option[Int]]].convertString("") shouldBe None
-    implicitly[CellParser[Option[Int]]].convertString("1") shouldBe Some(1)
+    implicitly[CellParser[Option[Int]]].convertString("") should matchPattern { case Success(None) => }
+    implicitly[CellParser[Option[Int]]].convertString("1") shouldBe Success(Some(1))
   }
 
   it should "parse optional MyNumber as None" in {
     import MyNumberParser._
 
     implicit val optionalMyNumberParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
-    implicitly[CellParser[Option[MyNumber]]].convertString("") shouldBe None
+    implicitly[CellParser[Option[MyNumber]]].convertString("") should matchPattern { case Success(None) => }
   }
 
   it should "parse optional MyNumber(1)" in {
@@ -171,7 +171,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
     implicit val optionalMyNumberParser: CellParser[Option[MyNumber]] = cellParserOption[MyNumber]
     val cellParser = implicitly[CellParser[Option[MyNumber]]]
-    cellParser.convertString("1") shouldBe Some(MyNumber(1))
+    cellParser.convertString("1") shouldBe Success(Some(MyNumber(1)))
   }
 
   it should "parse optional PhoneNumber" in {
@@ -183,8 +183,8 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
   it should "parse optional non-empty String" in {
     val parser = new CellParsers {}.cellParserOptionNonEmptyString
-    parser.convertString("Hello") shouldBe Some("Hello")
-    parser.convertString("") shouldBe None
+    parser.convertString("Hello") shouldBe Success(Some("Hello"))
+    parser.convertString("") shouldBe Success(None)
   }
 
   it should "conditionally parse" in {
@@ -208,7 +208,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
   behavior of "AttributeSet"
   it should "behave" in {
-    AttributeSet("{x}").xs shouldBe List("x")
-    AttributeSet("{x,y}").xs shouldBe List("x", "y")
+    AttributeSet.parse("{x}").get.xs shouldBe List("x")
+    AttributeSet.parse("{x,y}").get.xs shouldBe List("x", "y")
   }
 }

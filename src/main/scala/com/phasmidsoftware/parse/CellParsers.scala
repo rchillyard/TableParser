@@ -5,11 +5,11 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table._
-import com.phasmidsoftware.util.Reflection
+import com.phasmidsoftware.util.{FP, Reflection}
 
 import scala.reflect.ClassTag
-import scala.util.Try
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 /**
   * Trait to define the various parsers for reading case classes and their parameters from table rows.
@@ -29,10 +29,10 @@ trait CellParsers {
   def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
     override def toString: String = "MultiCellParser: cellParserRepetition"
 
-    def parse(wo: Option[String], row: Row, columns: Header): Seq[P] = {
-      def getP(i: Int): Try[P] = Try(implicitly[CellParser[P]].parse(Some(s"$i"), row, columns))
+    def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = {
+      def getTryP(i: Int) = implicitly[CellParser[P]].parse(Some(s"$i"), row, columns)
 
-      LazyList.from(start).map(getP).takeWhile(_.isSuccess).map(_.get).toList
+      FP.sequence(LazyList.from(start).map(getTryP).takeWhile(_.isSuccess).toList)
     }
   }
 
@@ -47,11 +47,13 @@ trait CellParsers {
   def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
     override def toString: String = "MultiCellParser: cellParserSeq"
 
-    def parse(wo: Option[String], row: Row, columns: Header): Seq[P] = for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w))
+    def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = FP.sequence(for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w)))
   }
 
   /**
     * Method to return a CellParser[Option[P].
+    *
+    * This class is used for optional types which are non-scalar, i.e. there are no implicitly-defined parsers for the Option[P].
     *
     * @tparam P the underlying type of the result
     * @return a SingleCellParser[Option[P]
@@ -61,13 +63,21 @@ trait CellParsers {
 
     private val cp: CellParser[P] = implicitly[CellParser[P]]
 
-    def convertString(w: String): Option[P] = Try(cp.parse(CellValue(w))).toOption
+    def convertString(w: String): Try[Option[P]] = convertToOptionP(cp.parse(CellValue(w)))
 
-    override def parse(wo: Option[String], row: Row, columns: Header): Option[P] = Try(cp.parse(wo, row, columns)).toOption
+    override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[P]] = convertToOptionP(cp.parse(wo, row, columns))
+
+    private def convertToOptionP(py: Try[P]) = py.map(Some(_)).recoverWith {
+      case _: ParseableException => Success(None)
+    }
   }
 
   /**
     * Method to return a CellParser[Option[String].
+    *
+    * TODO: why do we need this in addition to cellParserOption?
+    *
+    * CONSIDER: using BlankException as above...
     *
     * @return a SingleCellParser[Option[String]
     */
@@ -75,14 +85,14 @@ trait CellParsers {
     override def toString: String = s"cellParserOptionNonEmptyString"
 
     private val cp: CellParser[String] = new CellParser[String]() {
-      override def convertString(w: String): String = if (w.isEmpty) null else w
+      def convertString(w: String): Try[String] = Success(if (w.isEmpty) null else w)
 
-      override def parse(wo: Option[String], row: Row, columns: Header): String = throw new UnsupportedOperationException
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[String] = Failure(new UnsupportedOperationException)
     }
 
-    def convertString(w: String): Option[String] = Option(cp.convertString(w))
+    def convertString(w: String): Try[Option[String]] = cp.convertString(w).map(Option(_))
 
-    override def parse(wo: Option[String], row: Row, columns: Header): Option[String] = Try(cp.parse(wo, row, columns)).toOption
+    override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[String]] = cp.parse(wo, row, columns).map(Option(_))
   }
 
   /**
@@ -96,7 +106,7 @@ trait CellParsers {
   def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = new SingleCellParser[T] {
     override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
 
-    def convertString(w: String): T = construct(implicitly[CellParser[P]].parse(CellValue(w)))
+    def convertString(w: String): Try[T] = implicitly[CellParser[P]].parse(CellValue(w)).map(construct)
   }
 
   /**
@@ -121,12 +131,12 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser1 for $tc"
 
-      def parse(wo: Option[String], row: Row, columns: Header): T = {
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
         val p1V = readCell[T, P1](wo, row, columns)(p1)
-        construct(p1V)
+        p1V.map(construct)
       }
 
-      override def convertString(w: String): T = construct(implicitly[CellParser[P1]].convertString(w))
+      override def convertString(w: String): Try[T] = implicitly[CellParser[P1]].convertString(w).map(construct)
     }
   }
 
@@ -149,10 +159,10 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser2 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        construct(p1V, p2V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for (p1V <- readP[P1](p1); p2V <- readP[P2](p2)) yield construct(p1V, p2V)
       }
     }
   }
@@ -181,10 +191,11 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser2 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V: K = readCell[T, K](wo, row, columns)(p1)
-        val p2V = readCell[T, P](wo, row, columns)(p2)(tc, implicitly[ColumnHelper[T]], parsers(p1V))
-        construct(p1V, p2V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        for {
+          k <- readCell[T, K](wo, row, columns)(p1)
+          p <- readCell[T, P](wo, row, columns)(p2)(tc, implicitly[ColumnHelper[T]], parsers(k))
+        } yield construct(k, p)
       }
     }
   }
@@ -208,11 +219,14 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser3 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        construct(p1V, p2V, p3V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+        } yield construct(p1V, p2V, p3V)
       }
     }
   }
@@ -237,12 +251,15 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser4 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        val p4V = readCell[T, P4](wo, row, columns)(p4)
-        construct(p1V, p2V, p3V, p4V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+          p4V <- readP[P4](p4)
+        } yield construct(p1V, p2V, p3V, p4V)
       }
     }
   }
@@ -268,13 +285,16 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser5 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        val p4V = readCell[T, P4](wo, row, columns)(p4)
-        val p5V = readCell[T, P5](wo, row, columns)(p5)
-        construct(p1V, p2V, p3V, p4V, p5V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+          p4V <- readP[P4](p4)
+          p5V <- readP[P5](p5)
+        } yield construct(p1V, p2V, p3V, p4V, p5V)
       }
     }
   }
@@ -301,14 +321,17 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser6 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        val p4V = readCell[T, P4](wo, row, columns)(p4)
-        val p5V = readCell[T, P5](wo, row, columns)(p5)
-        val p6V = readCell[T, P6](wo, row, columns)(p6)
-        construct(p1V, p2V, p3V, p4V, p5V, p6V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+          p4V <- readP[P4](p4)
+          p5V <- readP[P5](p5)
+          p6V <- readP[P6](p6)
+        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V)
       }
     }
   }
@@ -336,15 +359,18 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser7 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        val p4V = readCell[T, P4](wo, row, columns)(p4)
-        val p5V = readCell[T, P5](wo, row, columns)(p5)
-        val p6V = readCell[T, P6](wo, row, columns)(p6)
-        val p7V = readCell[T, P7](wo, row, columns)(p7)
-        construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+          p4V <- readP[P4](p4)
+          p5V <- readP[P5](p5)
+          p6V <- readP[P6](p6)
+          p7V <- readP[P7](p7)
+        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V)
       }
     }
   }
@@ -373,16 +399,19 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser8 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        val p4V = readCell[T, P4](wo, row, columns)(p4)
-        val p5V = readCell[T, P5](wo, row, columns)(p5)
-        val p6V = readCell[T, P6](wo, row, columns)(p6)
-        val p7V = readCell[T, P7](wo, row, columns)(p7)
-        val p8V = readCell[T, P8](wo, row, columns)(p8)
-        construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+          p4V <- readP[P4](p4)
+          p5V <- readP[P5](p5)
+          p6V <- readP[P6](p6)
+          p7V <- readP[P7](p7)
+          p8V <- readP[P8](p8)
+        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V)
       }
     }
   }
@@ -412,17 +441,20 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser9 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        val p4V = readCell[T, P4](wo, row, columns)(p4)
-        val p5V = readCell[T, P5](wo, row, columns)(p5)
-        val p6V = readCell[T, P6](wo, row, columns)(p6)
-        val p7V = readCell[T, P7](wo, row, columns)(p7)
-        val p8V = readCell[T, P8](wo, row, columns)(p8)
-        val p9V = readCell[T, P9](wo, row, columns)(p9)
-        construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+          p4V <- readP[P4](p4)
+          p5V <- readP[P5](p5)
+          p6V <- readP[P6](p6)
+          p7V <- readP[P7](p7)
+          p8V <- readP[P8](p8)
+          p9V <- readP[P9](p9)
+        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V)
       }
     }
   }
@@ -453,18 +485,21 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser10 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        val p4V = readCell[T, P4](wo, row, columns)(p4)
-        val p5V = readCell[T, P5](wo, row, columns)(p5)
-        val p6V = readCell[T, P6](wo, row, columns)(p6)
-        val p7V = readCell[T, P7](wo, row, columns)(p7)
-        val p8V = readCell[T, P8](wo, row, columns)(p8)
-        val p9V = readCell[T, P9](wo, row, columns)(p9)
-        val p10V = readCell[T, P10](wo, row, columns)(p10)
-        construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V, p10V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+          p4V <- readP[P4](p4)
+          p5V <- readP[P5](p5)
+          p6V <- readP[P6](p6)
+          p7V <- readP[P7](p7)
+          p8V <- readP[P8](p8)
+          p9V <- readP[P9](p9)
+          p10V <- readP[P10](p10)
+        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V, p10V)
       }
     }
   }
@@ -496,19 +531,22 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser11 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        val p4V = readCell[T, P4](wo, row, columns)(p4)
-        val p5V = readCell[T, P5](wo, row, columns)(p5)
-        val p6V = readCell[T, P6](wo, row, columns)(p6)
-        val p7V = readCell[T, P7](wo, row, columns)(p7)
-        val p8V = readCell[T, P8](wo, row, columns)(p8)
-        val p9V = readCell[T, P9](wo, row, columns)(p9)
-        val p10V = readCell[T, P10](wo, row, columns)(p10)
-        val p11V = readCell[T, P11](wo, row, columns)(p11)
-        construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V, p10V, p11V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+          p4V <- readP[P4](p4)
+          p5V <- readP[P5](p5)
+          p6V <- readP[P6](p6)
+          p7V <- readP[P7](p7)
+          p8V <- readP[P8](p8)
+          p9V <- readP[P9](p9)
+          p10V <- readP[P10](p10)
+          p11V <- readP[P11](p11)
+        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V, p10V, p11V)
       }
     }
   }
@@ -541,20 +579,23 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser12 for $tc"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): T = {
-        val p1V = readCell[T, P1](wo, row, columns)(p1)
-        val p2V = readCell[T, P2](wo, row, columns)(p2)
-        val p3V = readCell[T, P3](wo, row, columns)(p3)
-        val p4V = readCell[T, P4](wo, row, columns)(p4)
-        val p5V = readCell[T, P5](wo, row, columns)(p5)
-        val p6V = readCell[T, P6](wo, row, columns)(p6)
-        val p7V = readCell[T, P7](wo, row, columns)(p7)
-        val p8V = readCell[T, P8](wo, row, columns)(p8)
-        val p9V = readCell[T, P9](wo, row, columns)(p9)
-        val p10V = readCell[T, P10](wo, row, columns)(p10)
-        val p11V = readCell[T, P11](wo, row, columns)(p11)
-        val p12V = readCell[T, P12](wo, row, columns)(p12)
-        construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V, p10V, p11V, p12V)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+        def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
+
+        for {
+          p1V <- readP[P1](p1)
+          p2V <- readP[P2](p2)
+          p3V <- readP[P3](p3)
+          p4V <- readP[P4](p4)
+          p5V <- readP[P5](p5)
+          p6V <- readP[P6](p6)
+          p7V <- readP[P7](p7)
+          p8V <- readP[P8](p8)
+          p9V <- readP[P9](p9)
+          p10V <- readP[P10](p10)
+          p11V <- readP[P11](p11)
+          p12V <- readP[P12](p12)
+        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V, p10V, p11V, p12V)
       }
     }
   }
@@ -612,19 +653,19 @@ trait CellParsers {
     */
   implicit def defaultColumnHelper[T]: ColumnHelper[T] = columnHelper()
 
-  private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): P = // if (columns.exists)
+  // CONSIDER inlining readCellWithHeader
+  private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): Try[P] = // if (columns.exists)
     readCellWithHeader(wo, row, columns, p)
 
   private def readCellWithHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, columns: Header, p: String) = {
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
-    // TODO sort this out...
-    if (idx >= 0) try cellParser.parse(CellValue(row(idx).get)) catch {
-      case NonFatal(e) => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
-    }
-    else try cellParser.parse(Some(columnName), row, columns) catch {
-      case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns")
+    if (idx >= 0) for (w <- row(idx); z <- cellParser.parse(CellValue(w)).recoverWith {
+      case NonFatal(e) => Failure(InvalidParseException(s"Problem parsing '$w' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e))
+    }) yield z
+    else cellParser.parse(Some(columnName), row, columns).recoverWith {
+      case _: UnsupportedOperationException => Failure(ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns"))
     }
   }
 }
@@ -647,6 +688,8 @@ case class ParsersException(w: String) extends Exception(w)
 case class AttributeSet(xs: StringList)
 
 object AttributeSet {
-  def apply(w: String): AttributeSet = apply(Parseable.split(w))
+  def apply(w: String): AttributeSet = parse(w).get
+
+  def parse(w: String): Try[AttributeSet] = Parseable.split(w).map(apply)
 }
 

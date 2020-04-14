@@ -11,7 +11,7 @@ import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
 
 import scala.annotation.implicitNotFound
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
   * Type class trait CellParser[T].
@@ -27,20 +27,20 @@ trait CellParser[+T] {
     * Convert a String into a T.
     *
     * @param w the String to be converted.
-    * @return a new instance of T.
+    * @return a new instance of T wrapped in Try
     */
-  def convertString(w: String): T
+  def convertString(w: String): Try[T]
 
   /**
     * Parse a Convertible value into a T.
     *
     * @param value the Convertible value.
-    * @return a new instance of T.
+    * @return a new instance of T wrapped in Try.
     */
-  def parse(value: Convertible): T = value match {
+  def parse(value: Convertible): Try[T] = value match {
     case CellValue(w) => convertString(w)
     case RowValues(row, columns) => parse(None, row, columns)
-    case _ => throw ParsersException(s"CellParser: cannot convert value $value of type ${value.getClass}")
+    case _ => Failure(ParsersException(s"CellParser: cannot convert value $value of type ${value.getClass}"))
   }
 
   /**
@@ -52,7 +52,7 @@ trait CellParser[+T] {
     *                CONSIDER do we actually need the Header parameter here?
     * @return a new instance of T.
     */
-  def parse(wo: Option[String], row: Row, columns: Header): T
+  def parse(wo: Option[String], row: Row, columns: Header): Try[T]
 }
 
 /**
@@ -61,7 +61,7 @@ trait CellParser[+T] {
   * @tparam T the type of the resulting object.
   */
 trait SingleCellParser[T] extends CellParser[T] {
-  def parse(w: Option[String], row: Row, columns: Header): T = throw new UnsupportedOperationException
+  def parse(w: Option[String], row: Row, columns: Header): Try[T] = Failure(new UnsupportedOperationException)
 
   override def toString: String = "SingleCellParser"
 }
@@ -73,7 +73,7 @@ trait SingleCellParser[T] extends CellParser[T] {
   */
 trait MultiCellParser[T] extends CellParser[T] {
   //noinspection NotImplementedCode
-  def convertString(w: String): T = throw new UnsupportedOperationException
+  def convertString(w: String): Try[T] = Failure(new UnsupportedOperationException)
 
   override def toString: String = "MultiCellParser"
 }
@@ -84,7 +84,7 @@ trait MultiCellParser[T] extends CellParser[T] {
   * CONSIDER making this a trait since it takes no value parameters.
   */
 sealed abstract class Convertible {
-  def convertTo[T: CellParser]: Try[T] = Try(cellReader.parse(this))
+  def convertTo[T: CellParser]: Try[T] = cellReader.parse(this)
 }
 
 /**
@@ -109,37 +109,40 @@ object RowValues {
 object CellParser {
 
   implicit object BooleanCellParser$ extends SingleCellParser[Boolean] {
-    def convertString(w: String): Boolean = implicitly[Parseable[Boolean]].parse(w).get
+    def convertString(w: String): Try[Boolean] = implicitly[Parseable[Boolean]].parse(w)
 
     override def toString: String = "BooleanCellParser$"
   }
 
   implicit object IntCellParser$ extends SingleCellParser[Int] {
-    def convertString(w: String): Int = implicitly[Parseable[Int]].parse(w).get
+    def convertString(w: String): Try[Int] = implicitly[Parseable[Int]].parse(w)
 
     override def toString: String = "IntCellParser$"
   }
 
   implicit object LongCellParser$ extends SingleCellParser[Long] {
-    override def convertString(w: String): Long = implicitly[Parseable[Long]].parse(w).get
+    override def convertString(w: String): Try[Long] = implicitly[Parseable[Long]].parse(w)
 
     override def toString: String = "LongCellParser$"
   }
 
   implicit object BigIntCellParser$ extends SingleCellParser[BigInt] {
-    override def convertString(w: String): BigInt = implicitly[Parseable[BigInt]].parse(w).get
+    override def convertString(w: String): Try[BigInt] = implicitly[Parseable[BigInt]].parse(w)
 
     override def toString: String = "BigIntCellParser$"
   }
 
   implicit object DoubleCellParser$ extends SingleCellParser[Double] {
-    override def convertString(w: String): Double = implicitly[Parseable[Double]].parse(w).get
+    override def convertString(w: String): Try[Double] = implicitly[Parseable[Double]].parse(w)
 
     override def toString: String = "DoubleCellParser$"
   }
 
+  /**
+    * This parser succeeds on empty strings.
+    */
   implicit object StringCellParser$ extends SingleCellParser[String] {
-    override def convertString(w: String): String = w
+    override def convertString(w: String): Try[String] = Success(w)
 
     override def toString: String = "StringCellParser$"
   }
@@ -147,23 +150,26 @@ object CellParser {
   implicit object DateTimeParser$ extends SingleCellParser[LocalDate] {
     override def toString: String = "DateTimeParser$"
 
-    override def convertString(w: String): LocalDate = implicitly[Parseable[LocalDate]].parse(w).get
+    override def convertString(w: String): Try[LocalDate] = implicitly[Parseable[LocalDate]].parse(w)
   }
 
   implicit object URLParser$ extends SingleCellParser[URL] {
-    override def convertString(w: String): URL = implicitly[Parseable[URL]].parse(w).get
+    override def convertString(w: String): Try[URL] = implicitly[Parseable[URL]].parse(w)
 
     override def toString: String = "URLParser$"
   }
 
   implicit object FileParser$ extends SingleCellParser[File] {
-    override def convertString(w: String): File = implicitly[Parseable[File]].parse(w).get
+    override def convertString(w: String): Try[File] = implicitly[Parseable[File]].parse(w)
 
     override def toString: String = "FileParser$"
   }
 
+  // TODO why do we have both OptionParser and ParseableOption?
   abstract class OptionParser[T: Parseable] extends SingleCellParser[Option[T]] {
-    override def convertString(w: String): Option[T] = implicitly[Parseable[T]].parse(w).toOption
+    override def convertString(w: String): Try[Option[T]] = implicitly[Parseable[T]].parse(w).map(Option(_)).recoverWith[Option[T]] {
+      case _: BlankException => Success(None)
+    }
   }
 
   implicit object BooleanOptionParser extends OptionParser[Boolean]

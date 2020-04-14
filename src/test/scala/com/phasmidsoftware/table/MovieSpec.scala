@@ -125,8 +125,8 @@ class MovieSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
   behavior of "Name"
   it should "parse Philip Michael Thomas" in {
     import MovieParser._
-    implicitly[CellParser[Name]].convertString("Philip Thomas") shouldBe Name("Philip", None, "Thomas", None)
-    implicitly[CellParser[Name]].convertString("Philip Michael Thomas") shouldBe Name("Philip", Some("Michael"), "Thomas", None)
+    implicitly[CellParser[Name]].convertString("Philip Thomas") shouldBe Success(Name("Philip", None, "Thomas", None))
+    implicitly[CellParser[Name]].convertString("Philip Michael Thomas") shouldBe Success(Name("Philip", Some("Michael"), "Thomas", None))
 
   }
 
