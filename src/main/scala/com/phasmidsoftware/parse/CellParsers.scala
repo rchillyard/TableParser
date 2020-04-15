@@ -150,7 +150,6 @@ trait CellParsers {
     * @return a MultiCellParser which converts Strings from a Row into the field types P1 and P2 and thence into a T
     */
   def cellParser2[P1: CellParser, P2: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2) => T, fields: Seq[String] = Nil): CellParser[T] = {
-    // CONSIDER refactoring all the repetitive code here (a macro, perhaps?)
     val tc = implicitly[ClassTag[T]]
     val Array(p1, p2) = fields match {
       case Nil => Reflection.extractFieldNames(tc)
@@ -162,7 +161,10 @@ trait CellParsers {
       override def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
         def readP[P: CellParser](w: String): Try[P] = readCell[T, P](wo, row, columns)(w)
 
-        for (p1V <- readP[P1](p1); p2V <- readP[P2](p2)) yield construct(p1V, p2V)
+        for {
+          p1V <- readP[P1](p1)
+          t <- cellParser1(construct.curried(p1V), Seq(p2)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -224,9 +226,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-        } yield construct(p1V, p2V, p3V)
+          t <- cellParser2(construct(p1V, _, _), Seq(p2, p3)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -256,10 +257,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-          p4V <- readP[P4](p4)
-        } yield construct(p1V, p2V, p3V, p4V)
+          t <- cellParser3(construct(p1V, _, _, _), Seq(p2, p3, p4)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -290,11 +289,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-          p4V <- readP[P4](p4)
-          p5V <- readP[P5](p5)
-        } yield construct(p1V, p2V, p3V, p4V, p5V)
+          t <- cellParser4(construct(p1V, _, _, _, _), Seq(p2, p3, p4, p5)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -326,12 +322,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-          p4V <- readP[P4](p4)
-          p5V <- readP[P5](p5)
-          p6V <- readP[P6](p6)
-        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V)
+          t <- cellParser5(construct(p1V, _, _, _, _, _), Seq(p2, p3, p4, p5, p6)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -364,13 +356,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-          p4V <- readP[P4](p4)
-          p5V <- readP[P5](p5)
-          p6V <- readP[P6](p6)
-          p7V <- readP[P7](p7)
-        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V)
+          t <- cellParser6(construct(p1V, _, _, _, _, _, _), Seq(p2, p3, p4, p5, p6, p7)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -404,14 +391,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-          p4V <- readP[P4](p4)
-          p5V <- readP[P5](p5)
-          p6V <- readP[P6](p6)
-          p7V <- readP[P7](p7)
-          p8V <- readP[P8](p8)
-        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V)
+          t <- cellParser7(construct(p1V, _, _, _, _, _, _, _), Seq(p2, p3, p4, p5, p6, p7, p8)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -446,15 +427,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-          p4V <- readP[P4](p4)
-          p5V <- readP[P5](p5)
-          p6V <- readP[P6](p6)
-          p7V <- readP[P7](p7)
-          p8V <- readP[P8](p8)
-          p9V <- readP[P9](p9)
-        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V)
+          t <- cellParser8(construct(p1V, _, _, _, _, _, _, _, _), Seq(p2, p3, p4, p5, p6, p7, p8, p9)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -490,16 +464,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-          p4V <- readP[P4](p4)
-          p5V <- readP[P5](p5)
-          p6V <- readP[P6](p6)
-          p7V <- readP[P7](p7)
-          p8V <- readP[P8](p8)
-          p9V <- readP[P9](p9)
-          p10V <- readP[P10](p10)
-        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V, p10V)
+          t <- cellParser9(construct(p1V, _, _, _, _, _, _, _, _, _), Seq(p2, p3, p4, p5, p6, p7, p8, p9, p10)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -536,17 +502,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-          p4V <- readP[P4](p4)
-          p5V <- readP[P5](p5)
-          p6V <- readP[P6](p6)
-          p7V <- readP[P7](p7)
-          p8V <- readP[P8](p8)
-          p9V <- readP[P9](p9)
-          p10V <- readP[P10](p10)
-          p11V <- readP[P11](p11)
-        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V, p10V, p11V)
+          t <- cellParser10(construct(p1V, _, _, _, _, _, _, _, _, _, _), Seq(p2, p3, p4, p5, p6, p7, p8, p9, p10, p11)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
@@ -584,18 +541,8 @@ trait CellParsers {
 
         for {
           p1V <- readP[P1](p1)
-          p2V <- readP[P2](p2)
-          p3V <- readP[P3](p3)
-          p4V <- readP[P4](p4)
-          p5V <- readP[P5](p5)
-          p6V <- readP[P6](p6)
-          p7V <- readP[P7](p7)
-          p8V <- readP[P8](p8)
-          p9V <- readP[P9](p9)
-          p10V <- readP[P10](p10)
-          p11V <- readP[P11](p11)
-          p12V <- readP[P12](p12)
-        } yield construct(p1V, p2V, p3V, p4V, p5V, p6V, p7V, p8V, p9V, p10V, p11V, p12V)
+          t <- cellParser11(construct(p1V, _, _, _, _, _, _, _, _, _, _, _), Seq(p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12)).parse(wo, row, columns)
+        } yield t
       }
     }
   }
