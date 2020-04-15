@@ -52,13 +52,22 @@ object Parseable {
   implicit object ParseableBoolean extends ParseableBoolean
 
   /**
-    * Parser of Int.
+    * Parser of Byte.
     */
-  trait ParseableInt extends Parseable[Int] {
-    override def parse(s: String): Try[Int] = parseAndRecover(s)(lift(_.toInt))(w => s"ParseableInt: cannot interpret '$w' as an Int")
+  trait ParseableByte extends Parseable[Byte] {
+    override def parse(s: String): Try[Byte] = parseAndRecover(s)(lift(_.toByte))(w => s"ParseableByte: cannot interpret '$w' as a Byte")
   }
 
-  implicit object ParseableInt extends ParseableInt
+  implicit object ParseableByte extends ParseableByte
+
+  /**
+    * Parser of Char.
+    */
+  trait ParseableChar extends Parseable[Char] {
+    override def parse(s: String): Try[Char] = parseAndRecover(s)(lift(_.head))(w => s"ParseableChar: cannot interpret '$w' as a Char")
+  }
+
+  implicit object ParseableChar extends ParseableChar
 
   /**
     * Parser of Short.
@@ -70,13 +79,13 @@ object Parseable {
   implicit object ParseableShort extends ParseableShort
 
   /**
-    * Parser of Byte.
+    * Parser of Int.
     */
-  trait ParseableByte extends Parseable[Byte] {
-    override def parse(s: String): Try[Byte] = parseAndRecover(s)(lift(_.toByte))(w => s"ParseableByte: cannot interpret '$w' as a Byte")
+  trait ParseableInt extends Parseable[Int] {
+    override def parse(s: String): Try[Int] = parseAndRecover(s)(lift(_.toInt))(w => s"ParseableInt: cannot interpret '$w' as an Int")
   }
 
-  implicit object ParseableByte extends ParseableByte
+  implicit object ParseableInt extends ParseableInt
 
   /**
     * Parser of Long.

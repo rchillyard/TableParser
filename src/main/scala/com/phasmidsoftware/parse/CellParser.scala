@@ -114,6 +114,24 @@ object CellParser {
     override def toString: String = "BooleanCellParser$"
   }
 
+  implicit object CharCellParser$ extends SingleCellParser[Char] {
+    def convertString(w: String): Try[Char] = implicitly[Parseable[Char]].parse(w)
+
+    override def toString: String = "CharCellParser$"
+  }
+
+  implicit object ByteCellParser$ extends SingleCellParser[Byte] {
+    def convertString(w: String): Try[Byte] = implicitly[Parseable[Byte]].parse(w)
+
+    override def toString: String = "ByteCellParser$"
+  }
+
+  implicit object ShortCellParser$ extends SingleCellParser[Short] {
+    def convertString(w: String): Try[Short] = implicitly[Parseable[Short]].parse(w)
+
+    override def toString: String = "ShortCellParser$"
+  }
+
   implicit object IntCellParser$ extends SingleCellParser[Int] {
     def convertString(w: String): Try[Int] = implicitly[Parseable[Int]].parse(w)
 
@@ -132,10 +150,22 @@ object CellParser {
     override def toString: String = "BigIntCellParser$"
   }
 
+  implicit object FloatCellParser$ extends SingleCellParser[Float] {
+    override def convertString(w: String): Try[Float] = implicitly[Parseable[Float]].parse(w)
+
+    override def toString: String = "FloatCellParser$"
+  }
+
   implicit object DoubleCellParser$ extends SingleCellParser[Double] {
     override def convertString(w: String): Try[Double] = implicitly[Parseable[Double]].parse(w)
 
     override def toString: String = "DoubleCellParser$"
+  }
+
+  implicit object BigDecimalCellParser$ extends SingleCellParser[BigDecimal] {
+    override def convertString(w: String): Try[BigDecimal] = implicitly[Parseable[BigDecimal]].parse(w)
+
+    override def toString: String = "BigDecimalCellParser$"
   }
 
   /**
