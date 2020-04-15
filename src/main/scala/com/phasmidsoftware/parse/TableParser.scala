@@ -96,14 +96,15 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   def parse(xs: Seq[Input]): Try[Table] = {
     def separateHeaderAndRows(h: Input, t: Seq[Input]): Try[Table] = for (ws <- rowParser.parseHeader(h); rs <- parseRows(t, ws)) yield rs
 
-    if (rowParser == null) // XXX how can this happen?
-      Failure(ParserException("implicit RowParser[Row] is undefined"))
-    else maybeFixedHeader match {
+    //    if (rowParser == null) // XXX how can this happen?
+    //      Failure(ParserException("implicit RowParser[Row] is undefined"))
+    //    else
+    maybeFixedHeader match {
       case Some(h) => parseRows(xs, h)
       case None => // NOTE: it is possible that we still don't really have a header encoded in the data either
         xs match {
           case h :: t => separateHeaderAndRows(h, t)
-          case LazyList.cons(h, t) => separateHeaderAndRows(h, t)
+          //          case LazyList.cons(h, t) => separateHeaderAndRows(h, t)
           case _ => Failure(ParserException("no rows to parse"))
         }
     }

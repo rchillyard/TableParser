@@ -6,8 +6,6 @@ package com.phasmidsoftware.util
 
 import java.net.URL
 
-import com.phasmidsoftware.parse.ParserException
-
 import scala.util.{Failure, Success, Try}
 
 object FP {
@@ -18,7 +16,7 @@ object FP {
     * @return a Try of Seq[X]
     *         NOTE: that the output collection type will be Seq, regardless of the input type
     */
-  def sequence[X](xys: Seq[Try[X]]): Try[Seq[X]] = (Try(Seq[X]()) /: xys) {
+  def sequence[X](xys: Seq[Try[X]]): Try[Seq[X]] = xys.foldLeft(Try(Seq[X]())) {
     (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
   }
 
