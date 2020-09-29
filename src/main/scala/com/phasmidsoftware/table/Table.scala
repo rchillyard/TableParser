@@ -34,7 +34,7 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] where each cell has value f(x) where x is the value of the corresponding cell in this.
     */
-  def map[S](f: Row => S): Table[S] = unit(rows map f)
+  override def map[S](f: Row => S): Table[S] = unit(rows map f)
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].

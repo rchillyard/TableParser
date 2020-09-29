@@ -102,7 +102,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
       case Some(h) => parseRows(xs, h)
       case None => // NOTE: it is possible that we still don't really have a header encoded in the data either
         xs match {
-          case h #:: t => separateHeaderAndRows(h, t)
+//          case h #:: t => separateHeaderAndRows(h, t)
           case h :: t => separateHeaderAndRows(h, t)
           case _ => Failure(ParserException("no rows to parse"))
         }
