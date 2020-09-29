@@ -632,6 +632,11 @@ trait CellParsers {
   */
 object CellParsers
 
+/**
+  * CONSIDER: do we really need this exception?
+  *
+  * @param w the message.
+  */
 case class ParsersException(w: String) extends Exception(w)
 
 

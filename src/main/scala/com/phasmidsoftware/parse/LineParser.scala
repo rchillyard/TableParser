@@ -53,9 +53,9 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   private def component: Parser[String] = s"""[^,$listSeparator}]+""".r
 
-  private def getOpenChar: Parser[String] = if (enclosures.nonEmpty) enclosures.head + "" else ""
+  private def getOpenChar: Parser[String] = if (enclosures.nonEmpty) s"${enclosures.head}" else ""
 
-  private def getCloseChar: Parser[String] = if (enclosures.nonEmpty) enclosures.last + "" else ""
+  private def getCloseChar: Parser[String] = if (enclosures.nonEmpty) s"${enclosures.last}" else ""
 
   private def formException(row: String, x: String) = ParserException(s"Cannot parse row '$row' due to: $x")
 

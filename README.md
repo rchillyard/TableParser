@@ -60,7 +60,7 @@ T is covariant so that if you have alternative parsers which generate different 
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
 an implicit instance of _CellParser[T]_ must be in scope.
 This is achieved via invoking a method (from object _Parsers_) of the following form:
-where _f_ is a function which which takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
+where _f_ is a function which takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
 and where _T_ is the type to be constructed:
 
     cellParserN[T,P1,P2,...Pn](f)
@@ -203,7 +203,7 @@ The basic structure of the application code will look something like this:
      
 In this example, the row type is _Movie_, a case class with eleven parameters.
 The data can be found in a local resource (relative to this class) called movie_metadata.csv.
-All of the (implicit) details that characterize this particular table input are provided
+All the (implicit) details that characterize this particular table input are provided
 in the _MovieParser_ object.
 
 The _Movie_ class looks like this:
@@ -298,7 +298,7 @@ A parameter can be optional, for example, in the _Movie_ example, the _Productio
 
     case class Production(country: String, budget: Option[Int], gross: Int, title_year: Int)
     
-In this case, some of the movies do not have a budget provided.
+In this example, some movies do not have a budget provided.
 All you have to do is declare it optional in the case class and _TableParser_ will specify it as _Some(x)_ if valid, else _None_.
 
 ## Example: Submissions
@@ -382,7 +382,7 @@ One of the instance methods of _Table[Row]_ is a method as follows:
     def render[U: TreeWriter](style: String)(implicit rr: Renderer[Row]): U
     
 Providing that you have defined an implicit object of type _TreeWriter[U]_ and a _Renderer[Row]_,
-then the _render_ method will produce an instance of _U_ which will be a tree containing all of the rows of this table.
+then the _render_ method will produce an instance of _U_ which will be a tree containing all the rows of this table.
 
 What sort of type is _U_?
 An XML node would be appropriate.
@@ -404,7 +404,7 @@ If we have a row type as for example:
 
 	case class Complex(r: Double, i: Double)
 	
-Then, we should define appropriate renderers something like as follows:
+Then, we should define appropriate renderers along the following likes:
 
 	implicit val valueRenderer: Renderer[Double] = renderer("td")
 	implicit val complexRenderer: Renderer[Complex] = renderer2("tr")(Complex)
@@ -443,7 +443,7 @@ V1.0.6 -> V1.0.7
 * build.sbt: changed scalaVersion to 2.12.8
 * CellParser: parametric type _T_ is now covariant;
 * CellParsers: added new method _cellParserOptionNonEmptyString_;
-    then for each of the _cellParserN_ methods, the signature has had an defaultable _fields_ parameter to allow explicit field naming;
+    then for each of the _cellParserN_ methods, the signature has had a defaultable _fields_ parameter to allow explicit field naming;
 * Reflection: changed the message to refer to the _cellParserN_ signatures;
 * README.md: fixed some issues with the doc regarding the _MovieTableParser_;
     added new features above.

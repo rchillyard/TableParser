@@ -6,6 +6,8 @@ version := "1.0.10-SNAPSHOT"
 
 scalaVersion := "2.13.3"
 
+scalacOptions := Seq("-unchecked", "-deprecation")
+
 lazy val scalaModules = "org.scala-lang.modules"
 
 lazy val scalaParserCombinatorsVersion = "1.1.2"

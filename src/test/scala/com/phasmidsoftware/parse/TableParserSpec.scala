@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.parse
 
-import java.util.Date
+import java.util.GregorianCalendar
 
 import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
@@ -132,6 +132,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Table.parse"
 
+  private val date = new GregorianCalendar(2018, 8, 12).getTime
   it should "parse raptors from raptors.csv" in {
     import DailyRaptorReport._
 
@@ -140,9 +141,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 12)), "Dense Fog/Light Rain", 0, 0)
+    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(date), "Dense Fog/Light Rain", 0, 0)
   }
 
+  private val date1 = new GregorianCalendar(2018, 8, 16).getTime
   it should "parse raptors from Seq[String]" in {
     import DailyRaptorReport._
 
@@ -153,7 +155,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 2
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), partlyCloudy, 3308, 5)
+    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(date1), partlyCloudy, 3308, 5)
 
   }
 
@@ -215,7 +217,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 2
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 16)), partlyCloudy, 3308, 5)
+    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(date1), partlyCloudy, 3308, 5)
 
   }
 
@@ -268,7 +270,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(new Date(118, 8, 12)), "Dense Fog/Light Rain", 0, 0)
+    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(date), "Dense Fog/Light Rain", 0, 0)
 
   }
 

@@ -74,7 +74,10 @@ trait Writable[O] {
     * @param x the character sequence to be written.
     * @return an instance of O which represents the updated output structure.
     */
-  def writeQuoted(o: O)(x: CharSequence): O = writeRaw(o)(quote + x.toString.replaceAll(quote.toString, quote + quote.toString) + quote)
+  def writeQuoted(o: O)(x: CharSequence): O = {
+    val w = x.toString.replaceAll(quote.toString, s"$quote$quote")
+    writeRaw(o)(s"$quote$w$quote")
+  }
 
   /**
     * The default quote is one double-quote symbol

@@ -281,7 +281,7 @@ object Header {
         case 0 => 26
         case other => other
       }
-      inner((m + 64).toChar + s, (n - m) / 26)
+      inner(s"${(m + 64).toChar}$s", (n - m) / 26)
     }
 
     inner("", n)
@@ -348,7 +348,7 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     rows map {
       case p: Product => ww.writeRow(o2)(p)
       case xs: Seq[Any] => ww.writeRowElements(o2)(xs)
-      case xs: Array[Any] => ww.writeRowElements(o2)(xs)
+      case xs: Array[Any] => ww.writeRowElements(o2)(xs.toIndexedSeq)
       case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     }
     o1
@@ -410,7 +410,9 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
   * NOTE: the existence or not of a Header in a BaseTable only affects how the table is rendered.
   * The parsing of a table always has a header of some sort.
   *
-  * @param rows   the rows of the table.
+  * TEST this
+  *
+  * @param rows the rows of the table.
   * @tparam Row the underlying type of each Row
   */
 case class TableWithoutHeader[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None) {
@@ -435,4 +437,9 @@ object TableWithHeader {
   def apply[Row: ClassTag](rows: Seq[Row]): Table[Row] = TableWithHeader(rows, Header.apply[Row]())
 }
 
+/**
+  * Table Exception.
+  *
+  * @param w the message.
+  */
 case class TableException(w: String) extends Exception(w)
