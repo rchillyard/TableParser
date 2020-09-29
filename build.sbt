@@ -2,7 +2,7 @@ organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-version := "1.0.9-SNAPSHOT"
+version := "1.0.9"
 
 scalaVersion := "2.12.10"
 
@@ -15,3 +15,5 @@ libraryDependencies ++= Seq(
   "com.github.nscala-time" %% "nscala-time" % "2.22.0",
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion
 )
+
+// publishTo := sonatypePublishToBundle.value
