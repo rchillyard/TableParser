@@ -266,8 +266,8 @@ case class Header(xs: Seq[String]) {
 object Header {
 
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
-  lazy val numbers: Stream[Int] = Stream.from(1)
-  lazy val generateNumbers: Stream[String] = numbers map (_.toString)
+  lazy val numbers: LazyList[Int] = LazyList.from(1)
+  lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
   //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
   //  lazy val generateLetters: Stream[String] = recursiveLetters
   val alphabet: List[String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray.map(_.toString).toList
@@ -288,14 +288,14 @@ object Header {
   }
   else n.toString
 
-  lazy val generateLetters: Stream[String] = numbers map intToString(letters = true)
+  lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
 
-  def multiply(prefixes: List[String], strings: Stream[String]): Stream[String] = {
-    val wss: List[Stream[String]] = prefixes map (prepend(_, strings))
-    wss.foldLeft(Stream.empty[String])(_ #::: _)
+  def multiply(prefixes: List[String], strings: LazyList[String]): LazyList[String] = {
+    val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
+    wss.foldLeft(LazyList.empty[String])(_ #::: _)
   }
 
-  def prepend(prefix: String, stream: Stream[String]): Stream[String] = stream map (prefix + _)
+  def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
 
   import scala.language.postfixOps
 

@@ -6,11 +6,12 @@ package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.ParserException
 import com.phasmidsoftware.util.TableParserException
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.util.{Success, Try}
 
-class RowSpec extends FlatSpec with Matchers {
+class RowSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Row"
 

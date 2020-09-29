@@ -9,11 +9,12 @@ import java.util.Date
 import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.util.Success
 
-class CellParsersSpec extends FlatSpec with Matchers {
+class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   case class MyNumber(x: Int)
 

@@ -5,11 +5,12 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.Header
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.util.{Success, Try}
 
-class StringsParserSpec extends FlatSpec with Matchers {
+class StringsParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   case class HawkCount(species: String, count: Int)
 

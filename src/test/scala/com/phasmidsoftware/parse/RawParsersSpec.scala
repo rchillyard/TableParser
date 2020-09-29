@@ -5,11 +5,12 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{RawTable, Table, TableWithHeader}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.util.{Success, Try}
 
-class RawParsersSpec extends FlatSpec with Matchers {
+class RawParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "parse"
 

@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.parse
 
+import scala.annotation.tailrec
 import scala.util.Try
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -61,6 +62,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   override def toString: String = s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 
   private def getDelimiterChar: Char = {
+    @tailrec
     def inner(w: Seq[Char], escaped: Boolean): Char =
       w match {
         case h :: t =>

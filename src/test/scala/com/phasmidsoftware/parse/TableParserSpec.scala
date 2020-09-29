@@ -9,14 +9,15 @@ import java.util.Date
 import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
-class TableParserSpec extends FlatSpec with Matchers {
+class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "TableParser"
 

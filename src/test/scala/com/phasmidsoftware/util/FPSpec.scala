@@ -5,11 +5,12 @@
 package com.phasmidsoftware.util
 
 import com.phasmidsoftware.util.FP._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.util.{Failure, Success}
 
-class FPSpec extends FlatSpec with Matchers {
+class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "FPSpec"
 

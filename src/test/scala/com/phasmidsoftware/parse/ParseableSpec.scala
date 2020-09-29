@@ -4,9 +4,10 @@
 
 package com.phasmidsoftware.parse
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
-class ParseableSpec extends FlatSpec with Matchers {
+class ParseableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Parseable"
 

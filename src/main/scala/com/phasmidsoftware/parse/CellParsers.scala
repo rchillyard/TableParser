@@ -31,7 +31,7 @@ trait CellParsers {
     def parse(wo: Option[String], row: Row, columns: Header): Seq[P] = {
       def getP(i: Int): Try[P] = Try(implicitly[CellParser[P]].parse(Some(s"$i"), row, columns))
 
-      Stream.from(start).map(getP).takeWhile(_.isSuccess).map(_.get).toList
+      LazyList.from(start).map(getP).takeWhile(_.isSuccess).map(_.get).toList
     }
   }
 
