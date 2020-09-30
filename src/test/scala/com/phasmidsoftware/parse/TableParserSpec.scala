@@ -54,7 +54,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = Some(Header.create("x", "y"))
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -105,7 +105,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
       def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
     }
@@ -198,7 +198,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
-      def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+      val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
       def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
     }
@@ -253,7 +253,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       def builder(rows: Seq[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = TableWithHeader(rows, header)
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
@@ -304,7 +304,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override def forgiving: Boolean = false
 
-      def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+      val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
     }
 
   }
@@ -354,7 +354,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override def forgiving: Boolean = true
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
   }

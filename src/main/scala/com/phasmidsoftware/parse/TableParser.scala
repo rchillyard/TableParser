@@ -4,10 +4,11 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.table.Header
+import com.phasmidsoftware.table.{Header, Table, TableWithHeader}
 import com.phasmidsoftware.util.FP
 
 import scala.annotation.implicitNotFound
+import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
 
 /**
@@ -57,7 +58,7 @@ trait TableParser[Table] {
     *
     * @return a RowParser[Row, Input].
     */
-  def rowParser: RowParser[Row, Input]
+  val rowParser: RowParser[Row, Input]
 
   /**
     * Method to parse a table based on a sequence of Inputs.
@@ -145,6 +146,22 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
     for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
   }
+}
+
+/**
+  * Case class to define a StringTableParser that assumes a header to be found in the input file.
+  * This class attempts to provide as much built-in functionality as possible.
+  *
+  * @tparam X the underlying row type.
+  */
+case class StringTableParserWithHeader[X: CellParser : ClassTag]() extends StringTableParser[Table[X]] {
+  type Row = X
+
+  val maybeFixedHeader: Option[Header] = None
+
+  def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, Header[Row]())
+
+  val rowParser: RowParser[X, String] = StandardRowParser[X]
 }
 
 /**

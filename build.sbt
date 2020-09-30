@@ -13,6 +13,7 @@ lazy val scalaModules = "org.scala-lang.modules"
 lazy val scalaParserCombinatorsVersion = "1.1.2"
 
 libraryDependencies ++= Seq(
+  "io.spray" %%  "spray-json" % "1.3.5",
   "org.scalatest" %% "scalatest" % "3.1.0" % "test",
   "com.github.nscala-time" %% "nscala-time" % "2.22.0",
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion

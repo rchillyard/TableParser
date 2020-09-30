@@ -47,7 +47,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       def builder(rows: Seq[IntPair], header: Header): Table[IntPair] = TableWithHeader(rows, Header[IntPair]())
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -131,7 +131,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   object IntPairHTML extends Renderers {
 
     trait HTMLTreeWriter extends TreeWriter[HTML] {
-      def evaluate(node: Node): HTML = HTML(node.style, node.content map (identity), node.attributes, node.children map evaluate)
+      def evaluate(node: Node): HTML = HTML(node.style, node.content map identity, node.attributes, node.children map evaluate)
     }
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter

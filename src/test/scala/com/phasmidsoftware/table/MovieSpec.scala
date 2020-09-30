@@ -58,7 +58,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override def forgiving: Boolean = false
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
       override def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
     }
@@ -84,7 +84,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override def forgiving: Boolean = false
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
     val movies = Seq(
@@ -109,7 +109,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override def forgiving: Boolean = false
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
     val movies = Seq(
