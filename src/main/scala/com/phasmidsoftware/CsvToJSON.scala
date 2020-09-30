@@ -5,6 +5,7 @@
 package com.phasmidsoftware
 
 import java.io.File
+import java.io.PrintWriter
 
 import com.phasmidsoftware.parse.{CellParser, CellParsers, StringTableParserWithHeader, TableParser}
 import com.phasmidsoftware.render.Writable
@@ -25,18 +26,13 @@ object CsvToJSON extends App {
     implicit val pairParser: CellParser[Pair] = cellParser2(Pair.apply)
   }
 
+  /**
+    * TODO: understand why this requires the headers (north, south) to be in all caps in the input file.
+   */
   implicit val ptp: TableParser[Table[Pair]] = StringTableParserWithHeader[Pair]()
 
-  implicit object StringBuilderWriteable extends Writable[StringBuilder] {
-    override def unit: StringBuilder = new StringBuilder
-
-    override def delimiter: CharSequence = "|"
-
-    override def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
-  }
-
-  val pty: Try[Table[Pair]] = Table.parse[Table[Pair]](new File("/Users/rhillyardx/Documents/pairs.csv"))
-
+  val userHome = System.getProperty("user.home")
+  val pty: Try[Table[Pair]] = Table.parse[Table[Pair]](new File(s"$userHome/Documents/pairs.csv"))
   val sy: Try[SharkBridgePairings] = for (pt <- pty) yield SharkBridgePairings((for (r <- pt.rows) yield r.asArray).toArray)
 
   object PairingsJsonProtocol extends DefaultJsonProtocol {
@@ -47,7 +43,9 @@ object CsvToJSON extends App {
 
   val jy: Try[JsValue] = for (s <- sy) yield s.toJson
 
-  for (j <- jy) println(j)
+  val pw: PrintWriter = new PrintWriter(s"$userHome/Documents/pairings.txt")
+  for (j <- jy) pw.println(j)
+  pw.close()
 
   jy recover {
     case e => println(e.getLocalizedMessage)

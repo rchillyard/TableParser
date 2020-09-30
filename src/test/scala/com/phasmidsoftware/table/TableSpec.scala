@@ -146,7 +146,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
     iIty should matchPattern { case Success(_) => }
 
-    implicit object StringBuilderWriteable extends Writable[StringBuilder] {
+    implicit object StringBuilderWritable extends Writable[StringBuilder] {
       override def unit: StringBuilder = new StringBuilder
 
       override def delimiter: CharSequence = "|"
