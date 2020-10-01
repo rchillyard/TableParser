@@ -136,7 +136,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse raptors from raptors.csv" in {
     import DailyRaptorReport._
 
-    val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parse(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
+    val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.

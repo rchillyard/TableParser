@@ -25,7 +25,40 @@ XML or HTML).
 An output structure which is itself tabular or sequence-oriented can be generated quite easily using the rows of the table,
 together with something like, for instance, a Json writer.
 
-For an introduction to _TableParser_ with a very simple use case, please see my blog at: https://scalaprof.blogspot.com/2019/04/new-projects.html 
+Quick Intro
+===========
+
+This library contains an application CsvToJSON which takes a CSV file, parses it, transforms the data,
+and outputs a JSON file.
+The minimum code necessary to read parse the CSV file as a table of "Player"s, using as many defaults as possible is:
+
+    case class Player(first: String, last: String)
+
+    object Player extends CellParsers {
+      implicit val playerParser: CellParser[Player] = cellParser2(Player.apply)
+    }
+
+    def parsePlayerTable(inputFile: String): Try[Table[Player]] = {
+        implicit val ptt: TableParser[Table[Player]] = StringTableParserWithHeader[Player]()
+        Table.parse[Table[Player]](Source.fromFile(inputFile))
+    }
+
+This assumes that the source input contains a header row which includes column names corresponding to the parameters
+of the case class _Player_ (in this case "first" and "last").
+
+The input file looks like this:
+
+    Id,First,Last,
+    1,Adam,Sullivan,
+    2,Amy,Avergun,
+    3,Ann,Peterson,
+
+etc...
+
+Note that columns not needed for the _Player_ case class are simply ignored.
+Also, note that the case of the column names is not important.
+
+For another simple use case _TableParser_, please see my blog at: https://scalaprof.blogspot.com/2019/04/new-projects.html 
 
 # User Guide
 
@@ -430,6 +463,11 @@ If you need to set HTML attributes for a specific type, for example a row in the
 
 Release Notes
 =============
+
+V1.0.9 -> V1.0.10
+* build.sbt: changed scalaVersion to 2.13.3
+* added StringTableParserWithHeader;
+* now column names are found by case-independent comparison.
 
 V1.0.8 -> V1.0.9
 * build.sbt: changed scalaVersion to 2.12.10

@@ -85,6 +85,10 @@ trait TableParser[Table] {
   * This class implements builder with a TableWithHeader object.
   * This class uses StandardRowParser of its rowParser.
   *
+  * @param maybeFixedHeader None => requires that the data source has a header row.
+  *                         Some(h) => specifies that the header is to be taken from h.
+  *                         NOTE: that the simplest is to specify the header directly from the type X:
+  * @see StringTableParserWithHeader#create
   * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
   */
 case class StringTableParserWithHeader[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None) extends StringTableParser[Table[X]] {
@@ -96,6 +100,18 @@ case class StringTableParserWithHeader[X: CellParser : ClassTag](maybeFixedHeade
   }
 
   val rowParser: RowParser[X, String] = StandardRowParser[X]
+}
+
+object StringTableParserWithHeader {
+  /**
+    * This create method constructs a StringTableParserWithHeader with header based simply on the type X.
+    * In this case, the source data must have the same number of colums as X has parameters, and they must be in the
+    * same order. Additionally, there should not be a header row in the source data.
+    *
+    * @tparam X the underlying type. There must be evidence of CellParser[X] and ClassTag[X].
+    * @return a StringTableParserWithHeader[X].
+    */
+  def create[X: CellParser : ClassTag]: StringTableParserWithHeader[X] = StringTableParserWithHeader[X](Some(Header.apply[X]()))
 }
 
 abstract class AbstractTableParser[Table] extends TableParser[Table] {
@@ -124,7 +140,6 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
       case Some(h) => parseRows(xs, h)
       case None => // NOTE: it is possible that we still don't really have a header encoded in the data either
         xs match {
-//          case h #:: t => separateHeaderAndRows(h, t)
           case h :: t => separateHeaderAndRows(h, t)
           case _ => Failure(ParserException("no rows to parse"))
         }

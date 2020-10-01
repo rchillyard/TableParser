@@ -89,7 +89,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: URI, enc: String): Try[T] = {
+  def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     parse(u)
   }
@@ -102,18 +102,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
-
-  /**
-    * Method to parse a table from a URL with an explicit encoding.
-    * NOTE: The source created will be closed by the parse method.
-    *
-    * @param u   the URL.
-    * @param enc the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
-  def parse[T: TableParser](u: URL, enc: String): Try[T] = for (s <- Try(Source.fromURL(u, enc)); t <- parse(s)) yield t
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
 
   /**
     * Method to parse a table from an InputStream with an explicit encoding.
@@ -147,16 +136,14 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](x: Source): Try[T] = {
-    val result = parse(x.getLines())
-    result match {
-      case Success(_) => try {
-        x.close(); result
-      } catch {
-        case e: Exception => Failure(e)
-      }
-      case _ => result
+  def parse[T: TableParser](x: => Source): Try[T] = parse(x.getLines()) match {
+    case z@Success(_) => try {
+      x.close()
+      z
+    } catch {
+      case e: Exception => Failure(e)
     }
+    case x => x
   }
 
   /**
@@ -186,26 +173,26 @@ object Table {
   /**
     * Method to parse a table from a File.
     *
-    * @param f   the File.
+    * @param f   the File (call by name in case there is an exception thrown while constructing the file).
     * @param enc the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](f: File, enc: String): Try[T] = {
+  def parseFile[T: TableParser](f: => File, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
-    parse(f)
+    parseFile(f)
   }
 
   /**
     * Method to parse a table from an File.
     * NOTE: The source created will be closed by the parse method.
     *
-    * @param f     the File.
+    * @param f     the File (call by name in case there is an exception thrown while constructing the file).
     * @param codec (implicit) the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](f: File)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromFile(f)); t <- parse(s)) yield t
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromFile(f)); t <- parse(s)) yield t
 
   /**
     * Method to parse a table from an File.
@@ -219,8 +206,19 @@ object Table {
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
     Option(clazz.getResource(s)) match {
       case None => Failure(ParserException(s"Table.getResource: $s does not exist for $clazz"))
-      case Some(u) => parse(u)
+      case Some(u) => parseResource(u)
     }
+
+  /**
+    * Method to parse a table from a URL with an explicit encoding.
+    * NOTE: The source created will be closed by the parse method.
+    *
+    * @param u   the URL.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = for (s <- Try(Source.fromURL(u, enc)); t <- parse(s)) yield t
 
   /**
     * Method to parse a table from a URL.
@@ -229,7 +227,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] =
+  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] =
     for (uri <- Try(u.toURI); t <- parse(uri)) yield t
 
   /**

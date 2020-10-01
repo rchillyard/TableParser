@@ -4,6 +4,8 @@
 
 package com.phasmidsoftware.table
 
+import java.io.File
+
 import com.phasmidsoftware.parse.{RawParsers, RowParser, StringParser, StringTableParser}
 import com.phasmidsoftware.render._
 import org.scalatest.flatspec
@@ -77,6 +79,22 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val iIty = Table.parse(source)
     iIty should matchPattern { case Success(_) => }
     iIty.get.size shouldBe 2
+  }
+
+  it should "parse from File" in {
+    import IntPair._
+
+    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
+    iIty should matchPattern { case Success(_) => }
+    iIty.get.size shouldBe 2
+  }
+
+  it should "parse from null File" in {
+    import IntPair._
+
+    val f: String = null
+    val iIty = Table.parseFile(new File(f))
+    iIty should matchPattern { case Failure(_) => }
   }
 
   it should "parse from Resource" in {
