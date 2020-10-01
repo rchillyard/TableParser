@@ -621,7 +621,7 @@ trait CellParsers {
       case e: Exception => throw ParserException(s"Problem parsing '${row(idx)}' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e)
     }
     else try cellParser.parse(Some(columnName), row, columns) catch {
-      case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns")
+      case _: UnsupportedOperationException => throw ParserException(s"unable to find value for column $columnName in $columns")
     }
   }
 }

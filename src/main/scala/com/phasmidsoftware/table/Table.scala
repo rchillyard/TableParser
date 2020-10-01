@@ -258,7 +258,7 @@ case class Header(xs: Seq[String]) {
     case Nil => false
   }
 
-  def getIndex(w: String): Try[Int] = FP.indexFound(w, xs.indexOf(w.toUpperCase))
+  def getIndex(w: String): Try[Int] = FP.indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
 
   def ++(other: Header): Header = Header(xs ++ other.xs)
 }
@@ -320,7 +320,7 @@ object Header {
     */
   def apply[X: ClassTag](): Header = Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList)
 
-  def create(ws: String*): Header = apply(ws map (_.toUpperCase))
+  def create(ws: String*): Header = apply(ws)
 }
 
 

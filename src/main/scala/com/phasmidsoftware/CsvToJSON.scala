@@ -6,41 +6,49 @@ package com.phasmidsoftware
 
 import java.io.{File, PrintWriter}
 
-import com.phasmidsoftware.parse.{CellParser, CellParsers, StringTableParserWithHeader, TableParser}
-import com.phasmidsoftware.table.Table
+import com.phasmidsoftware.parse.{CellParser, CellParsers, ColumnHelper, StringTableParserWithHeader, TableParser}
+import com.phasmidsoftware.table.{Header, Table}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat, enrichAny}
 
+import scala.io.Codec
 import scala.util.{Success, Try}
 
 object CsvToJSON extends App {
 
-  case class Pair(north: String, south: String) {
-    def asArray: Array[String] = Array(north, south)
+  case class Player(first: String, last: String) {
+    def nickname: String = s"$first ${last.head}"
   }
 
-  case class SharkBridgePairings(partners: Array[Array[String]]) {
+  case class Partnership(playerA: String, playerB: String) {
+    def asArray: Array[String] = Array(playerA, playerB)
+  }
+
+  object Partnership {
+    def apply(players: Seq[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
+  }
+
+  case class Partnerships(partners: Array[Array[String]]) {
     def size: Int = partners.length
   }
 
-  object Pair extends CellParsers {
-    implicit val pairParser: CellParser[Pair] = cellParser2(Pair.apply)
+  object Player extends CellParsers {
+    implicit val playerParser: CellParser[Player] = cellParser2(Player.apply)
   }
 
-  /**
-    * TODO: understand why this requires the headers (north, south) to be in all caps in the input file.
-    */
-  implicit val ptp: TableParser[Table[Pair]] = StringTableParserWithHeader[Pair]()
-
+  implicit val ptp: TableParser[Table[Player]] = StringTableParserWithHeader[Player](Some(Header[Player]()))
   private val userHome = System.getProperty("user.home")
-  private val inputFile = s"$userHome/Documents/pairs.csv"
-  private val outputFile = s"$userHome/Documents/pairings.txt"
-  val pty: Try[Table[Pair]] = Table.parse[Table[Pair]](new File(inputFile))
-  val sy: Try[SharkBridgePairings] = for (pt <- pty) yield SharkBridgePairings((for (r <- pt.rows) yield r.asArray).toArray)
-
+  private val baseName = if (args.length > 0) args.head else "partnerships"
+  private val inputFile = s"$userHome/Documents/$baseName.csv"
+  private val outputFile = s"$userHome/Documents/$baseName.json"
+  implicit val codec: Codec = Codec.UTF8
+  val pty: Try[Table[Player]] = Table.parse[Table[Player]](new File(inputFile))
+  val pssy: Try[Iterator[Seq[Player]]] = for (pt <- pty) yield pt.rows grouped 2
+  val tsy: Try[Iterator[Partnership]] = for (pss <- pssy) yield for (ps <- pss) yield Partnership(ps)
+  val sy: Try[Partnerships] = for (ts <- tsy) yield Partnerships((for (t <- ts) yield t.asArray).toArray)
   for (s <- sy) println(s"${s.size} partnerships read from $inputFile")
 
   object PairingsJsonProtocol extends DefaultJsonProtocol {
-    implicit val sharkBridgePairings: RootJsonFormat[SharkBridgePairings] = jsonFormat1(SharkBridgePairings)
+    implicit val partnershipsFormat: RootJsonFormat[Partnerships] = jsonFormat1(Partnerships)
   }
 
   import PairingsJsonProtocol._

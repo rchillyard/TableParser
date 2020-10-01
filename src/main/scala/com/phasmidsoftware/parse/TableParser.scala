@@ -87,12 +87,13 @@ trait TableParser[Table] {
   *
   * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
   */
-case class StringTableParserWithHeader[X: CellParser : ClassTag]() extends StringTableParser[Table[X]] {
+case class StringTableParserWithHeader[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None) extends StringTableParser[Table[X]] {
   type Row = X
 
-  val maybeFixedHeader: Option[Header] = None
-
-  def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, Header[Row]())
+  def builder(rows: Seq[Row], header: Header): Table[Row] = maybeFixedHeader match {
+    case Some(h) => TableWithHeader(rows, h)
+    case None => TableWithHeader(rows, Header[Row]()) // CHECK
+  }
 
   val rowParser: RowParser[X, String] = StandardRowParser[X]
 }
