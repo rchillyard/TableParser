@@ -4,10 +4,12 @@
 
 package com.phasmidsoftware.table
 
-import java.io.File
+import java.io.{File, InputStream}
+import java.net.URL
 
 import com.phasmidsoftware.parse.{RawParsers, RowParser, StringParser, StringTableParser}
 import com.phasmidsoftware.render._
+import com.phasmidsoftware.util.FP.safeResource
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
@@ -104,6 +106,62 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty should matchPattern { case Success(_) => }
     iIty.get.size shouldBe 2
   }
+
+  behavior of "parse with safeResource"
+
+  it should "return success for intPairs.csv" in {
+    import IntPair._
+
+    lazy val i: InputStream = classOf[TableSpec].getResourceAsStream("intPairs.csv")
+    val iIty = Table.parseInputStream(i)
+    iIty should matchPattern { case Success(_) => }
+    iIty.get.size shouldBe 2
+  }
+
+  it should "return failure(0)" in {
+    import IntPair._
+
+    val iIty = Table.parse(Source.fromResource(null))
+    iIty should matchPattern { case Failure(_) => }
+    iIty.recover {
+      case _: NullPointerException => Success(())
+      case e => fail(s"wrong exception: $e")
+    }
+  }
+
+  it should "return failure(1)" in {
+    import IntPair._
+
+    lazy val i: InputStream = classOf[TableSpec].getResourceAsStream(null)
+    val iIty = Table.parseInputStream(i)
+    iIty should matchPattern { case Failure(_) => }
+    iIty.recover {
+      case _: NullPointerException => Success(())
+      case e => fail(s"wrong exception: $e")
+    }
+  }
+
+  it should "return failure(2)" in {
+    lazy val i: InputStream = getClass.getResourceAsStream("emptyResource.txt")
+    val wy = safeResource(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
+    wy should matchPattern { case Failure(_) => }
+    wy.recover {
+      case _: NoSuchElementException => Success(())
+      case e => fail(s"wrong exception: $e")
+    }
+  }
+
+  it should "return success for intPairs.csv URL with encoding" in {
+    import IntPair._
+
+    lazy val u: URL = classOf[TableSpec].getResource("intPairs.csv")
+    val iIty = Table.parseResource(u, "UTF-8")
+    iIty should matchPattern { case Success(_) => }
+    iIty.get.size shouldBe 2
+  }
+
+
+  behavior of "other"
 
   it should "do iterator" in {
     import IntPair._

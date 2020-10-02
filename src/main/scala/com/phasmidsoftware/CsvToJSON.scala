@@ -60,7 +60,7 @@ object CsvToJSON extends App {
   import PairingsJsonProtocol._
 
   private val triedString: Try[String] = for (s <- sy; j = s.toJson) yield j.prettyPrint
-  triedString.transform(printJson, e => Success(println(e.getLocalizedMessage)))
+  triedString.transform(printJson, e => Success(System.err.println(e.getLocalizedMessage)))
 
   private def printJson(w: String): Try[Unit] = {
     val p: PrintWriter = new PrintWriter(outputFile)

@@ -6,7 +6,9 @@ package com.phasmidsoftware.util
 
 import java.net.URL
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Using.Releasable
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try, Using}
 
 object FP {
   /**
@@ -37,6 +39,22 @@ object FP {
     case _ => Failure(TableParserException(s"Header column $w not found"))
   }
 
+  /**
+    * This method is to Using.apply as flatMap is to Map.
+    *
+    * @param resource a resource which is used by f and will be managed via Using.resource
+    * @param f a function of R => Try[A].
+    * @tparam R the resource type.
+    * @tparam A the underlying type of the result.
+    * @return a Try[A]
+    */
+  def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] =
+    try {
+      val r = resource
+      Using.resource(r)(f)
+    } catch {
+      case NonFatal(e) => Failure(e)
+    }
 
 }
 

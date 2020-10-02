@@ -13,7 +13,7 @@ import com.phasmidsoftware.util.{FP, Reflection}
 
 import scala.io.{Codec, Source}
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 /**
   * A Table of Rows.
@@ -102,7 +102,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = FP.safeResource(Source.fromURI(u))(parse(_))
 
   /**
     * Method to parse a table from an InputStream with an explicit encoding.
@@ -112,21 +112,20 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](i: InputStream, enc: String): Try[T] = {
+  def parseInputStream[T: TableParser](i: => InputStream, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
-    parse(i)
+    parseInputStream(i)
   }
 
   /**
     * Method to parse a table from an InputStream with an implicit encoding.
-    * NOTE: The source created will be closed by the parse method.
     *
-    * @param i     the InputStream.
+    * @param i     the InputStream (call-by-name).
     * @param codec (implicit) the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromInputStream(i)); t <- parse(s)) yield t
+  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = FP.safeResource(Source.fromInputStream(i))(parse(_))
 
   /**
     * Method to parse a table from a Source.
@@ -136,15 +135,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](x: => Source): Try[T] = parse(x.getLines()) match {
-    case z@Success(_) => try {
-      x.close()
-      z
-    } catch {
-      case e: Exception => Failure(e)
-    }
-    case x => x
-  }
+  def parse[T: TableParser](x: => Source): Try[T] = for (z <- Try(x.getLines()); y <- parse(z)) yield y
 
   /**
     * Method to parse a table from an Iterator of String.
@@ -185,14 +176,13 @@ object Table {
 
   /**
     * Method to parse a table from an File.
-    * NOTE: The source created will be closed by the parse method.
     *
     * @param f     the File (call by name in case there is an exception thrown while constructing the file).
     * @param codec (implicit) the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromFile(f)); t <- parse(s)) yield t
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = FP.safeResource(Source.fromFile(f))(parse(_))
 
   /**
     * Method to parse a table from an File.
@@ -204,21 +194,17 @@ object Table {
     * @return a Try[T]
     */
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
-    Option(clazz.getResource(s)) match {
-      case None => Failure(ParserException(s"Table.getResource: $s does not exist for $clazz"))
-      case Some(u) => parseResource(u)
-    }
+    FP.safeResource(Source.fromURL(clazz.getResource(s)))(parse(_))
 
   /**
     * Method to parse a table from a URL with an explicit encoding.
-    * NOTE: The source created will be closed by the parse method.
     *
     * @param u   the URL.
     * @param enc the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = for (s <- Try(Source.fromURL(u, enc)); t <- parse(s)) yield t
+  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = FP.safeResource(Source.fromURL(u, enc))(parse(_))
 
   /**
     * Method to parse a table from a URL.
@@ -441,3 +427,5 @@ object TableWithHeader {
   * @param w the message.
   */
 case class TableException(w: String) extends Exception(w)
+
+
