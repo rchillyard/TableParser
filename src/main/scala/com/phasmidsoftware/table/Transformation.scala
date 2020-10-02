@@ -13,6 +13,17 @@ case class RawTableTransformation(transformers: Map[String, Transformation[Strin
     val xm: Map[Int, Transformation[String, String]] = for ((k, x) <- transformers; h <- t.maybeHeader; index <- h.getIndex(k).toOption) yield (index, x)
     t.map[RawRow](RawRowTransformation(xm))
   }
+
+//  def map[Z](f: RawTable => Z): Transformation[RawTable, Z] = f compose apply
+}
+
+case class RawTableAggregation(aggregators: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable] {
+  override def apply(t: RawTable): RawTable = {
+    val header = t.maybeHeader.get // there must be a header for a raw table.
+    // TODO fix this get
+    val xm: Map[Int, Transformation[String, String]] = for ((k, x) <- aggregators; index = header.getIndex(k).get) yield (index, x)
+    t.map[RawRow](RawRowTransformation(xm))
+  }
 }
 
 case class RawTableProjection(columns: Seq[String]) extends Transformation[RawTable, RawTable] {
