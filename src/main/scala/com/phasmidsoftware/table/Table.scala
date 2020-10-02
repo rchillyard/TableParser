@@ -9,6 +9,7 @@ import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.render._
+import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{FP, Reflection}
 
 import scala.io.{Codec, Source}
@@ -102,7 +103,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = FP.safeResource(Source.fromURI(u))(parse(_))
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = safeResource(Source.fromURI(u))(parse(_))
 
   /**
     * Method to parse a table from an InputStream with an explicit encoding.
@@ -125,7 +126,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = FP.safeResource(Source.fromInputStream(i))(parse(_))
+  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = safeResource(Source.fromInputStream(i))(parse(_))
 
   /**
     * Method to parse a table from a Source.
@@ -194,7 +195,7 @@ object Table {
     * @return a Try[T]
     */
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
-    FP.safeResource(Source.fromURL(clazz.getResource(s)))(parse(_))
+    safeResource(Source.fromURL(clazz.getResource(s)))(parse(_))
 
   /**
     * Method to parse a table from a URL with an explicit encoding.
@@ -204,7 +205,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = FP.safeResource(Source.fromURL(u, enc))(parse(_))
+  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = safeResource(Source.fromURL(u, enc))(parse(_))
 
   /**
     * Method to parse a table from a URL.
@@ -242,7 +243,7 @@ case class Header(xs: Seq[String]) {
     case Nil => false
   }
 
-  def getIndex(w: String): Try[Int] = FP.indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
+  def getIndex(w: String): Try[Int] = indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
 
   def ++(other: Header): Header = Header(xs ++ other.xs)
 }
