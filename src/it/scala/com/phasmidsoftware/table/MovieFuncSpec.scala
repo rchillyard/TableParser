@@ -1,10 +1,10 @@
 package com.phasmidsoftware.table
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
 import scala.util._
 
-class MovieFuncSpec extends FlatSpec with Matchers {
+class MovieFuncSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   behavior of "Movie table"
 

@@ -12,7 +12,9 @@ import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.{FP, Reflection}
 
 import scala.io.{Codec, Source}
+import scala.language.postfixOps
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -34,7 +36,7 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] where each cell has value f(x) where x is the value of the corresponding cell in this.
     */
-  def map[S](f: Row => S): Table[S] = unit(rows map f)
+  override def map[S](f: Row => S): Table[S] = unit(rows map f)
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].
@@ -58,7 +60,7 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * Method to generate a Table[S] for a set of rows.
     * Although declared as an instance method, this method produces its result independent of this.
     *
-    * @param rows        a sequence of S.
+    * @param rows a sequence of S.
     * @tparam S the underlying type of the rows and the result.
     * @return a new instance of Table[S].
     */
@@ -151,9 +153,10 @@ object Table {
     val result = parse(x.getLines())
     result match {
       case Success(_) => try {
-        x.close(); result
+        x.close()
+        result
       } catch {
-        case e: Exception => Failure(e)
+        case NonFatal(e) => Failure(e)
       }
       case _ => result
     }
@@ -250,6 +253,7 @@ object Table {
 
 /**
   * Case class to represent a header.
+  *
   * @param xs the sequence of column names.
   */
 case class Header(xs: Seq[String]) {
@@ -266,8 +270,9 @@ case class Header(xs: Seq[String]) {
 object Header {
 
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
-  lazy val numbers: Stream[Int] = Stream.from(1)
-  lazy val generateNumbers: Stream[String] = numbers map (_.toString)
+  lazy val numbers: LazyList[Int] = LazyList.from(1)
+  lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
+  //noinspection SpellCheckingInspection
   //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
   //  lazy val generateLetters: Stream[String] = recursiveLetters
   val alphabet: List[String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray.map(_.toString).toList
@@ -275,29 +280,28 @@ object Header {
   private def intToString(letters: Boolean)(n: Int): String = if (letters) {
     @scala.annotation.tailrec
     def inner(s: String, n: Int): String = {
-      if (n <= 0)
-        return s
-      val m = n % 26 match {
-        case 0 => 26
-        case other => other
+      if (n <= 0) s
+      else {
+        val m = n % 26 match {
+          case 0 => 26
+          case other => other
+        }
+        inner(s"${(m + 64).toChar}$s", (n - m) / 26)
       }
-      inner((m + 64).toChar + s, (n - m) / 26)
     }
 
     inner("", n)
   }
   else n.toString
 
-  lazy val generateLetters: Stream[String] = numbers map intToString(letters = true)
+  lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
 
-  def multiply(prefixes: List[String], strings: Stream[String]): Stream[String] = {
-    val wss: List[Stream[String]] = prefixes map (prepend(_, strings))
-    wss.foldLeft(Stream.empty[String])(_ #::: _)
+  def multiply(prefixes: List[String], strings: LazyList[String]): LazyList[String] = {
+    val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
+    wss.foldLeft(LazyList.empty[String])(_ #::: _)
   }
 
-  def prepend(prefix: String, stream: Stream[String]): Stream[String] = stream map (prefix + _)
-
-  import scala.language.postfixOps
+  def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
 
   /**
     * This method constructs a new Header based on Excel row/column names.
@@ -348,7 +352,7 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     rows map {
       case p: Product => ww.writeRow(o2)(p)
       case xs: Seq[Any] => ww.writeRowElements(o2)(xs)
-      case xs: Array[Any] => ww.writeRowElements(o2)(xs)
+      case xs: Array[Any] => ww.writeRowElements(o2)(xs) // TODO fix this
       case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     }
     o1
@@ -401,7 +405,6 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     val trimmed = tableNode.trim
     implicitly[TreeWriter[U]].evaluate(trimmed)
   }
-
 }
 
 /**
@@ -410,7 +413,7 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
   * NOTE: the existence or not of a Header in a BaseTable only affects how the table is rendered.
   * The parsing of a table always has a header of some sort.
   *
-  * @param rows   the rows of the table.
+  * @param rows the rows of the table.
   * @tparam Row the underlying type of each Row
   */
 case class TableWithoutHeader[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None) {

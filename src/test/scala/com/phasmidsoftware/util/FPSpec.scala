@@ -5,11 +5,11 @@
 package com.phasmidsoftware.util
 
 import com.phasmidsoftware.util.FP._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
 import scala.util.{Failure, Success}
 
-class FPSpec extends FlatSpec with Matchers {
+class FPSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   behavior of "FPSpec"
 
@@ -18,12 +18,17 @@ class FPSpec extends FlatSpec with Matchers {
     indexFound("junk", -1) should matchPattern { case Failure(TableParserException("Header column junk not found", null)) => }
   }
 
-  ignore should "getURLforResource" in {
-
+  it should "getURLForResource" in {
+    getURLForResource("testFile.txt", getClass) should matchPattern { case Success(_) => }
+    getURLForResource(".txt", getClass) should matchPattern { case Failure(_) => }
   }
 
-  ignore should "sequence" in {
-
+  it should "sequence" in {
+    val try1 = Success(1)
+    val try2 = Success(2)
+    val try3 = Failure(TableParserException(""))
+    sequence(Seq(try1, try2)) shouldBe Success(Seq(1, 2))
+    sequence(Seq(try1, try3)) should matchPattern { case Failure(_) => }
   }
 
 }

@@ -4,11 +4,11 @@
 
 package com.phasmidsoftware.parse
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
 import scala.util.Success
 
-class LineParserSpec extends FlatSpec with Matchers {
+class LineParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   val hgTabbed = "Hello\tGoodbye"
   val hgSerial = "Hello, Goodbye"
@@ -17,9 +17,9 @@ class LineParserSpec extends FlatSpec with Matchers {
 
   behavior of "LineParser"
   // TODO fix deprecation of syntax (next two lines).
-  val p2 = new LineParser("""\t""".r, """[^\t]*""".r, "", '|', quote = ''')
-  val p3 = new LineParser(", *".r, """[\w_\?:=\.\/]+""".r, "", '|', quote = ''')
-  val p4 = new LineParser("|".r, """[^|]*""".r, "{}", ',', quote = '"')
+  val p2 = new LineParser("""\t""".r, """[^\t]*""".r, "", '|', quote = '\'')
+  val p3 = new LineParser(", *".r, """[\w_?:=./]+""".r, "", '|', quote = '\'')
+  val p4 = new LineParser("""\|""".r, """[^|]*""".r, "{}", ',', quote = '\"')
   private val helloQuoteGoodbye = """"Hello ""Goodbye""""
   private val HelloGoodbye = """Hello "Goodbye"""
   val HelloCommaGoodbye = """{Hello,Goodbye}"""
@@ -44,8 +44,8 @@ class LineParserSpec extends FlatSpec with Matchers {
 
   }
   it should "parse quotedString" in {
-    p1.parseAll(p1.quotedString,""""Hello\tGoodbye"""") should matchPattern { case p1.Success("""Hello\tGoodbye""", _) => }
-    p2.parseAll(p2.quotedString,"""'Hello,Goodbye'""") should matchPattern { case p2.Success("""Hello,Goodbye""", _) => }
+    p1.parseAll(p1.quotedString, """"Hello\tGoodbye"""") should matchPattern { case p1.Success("""Hello\tGoodbye""", _) => }
+    p2.parseAll(p2.quotedString, """'Hello,Goodbye'""") should matchPattern { case p2.Success("""Hello,Goodbye""", _) => }
     p1.parseAll(p1.quotedString, helloQuoteGoodbye) should matchPattern { case p1.Success(`HelloGoodbye`, _) => }
   }
 
@@ -54,10 +54,10 @@ class LineParserSpec extends FlatSpec with Matchers {
   }
 
   it should "parse list" in {
-    p1.parseAll(p1.list,HelloCommaGoodbye) should matchPattern { case p1.Success(`HelloCommaGoodbye`, _) => }
+    p1.parseAll(p1.list, HelloCommaGoodbye) should matchPattern { case p1.Success(`HelloCommaGoodbye`, _) => }
     p2.parseAll(p2.list, "Hello") should matchPattern { case p2.Failure(_, _) => }
-    p2.parseAll(p2.list,"""Hello|Goodbye""") should matchPattern { case p2.Success("{Hello,Goodbye}", _) => }
-    p2.parseAll(p2.list,"""Action|Adventure|Fantasy|Sci-Fi""") should matchPattern { case p2.Success("{Action,Adventure,Fantasy,Sci-Fi}", _) => }
+    p2.parseAll(p2.list, """Hello|Goodbye""") should matchPattern { case p2.Success("{Hello,Goodbye}", _) => }
+    p2.parseAll(p2.list, """Action|Adventure|Fantasy|Sci-Fi""") should matchPattern { case p2.Success("{Action,Adventure,Fantasy,Sci-Fi}", _) => }
 
   }
 

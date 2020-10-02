@@ -4,9 +4,9 @@
 
 package com.phasmidsoftware.render
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
-class WritableSpec extends FlatSpec with Matchers {
+class WritableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   behavior of "Writable"
 

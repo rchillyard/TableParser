@@ -5,12 +5,12 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.{CellParser, RowParser, StringTableParser}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
 import scala.util._
 
 //noinspection SpellCheckingInspection
-class MovieSpec extends FlatSpec with Matchers {
+class MovieSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   private val movieHeader = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
 
@@ -46,8 +46,7 @@ class MovieSpec extends FlatSpec with Matchers {
     x.get.size shouldBe 1
   }
 
-  // TODO rework this test
-  ignore should "fail to parse the first (edited) movie from the IMDB dataset" in {
+  it should "fail to parse the first (edited) movie from the IMDB dataset" in {
     import MovieParser._
 
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
@@ -64,9 +63,8 @@ class MovieSpec extends FlatSpec with Matchers {
 
     val movies = Seq(
       movieHeader,
-      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
+      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-,,2009,936,7.9,1.78,33000"
     )
-
     val x: Try[Table[Movie]] = Table.parse(movies)
     x should matchPattern { case Failure(_) => }
   }
@@ -127,8 +125,8 @@ class MovieSpec extends FlatSpec with Matchers {
   behavior of "Name"
   it should "parse Philip Michael Thomas" in {
     import MovieParser._
-    implicitly[CellParser[Name]].convertString("Philip Thomas") shouldBe Name("Philip", None, "Thomas", None)
-    implicitly[CellParser[Name]].convertString("Philip Michael Thomas") shouldBe Name("Philip", Some("Michael"), "Thomas", None)
+    implicitly[CellParser[Name]].convertString("Philip Thomas") shouldBe Success(Name("Philip", None, "Thomas", None))
+    implicitly[CellParser[Name]].convertString("Philip Michael Thomas") shouldBe Success(Name("Philip", Some("Michael"), "Thomas", None))
 
   }
 

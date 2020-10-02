@@ -6,16 +6,11 @@ package com.phasmidsoftware.table
 
 import com.phasmidsoftware.RawRow
 
-trait Transformation[X, Y] extends (X => Y) {
-
-//  def map[Z](f: Y=>Z): Transformation[X, Z]
-}
+trait Transformation[X, Y] extends (X => Y)
 
 case class RawTableTransformation(transformers: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable] {
   override def apply(t: RawTable): RawTable = {
-    val header = t.maybeHeader.get // there must be a header for a raw table.
-    // TODO fix this get
-    val xm: Map[Int, Transformation[String, String]] = for ((k, x) <- transformers; index = header.getIndex(k).get) yield (index, x)
+    val xm: Map[Int, Transformation[String, String]] = for ((k, x) <- transformers; h <- t.maybeHeader; index <- h.getIndex(k).toOption) yield (index, x)
     t.map[RawRow](RawRowTransformation(xm))
   }
 
@@ -33,9 +28,7 @@ case class RawTableAggregation(aggregators: Map[String, Transformation[String, S
 
 case class RawTableProjection(columns: Seq[String]) extends Transformation[RawTable, RawTable] {
   override def apply(t: RawTable): RawTable = {
-    val header = t.maybeHeader.get // there must be a header for a raw table.
-    // TODO fix this get
-    val xs: Seq[Int] = for (k <- columns; index = header.getIndex(k).get) yield index
+    val xs: Seq[Int] = for (k <- columns; h <- t.maybeHeader; io = h.getIndex(k).toOption; i <- io) yield i
     t.map[RawRow](RawRowProjection(xs))
   }
 }

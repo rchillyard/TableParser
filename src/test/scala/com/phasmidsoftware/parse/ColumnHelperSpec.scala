@@ -5,9 +5,9 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.MovieParser.columnHelper
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{flatspec, matchers}
 
-class ColumnHelperSpec extends FlatSpec with Matchers {
+class ColumnHelperSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
   behavior of "ColumnHelper"
 
