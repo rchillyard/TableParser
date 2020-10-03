@@ -576,7 +576,7 @@ trait CellParsers {
       case NonFatal(e) => Failure(InvalidParseException(s"Problem parsing '$w' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e))
     }) yield z
     else cellParser.parse(Some(columnName), row, columns).recoverWith {
-      case _: UnsupportedOperationException => Failure(ParserException(s"unable to find value for column ${columnName.toUpperCase} in $columns"))
+      case _: UnsupportedOperationException => Failure(ParserException(s"unable to find value for column $columnName in $columns"))
     }
   }
 }
@@ -587,6 +587,11 @@ trait CellParsers {
   */
 object CellParsers
 
+/**
+  * CONSIDER: do we really need this exception?
+  *
+  * @param w the message.
+  */
 case class ParsersException(w: String) extends Exception(w)
 
 /**

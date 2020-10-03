@@ -27,7 +27,7 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean) exten
 
     override def forgiving: Boolean = self.forgiving
 
-    def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
     def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
   }

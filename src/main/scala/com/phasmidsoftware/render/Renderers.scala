@@ -453,7 +453,7 @@ trait Renderers {
     * @tparam T   the underlying type of the first parameter of the input to the render method.
     * @return a Renderer[T].
     */
-  def renderer12[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, P10: Renderer, P11: Renderer, P12: Renderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T): Renderer[T] = new ProductRenderer[T](style) {
+  def renderer12[P1: Renderer, P2: Renderer, P3: Renderer, P4: Renderer, P5: Renderer, P6: Renderer, P7: Renderer, P8: Renderer, P9: Renderer, P10: Renderer, P11: Renderer, P12: Renderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T): Renderer[T] = new ProductRenderer[T](style, attrs) {
 
     protected def nodes(t: T): Seq[Node] = {
       val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = Reflection.extractFieldNames(implicitly[ClassTag[T]])

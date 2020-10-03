@@ -156,7 +156,7 @@ object MovieParser extends CellParsers {
 
     override def forgiving: Boolean = true
 
-    def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
     def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
   }

@@ -4,14 +4,17 @@
 
 package com.phasmidsoftware.parse
 
+import java.util.GregorianCalendar
+
 import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
-import org.scalatest.{flatspec, matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.util.{Failure, Success}
 
-class CellParsersSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
+class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   case class MyNumber(x: Int)
 

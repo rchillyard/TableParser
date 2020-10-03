@@ -4,16 +4,20 @@
 
 package com.phasmidsoftware.table
 
+import java.io.{File, InputStream}
+import java.net.URL
+
 import com.phasmidsoftware.parse.{RawParsers, RowParser, StringParser, StringTableParser}
 import com.phasmidsoftware.render._
-import org.scalatest.{flatspec, matchers}
+import com.phasmidsoftware.util.FP.safeResource
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
-import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
-class TableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
+class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   case class IntPair(a: Int, b: Int) {
     def map(f: Int => Int): IntPair = IntPair(f(a), f(b))
@@ -47,7 +51,7 @@ class TableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
 
       def builder(rows: Seq[IntPair], header: Header): Table[IntPair] = TableWithHeader(rows, Header[IntPair]())
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -79,6 +83,22 @@ class TableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
     iIty.get.size shouldBe 2
   }
 
+  it should "parse from File" in {
+    import IntPair._
+
+    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
+    iIty should matchPattern { case Success(_) => }
+    iIty.get.size shouldBe 2
+  }
+
+  it should "parse from null File" in {
+    import IntPair._
+
+    val f: String = null
+    val iIty = Table.parseFile(new File(f))
+    iIty should matchPattern { case Failure(_) => }
+  }
+
   it should "parse from Resource" in {
     import IntPair._
 
@@ -86,6 +106,62 @@ class TableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
     iIty should matchPattern { case Success(_) => }
     iIty.get.size shouldBe 2
   }
+
+  behavior of "parse with safeResource"
+
+  it should "return success for intPairs.csv" in {
+    import IntPair._
+
+    lazy val i: InputStream = classOf[TableSpec].getResourceAsStream("intPairs.csv")
+    val iIty = Table.parseInputStream(i)
+    iIty should matchPattern { case Success(_) => }
+    iIty.get.size shouldBe 2
+  }
+
+  it should "return failure(0)" in {
+    import IntPair._
+
+    val iIty = Table.parse(Source.fromResource(null))
+    iIty should matchPattern { case Failure(_) => }
+    iIty.recover {
+      case _: NullPointerException => Success(())
+      case e => fail(s"wrong exception: $e")
+    }
+  }
+
+  it should "return failure(1)" in {
+    import IntPair._
+
+    lazy val i: InputStream = classOf[TableSpec].getResourceAsStream(null)
+    val iIty = Table.parseInputStream(i)
+    iIty should matchPattern { case Failure(_) => }
+    iIty.recover {
+      case _: NullPointerException => Success(())
+      case e => fail(s"wrong exception: $e")
+    }
+  }
+
+  it should "return failure(2)" in {
+    lazy val i: InputStream = getClass.getResourceAsStream("emptyResource.txt")
+    val wy = safeResource(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
+    wy should matchPattern { case Failure(_) => }
+    wy.recover {
+      case _: NoSuchElementException => Success(())
+      case e => fail(s"wrong exception: $e")
+    }
+  }
+
+  it should "return success for intPairs.csv URL with encoding" in {
+    import IntPair._
+
+    lazy val u: URL = classOf[TableSpec].getResource("intPairs.csv")
+    val iIty = Table.parseResource(u, "UTF-8")
+    iIty should matchPattern { case Success(_) => }
+    iIty.get.size shouldBe 2
+  }
+
+
+  behavior of "other"
 
   it should "do iterator" in {
     import IntPair._
@@ -131,7 +207,7 @@ class TableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
   object IntPairHTML extends Renderers {
 
     trait HTMLTreeWriter extends TreeWriter[HTML] {
-      def evaluate(node: Node): HTML = HTML(node.style, node.content map (_.toString), node.attributes, node.children map evaluate)
+      def evaluate(node: Node): HTML = HTML(node.style, node.content map identity, node.attributes, node.children map evaluate)
     }
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter
@@ -146,7 +222,7 @@ class TableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
     val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
     iIty should matchPattern { case Success(_) => }
 
-    implicit object StringBuilderWriteable extends Writable[StringBuilder] {
+    implicit object StringBuilderWritable extends Writable[StringBuilder] {
       override def unit: StringBuilder = new StringBuilder
 
       override def delimiter: CharSequence = "|"
@@ -166,7 +242,7 @@ class TableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
     val hy = iIty map (_.render("table", Map()))
     hy should matchPattern { case Success(_) => }
     // CONSIDER why do we use ArrayBuffer here instead of List?
-    hy.get shouldBe HTML("table", None, Map(), List(HTML("thead", None, Map(), List(HTML("tr", None, Map(), ArrayBuffer(HTML("th", Some("a"), Map(), List()), HTML("th", Some("b"), Map(), List())).toSeq))), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
+    hy.get shouldBe HTML("table", None, Map(), List(HTML("thead", None, Map(), List(HTML("tr", None, Map(), Seq(HTML("th", Some("a"), Map(), List()), HTML("th", Some("b"), Map(), List()))))), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
   }
 
   behavior of "Header"
@@ -186,12 +262,12 @@ class TableSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
   }
 
   it should "prepend" in {
-    val xs = Header.prepend("x", LazyList.from(Header.alphabet)).take(100).toList
+    val xs = Header.prepend("x", Header.alphabet.to(LazyList)).take(100).toList
     xs shouldBe Seq("xA", "xB", "xC", "xD", "xE", "xF", "xG", "xH", "xI", "xJ", "xK", "xL", "xM", "xN", "xO", "xP", "xQ", "xR", "xS", "xT", "xU", "xV", "xW", "xX", "xY", "xZ")
   }
 
   it should "multiply" in {
-    val xs = Header.multiply(List("A", "B"), LazyList.from(Header.alphabet))
+    val xs = Header.multiply(List("A", "B"), Header.alphabet.to(LazyList))
     xs shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", "AW", "AX", "AY", "AZ", "BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", "BM", "BN", "BO", "BP", "BQ", "BR", "BS", "BT", "BU", "BV", "BW", "BX", "BY", "BZ")
   }
 

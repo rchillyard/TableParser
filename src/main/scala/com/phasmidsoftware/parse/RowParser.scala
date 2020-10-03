@@ -68,7 +68,7 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
     * @param w the header row as a String.
     * @return a Try[Header].
     */
-  override def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow(w.toUpperCase)) yield Header(ws)
+  override def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow(w)) yield Header(ws)
 }
 
 object StandardRowParser {
@@ -105,5 +105,5 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
     * @param ws the header row as a sequence of Strings.
     * @return a Try[Header].
     */
-  override def parseHeader(ws: Strings): Try[Header] = Try(Header(ws map (_.toUpperCase())))
+  override def parseHeader(ws: Strings): Try[Header] = Try(Header(ws))
 }
