@@ -1,3 +1,4 @@
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/app/scalaprof/TableParser?utm_source=github.com&utm_medium=referral&utm_content=rchillyard/TableParser&utm_campaign=Badge_Grade_Settings)
 [![CircleCI](https://circleci.com/gh/rchillyard/TableParser.svg?style=svg)](https://circleci.com/gh/rchillyard/TableParser)
 
 # Introduction to TableParser
@@ -62,7 +63,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-Current version: 1.0.9.
+Current version: 1.0.10.
 
 See release notes below for history.
 
@@ -105,7 +106,7 @@ _Name.apply_ (see example below).
 If you have created additional apply methods, you will need to define a function of a specific type and pass that in.
 Or, more simply, do as for _ratingParser_ in the example below.
 
-Note that _P1_, _P2_, ... _Pn_ each hava a context bound on _CellParser_ (that's to say, there is implicit
+Note that _P1_, _P2_, ... _Pn_ each have a context bound on _CellParser_ (that's to say, there is implicit
 evidence of type _CellParser[P]_).
 This is the mechanism which saves the programmer from having to specify explicit conversions.
 _T_ is bound to be a subtype of _Product_ and has two context bounds: _ClassTag_ and _ColumnHelper_.
@@ -399,7 +400,7 @@ Here, for example, is an appropriate definition.
 The default _delimiter_ is ", ".
 You can override the _newline_ and _quote_ methods too if you don't want the defaults.	
 
-And then, folllowing this, you will write something like the following code:
+And then, following this, you will write something like the following code:
 
     print(table.render.toString)
 
@@ -419,7 +420,7 @@ then the _render_ method will produce an instance of _U_ which will be a tree co
 
 What sort of type is _U_?
 An XML node would be appropriate.
-The specifications use a type called HTML which is provided in package _parse.render.tag_ more as an examplar rather than something definitive.
+The specifications use a type called HTML which is provided in package _parse.render.tag_ more as an exemplar rather than something definitive.
 
     case class HTML(tag: String, content: Option[String], attributes: Map[String, String], hs: Seq[HTML])
 
@@ -502,7 +503,7 @@ V1.0.2 -> V1.0.3
 V1.0.1 -> V1.0.2
 * Added self-checking of LineParser;
 * Able to parse two quote-chars together in a quotation as one quote char;
-* Added enc and codec params as apporpriate to Table.parse methods.
+* Added enc and codec params as appropriate to Table.parse methods.
 * Added stringCellParser;
 * Now, properly closes source in Table.parse methods.
 

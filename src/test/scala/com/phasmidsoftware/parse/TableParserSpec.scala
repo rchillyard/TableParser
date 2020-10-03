@@ -4,8 +4,6 @@
 
 package com.phasmidsoftware.parse
 
-import java.util.GregorianCalendar
-
 import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
@@ -37,7 +35,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     trait IntPairRowParser extends StringParser[IntPair] {
       override def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
-        case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
+        case intPairParser.Success((x: Int, y: Int), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse $w"))
       }
 
@@ -77,6 +75,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
 
   object DailyRaptorReport {
+
     object DailyRaptorReportParser extends CellParsers {
 
 
@@ -111,6 +110,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
+
   }
 
   behavior of "RowParser.parse"
@@ -132,7 +132,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Table.parse"
 
-  private val date = new GregorianCalendar(2018, 8, 12).getTime
   it should "parse raptors from raptors.csv" in {
     import DailyRaptorReport._
 
@@ -141,10 +140,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(date), "Dense Fog/Light Rain", 0, 0)
+    val date = new LocalDate(2018, 9, 12)
+    x.get.rows.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
   }
 
-  private val date1 = new GregorianCalendar(2018, 8, 16).getTime
   it should "parse raptors from Seq[String]" in {
     import DailyRaptorReport._
 
@@ -155,7 +154,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 2
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(date1), partlyCloudy, 3308, 5)
+    val date = new LocalDate(2018, 9, 16)
+    x.get.rows.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
 
   }
 
@@ -217,8 +217,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 2
     //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(date1), partlyCloudy, 3308, 5)
-
+    val date = new LocalDate(2018, 9, 16)
+    x.get.rows.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
   }
 
   object DailyRaptorReportNoHeader {
@@ -269,8 +269,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.
-    //noinspection ScalaDeprecation
-    x.get.rows.head shouldBe DailyRaptorReport(LocalDate.fromDateFields(date), "Dense Fog/Light Rain", 0, 0)
+    val date = new LocalDate(2018, 9, 12)
+    x.get.rows.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
 
   }
 
@@ -322,6 +322,25 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     qty should matchPattern { case Success(_) => }
     qty.get.size shouldBe 1
     println(qty.get.head)
+  }
+
+  it should "fail on incompatible parser" in {
+    import Submissions._
+    val strings: Seq[String] = Nil
+    Table.parse(strings) match {
+      case Success(_) => fail("should fail")
+      case Failure(_) => succeed
+    }
+  }
+
+  it should "fail on empty rows" in {
+    import Submissions._
+    val rows: Seq[Seq[String]] = Nil
+    val qty: Try[Table[Submission]] = Table.parseSequence(rows)
+    qty match {
+      case Success(_) => fail("should fail")
+      case Failure(_) => succeed
+    }
   }
 
 

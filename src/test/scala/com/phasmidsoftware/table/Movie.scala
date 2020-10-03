@@ -106,7 +106,7 @@ case class Name(first: String, middle: Option[String], last: String, suffix: Opt
 /**
   * The US rating.
   * NOTE: this definition does not cover all of the ratings in the IMDB movie dataset.
-  * That's OK--this is just an examplar.
+  * That's OK--this is just an exemplar.
   */
 case class Rating(code: String, age: Option[Int]) {
   override def toString: String = code + (age match {
@@ -173,7 +173,7 @@ object Name {
     case rName(first, _, middle, last, _, null) => apply(first, Some(middle), last, None)
     case rName(first, _, null, last, _, suffix) => apply(first, None, last, Some(suffix))
     case rName(first, _, middle, last, _, suffix) => apply(first, Some(middle), last, Some(suffix))
-    case _ => throw new Exception(s"parse error in Name: $name")
+    case _ => throw new Exception(s"""parse error in Name: '$name'""")
   }
 }
 
@@ -188,7 +188,7 @@ object Rating {
     s match {
       case rRating(code, _, null) => apply(code, None)
       case rRating(code, _, age) => apply(code, Try(age.toInt).toOption)
-      case _ => throw new Exception(s"parse error in Rating: $s")
+      case _ => throw new Exception(s"""parse error in Rating: '$s'""")
     }
 
   private val rRating = """^(\w*)(-(\d\d))?$""".r

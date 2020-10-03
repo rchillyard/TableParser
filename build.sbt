@@ -6,17 +6,23 @@ version := "1.0.10-SNAPSHOT"
 
 scalaVersion := "2.13.3"
 
-scalacOptions := Seq("-unchecked", "-deprecation")
+scalacOptions += "-deprecation"
+
+Test / unmanagedSourceDirectories += baseDirectory.value / "src/it/scala"
+Test / unmanagedResourceDirectories += baseDirectory.value / "src/it/resources"
+
+resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
 
 lazy val scalaModules = "org.scala-lang.modules"
-
+lazy val scalaTestVersion = "3.1.1"
 lazy val scalaParserCombinatorsVersion = "1.1.2"
+lazy val nScalaTimeVersion = "2.22.0"
 
 libraryDependencies ++= Seq(
   "io.spray" %%  "spray-json" % "1.3.5",
-  "org.scalatest" %% "scalatest" % "3.1.0" % "test",
-  "com.github.nscala-time" %% "nscala-time" % "2.22.0",
-  scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion
+  scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
+  "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
+  "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 
 // publishTo := sonatypePublishToBundle.value

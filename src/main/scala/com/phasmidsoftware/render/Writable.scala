@@ -40,7 +40,7 @@ trait Writable[O] {
 
   /**
     * Method to write a value of type Any to the given instance o, possibly quoted.
-    * Elements will be separated by the delimite, but no newline is appended.
+    * Elements will be separated by the delimiter, but no newline is appended.
     * Element strings may be enclosed in quotes if appropriate.
     *
     * @param o  the instance of O whither the xs values should be written.
@@ -54,6 +54,8 @@ trait Writable[O] {
     o
   }
 
+  private val sQuote: String = quote.toString
+
   /**
     * Method to write a value of type Any to the given instance o, possibly quoted.
     *
@@ -61,7 +63,7 @@ trait Writable[O] {
     * @param x the character sequence to be written.
     * @return an instance of O which represents the updated output structure.
     */
-  def writeValue(o: O)(x: Any): O = if (x.toString.contains(delimiter.toString) || x.toString.contains(quote.toString))
+  def writeValue(o: O)(x: Any): O = if (x.toString.contains(delimiter.toString) || x.toString.contains(sQuote))
     writeQuoted(o)(x.toString)
   else
     writeRaw(o)(x.toString)

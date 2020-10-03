@@ -5,6 +5,9 @@
 package com.phasmidsoftware.util
 
 import scala.reflect.ClassTag
+import java.lang.reflect.Modifier
+
+import scala.util.control.NonFatal
 
 object Reflection {
 
@@ -15,10 +18,6 @@ object Reflection {
     * @return an Array of String.
     */
   def extractFieldNames(classTag: ClassTag[_]): Array[String] = {
-    import java.lang.reflect.Modifier
-
-    import scala.util.control.NonFatal
-
     val clazz = classTag.runtimeClass
     try {
       // NOTE: copy methods have the form copy$default$N(), we need to sort them in order, but must account for the fact

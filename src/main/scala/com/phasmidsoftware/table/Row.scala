@@ -20,6 +20,7 @@ case class Row(ws: Seq[String], hdr: Header) extends (String => Try[String]) {
     * Method to yield the value for a given column name
     *
     * NOTE this doesn't seem to be used.
+    * TODO: why is ParserException not found to link to?
     *
     * @param w the column name.
     * @return the value as a String.

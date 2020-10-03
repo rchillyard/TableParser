@@ -9,9 +9,11 @@ import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.render._
+import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{FP, Reflection}
 
 import scala.io.{Codec, Source}
+import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
 
@@ -58,7 +60,7 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * Method to generate a Table[S] for a set of rows.
     * Although declared as an instance method, this method produces its result independent of this.
     *
-    * @param rows        a sequence of S.
+    * @param rows a sequence of S.
     * @tparam S the underlying type of the rows and the result.
     * @return a new instance of Table[S].
     */
@@ -102,7 +104,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = FP.safeResource(Source.fromURI(u))(parse(_))
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = safeResource(Source.fromURI(u))(parse(_))
 
   /**
     * Method to parse a table from an InputStream with an explicit encoding.
@@ -125,7 +127,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = FP.safeResource(Source.fromInputStream(i))(parse(_))
+  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = safeResource(Source.fromInputStream(i))(parse(_))
 
   /**
     * Method to parse a table from a Source.
@@ -194,7 +196,7 @@ object Table {
     * @return a Try[T]
     */
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
-    FP.safeResource(Source.fromURL(clazz.getResource(s)))(parse(_))
+    safeResource(Source.fromURL(clazz.getResource(s)))(parse(_))
 
   /**
     * Method to parse a table from a URL with an explicit encoding.
@@ -204,7 +206,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = FP.safeResource(Source.fromURL(u, enc))(parse(_))
+  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = safeResource(Source.fromURL(u, enc))(parse(_))
 
   /**
     * Method to parse a table from a URL.
@@ -234,6 +236,7 @@ object Table {
 
 /**
   * Case class to represent a header.
+  *
   * @param xs the sequence of column names.
   */
 case class Header(xs: Seq[String]) {
@@ -242,7 +245,7 @@ case class Header(xs: Seq[String]) {
     case Nil => false
   }
 
-  def getIndex(w: String): Try[Int] = FP.indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
+  def getIndex(w: String): Try[Int] = indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
 
   def ++(other: Header): Header = Header(xs ++ other.xs)
 }
@@ -259,13 +262,14 @@ object Header {
   private def intToString(letters: Boolean)(n: Int): String = if (letters) {
     @scala.annotation.tailrec
     def inner(s: String, n: Int): String = {
-      if (n <= 0)
-        return s
-      val m = n % 26 match {
-        case 0 => 26
-        case other => other
+      if (n <= 0) s
+      else {
+        val m = n % 26 match {
+          case 0 => 26
+          case other => other
+        }
+        inner(s"${(m + 64).toChar}$s", (n - m) / 26)
       }
-      inner(s"${(m + 64).toChar}$s", (n - m) / 26)
     }
 
     inner("", n)
@@ -280,8 +284,6 @@ object Header {
   }
 
   def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
-
-  import scala.language.postfixOps
 
   /**
     * This method constructs a new Header based on Excel row/column names.
@@ -385,7 +387,6 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     val trimmed = tableNode.trim
     implicitly[TreeWriter[U]].evaluate(trimmed)
   }
-
 }
 
 /**

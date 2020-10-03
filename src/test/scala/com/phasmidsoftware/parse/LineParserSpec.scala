@@ -45,8 +45,8 @@ class LineParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   }
   it should "parse quotedString" in {
-    p1.parseAll(p1.quotedString,""""Hello\tGoodbye"""") should matchPattern { case p1.Success("""Hello\tGoodbye""", _) => }
-    p2.parseAll(p2.quotedString,"""'Hello,Goodbye'""") should matchPattern { case p2.Success("""Hello,Goodbye""", _) => }
+    p1.parseAll(p1.quotedString, """"Hello\tGoodbye"""") should matchPattern { case p1.Success("""Hello\tGoodbye""", _) => }
+    p2.parseAll(p2.quotedString, """'Hello,Goodbye'""") should matchPattern { case p2.Success("""Hello,Goodbye""", _) => }
     p1.parseAll(p1.quotedString, helloQuoteGoodbye) should matchPattern { case p1.Success(`HelloGoodbye`, _) => }
   }
 
@@ -55,10 +55,10 @@ class LineParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse list" in {
-    p1.parseAll(p1.list,HelloCommaGoodbye) should matchPattern { case p1.Success(`HelloCommaGoodbye`, _) => }
+    p1.parseAll(p1.list, HelloCommaGoodbye) should matchPattern { case p1.Success(`HelloCommaGoodbye`, _) => }
     p2.parseAll(p2.list, "Hello") should matchPattern { case p2.Failure(_, _) => }
-    p2.parseAll(p2.list,"""Hello|Goodbye""") should matchPattern { case p2.Success("{Hello,Goodbye}", _) => }
-    p2.parseAll(p2.list,"""Action|Adventure|Fantasy|Sci-Fi""") should matchPattern { case p2.Success("{Action,Adventure,Fantasy,Sci-Fi}", _) => }
+    p2.parseAll(p2.list, """Hello|Goodbye""") should matchPattern { case p2.Success("{Hello,Goodbye}", _) => }
+    p2.parseAll(p2.list, """Action|Adventure|Fantasy|Sci-Fi""") should matchPattern { case p2.Success("{Action,Adventure,Fantasy,Sci-Fi}", _) => }
 
   }
 
