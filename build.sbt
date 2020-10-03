@@ -2,7 +2,7 @@ organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-version := "1.0.10-SNAPSHOT"
+version := "1.0.10"
 
 scalaVersion := "2.13.3"
 
@@ -16,7 +16,7 @@ resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releas
 lazy val scalaModules = "org.scala-lang.modules"
 lazy val scalaTestVersion = "3.1.1"
 lazy val scalaParserCombinatorsVersion = "1.1.2"
-lazy val nScalaTimeVersion = "2.22.0"
+lazy val nScalaTimeVersion = "2.24.0"
 
 libraryDependencies ++= Seq(
   "io.spray" %%  "spray-json" % "1.3.5",

@@ -66,7 +66,7 @@ object CsvToJSON extends App {
     val p: PrintWriter = new PrintWriter(outputFile)
     p.println(w)
     p.close()
-    println(s"output sent to $outputFile")
+    println(s"output of ${w.length} characters sent to $outputFile")
     Success(())
   }
 
