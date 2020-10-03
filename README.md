@@ -41,7 +41,7 @@ The minimum code necessary to read parse the CSV file as a table of "Player"s, u
 
     def parsePlayerTable(inputFile: String): Try[Table[Player]] = {
         implicit val ptt: TableParser[Table[Player]] = StringTableParserWithHeader[Player]()
-        Table.parse[Table[Player]](Source.fromFile(inputFile))
+        Table.parseFile[Table[Player]](inputFile)
     }
 
 This assumes that the source input contains a header row which includes column names corresponding to the parameters
@@ -129,17 +129,25 @@ It is to be expected that _join_ methods will be added later.
 The following object methods are available for parsing text:
 *  def parse[T: TableParser](ws: Seq[String]): Try[T]
 *  def parse[T: TableParser](ws: Iterator[String]): Try[T]
-*  def parse[T: TableParser](x: Source): Try[T]
+*  def parse[T: TableParser](x: => Source): Try[T]
 *  def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T]
 *  def parse[T: TableParser](u: URI, enc: String): Try[T]
-*  def parse[T: TableParser](u: URL, enc: String): Try[T]
-*  def parse[T: TableParser](u: URL)(implicit codec: Codec): Try[T]
-*  def parse[T: TableParser](i: InputStream, enc: String): Try[T]
-*  def parse[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T]
-*  def parse[T: TableParser](f: File)(implicit codec: Codec): Try[T]
-*  def parse[T: TableParser](f: File, enc: String): Try[T]
+*  def parseInputStream[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T]
+*  def parseInputStream[T: TableParser](i: InputStream, enc: String): Try[T]
+*  def parseFile[T: TableParser](f: File)(implicit codec: Codec): Try[T]
+*  def parseFile[T: TableParser](f: File, enc: String): Try[T]
+*  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T]
+*  def parseFile[T: TableParser](pathname: String, enc: String): Try[T]
 *  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T]
+*  def parseResource[T: TableParser](u: URL, enc: String): Try[T]
+*  def parseResource[T: TableParser](u: URL)(implicit codec: Codec): Try[T]
 *  def parseSequence[T: TableParser](wss: Seq[Seq[String]]): Try[T]
+
+Please note that, in the case of a parameter being an Auto-closeable object such as InputStream or Source,
+it is the caller's responsibility to close it after parsing.
+However, if the parameter is a File, or filename, or URL/URI, then any Source object that is instantiated within
+the parse method will be closed.
+This applies also to the parseInputStream methods: the internally defined Source will be closed (but not the stream).
 
 ## TableParser
 

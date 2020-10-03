@@ -10,7 +10,7 @@ import java.net.{URI, URL}
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
-import com.phasmidsoftware.util.{FP, Reflection}
+import com.phasmidsoftware.util.Reflection
 
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
@@ -84,17 +84,37 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
 object Table {
 
   /**
-    * Method to parse a table from a URI with an explicit encoding.
+    * Primary method to parse a table from a Seq of String.
+    * This method is, in turn, invoked by all other parse methods defined below (other than parseSequence).
     *
-    * @param u   the URI.
-    * @param enc the encoding.
+    * @param ws the Strings.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
-    parse(u)
+  def parse[T: TableParser](ws: Seq[String]): Try[T] = implicitly[TableParser[T]] match {
+    case parser: StringTableParser[T] => parser.parse(ws)
+    case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
+
+  /**
+    * Method to parse a table from an Iterator of String.
+    *
+    * @param ws the iterator.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](ws: Iterator[String]): Try[T] = parse(ws.toSeq)
+
+  /**
+    * Method to parse a table from a Source.
+    *
+    * NOTE: the caller is responsible for closing the given Source.
+    *
+    * @param x the Source.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](x: => Source): Try[T] = for (z <- Try(x.getLines()); y <- parse(z)) yield y
 
   /**
     * Method to parse a table from a URI with an implicit encoding.
@@ -107,16 +127,18 @@ object Table {
   def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = safeResource(Source.fromURI(u))(parse(_))
 
   /**
-    * Method to parse a table from an InputStream with an explicit encoding.
+    * Method to parse a table from a URI with an explicit encoding.
     *
-    * @param i   the InputStream.
+    * TEST this
+    *
+    * @param u   the URI.
     * @param enc the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseInputStream[T: TableParser](i: => InputStream, enc: String): Try[T] = {
+  def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
-    parseInputStream(i)
+    parse(u)
   }
 
   /**
@@ -130,44 +152,27 @@ object Table {
   def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = safeResource(Source.fromInputStream(i))(parse(_))
 
   /**
-    * Method to parse a table from a Source.
-    * The Source will close itself after extracting the lines.
+    * Method to parse a table from an InputStream with an explicit encoding.
     *
-    * @param x the Source.
+    * TEST this
+    *
+    * @param i   the InputStream.
+    * @param enc the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](x: => Source): Try[T] = for (z <- Try(x.getLines()); y <- parse(z)) yield y
-
-  /**
-    * Method to parse a table from an Iterator of String.
-    *
-    * @param ws the iterator.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
-  def parse[T: TableParser](ws: Iterator[String]): Try[T] = parse(ws.toSeq)
-
-  /**
-    * Method to parse a table from a Seq of String.
-    *
-    * @param ws the Strings.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
-  def parse[T: TableParser](ws: Seq[String]): Try[T] = {
-    val tableParser = implicitly[TableParser[T]]
-    tableParser match {
-      case parser: StringTableParser[T] => parser.parse(ws)
-      case _ => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $tableParser"))
-    }
+  def parseInputStream[T: TableParser](i: => InputStream, enc: String): Try[T] = {
+    implicit val codec: Codec = Codec(enc)
+    parseInputStream(i)
   }
 
   /**
     * Method to parse a table from a File.
     *
+    * TEST this.
+    *
     * @param f   the File (call by name in case there is an exception thrown while constructing the file).
-    * @param enc the encoding.
+    * @param enc the explicit encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
@@ -184,7 +189,31 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = FP.safeResource(Source.fromFile(f))(parse(_))
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = safeResource(Source.fromFile(f))(parse(_))
+
+  /**
+    * Method to parse a table from a File.
+    *
+    * TEST this.
+    *
+    * @param pathname the file pathname.
+    * @param enc      the explicit encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseFile[T: TableParser](pathname: String, enc: String): Try[T] = Try(parseFile(new File(pathname), enc)).flatten
+
+  /**
+    * Method to parse a table from an File.
+    *
+    * TEST this.
+    *
+    * @param pathname the file pathname.
+    * @param codec    (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] = Try(parseFile(new File(pathname))).flatten
 
   /**
     * Method to parse a table from an File.
@@ -199,16 +228,6 @@ object Table {
     safeResource(Source.fromURL(clazz.getResource(s)))(parse(_))
 
   /**
-    * Method to parse a table from a URL with an explicit encoding.
-    *
-    * @param u   the URL.
-    * @param enc the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
-  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = safeResource(Source.fromURL(u, enc))(parse(_))
-
-  /**
     * Method to parse a table from a URL.
     *
     * @param u the URI.
@@ -217,6 +236,18 @@ object Table {
     */
   def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] =
     for (uri <- Try(u.toURI); t <- parse(uri)) yield t
+
+  /**
+    * Method to parse a table from a URL with an explicit encoding.
+    *
+    * NOTE: the logic here is different from that of parseResource(u:=>URL)(implicit codec: Codec) above.
+    *
+    * @param u   the URL.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = safeResource(Source.fromURL(u, enc))(parse(_))
 
   /**
     * Method to parse a table from a Seq of Seq of String.
@@ -240,13 +271,22 @@ object Table {
   * @param xs the sequence of column names.
   */
 case class Header(xs: Seq[String]) {
-  def exists: Boolean = xs match {
-    case _ :: _ => true
-    case Nil => false
-  }
-
+  /**
+    * Get the index of w in this Header, ignoring case.
+    *
+    * @param w the String to find, a column name.
+    * @return the index wrapped in Try.
+    */
   def getIndex(w: String): Try[Int] = indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
 
+  /**
+    * Concatenate this Header with other.
+    *
+    * TEST this.
+    *
+    * @param other the other Header.
+    * @return a Header made up of these colukns and those of other, in that order.
+    */
   def ++(other: Header): Header = Header(xs ++ other.xs)
 }
 
@@ -306,10 +346,14 @@ object Header {
     */
   def apply[X: ClassTag](): Header = Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList)
 
+  /**
+    * Create a Header from a variable list of parameters.
+    *
+    * @param ws a variable list of Strings.
+    * @return a Header.
+    */
   def create(ws: String*): Header = apply(ws)
 }
-
-
 
 /**
   * CONSIDER eliminating this base class

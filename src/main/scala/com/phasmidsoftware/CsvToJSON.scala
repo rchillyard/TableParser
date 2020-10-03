@@ -10,9 +10,11 @@ import com.phasmidsoftware.parse.{CellParser, CellParsers, StringTableParserWith
 import com.phasmidsoftware.table.Table
 import spray.json.{DefaultJsonProtocol, RootJsonFormat, enrichAny}
 
-import scala.io.Source
 import scala.util.{Success, Try}
 
+/**
+  * Main Application which is really just an example application and should be defined in the test classes.
+  */
 object CsvToJSON extends App {
 
   case class Player(first: String, last: String) {
@@ -31,7 +33,7 @@ object CsvToJSON extends App {
     // NOTE: use the following form if the source file does contain an explicit header row.
     implicit val ptp: TableParser[Table[Player]] = StringTableParserWithHeader[Player]()
 
-    Table.parse[Table[Player]](Source.fromFile(inputFile))
+    Table.parseFile[Table[Player]](inputFile)
   }
 
   case class Partnership(playerA: String, playerB: String) {
