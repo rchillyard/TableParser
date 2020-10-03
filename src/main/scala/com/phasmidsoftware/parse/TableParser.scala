@@ -4,10 +4,11 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.table.Header
+import com.phasmidsoftware.table.{Header, Table, TableWithHeader}
 import com.phasmidsoftware.util.FP
 
 import scala.annotation.implicitNotFound
+import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
 
 /**
@@ -57,7 +58,7 @@ trait TableParser[Table] {
     *
     * @return a RowParser[Row, Input].
     */
-  def rowParser: RowParser[Row, Input]
+  val rowParser: RowParser[Row, Input]
 
   /**
     * Method to parse a table based on a sequence of Inputs.
@@ -74,6 +75,43 @@ trait TableParser[Table] {
     * @return a sequence of Try[Row] which will all be of type Success.
     */
   def logFailures(rys: Seq[Try[Row]]): Seq[Try[Row]]
+}
+
+/**
+  * Case class to define a StringTableParser that assumes a header to be found in the input file.
+  * This class attempts to provide as much built-in functionality as possible.
+  *
+  * This class assumes that the names of the columns are in the first line.
+  * This class implements builder with a TableWithHeader object.
+  * This class uses StandardRowParser of its rowParser.
+  *
+  * @param maybeFixedHeader None => requires that the data source has a header row.
+  *                         Some(h) => specifies that the header is to be taken from h.
+  *                         NOTE: that the simplest is to specify the header directly from the type X:
+  * @see StringTableParserWithHeader#create
+  * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
+  */
+case class StringTableParserWithHeader[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None) extends StringTableParser[Table[X]] {
+  type Row = X
+
+  def builder(rows: Seq[Row], header: Header): Table[Row] = maybeFixedHeader match {
+    case Some(h) => TableWithHeader(rows, h)
+    case None => TableWithHeader(rows, Header[Row]()) // CHECK
+  }
+
+  val rowParser: RowParser[X, String] = StandardRowParser[X]
+}
+
+object StringTableParserWithHeader {
+  /**
+    * This create method constructs a StringTableParserWithHeader with header based simply on the type X.
+    * In this case, the source data must have the same number of colums as X has parameters, and they must be in the
+    * same order. Additionally, there should not be a header row in the source data.
+    *
+    * @tparam X the underlying type. There must be evidence of CellParser[X] and ClassTag[X].
+    * @return a StringTableParserWithHeader[X].
+    */
+  def create[X: CellParser : ClassTag]: StringTableParserWithHeader[X] = StringTableParserWithHeader[X](Some(Header.apply[X]()))
 }
 
 abstract class AbstractTableParser[Table] extends TableParser[Table] {

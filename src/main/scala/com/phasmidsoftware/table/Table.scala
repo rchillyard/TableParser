@@ -9,13 +9,13 @@ import java.net.{URI, URL}
 
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.render._
+import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{FP, Reflection}
 
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 /**
   * A Table of Rows.
@@ -91,7 +91,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: URI, enc: String): Try[T] = {
+  def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     parse(u)
   }
@@ -104,18 +104,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromURI(u)); t <- parse(s)) yield t
-
-  /**
-    * Method to parse a table from a URL with an explicit encoding.
-    * NOTE: The source created will be closed by the parse method.
-    *
-    * @param u   the URL.
-    * @param enc the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
-  def parse[T: TableParser](u: URL, enc: String): Try[T] = for (s <- Try(Source.fromURL(u, enc)); t <- parse(s)) yield t
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = safeResource(Source.fromURI(u))(parse(_))
 
   /**
     * Method to parse a table from an InputStream with an explicit encoding.
@@ -125,21 +114,20 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](i: InputStream, enc: String): Try[T] = {
+  def parseInputStream[T: TableParser](i: => InputStream, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
-    parse(i)
+    parseInputStream(i)
   }
 
   /**
     * Method to parse a table from an InputStream with an implicit encoding.
-    * NOTE: The source created will be closed by the parse method.
     *
-    * @param i     the InputStream.
+    * @param i     the InputStream (call-by-name).
     * @param codec (implicit) the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromInputStream(i)); t <- parse(s)) yield t
+  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = safeResource(Source.fromInputStream(i))(parse(_))
 
   /**
     * Method to parse a table from a Source.
@@ -149,18 +137,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](x: Source): Try[T] = {
-    val result = parse(x.getLines())
-    result match {
-      case Success(_) => try {
-        x.close()
-        result
-      } catch {
-        case NonFatal(e) => Failure(e)
-      }
-      case _ => result
-    }
-  }
+  def parse[T: TableParser](x: => Source): Try[T] = for (z <- Try(x.getLines()); y <- parse(z)) yield y
 
   /**
     * Method to parse a table from an Iterator of String.
@@ -189,26 +166,25 @@ object Table {
   /**
     * Method to parse a table from a File.
     *
-    * @param f   the File.
+    * @param f   the File (call by name in case there is an exception thrown while constructing the file).
     * @param enc the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](f: File, enc: String): Try[T] = {
+  def parseFile[T: TableParser](f: => File, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
-    parse(f)
+    parseFile(f)
   }
 
   /**
     * Method to parse a table from an File.
-    * NOTE: The source created will be closed by the parse method.
     *
-    * @param f     the File.
+    * @param f     the File (call by name in case there is an exception thrown while constructing the file).
     * @param codec (implicit) the encoding.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](f: File)(implicit codec: Codec): Try[T] = for (s <- Try(Source.fromFile(f)); t <- parse(s)) yield t
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = FP.safeResource(Source.fromFile(f))(parse(_))
 
   /**
     * Method to parse a table from an File.
@@ -220,10 +196,17 @@ object Table {
     * @return a Try[T]
     */
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
-    Option(clazz.getResource(s)) match {
-      case None => Failure(ParserException(s"Table.getResource: $s does not exist for $clazz"))
-      case Some(u) => parse(u)
-    }
+    safeResource(Source.fromURL(clazz.getResource(s)))(parse(_))
+
+  /**
+    * Method to parse a table from a URL with an explicit encoding.
+    *
+    * @param u   the URL.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = safeResource(Source.fromURL(u, enc))(parse(_))
 
   /**
     * Method to parse a table from a URL.
@@ -232,7 +215,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] =
+  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] =
     for (uri <- Try(u.toURI); t <- parse(uri)) yield t
 
   /**
@@ -262,7 +245,7 @@ case class Header(xs: Seq[String]) {
     case Nil => false
   }
 
-  def getIndex(w: String): Try[Int] = FP.indexFound(w, xs.indexOf(w.toUpperCase))
+  def getIndex(w: String): Try[Int] = indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
 
   def ++(other: Header): Header = Header(xs ++ other.xs)
 }
@@ -272,7 +255,6 @@ object Header {
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
   lazy val numbers: LazyList[Int] = LazyList.from(1)
   lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
-  //noinspection SpellCheckingInspection
   //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
   //  lazy val generateLetters: Stream[String] = recursiveLetters
   val alphabet: List[String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray.map(_.toString).toList
@@ -324,7 +306,7 @@ object Header {
     */
   def apply[X: ClassTag](): Header = Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList)
 
-  def create(ws: String*): Header = apply(ws map (_.toUpperCase))
+  def create(ws: String*): Header = apply(ws)
 }
 
 
@@ -352,7 +334,7 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     rows map {
       case p: Product => ww.writeRow(o2)(p)
       case xs: Seq[Any] => ww.writeRowElements(o2)(xs)
-      case xs: Array[Any] => ww.writeRowElements(o2)(xs) // TODO fix this
+      case xs: Array[Any] => ww.writeRowElements(o2)(xs.toIndexedSeq)
       case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     }
     o1
@@ -413,6 +395,8 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
   * NOTE: the existence or not of a Header in a BaseTable only affects how the table is rendered.
   * The parsing of a table always has a header of some sort.
   *
+  * TEST this
+  *
   * @param rows the rows of the table.
   * @tparam Row the underlying type of each Row
   */
@@ -438,4 +422,11 @@ object TableWithHeader {
   def apply[Row: ClassTag](rows: Seq[Row]): Table[Row] = TableWithHeader(rows, Header.apply[Row]())
 }
 
+/**
+  * Table Exception.
+  *
+  * @param w the message.
+  */
 case class TableException(w: String) extends Exception(w)
+
+

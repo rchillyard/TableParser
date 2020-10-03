@@ -2,9 +2,9 @@ organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-version := "1.0.9"
+version := "1.0.10-SNAPSHOT"
 
-scalaVersion := "2.13.1"
+scalaVersion := "2.13.3"
 
 scalacOptions += "-deprecation"
 
@@ -19,9 +19,10 @@ lazy val scalaParserCombinatorsVersion = "1.1.2"
 lazy val nScalaTimeVersion = "2.22.0"
 
 libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+  "io.spray" %%  "spray-json" % "1.3.5",
+  scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
-  scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion
+  "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 
 // publishTo := sonatypePublishToBundle.value

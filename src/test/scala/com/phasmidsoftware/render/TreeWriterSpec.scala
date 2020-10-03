@@ -4,9 +4,10 @@
 
 package com.phasmidsoftware.render
 
-import org.scalatest.{flatspec, matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
-class TreeWriterSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
+class TreeWriterSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   case class HTML(x: String, ao: Option[String], attrs: Map[String, String], hs: Seq[HTML])
 
@@ -20,7 +21,7 @@ class TreeWriterSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers 
     def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Map.empty, hs)
 
     trait HTMLTreeWriter extends TreeWriter[HTML] {
-      def evaluate(node: Node): HTML = HTML(node.style, node.content map (_.toString), node.attributes, node.children map evaluate)
+      def evaluate(node: Node): HTML = HTML(node.style, node.content map identity, node.attributes, node.children map evaluate)
     }
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter

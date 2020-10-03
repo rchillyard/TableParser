@@ -7,14 +7,15 @@ package com.phasmidsoftware.parse
 import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
-import org.scalatest.{flatspec, matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
-class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
+class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "TableParser"
 
@@ -34,7 +35,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
     trait IntPairRowParser extends StringParser[IntPair] {
       override def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
-        case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
+        case intPairParser.Success((x: Int, y: Int), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse $w"))
       }
 
@@ -51,7 +52,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
       val maybeFixedHeader: Option[Header] = Some(Header.create("x", "y"))
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -103,7 +104,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
       val maybeFixedHeader: Option[Header] = None
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
       def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
     }
@@ -134,7 +135,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
   it should "parse raptors from raptors.csv" in {
     import DailyRaptorReport._
 
-    val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parse(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
+    val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
     x should matchPattern { case Success(TableWithHeader(_, _)) => }
     x.get.rows.size shouldBe 13
     // TODO fix deprecation. Also in two other places in this module.
@@ -197,7 +198,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
       val maybeFixedHeader: Option[Header] = None
 
-      def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+      val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
       def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
     }
@@ -252,7 +253,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
       def builder(rows: Seq[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = TableWithHeader(rows, header)
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
@@ -303,7 +304,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
       override def forgiving: Boolean = false
 
-      def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+      val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
     }
 
   }
@@ -372,7 +373,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
 
       override def forgiving: Boolean = true
 
-      def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
   }
@@ -385,5 +386,60 @@ class TableParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers
     qty.get.size shouldBe 1
   }
 
+  /**
+    * The following tests relate to the application CsvToJSON
+    */
+  behavior of "StringTableParserWithHeader"
 
+  case class Player(first: String, last: String) {
+    def nickname: String = s"$first ${last.head}"
+  }
+
+  case class Partnership(playerA: String, playerB: String) {
+    def asArray: Array[String] = Array(playerA, playerB)
+  }
+
+  object Partnership {
+    def apply(players: Seq[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
+  }
+
+  case class Partnerships(partners: Array[Array[String]]) {
+    def size: Int = partners.length
+  }
+
+  object Player extends CellParsers {
+    implicit val playerParser: CellParser[Player] = cellParser2(Player.apply)
+  }
+
+  it should "support fixed header" in {
+
+    implicit val ptp: TableParser[Table[Player]] = StringTableParserWithHeader[Player](Some(Header[Player]()))
+
+    val strings = List("Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
+    val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
+    val pssy: Try[Iterator[Seq[Player]]] = for (pt <- pty) yield pt.rows grouped 2
+    val tsy: Try[Iterator[Partnership]] = for (pss <- pssy) yield for (ps <- pss) yield Partnership(ps)
+    val sy: Try[Partnerships] = for (ts <- tsy) yield Partnerships((for (t <- ts) yield t.asArray).toArray)
+    sy should matchPattern { case Success(_) => }
+    val partnerships: Partnerships = sy.get
+    partnerships.size shouldBe 2
+    partnerships.partners.head shouldBe Array("Adam S", "Amy A")
+    partnerships.partners.last shouldBe Array("Ann P", "Barbara G")
+  }
+
+  it should "support header from source" in {
+
+    implicit val ptp: TableParser[Table[Player]] = StringTableParserWithHeader[Player]()
+
+    val strings = List("First, Last", "Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
+    val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
+    val pssy: Try[Iterator[Seq[Player]]] = for (pt <- pty) yield pt.rows grouped 2
+    val tsy: Try[Iterator[Partnership]] = for (pss <- pssy) yield for (ps <- pss) yield Partnership(ps)
+    val sy: Try[Partnerships] = for (ts <- tsy) yield Partnerships((for (t <- ts) yield t.asArray).toArray)
+    sy should matchPattern { case Success(_) => }
+    val partnerships: Partnerships = sy.get
+    partnerships.size shouldBe 2
+    partnerships.partners.head shouldBe Array("Adam S", "Amy A")
+    partnerships.partners.last shouldBe Array("Ann P", "Barbara G")
+  }
 }

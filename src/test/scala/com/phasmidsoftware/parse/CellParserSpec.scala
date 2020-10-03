@@ -5,12 +5,13 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{Header, Row}
-import org.scalatest.{flatspec, matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.util.{Failure, Success, Try}
 
 //noinspection NotImplementedCode
-class CellParserSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
+class CellParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   private val intCellParser: CellParser[Int] = new CellParser[Int] {
     def convertString(w: String): Try[Int] = Try(w.toInt)

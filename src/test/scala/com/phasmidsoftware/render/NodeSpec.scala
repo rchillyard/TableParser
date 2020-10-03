@@ -4,9 +4,10 @@
 
 package com.phasmidsoftware.render
 
-import org.scalatest.{flatspec, matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
-class NodeSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
+class NodeSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "NodeSpec"
 

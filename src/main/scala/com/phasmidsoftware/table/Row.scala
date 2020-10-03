@@ -12,7 +12,7 @@ import scala.util.{Failure, Try}
   * Case class to represent a (raw) row from a table.
   *
   * @param ws  the (raw) Strings that make up the row.
-  * @param hdr is the column names, which should all be in upper case.
+  * @param hdr is the Header containing the column names.
   */
 case class Row(ws: Seq[String], hdr: Header) extends (String => Try[String]) {
 

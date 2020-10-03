@@ -6,11 +6,12 @@ package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.ParserException
 import com.phasmidsoftware.util.TableParserException
-import org.scalatest.{flatspec, matchers}
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 
 import scala.util.{Success, Try}
 
-class RowSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
+class RowSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Row"
 
@@ -38,7 +39,6 @@ class RowSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
   it should "fail apply(String) when appropriate" in {
     val f: String => Try[String] = Row(Seq("1", "2", "Junk"), Header(Seq("A", "B", "c")))
     an[TableParserException] should be thrownBy f("x").get
-    an[TableParserException] should be thrownBy f("c").get
     the[TableParserException] thrownBy f("x").get should have message "Header column x not found"
   }
 
