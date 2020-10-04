@@ -35,19 +35,16 @@ The minimum code necessary to read parse the CSV file as a table of "Player"s, u
 
     case class Player(first: String, last: String)
 
-    object Player extends CellParsers {
-      implicit val playerParser: CellParser[Player] = cellParser2(Player.apply)
+    object Player extends TableParserHelper[Player]() {
+      def cellParser: CellParser[Player] = cellParser2(apply)
     }
 
-    def parsePlayerTable(inputFile: String): Try[Table[Player]] = {
-        implicit val ptt: TableParser[Table[Player]] = StringTableParserWithHeader[Player]()
-        Table.parseFile[Table[Player]](inputFile)
-    }
+    val pty: Try[Table[Player]] = Table.parseFile[Table[Player]]("players.csv")
 
-This assumes that the source input contains a header row which includes column names corresponding to the parameters
+This assumes that the source input file ("players.csv") contains a header row which includes column names corresponding to the parameters
 of the case class _Player_ (in this case "first" and "last").
 
-The input file looks like this:
+The input file looks something like this (the first and last columns are required, others are ignored):
 
     Id,First,Last,
     1,Adam,Sullivan,

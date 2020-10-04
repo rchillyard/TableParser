@@ -6,7 +6,7 @@ package com.phasmidsoftware
 
 import java.io.PrintWriter
 
-import com.phasmidsoftware.parse.{CellParser, CellParsers, StringTableParserWithHeader, TableParser}
+import com.phasmidsoftware.parse.{CellParser, TableParserHelper}
 import com.phasmidsoftware.table.Table
 import spray.json.{DefaultJsonProtocol, RootJsonFormat, enrichAny}
 
@@ -21,19 +21,8 @@ object CsvToJSON extends App {
     def nickname: String = s"$first ${last.head}"
   }
 
-  object Player extends CellParsers {
-    implicit val playerParser: CellParser[Player] = cellParser2(Player.apply)
-  }
-
-  def parsePlayerTable(inputFile: String): Try[Table[Player]] = {
-    // NOTE: use the following form if the source file does NOT contain an explicit header row AND if the file has
-    // columns which are in the same order as the attributes of Player.
-    //  implicit val ptp: TableParser[Table[Player]] = StringTableParserWithHeader.create[Player]
-
-    // NOTE: use the following form if the source file does contain an explicit header row.
-    implicit val ptp: TableParser[Table[Player]] = StringTableParserWithHeader[Player]()
-
-    Table.parseFile[Table[Player]](inputFile)
+  object Player extends TableParserHelper[Player]() {
+    def cellParser: CellParser[Player] = cellParser2(apply)
   }
 
   case class Partnership(playerA: String, playerB: String) {
@@ -48,8 +37,11 @@ object CsvToJSON extends App {
     def size: Int = partners.length
   }
 
-  val (inputFile, outputFile) = getFileNames("Documents", "partnerships")
-  val pty: Try[Table[Player]] = parsePlayerTable(inputFile)
+  println(s"CsvToJSON ${args.headOption.getOrElse("")}")
+
+  val (inputFile, outputFile) = getFileNames("Documents", "Partnerships")
+
+  val pty: Try[Table[Player]] = Table.parseFile[Table[Player]](inputFile)
   val pssy: Try[Iterator[Seq[Player]]] = for (pt <- pty) yield pt.rows grouped 2
   val tsy: Try[Iterator[Partnership]] = for (pss <- pssy) yield for (ps <- pss) yield Partnership(ps)
   val sy: Try[Partnerships] = for (ts <- tsy) yield Partnerships((for (t <- ts) yield t.asArray).toArray)

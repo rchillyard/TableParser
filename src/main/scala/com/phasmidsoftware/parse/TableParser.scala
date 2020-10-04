@@ -105,7 +105,7 @@ case class StringTableParserWithHeader[X: CellParser : ClassTag](maybeFixedHeade
 object StringTableParserWithHeader {
   /**
     * This create method constructs a StringTableParserWithHeader with header based simply on the type X.
-    * In this case, the source data must have the same number of colums as X has parameters, and they must be in the
+    * In this case, the source data must have the same number of columns as X has parameters, and they must be in the
     * same order. Additionally, there should not be a header row in the source data.
     *
     * @tparam X the underlying type. There must be evidence of CellParser[X] and ClassTag[X].
@@ -200,4 +200,36 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
     val rys = for (w <- xs) yield rowParser.parse(w)(header)
     for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
   }
+}
+
+/**
+  * TableParserHelper: abstract class to help with defining an implicit TableParser of Table[X].
+  * Note that this class extends CellParser[X].
+  * It is expected that this should be sub-classed by the object which is the companion object of X.
+  * That will make it easiest for the compiler to discover the implicit value of type TableParser of Table[X]
+  *
+  * NOTE: this class should be used for simple cases where the the data and type X match according to one of options
+  * for hasHeaderRow.
+  * More complex situations can easily be handled but not using this TableParserHelper class.
+  *
+  * @param hasHeaderRow true (default) if the data to be read has an explicit header row with column names that match the parameters
+  *                     of type X;
+  *                     false if there is no header row in the data AND if the data has (unnamed) columns of the same number
+  *                     and in the same order as defined by type X.
+  * @tparam X the type for which we require a TableParser[X].
+  */
+abstract class TableParserHelper[X: ClassTag](hasHeaderRow: Boolean = true) extends CellParsers {
+
+  /**
+    * Abstract method which will return a CellParser[X].
+    * NOTE that a typical definition will be something like cellParser2(Player.apply) where, in this case, the number
+    * is 2 corresponding to the number of parameters in Player.
+    *
+    * @return
+    */
+  def cellParser: CellParser[X]
+
+  implicit val xp: CellParser[X] = cellParser
+
+  implicit val ptp: TableParser[Table[X]] = if (hasHeaderRow) StringTableParserWithHeader[X]() else StringTableParserWithHeader.create[X]
 }
