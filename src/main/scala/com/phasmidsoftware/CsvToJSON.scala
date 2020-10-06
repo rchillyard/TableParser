@@ -13,6 +13,8 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat, enrichAny}
 import scala.util.{Success, Try}
 
 /**
+  * NOTE: see Pairings for an improved version of this.
+  *
   * Main Application which is really just an example application and should be defined in the test classes.
   */
 object CsvToJSON extends App {
