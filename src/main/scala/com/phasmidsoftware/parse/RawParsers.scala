@@ -5,15 +5,15 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.RawRow
-import com.phasmidsoftware.table.{Header, Table, TableWithHeader}
+import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 
 /**
   * Abstract class to define a raw parser, that's to say a Parser of Seq[String]
   *
   * @param maybeHeader a header if appropriate.
-  * @param forgiving   true if we want this parser to be forgiving.
+  * @param forgiving   true if we want this parser to be forgiving (defaults to false).
   */
-abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean) extends CellParsers {
+abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = false) extends CellParsers {
   self =>
 
   implicit val stringSeqParser: CellParser[RawRow] = cellParserSeq
@@ -25,18 +25,18 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean) exten
 
     val maybeFixedHeader: Option[Header] = maybeHeader
 
-    override def forgiving: Boolean = self.forgiving
+    override val forgiving: Boolean = self.forgiving
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+    def builder(rows: Seq[Row], header: Header): Table[Row] = HeadedTable(rows, header)
   }
 
 }
 
 object RawParsers {
 
-  object WithHeaderRow extends RawParsers(None, true)
+  object WithHeaderRow extends RawParsers(None)
 
 }
 

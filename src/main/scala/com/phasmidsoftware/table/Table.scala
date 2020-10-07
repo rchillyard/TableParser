@@ -439,13 +439,13 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
   * NOTE: the existence or not of a Header in a BaseTable only affects how the table is rendered.
   * The parsing of a table always has a header of some sort.
   *
-  * TEST this
+  * TEST this: it is currently not used.
   *
   * @param rows the rows of the table.
   * @tparam Row the underlying type of each Row
   */
-case class TableWithoutHeader[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None) {
-  def unit[S](rows: Seq[S]): Table[S] = TableWithoutHeader(rows)
+case class UnheadedTable[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None) {
+  def unit[S](rows: Seq[S]): Table[S] = UnheadedTable(rows)
 }
 
 /**
@@ -458,12 +458,12 @@ case class TableWithoutHeader[Row](rows: Seq[Row]) extends BaseTable[Row](rows, 
   * @param header the header.
   * @tparam Row the underlying type of each Row
   */
-case class TableWithHeader[Row](rows: Seq[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
-  def unit[S](rows: Seq[S]): Table[S] = TableWithHeader(rows, header)
+case class HeadedTable[Row](rows: Seq[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
+  def unit[S](rows: Seq[S]): Table[S] = HeadedTable(rows, header)
 }
 
-object TableWithHeader {
-  def apply[Row: ClassTag](rows: Seq[Row]): Table[Row] = TableWithHeader(rows, Header.apply[Row]())
+object HeadedTable {
+  def apply[Row: ClassTag](rows: Seq[Row]): Table[Row] = HeadedTable(rows, Header.apply[Row]())
 }
 
 /**
