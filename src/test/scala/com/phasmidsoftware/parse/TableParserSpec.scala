@@ -397,10 +397,21 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   object Player extends TableParserHelper[Player]() {
     def cellParser: CellParser[Player] = cellParser2(apply)
+
+    /**
+      * Method to transform a Table[Player] into a Table[Partnership].
+      *
+      * The requirements of the application are that the rows of the Player table are grouped by twos
+      * and each resulting entity (an array of length 2) is taken to form a Partnership.
+      *
+      * @param pt a Table[Player]
+      * @return a Table[Partnership]
+      */
+    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Partnership(r))
   }
 
   case class Partnership(playerA: String, playerB: String) {
-    def asArray: Array[String] = Array(playerA, playerB)
+    val asArray: Array[String] = Array(playerA, playerB)
   }
 
   object Partnership {
@@ -414,8 +425,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "support header defined in a header row in the input" in {
     val strings = List("First, Last", "Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
     val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
-    val pssy: Try[Iterator[Seq[Player]]] = for (pt <- pty) yield pt.rows grouped 2
-    val tsy: Try[Iterator[Partnership]] = for (pss <- pssy) yield for (ps <- pss) yield Partnership(ps)
+    val tsy: Try[Table[Partnership]] = for (pt <- pty) yield Player.convertTable(pt)
     val sy: Try[Partnerships] = for (ts <- tsy) yield Partnerships((for (t <- ts) yield t.asArray).toArray)
     sy should matchPattern { case Success(_) => }
     val partnerships: Partnerships = sy.get

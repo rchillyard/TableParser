@@ -59,6 +59,17 @@ trait Renderer[T] {
   def asString(t: T): String = t.toString
 }
 
+trait NewRenderer[Row] {
+
+  /**
+    * TODO introduce Writable for String
+    *
+    * @param r a NewRenderable object to render
+    * @return
+    */
+  def render(r: NewRenderable[Row]): String
+}
+
 /**
   * CONSIDER having style defined as an Option[String]
   *

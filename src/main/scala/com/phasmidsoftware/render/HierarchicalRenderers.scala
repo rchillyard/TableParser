@@ -14,7 +14,7 @@ import scala.reflect.ClassTag
   * containers (Seq and Option), etc. to hierarchical output elements such as XML or HTML.
   *
   */
-trait Renderers {
+trait HierarchicalRenderers {
 
   /**
     * Method to return a Renderer[T].

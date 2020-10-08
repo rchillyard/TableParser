@@ -170,6 +170,16 @@ _rowParser_ is the specific parser for the _Row_ type (see below).
 _builder_ is used by the _parse_ method.
 _parse_ is the main method of _TableParser_ and takes a _Seq[String]_ and yields a _Try[Table]_.
 
+Associated with _TableParser_ is an abstract class called _TableParserHelper_ whose purpose is to make your coding job easier.
+_TableParserHelper_ is designed to be extended (i.e. sub-classed) by the companion object of the case class that you
+wish to parse from a row of your input.
+Doing it this way makes it easier for the implicit TableParser instance to be found.
+You can also set up your application along the lines of the examples below, such as the Movie example.
+
+The constructor for _TableParserHelper_ takes two parameters, both of which can be defaulted:
+* sourceHasHeaderRow: Boolean = true
+* forgiving: Boolean = false
+
 ## RowParser
 
 _RowParser_ is a trait which defines how a line of text is to be parsed as a _Row_.
@@ -230,6 +240,17 @@ to the value in another (key) column: _cellParser2Conditional_.
 In this case, you must supply a _Map_ which specifies which parser is to be used for each possible value of the key column.
 If the value in that column is not one of the keys of the map, an exception will be thrown.
 For an example of this, please see the example in _CellParsersSpec_ ("conditionally parse").
+
+## Caveats
+
+A case class which represents a row (or part of a row) of the table you want to create from parsing,
+or which you want to render must abide by certain rules:
+* There should not be any fields defined in the body of the case class.
+So, no <i>val, var</i> or <i>lazy val</i>.
+Instead, any behavior you want to add to the class, beyond the parameters (fields) of the class,
+must be defined using _def_.
+
+
 
 ## Example: Movie
 
@@ -469,6 +490,9 @@ If you need to set HTML attributes for a specific type, for example a row in the
 
 Release Notes
 =============
+
+V1.0.10 -> V1.0.11
+* introduction of JsonWritable
 
 V1.0.9 -> V1.0.10
 * build.sbt: changed scalaVersion to 2.13.3

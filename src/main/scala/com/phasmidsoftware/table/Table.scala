@@ -22,7 +22,7 @@ import scala.util.{Failure, Try}
   *
   * @tparam Row the type of each row.
   */
-trait Table[Row] extends Iterable[Row] with Renderable[Row] {
+trait Table[Row] extends Iterable[Row] with NewRenderable[Row] {
 
   /**
     * Optional value of the Header of this Table, if there is one.
@@ -46,6 +46,14 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * @return a Table[S] where each cell has value f(x) where x is the value of the corresponding cell in this.
     */
   def flatMap[S](f: Row => Table[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))(_ ++ _)
+
+  def processRows[S](f: Seq[Row] => Seq[S]): Table[S] = unit(f(rows))
+
+  def processRows[R, S](f: (Seq[Row], Seq[R]) => Seq[S])(t: Table[R]): Table[S] = unit(f(rows, t.rows))
+
+  override def drop(n: Int): Iterable[Row] = processRows(rs => rs.drop(n))
+
+  def zip[Row2](t: Table[Row2]): Table[(Row, Row2)] = processRows[Row2, (Row, Row2)]((rs1, rs2) => rs1 zip rs2)(t)
 
   /**
     * Method to concatenate two Rows
@@ -397,7 +405,7 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     * @return a new instance of U which represents this Table as a tree of some sort.
     */
   def render[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Row]): U = {
-    object TableRenderers extends Renderers {
+    object TableRenderers extends HierarchicalRenderers {
       val rowsRenderer: Renderer[Seq[Row]] = sequenceRenderer[Row]("tbody")
       implicit val headerRenderer: Renderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
       implicit val optionRenderer: Renderer[Option[Header]] = optionRenderer[Header]("thead", Map())
@@ -420,7 +428,7 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     * @return a new instance of U which represents this Table as a tree of some sort.
     */
   def renderSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Indexed[Row]]): U = {
-    object TableRenderers extends Renderers {
+    object TableRenderers extends HierarchicalRenderers {
       val rowsRenderer: Renderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("tbody")
       implicit val headerRenderer: Renderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
       implicit val optionRenderer: Renderer[Option[Header]] = optionRenderer[Header]("thead", Map())

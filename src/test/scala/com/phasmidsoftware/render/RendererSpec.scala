@@ -25,7 +25,7 @@ class RendererSpec extends flatspec.AnyFlatSpec with should.Matchers {
     def apply(x: String, ao: Option[String]): SimpleHTML = apply(x, ao, Map.empty, Nil)
   }
 
-  object Complex1 extends Renderers {
+  object Complex1 extends HierarchicalRenderers {
     implicit val complexRenderer: Renderer[Complex] = renderer2("complex")(Complex.apply)
 
     trait TreeWriterString$ extends TreeWriter[String] {
@@ -36,7 +36,7 @@ class RendererSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   }
 
-  object Complex2 extends Renderers {
+  object Complex2 extends HierarchicalRenderers {
     implicit val valueRenderer: Renderer[Double] = renderer("td")
     implicit val complexRenderer: Renderer[Complex] = renderer2("")(Complex)
     implicit val indexedRenderer: Renderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th")
@@ -51,7 +51,7 @@ class RendererSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   }
 
-  object Complex3 extends Renderers {
+  object Complex3 extends HierarchicalRenderers {
     implicit val valueRenderer: Renderer[Double] = renderer("td")
     implicit val complexRenderer: Renderer[Complex] = renderer2("tr")(Complex)
 
@@ -66,7 +66,7 @@ class RendererSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   }
 
-  object Complicated extends Renderers {
+  object Complicated extends HierarchicalRenderers {
     implicit val elementRenderer: Renderer[String] = renderer("element")
     implicit val optionLongRenderer: Renderer[Option[Long]] = optionRenderer("", Map())
     implicit val sequenceStringRenderer: Renderer[Seq[String]] = sequenceRenderer("")
