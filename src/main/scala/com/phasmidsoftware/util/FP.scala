@@ -11,8 +11,20 @@ import scala.util.{Failure, Success, Try, Using}
 
 object FP {
   /**
+    * Sequence method to combine elements of Try.
     *
-    * @param xys a sequence of Try[X]
+    * @param xys an Iterator of Try[X]
+    * @tparam X the underlying type
+    * @return a Try of Iterator[X]
+    */
+  def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] = xys.foldLeft(Try(Seq[X]())) {
+    (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
+  }.map(_.iterator)
+
+  /**
+    * Sequence method to combine elements of Try.
+    *
+    * @param xys an Iterable of Try[X]
     * @tparam X the underlying type
     * @return a Try of Seq[X]
     *         NOTE: that the output collection type will be Seq, regardless of the input type
@@ -20,6 +32,7 @@ object FP {
   def sequence[X](xys: Iterable[Try[X]]): Try[Seq[X]] = xys.foldLeft(Try(Seq[X]())) {
     (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
   }
+
 
   /**
     * Method to yield a Try[URL] for a resource name and a given class.
@@ -30,12 +43,19 @@ object FP {
     */
   def getURLForResource(resourceName: String, clazz: Class[_] = getClass): Try[URL] = Option(clazz.getResource(resourceName)) match {
     case Some(u) => Success(u)
-    case None => Failure(TableParserException(s"$resourceName is not a valid resource for $clazz"))
+    case None => Failure(FPException(s"$resourceName is not a valid resource for $clazz"))
   }
 
+  /**
+    * Method to determine if the String w was found at a valid index (i).
+    *
+    * @param w the String (ignored unless there's an exception).
+    * @param i the index found.
+    * @return Success(i) if all well, else Failure(exception).
+    */
   def indexFound(w: String, i: Int): Try[Int] = i match {
     case x if x >= 0 => Success(x)
-    case _ => Failure(TableParserException(s"Header column $w not found"))
+    case _ => Failure(FPException(s"Header column $w not found"))
   }
 
   /**
@@ -48,8 +68,7 @@ object FP {
     * @return a Try[A]
     */
   def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f).flatten
-
   //    try { Using.resource(resource)(f) } catch { case NonFatal(e) => Failure(e) }
 }
 
-case class TableParserException(msg: String, e: Throwable = null) extends Exception(msg, e)
+case class FPException(msg: String, e: Throwable = null) extends Exception(msg, e)

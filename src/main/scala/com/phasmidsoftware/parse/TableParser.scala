@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.table.{HeadedTable, Header, Table}
+import com.phasmidsoftware.table.{HeadedArrayTable, Header, Table}
 import com.phasmidsoftware.util.FP
 
 import scala.annotation.implicitNotFound
@@ -44,7 +44,7 @@ trait TableParser[Table] {
     * @param header the Header, derived either from the program or the data.
     * @return an instance of Table.
     */
-  protected def builder(rows: Iterable[Row], header: Header): Table
+  protected def builder(rows: Iterator[Row], header: Header): Table
 
   /**
     * Method to determine how errors are handled.
@@ -66,7 +66,7 @@ trait TableParser[Table] {
     * @param xs the sequence of Inputs, one for each row
     * @return a Try[Table]
     */
-  def parse(xs: Iterable[Input]): Try[Table]
+  def parse(xs: Iterator[Input]): Try[Table]
 
   /**
     * Method to log any failures (only in forgiving mode).
@@ -74,7 +74,7 @@ trait TableParser[Table] {
     * @param rys the sequence of Try[Row]
     * @return a sequence of Try[Row] which will all be of type Success.
     */
-  protected def logFailures(rys: Iterable[Try[Row]]): Iterable[Try[Row]]
+  protected def logFailures(rys: Iterator[Try[Row]]): Iterator[Try[Row]]
 }
 
 /**
@@ -82,7 +82,7 @@ trait TableParser[Table] {
   * This class attempts to provide as much built-in functionality as possible.
   *
   * This class assumes that the names of the columns are in the first line.
-  * This class implements builder with a HeadedTable object.
+  * This class implements builder with a HeadedArrayTable object.
   * This class uses StandardRowParser of its rowParser.
   *
   * @param maybeFixedHeader None => requires that the data source has a header row.
@@ -95,9 +95,9 @@ case class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: O
   type Row = X
 
 
-  protected def builder(rows: Iterable[Row], header: Header): Table[Row] = maybeFixedHeader match {
-    case Some(h) => HeadedTable(rows, h)
-    case None => HeadedTable(rows, Header[Row]()) // CHECK
+  protected def builder(rows: Iterator[X], header: Header): Table[Row] = maybeFixedHeader match {
+    case Some(h) => HeadedArrayTable(rows, h)
+    case None => HeadedArrayTable(rows, Header[Row]()) // CHECK
   }
 
   protected val rowParser: RowParser[X, String] = StandardRowParser[X]
@@ -130,7 +130,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     * @param header the header to be used.
     * @return a Try[Table]
     */
-  def parseRows(xs: Iterable[Input], header: Header): Try[Table]
+  def parseRows(xs: Iterator[Input], header: Header): Try[Table]
 
   /**
     * Method to parse a table based on a sequence of Inputs.
@@ -138,13 +138,13 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     * @param xs the sequence of Inputs, one for each row
     * @return a Try[Table]
     */
-  def parse(xs: Iterable[Input]): Try[Table] = {
-    def separateHeaderAndRows(h: Input, t: Iterable[Input]): Try[Table] = for (ws <- rowParser.parseHeader(h); rs <- parseRows(t, ws)) yield rs
+  def parse(xs: Iterator[Input]): Try[Table] = {
+    def separateHeaderAndRows(h: Input, t: Iterable[Input]): Try[Table] = for (ws <- rowParser.parseHeader(h); rs <- parseRows(t.iterator, ws)) yield rs
 
     maybeFixedHeader match {
       case Some(h) => parseRows(xs, h)
       case None => // NOTE: it is possible that we still don't really have a header encoded in the data either
-        xs match {
+        xs.toSeq match {
           case h :: t => separateHeaderAndRows(h, t)
           case _ => Failure(ParserException("no rows to parse"))
         }
@@ -160,7 +160,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     * @tparam T the parametric type of the resulting Table. T corresponds to Input in the calling method, i.e. a Row.
     * @return a Try of Table
     */
-  protected def doParseRows[T](ts: Iterable[T], header: Header, f: T => Header => Try[Row]): Try[Table] = {
+  protected def doParseRows[T](ts: Iterator[T], header: Header, f: T => Header => Try[Row]): Try[Table] = {
     val rys = for (t <- ts) yield f(t)(header)
     for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
   }
@@ -171,7 +171,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     * @param rys the sequence of Try[Row]
     * @return a sequence of Try[Row] which will all be of type Success.
     */
-  protected def logFailures(rys: Iterable[Try[Row]]): Iterable[Try[Row]] = {
+  protected def logFailures(rys: Iterator[Try[Row]]): Iterator[Try[Row]] = {
     def logException(e: Throwable): Unit = {
       val string = s"${e.getLocalizedMessage}${
         if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
@@ -197,7 +197,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
   type Input = String
 
-  def parseRows(xs: Iterable[String], header: Header): Try[Table] = doParseRows(xs, header, rowParser.parse)
+  def parseRows(xs: Iterator[String], header: Header): Try[Table] = doParseRows(xs, header, rowParser.parse)
 }
 
 /**
@@ -209,7 +209,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
 abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
   type Input = Strings
 
-  def parseRows(xs: Iterable[Strings], header: Header): Try[Table] = doParseRows(xs, header, rowParser.parse)
+  def parseRows(xs: Iterator[Strings], header: Header): Try[Table] = doParseRows(xs, header, rowParser.parse)
 }
 
 /**
@@ -245,3 +245,5 @@ abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true
 
   implicit val ptp: TableParser[Table[X]] = if (sourceHasHeaderRow) HeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)
 }
+
+case class TableParserException(msg: String, e: Throwable = null) extends Exception(msg, e)

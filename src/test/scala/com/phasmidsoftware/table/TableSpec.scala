@@ -49,7 +49,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
 
 
-      def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
+      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedArrayTable(rows, Header[IntPair]())
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -185,7 +185,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "flatMap" in {
-    val f: IntPair => Table[IntPair] = p => HeadedTable(Seq(p), Header())
+    val f: IntPair => Table[IntPair] = p => HeadedArrayTable(Seq(p), Header())
 
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99"))
@@ -308,7 +308,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val mty: Try[RawTable] = Table.parse(rows)
-    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    mty should matchPattern { case Success(HeadedArrayTable(_, _)) => }
     val rawTable: RawTable = mty.get
     rawTable.size shouldBe 1
     rawTable.head(1) shouldBe "Doug Walker"
@@ -328,7 +328,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val mty: Try[RawTable] = Table.parse(rows)
-    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    mty should matchPattern { case Success(HeadedArrayTable(_, _)) => }
     val rawTable: RawTable = mty.get
     rawTable.size shouldBe 1
     rawTable.head(1) shouldBe "Doug Walker"

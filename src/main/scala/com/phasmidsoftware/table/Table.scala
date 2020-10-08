@@ -92,28 +92,26 @@ trait Table[Row] extends Iterable[Row] with NewRenderable[Row] {
 object Table {
 
   /**
-    * Primary method to parse a table from a Seq of String.
+    * Primary method to parse a table from an Iterator of String.
     * This method is, in turn, invoked by all other parse methods defined below (other than parseSequence).
     *
     * @param ws the Strings.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](ws: Iterable[String]): Try[T] = implicitly[TableParser[T]] match {
+  def parse[T: TableParser](ws: Iterator[String]): Try[T] = implicitly[TableParser[T]] match {
     case parser: StringTableParser[T] => parser.parse(ws)
     case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
 
   /**
-    * Method to parse a table from an Iterator of String.
+    * Method to parse a table from an Iterable of String.
     *
-    * CONSIDER why do we need to convert ws to a sequence?
-    *
-    * @param ws the iterator.
+    * @param ws the Strings.
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](ws: Iterator[String]): Try[T] = parse(ws.toSeq)
+  def parse[T: TableParser](ws: Iterable[String]): Try[T] = parse(ws.iterator)
 
   /**
     * Method to parse a table from a Source.
@@ -266,7 +264,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseSequence[T: TableParser](wss: Seq[Seq[String]]): Try[T] = {
+  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] = {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
       case parser: StringsTableParser[T] => parser.parse(wss)
@@ -460,20 +458,23 @@ case class UnheadedTable[Row](rows: Iterable[Row]) extends BaseTable[Row](rows, 
 
 /**
   * Concrete case class implementing BaseTable with a Header.
+  * The unit and apply methods are such that rows is in fact an Array[Row].
   *
   * NOTE: the existence or not of a Header in a BaseTable only affects how the table is rendered.
   * The parsing of a table always has a header of some sort.
   *
-  * @param rows   the rows of the table.
+  * @param rows   the rows of the table, stored as an Array.
   * @param header the header.
   * @tparam Row the underlying type of each Row
   */
-case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
-  def unit[S](rows: Iterable[S]): Table[S] = HeadedTable(rows, header)
+case class HeadedArrayTable[Row](rows: Iterable[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
+  def unit[S](rows: Iterable[S]): Table[S] = HeadedArrayTable(rows, header)
 }
 
-object HeadedTable {
-  def apply[Row: ClassTag](rows: Seq[Row]): Table[Row] = HeadedTable(rows, Header.apply[Row]())
+object HeadedArrayTable {
+  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedArrayTable(rows.toArray, header)
+
+  def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = HeadedArrayTable(rows, Header.apply[Row]())
 }
 
 /**
