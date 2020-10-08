@@ -47,9 +47,9 @@ trait Table[Row] extends Iterable[Row] with NewRenderable[Row] {
     */
   def flatMap[S](f: Row => Table[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))(_ ++ _)
 
-  def processRows[S](f: Seq[Row] => Seq[S]): Table[S] = unit(f(rows))
+  def processRows[S](f: Iterable[Row] => Iterable[S]): Table[S] = unit(f(rows))
 
-  def processRows[R, S](f: (Seq[Row], Seq[R]) => Seq[S])(t: Table[R]): Table[S] = unit(f(rows, t.rows))
+  def processRows[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(t: Table[R]): Table[S] = unit(f(rows, t.rows))
 
   override def drop(n: Int): Iterable[Row] = processRows(rs => rs.drop(n))
 
@@ -72,14 +72,14 @@ trait Table[Row] extends Iterable[Row] with NewRenderable[Row] {
     * @tparam S the underlying type of the rows and the result.
     * @return a new instance of Table[S].
     */
-  def unit[S](rows: Seq[S]): Table[S]
+  def unit[S](rows: Iterable[S]): Table[S]
 
   /**
     * Method to access the individual rows of this table.
     *
     * @return the rows, in the same sequence in which they were parsed.
     */
-  def rows: Seq[Row]
+  def rows: Iterable[Row]
 
   /**
     * Method to return the rows of this table as an iterator.
@@ -99,13 +99,15 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](ws: Seq[String]): Try[T] = implicitly[TableParser[T]] match {
+  def parse[T: TableParser](ws: Iterable[String]): Try[T] = implicitly[TableParser[T]] match {
     case parser: StringTableParser[T] => parser.parse(ws)
     case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
 
   /**
     * Method to parse a table from an Iterator of String.
+    *
+    * CONSIDER why do we need to convert ws to a sequence?
     *
     * @param ws the iterator.
     * @tparam T the type of the resulting table.
@@ -370,7 +372,7 @@ object Header {
   * @param maybeHeader (optional) header
   * @tparam Row the underlying type of each Row
   */
-abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) extends Table[Row] {
+abstract class BaseTable[Row](rows: Iterable[Row], val maybeHeader: Option[Header]) extends Table[Row] {
   self =>
 
   /**
@@ -412,7 +414,7 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
     }
     import TableRenderers._
     val node: Node = implicitly[Renderer[Option[Header]]].render(maybeHeader)
-    implicitly[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows))))
+    implicitly[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows.toSeq))))
   }
 
   /**
@@ -452,8 +454,8 @@ abstract class BaseTable[Row](rows: Seq[Row], val maybeHeader: Option[Header]) e
   * @param rows the rows of the table.
   * @tparam Row the underlying type of each Row
   */
-case class UnheadedTable[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None) {
-  def unit[S](rows: Seq[S]): Table[S] = UnheadedTable(rows)
+case class UnheadedTable[Row](rows: Iterable[Row]) extends BaseTable[Row](rows, None) {
+  def unit[S](rows: Iterable[S]): Table[S] = UnheadedTable(rows)
 }
 
 /**
@@ -466,8 +468,8 @@ case class UnheadedTable[Row](rows: Seq[Row]) extends BaseTable[Row](rows, None)
   * @param header the header.
   * @tparam Row the underlying type of each Row
   */
-case class HeadedTable[Row](rows: Seq[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
-  def unit[S](rows: Seq[S]): Table[S] = HeadedTable(rows, header)
+case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
+  def unit[S](rows: Iterable[S]): Table[S] = HeadedTable(rows, header)
 }
 
 object HeadedTable {

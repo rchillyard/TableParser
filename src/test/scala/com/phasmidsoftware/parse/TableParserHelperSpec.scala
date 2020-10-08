@@ -43,7 +43,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   object Partnership {
-    def apply(players: Seq[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
+    def apply(players: Iterable[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
   }
 
   case class Partnerships(partners: Array[Array[String]]) {

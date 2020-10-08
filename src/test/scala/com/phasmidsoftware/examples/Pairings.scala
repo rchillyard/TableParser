@@ -119,5 +119,5 @@ object Partnership extends DefaultJsonProtocol {
     * @param players the sequence of Players. Whatever length is given, we will use the nicknames of the first and last.
     * @return a Partnership.
     */
-  def apply(players: Seq[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
+  def apply(players: Iterable[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
 }

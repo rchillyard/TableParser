@@ -49,7 +49,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
 
 
-      def builder(rows: Seq[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
+      def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }

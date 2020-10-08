@@ -17,7 +17,7 @@ object FP {
     * @return a Try of Seq[X]
     *         NOTE: that the output collection type will be Seq, regardless of the input type
     */
-  def sequence[X](xys: Seq[Try[X]]): Try[Seq[X]] = xys.foldLeft(Try(Seq[X]())) {
+  def sequence[X](xys: Iterable[Try[X]]): Try[Seq[X]] = xys.foldLeft(Try(Seq[X]())) {
     (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
   }
 

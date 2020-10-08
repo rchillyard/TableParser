@@ -21,7 +21,7 @@ class TreeWriterSpec extends flatspec.AnyFlatSpec with should.Matchers {
     def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Map.empty, hs)
 
     trait HTMLTreeWriter extends TreeWriter[HTML] {
-      def evaluate(node: Node): HTML = HTML(node.style, node.content map identity, node.attributes, node.children map evaluate)
+      def evaluate(node: Node): HTML = HTML(node.style, node.content map identity, node.attributes, node.children.toSeq map evaluate)
     }
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter

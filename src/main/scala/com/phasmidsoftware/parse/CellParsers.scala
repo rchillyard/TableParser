@@ -47,7 +47,7 @@ trait CellParsers {
   def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
     override def toString: String = "MultiCellParser: cellParserSeq"
 
-    def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = FP.sequence(for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w)))
+    def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = FP.sequence(for (w <- row.ws.toSeq) yield implicitly[CellParser[P]].parse(CellValue(w)))
   }
 
   /**

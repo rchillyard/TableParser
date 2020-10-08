@@ -61,7 +61,7 @@ case class Row(ws: Seq[String], hdr: Header) extends (String => Try[String]) {
 case class Indexed[T](i: Int, t: T)
 
 object Indexed {
-  def index[T](rows: Seq[T]): Seq[Indexed[T]] = rows.zipWithIndex.map(Indexed(_))
+  def index[T](rows: Iterable[T]): Seq[Indexed[T]] = rows.toSeq.zipWithIndex.map(Indexed(_))
 
   def apply[T](tuple: (T, Int)): Indexed[T] = Indexed(tuple._2, tuple._1)
 }

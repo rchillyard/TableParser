@@ -44,7 +44,7 @@ class RendererSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import HTML._
 
     trait TreeWriterHTML$ extends TreeWriter[HTML] {
-      def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children map evaluate)
+      def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children.toSeq map evaluate)
     }
 
     implicit object TreeWriterHTML$ extends TreeWriterHTML$
@@ -59,7 +59,7 @@ class RendererSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import HTML._
 
     trait TreeWriterHTML$ extends TreeWriter[HTML] {
-      def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children map evaluate)
+      def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children.toSeq map evaluate)
     }
 
     implicit object TreeWriterHTML$ extends TreeWriterHTML$
@@ -73,7 +73,7 @@ class RendererSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit val complicatedRenderer: Renderer[Complicated] = renderer5("x")(Complicated.apply)
 
     trait TreeWriterHTML$ extends TreeWriter[SimpleHTML] {
-      def evaluate(node: Node): SimpleHTML = SimpleHTML(node.style, node.content, node.attributes, node.children map evaluate)
+      def evaluate(node: Node): SimpleHTML = SimpleHTML(node.style, node.content, node.attributes, node.children.toSeq map evaluate)
     }
 
     implicit object TreeWriterHTML$ extends TreeWriterHTML$
