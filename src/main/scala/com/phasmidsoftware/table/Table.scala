@@ -47,12 +47,6 @@ trait Table[Row] extends Iterable[Row] with NewRenderable[Row] {
     */
   def flatMap[S](f: Row => Table[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))(_ ++ _)
 
-  def processRows[S](f: Iterable[Row] => Iterable[S]): Table[S] = unit(f(rows))
-
-  def processRows[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(t: Table[R]): Table[S] = unit(f(rows, t.rows))
-
-  override def drop(n: Int): Iterable[Row] = processRows(rs => rs.drop(n))
-
   def zip[Row2](t: Table[Row2]): Table[(Row, Row2)] = processRows[Row2, (Row, Row2)]((rs1, rs2) => rs1 zip rs2)(t)
 
   /**
@@ -82,11 +76,32 @@ trait Table[Row] extends Iterable[Row] with NewRenderable[Row] {
   def rows: Iterable[Row]
 
   /**
+    * Method to yield a Seq of the rows of this Table.
+    *
+    * @return a Seq[Row]
+    */
+  override def toSeq: Seq[Row] = { lazy val rs = rows.toSeq; rs }
+
+  /**
+    * Method to yield an Array from the rows of this Table.
+    *
+    * @tparam Element the element type of the resulting Array.
+    * @return an Array[Element].
+    */
+  override def toArray[Element >: Row: ClassTag]: Array[Element] = { lazy val rs = rows.toArray[Element]; rs }
+
+  /**
     * Method to return the rows of this table as an iterator.
     *
     * @return the rows in the form of Iterator[Row]
     */
   def iterator: Iterator[Row] = rows.iterator
+
+  def processRows[S](f: Iterable[Row] => Iterable[S]): Table[S] = unit(f(rows))
+
+  def processRows[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(t: Table[R]): Table[S] = unit(f(rows, t.rows))
+
+  override def drop(n: Int): Iterable[Row] = processRows(rs => rs.drop(n))
 }
 
 object Table {
@@ -467,14 +482,19 @@ case class UnheadedTable[Row](rows: Iterable[Row]) extends BaseTable[Row](rows, 
   * @param header the header.
   * @tparam Row the underlying type of each Row
   */
-case class HeadedArrayTable[Row](rows: Iterable[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
-  def unit[S](rows: Iterable[S]): Table[S] = HeadedArrayTable(rows, header)
+case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
+  def unit[S](rows: Iterable[S]): Table[S] = HeadedTable(rows, header)
 }
 
-object HeadedArrayTable {
-  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedArrayTable(rows.toArray, header)
+/**
+  * Companion object for HeadedTable.
+  * The apply methods provided arbitrarily use Vector as the collection for the rows of the table.
+  * CONSIDER using something else such as Array.
+  */
+object HeadedTable {
+  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.toVector, header)
 
-  def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = HeadedArrayTable(rows, Header.apply[Row]())
+  def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = HeadedTable(rows, Header.apply[Row]())
 }
 
 /**

@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.table.{HeadedArrayTable, Header, Table}
+import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP
 
 import scala.annotation.implicitNotFound
@@ -82,7 +82,7 @@ trait TableParser[Table] {
   * This class attempts to provide as much built-in functionality as possible.
   *
   * This class assumes that the names of the columns are in the first line.
-  * This class implements builder with a HeadedArrayTable object.
+  * This class implements builder with a HeadedTable object.
   * This class uses StandardRowParser of its rowParser.
   *
   * @param maybeFixedHeader None => requires that the data source has a header row.
@@ -96,8 +96,8 @@ case class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: O
 
 
   protected def builder(rows: Iterator[X], header: Header): Table[Row] = maybeFixedHeader match {
-    case Some(h) => HeadedArrayTable(rows, h)
-    case None => HeadedArrayTable(rows, Header[Row]()) // CHECK
+    case Some(h) => HeadedTable(rows, h)
+    case None => HeadedTable(rows, Header[Row]()) // CHECK
   }
 
   protected val rowParser: RowParser[X, String] = StandardRowParser[X]

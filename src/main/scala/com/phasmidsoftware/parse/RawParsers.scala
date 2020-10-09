@@ -5,7 +5,7 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.RawRow
-import com.phasmidsoftware.table.{HeadedArrayTable, Header, Table}
+import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 
 /**
   * Abstract class to define a raw parser, that's to say a Parser of Seq[String]
@@ -20,6 +20,7 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
 
   implicit val parser: StandardRowParser[RawRow] = StandardRowParser[RawRow]
 
+  // CONSIDER why do we have a concrete Table type mentioned here?
   implicit object RawTableParser extends StringTableParser[Table[RawRow]] {
     type Row = RawRow
 
@@ -29,7 +30,8 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedArrayTable(rows, header)
+    // CONSIDER why do we have a concrete Table type mentioned here?
+    protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
   }
 
 }

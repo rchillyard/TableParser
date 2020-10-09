@@ -26,7 +26,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Success(HeadedArrayTable(_, _)) => }
+    x should matchPattern { case Success(HeadedTable(_, _)) => }
     val mt = x.get
     println(s"Movie: successfully parsed ${mt.size} rows")
     println(mt)
@@ -43,7 +43,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Success(HeadedArrayTable(_, _)) => }
+    x should matchPattern { case Success(HeadedTable(_, _)) => }
     x.get.size shouldBe 1
   }
 
@@ -59,7 +59,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      protected def builder(rows: Iterator[Movie], header: Header): Table[Row] = HeadedArrayTable(rows, header)
+      protected def builder(rows: Iterator[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
     }
 
     val movies = Seq(
@@ -78,7 +78,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
-      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedArrayTable(rows, header)
+      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
@@ -91,7 +91,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val mty = Table.parse(movies)
-    mty should matchPattern { case Success(HeadedArrayTable(_, _)) => }
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
     mty.get.size shouldBe 1
   }
 
@@ -103,7 +103,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
-      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedArrayTable(rows, header)
+      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
@@ -116,7 +116,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val mty = Table.parse(movies)
-    mty should matchPattern { case Success(HeadedArrayTable(_, _)) => }
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
     mty.get.size shouldBe 1
     val z: Table[UnMovie] = mty.get.map[UnMovie](m => UnMovie(m.title.toLowerCase))
     z.size shouldBe 1

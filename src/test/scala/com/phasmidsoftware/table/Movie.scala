@@ -158,7 +158,7 @@ object MovieParser extends CellParsers {
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    protected def builder(rows: Iterator[Movie], header: Header): Table[Row] = HeadedArrayTable(rows, header)
+    protected def builder(rows: Iterator[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
   }
 
 }

@@ -86,7 +86,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object JsonRendererPartnerships extends JsonRenderer[Partnership] {
       def render(r: NewRenderable[Partnership]): String = r match {
         case zt: Table[Partnership] =>
-          Partnerships((for (z <- zt) yield z.asArray).rows.toArray).prettyPrint
+          Partnerships((for (z <- zt) yield z.asArray).toArray).prettyPrint
         case _ => throw TableException("render problem")
       }
     }
