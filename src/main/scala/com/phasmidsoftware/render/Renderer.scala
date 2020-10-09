@@ -64,10 +64,10 @@ trait NewRenderer[Row] {
   /**
     * TODO introduce Writable for String
     *
-    * @param r a NewRenderable object to render
+    * @param r a Renderable object to render
     * @return
     */
-  def render(r: NewRenderable[Row]): String
+  def render(r: Renderable[Row]): String
 }
 
 /**

@@ -231,14 +231,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     implicit object DummyNewRenderer extends NewRenderer[IntPair] {
-      def render(r: NewRenderable[IntPair]): String = r match {
+      def render(r: Renderable[IntPair]): String = r match {
         case t: BaseTable[_] => t.render(StringBuilderWritable).toString
         case _ => throw TableException("render problem")
       }
     }
 
     val sy = iIty map {
-      case r: NewRenderable[_] => r.render
+      case r: Renderable[_] => r.render
       case _ => fail("cannot render table")
     }
     sy should matchPattern { case Success(_) => }

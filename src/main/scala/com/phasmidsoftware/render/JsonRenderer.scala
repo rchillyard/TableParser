@@ -14,7 +14,7 @@ import spray.json.{JsArray, JsObject, JsValue, JsonWriter, enrichAny}
   */
 abstract class JsonRenderer[T: JsonWriter] extends NewRenderer[T] {
 
-  def render(r: NewRenderable[T]): String = r match {
+  def render(r: Renderable[T]): String = r match {
     case zt: Table[T] => JsObject(Map[String, JsValue]("header" -> JsArray((for (row <- zt.rows) yield row.toJson).toVector))).prettyPrint
     case _ => throw TableException("render problem")
   }

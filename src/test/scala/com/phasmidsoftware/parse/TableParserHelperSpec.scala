@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.render.{NewRenderable, NewRenderer}
+import com.phasmidsoftware.render.{NewRenderer, Renderable}
 import com.phasmidsoftware.table._
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -84,7 +84,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     trait JsonRenderer[T] extends NewRenderer[T]
     implicit object JsonRendererPartnerships extends JsonRenderer[Partnership] {
-      def render(r: NewRenderable[Partnership]): String = r match {
+      def render(r: Renderable[Partnership]): String = r match {
         case zt: Table[Partnership] =>
           Partnerships((for (z <- zt) yield z.asArray).toArray).prettyPrint
         case _ => throw TableException("render problem")
