@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.examples
 
-import com.phasmidsoftware.examples.Pairings.{convertToPartnerships, prepareJsonFromPartnerships}
+import com.phasmidsoftware.examples.Pairings.convertToPartnerships
 import com.phasmidsoftware.table.Table
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
@@ -18,12 +18,12 @@ class PairingsSpec extends AnyFlatSpec with should.Matchers {
   it should "prepareJsonFromPartnerships" in {
     val pty = Table.parseResource[Table[Player]]("partnerships.csv", getClass)
     val zy = pty map convertToPartnerships
-    val wy = zy flatMap prepareJsonFromPartnerships
+    val wy = zy map Partnerships.toJsonPretty
     wy should matchPattern { case Success(_) => }
     import spray.json._
     val partnerships = wy.get.parseJson.convertTo[Partnerships]
-    partnerships.partnerships.length shouldBe 19
-    wy.get.length shouldBe 488
+    partnerships.partnerships.length shouldBe 18
+    wy.get.length shouldBe 464
   }
 
 

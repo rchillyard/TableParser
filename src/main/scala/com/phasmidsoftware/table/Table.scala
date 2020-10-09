@@ -34,20 +34,27 @@ trait Table[Row] extends Iterable[Row] with NewRenderable[Row] {
     *
     * @param f a function which transforms a Row into an S.
     * @tparam S the type of the rows of the result.
-    * @return a Table[S] where each cell has value f(x) where x is the value of the corresponding cell in this.
+    * @return a Table[S] where each row has value f(x) where x is the value of the corresponding row in this.
     */
   override def map[S](f: Row => S): Table[S] = unit(rows map f)
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].
     *
-    * @param f a function which transforms a Row into a Table[S].
+    * @param f a function which transforms a Row into an IterableOnce[S].
     * @tparam S the type of the rows of the result.
-    * @return a Table[S] where each cell has value f(x) where x is the value of the corresponding cell in this.
+    * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
     */
-  def flatMap[S](f: Row => Table[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))(_ ++ _)
+  override def flatMap[S](f: Row => IterableOnce[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(Iterable.from(e)))
 
-  def zip[Row2](t: Table[Row2]): Table[(Row, Row2)] = processRows[Row2, (Row, Row2)]((rs1, rs2) => rs1 zip rs2)(t)
+  /**
+    * Method to zip to Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
+    *
+    * @param table the other Table.
+    * @tparam R the underlying type of the other Table.
+    * @return a Table of (Row, R).
+    */
+  def zip[R](table: Table[R]): Table[(Row, R)] = processRows[R, (Row, R)]((rs1, rs2) => rs1 zip rs2)(table)
 
   /**
     * Method to concatenate two Rows
@@ -97,11 +104,66 @@ trait Table[Row] extends Iterable[Row] with NewRenderable[Row] {
     */
   def iterator: Iterator[Row] = rows.iterator
 
+  /**
+    * Method to process the rows as an Iterable into an Iterable which will make up the resulting Table.
+    * NOTE: if you need the rows processed individually, use map or flatMap.
+    *
+    * @param f a function which takes an Iterable[Row] and returns an Iterable[S]
+    * @tparam S the underlying type of the result.
+    * @return a table[S]
+    */
   def processRows[S](f: Iterable[Row] => Iterable[S]): Table[S] = unit(f(rows))
 
-  def processRows[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(t: Table[R]): Table[S] = unit(f(rows, t.rows))
+  /**
+    * Method to process the rows of this Table and the other Table as a pair of Iterables resulting in an Iterable which will make up the resulting Table.
+    * NOTE: this is used by zip.
+    *
+    * @param f     a function which takes an Iterable[Row] and an Iterable[R] and returns an Iterable[S]
+    * @param other the other table of type Iterable[R].
+    * @tparam R the underlying type of the other table.
+    * @tparam S the underlying type of the result.
+    * @return a table[S]
+    */
+  def processRows[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(other: Table[R]): Table[S] = unit(f(rows, other.rows))
 
-  override def drop(n: Int): Iterable[Row] = processRows(rs => rs.drop(n))
+  /**
+    * drop
+    *
+    * @param n the number of rows to drop.
+    * @return a Table like this Table but without its first n rows.
+    */
+  override def drop(n: Int): Table[Row] = processRows(rs => rs.drop(n))
+
+  /**
+    * take
+    *
+    * @param n the number of rows to take.
+    * @return a Table like this Table but with only its first n rows.
+    */
+  override def take(n: Int): Table[Row] = processRows(rs => rs.take(n))
+
+  /**
+    * Method to return an empty Table of type Row.
+    *
+    * @return a Table[Row] without any rows.
+    */
+  override def empty: Table[Row] = unit(Seq.empty)
+
+  /**
+    * Method to filter the rows of a table.
+    *
+    * @param p a predicate to be applied to each row.
+    * @return a Table[Row] consisting only of rows which satisfy the predicate p.
+    */
+  override def filter(p: Row => Boolean): Table[Row] = processRows(rs => rs.filter(p))
+
+  /**
+    * Method to filter out the rows of a table.
+    *
+    * @param p a predicate to be applied to each row.
+    * @return a Table[Row] consisting only of rows which do not satisfy the predicate p.
+    */
+  override def filterNot(p: Row => Boolean): Table[Row] = processRows(rs => rs.filterNot(p))
 }
 
 object Table {

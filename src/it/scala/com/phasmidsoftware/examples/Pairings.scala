@@ -30,15 +30,18 @@ object Pairings extends App {
   println(s"Pairings")
   private val pty = Table.parseResource[Table[Player]]("partnerships.csv", getClass)
   private val zy = pty map convertToPartnerships
-  private val wy = zy flatMap prepareJsonFromPartnerships
-  wy.transform(w => Success(println(w)), e => Success(System.err.println(e.getLocalizedMessage)))
+  private val wy = zy map Partnerships.toJsonPretty
+  wy.transform(w => Success(println(w)), processException)
 
-  def prepareJsonFromPartnerships(z: Partnerships): Try[String] = Try(z.toJson.prettyPrint)
+  private def processException(e: Throwable): Try[Unit] = e match {
+    case PairingsException(m) => Success(System.err.println(m))
+    case _ => Success(e.printStackTrace(System.err))
+  }
 
   def convertToPartnerships(pt: Table[Player]): Partnerships = {
     println(s"${pt.size} players read")
     val duplicates = for ((_, v) <- pt.toSeq.groupBy(_.nickname); if v.length > 1; p <- v) yield p
-    if (duplicates.nonEmpty) throw new Exception(s"Duplicate player nicknames for: $duplicates")
+    if (duplicates.nonEmpty) throw PairingsException(s"Duplicate player nicknames for: $duplicates")
     val ts = Player.convertTable(pt)
     println(s"transformed into ${ts.size} partnerships")
     Partnerships.create(Partnership.convertTable(ts))
@@ -70,7 +73,7 @@ object Player extends TableParserHelper[Player]() {
     * @param pt a Table[Player]
     * @return a Table[Partnership]
     */
-  def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toSeq).map(r => Partnership(r))
+  def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toSeq).flatMap(Partnership.create)
 }
 
 /**
@@ -88,7 +91,8 @@ object Partnership {
     * @param players the sequence of Players. Whatever length is given, we will use the nicknames of the first and last.
     * @return a Partnership.
     */
-  def apply(players: Iterable[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
+  def create(players: Iterable[Player]): Option[Partnership] =
+    players.tail.headOption map (p => Partnership(players.head.nickname, p.nickname))
 
   /**
     * Method to transform a Table[Player] into a Table[PartnershipAsArray].
@@ -114,5 +118,9 @@ object Partnerships extends DefaultJsonProtocol {
 
   implicit val partnershipsFormat: RootJsonFormat[Partnerships] = jsonFormat1(Partnerships.apply)
 
+  def toJsonPretty(partnerships: Partnerships): String = partnerships.toJson.prettyPrint
+
   def create(t: Table[PartnershipAsArray]): Partnerships = Partnerships(for (r <- t.rows.toArray) yield r.pair)
 }
+
+case class PairingsException(m: String) extends Exception(m)
