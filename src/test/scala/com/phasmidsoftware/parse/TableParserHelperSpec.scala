@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.render.{NewRenderer, Renderable}
+import com.phasmidsoftware.render.{Renderable, StringRenderer}
 import com.phasmidsoftware.table._
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -82,7 +82,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "support fixed header and write to Json" in {
 
-    trait JsonRenderer[T] extends NewRenderer[T]
+    trait JsonRenderer[T] extends StringRenderer[T]
     implicit object JsonRendererPartnerships extends JsonRenderer[Partnership] {
       def render(r: Renderable[Partnership]): String = r match {
         case zt: Table[Partnership] =>

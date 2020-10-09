@@ -15,5 +15,5 @@ trait Renderable[Row] {
     *
     * @return a String
     */
-  def render(implicit newRenderer: NewRenderer[Row]): String = implicitly[NewRenderer[Row]].render(this)
+  def render(implicit newRenderer: StringRenderer[Row]): String = implicitly[StringRenderer[Row]].render(this)
 }

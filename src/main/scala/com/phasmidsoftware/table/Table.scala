@@ -479,18 +479,18 @@ abstract class BaseTable[Row](rows: Iterable[Row], val maybeHeader: Option[Heade
     *
     * @param style      the "style" to be used for the node which will represent this table.
     * @param attributes the attributes to be applied to the top level node for this table.
-    * @param rr         an (implicit) Renderer[Row]
+    * @param rr         an (implicit) HierarchicalRenderer[Row]
     * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
     * @return a new instance of U which represents this Table as a tree of some sort.
     */
-  def render[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Row]): U = {
+  def render[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: HierarchicalRenderer[Row]): U = {
     object TableRenderers extends HierarchicalRenderers {
-      val rowsRenderer: Renderer[Seq[Row]] = sequenceRenderer[Row]("tbody")
-      implicit val headerRenderer: Renderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
-      implicit val optionRenderer: Renderer[Option[Header]] = optionRenderer[Header]("thead", Map())
+      val rowsRenderer: HierarchicalRenderer[Seq[Row]] = sequenceRenderer[Row]("tbody")
+      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
+      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
     }
     import TableRenderers._
-    val node: Node = implicitly[Renderer[Option[Header]]].render(maybeHeader)
+    val node: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
     implicitly[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows.toSeq))))
   }
 
@@ -502,18 +502,18 @@ abstract class BaseTable[Row](rows: Iterable[Row], val maybeHeader: Option[Heade
     *
     * @param style      the "style" to be used for the node which will represent this table.
     * @param attributes the attributes to be applied to the top level node for this table.
-    * @param rr         an (implicit) Renderer[ Indexed [ Row ] ]
+    * @param rr         an (implicit) HierarchicalRenderer[ Indexed [ Row ] ]
     * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
     * @return a new instance of U which represents this Table as a tree of some sort.
     */
-  def renderSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: Renderer[Indexed[Row]]): U = {
+  def renderSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: HierarchicalRenderer[Indexed[Row]]): U = {
     object TableRenderers extends HierarchicalRenderers {
-      val rowsRenderer: Renderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("tbody")
-      implicit val headerRenderer: Renderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
-      implicit val optionRenderer: Renderer[Option[Header]] = optionRenderer[Header]("thead", Map())
+      val rowsRenderer: HierarchicalRenderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("tbody")
+      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
+      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
     }
     import TableRenderers._
-    val headerNode: Node = implicitly[Renderer[Option[Header]]].render(maybeHeader)
+    val headerNode: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
     val tableNode = Node(style, attributes, headerNode +: Seq(rowsRenderer.render(Indexed.index(rows))))
     val trimmed = tableNode.trim
     implicitly[TreeWriter[U]].evaluate(trimmed)

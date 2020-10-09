@@ -212,8 +212,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter
 
-    implicit val intPairRenderer: Renderer[IntPair] = renderer2("IntPair")(IntPair.apply)
-    implicit val r: Renderer[Indexed[IntPair]] = indexedRenderer("", "th")
+    implicit val intPairRenderer: HierarchicalRenderer[IntPair] = renderer2("IntPair")(IntPair.apply)
+    implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
 
   }
 
@@ -230,7 +230,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       override def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
     }
 
-    implicit object DummyNewRenderer extends NewRenderer[IntPair] {
+    implicit object DummyStringRenderer$ extends StringRenderer[IntPair] {
       def render(r: Renderable[IntPair]): String = r match {
         case t: BaseTable[_] => t.render(StringBuilderWritable).toString
         case _ => throw TableException("render problem")
