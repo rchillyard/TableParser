@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.{ParserException, TableParserException}
+import com.phasmidsoftware.parse.ParserException
 import com.phasmidsoftware.util.FPException
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
