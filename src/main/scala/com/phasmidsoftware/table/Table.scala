@@ -127,20 +127,37 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
   def processRows[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(other: Table[R]): Table[S] = unit(f(rows, other.rows))
 
   /**
+    * Method to transform this Table[Row] into a sorted Table[S] where S is a super-class of Row and for which there is
+    * evidence of Ordering[S].
+    *
+    * @tparam S the underlying type of the resulting Table (a super-type of Row and for which there is evidence of Ordering[S]).
+    * @return a Table[S].
+    */
+  def sorted[S >: Row : Ordering]: Table[S] = processRows(rs => (rs map (_.asInstanceOf[S])).toSeq.sorted)
+
+  /**
     * drop
     *
     * @param n the number of rows to drop.
     * @return a Table like this Table but without its first n rows.
     */
-  override def drop(n: Int): Table[Row] = processRows(rs => rs.drop(n))
+  override def drop(n: Int): Table[Row] = processRows(_.drop(n))
 
   /**
-    * take
+    * dropRight
     *
-    * @param n the number of rows to take.
-    * @return a Table like this Table but with only its first n rows.
+    * @param n the number of rows to dropRight.
+    * @return a Table like this Table but with dropRight(n) rows.
     */
-  override def take(n: Int): Table[Row] = processRows(rs => rs.take(n))
+  override def dropRight(n: Int): Table[Row] = processRows(_.dropRight(n))
+
+  /**
+    * dropWhile
+    *
+    * @param p the predicate.
+    * @return a Table like this Table but with dropWhile(p) rows.
+    */
+  override def dropWhile(p: Row => Boolean): Table[Row] = processRows(_.dropWhile(p))
 
   /**
     * Method to return an empty Table of type Row.
@@ -155,7 +172,7 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * @param p a predicate to be applied to each row.
     * @return a Table[Row] consisting only of rows which satisfy the predicate p.
     */
-  override def filter(p: Row => Boolean): Table[Row] = processRows(rs => rs.filter(p))
+  override def filter(p: Row => Boolean): Table[Row] = processRows(_.filter(p))
 
   /**
     * Method to filter out the rows of a table.
@@ -163,7 +180,40 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * @param p a predicate to be applied to each row.
     * @return a Table[Row] consisting only of rows which do not satisfy the predicate p.
     */
-  override def filterNot(p: Row => Boolean): Table[Row] = processRows(rs => rs.filterNot(p))
+  override def filterNot(p: Row => Boolean): Table[Row] = processRows(_.filterNot(p))
+
+  /**
+    * slice
+    *
+    * @param from the index at which to begin the slice.
+    *             @param until the index at which to end the slice
+    * @return a Table like this Table but with slice(from, until) rows.
+    */
+  override def slice(from: Int, until: Int): Table[Row] = processRows(_.slice(from, until))
+
+  /**
+    * take
+    *
+    * @param n the number of rows to take.
+    * @return a Table like this Table but with only its first n rows.
+    */
+  override def take(n: Int): Table[Row] = processRows(_.take(n))
+
+  /**
+    * takeRight
+    *
+    * @param n the number of rows to takeRight.
+    * @return a Table like this Table but with takeRight(n) rows.
+    */
+  override def takeRight(n: Int): Table[Row] = processRows(_.takeRight(n))
+
+  /**
+    * takeWhile
+    *
+    * @param p the predicate.
+    * @return a Table like this Table but with takeWhile(p) rows.
+    */
+  override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
 }
 
 object Table {
