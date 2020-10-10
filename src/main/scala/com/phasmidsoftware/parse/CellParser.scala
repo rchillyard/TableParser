@@ -183,12 +183,14 @@ object CellParser {
     override def convertString(w: String): Try[LocalDate] = implicitly[Parseable[LocalDate]].parse(w)
   }
 
+  // TEST
   implicit object URLParser$ extends SingleCellParser[URL] {
     override def convertString(w: String): Try[URL] = implicitly[Parseable[URL]].parse(w)
 
     override def toString: String = "URLParser$"
   }
 
+  // TEST
   implicit object FileParser$ extends SingleCellParser[File] {
     override def convertString(w: String): Try[File] = implicitly[Parseable[File]].parse(w)
 
@@ -202,18 +204,23 @@ object CellParser {
     }
   }
 
+  // TEST
   implicit object BooleanOptionParser extends OptionParser[Boolean]
 
   implicit object IntOptionParser extends OptionParser[Int]
 
+  // TEST
   implicit object LongOptionParser extends OptionParser[Long]
 
   implicit object DoubleOptionParser extends OptionParser[Double]
 
+  // TEST
   implicit object LocalDateOptionParser extends OptionParser[LocalDate]
 
+  // TEST
   implicit object URLOptionParser extends OptionParser[URL]
 
+  // TEST
   implicit object FileOptionParser extends OptionParser[File]
 
 }

@@ -50,6 +50,8 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
   /**
     * Method to zip to Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
     *
+    * TEST
+    *
     * @param table the other Table.
     * @tparam R the underlying type of the other Table.
     * @return a Table of (Row, R).
@@ -138,6 +140,8 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
   /**
     * drop
     *
+    * TEST
+    *
     * @param n the number of rows to drop.
     * @return a Table like this Table but without its first n rows.
     */
@@ -145,6 +149,8 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
 
   /**
     * dropRight
+    *
+    * TEST
     *
     * @param n the number of rows to dropRight.
     * @return a Table like this Table but with dropRight(n) rows.
@@ -154,6 +160,8 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
   /**
     * dropWhile
     *
+    * TEST
+    *
     * @param p the predicate.
     * @return a Table like this Table but with dropWhile(p) rows.
     */
@@ -162,12 +170,16 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
   /**
     * Method to return an empty Table of type Row.
     *
+    * TEST
+    *
     * @return a Table[Row] without any rows.
     */
   override def empty: Table[Row] = unit(Seq.empty)
 
   /**
     * Method to filter the rows of a table.
+    *
+    * TEST
     *
     * @param p a predicate to be applied to each row.
     * @return a Table[Row] consisting only of rows which satisfy the predicate p.
@@ -177,6 +189,8 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
   /**
     * Method to filter out the rows of a table.
     *
+    * TEST
+    *
     * @param p a predicate to be applied to each row.
     * @return a Table[Row] consisting only of rows which do not satisfy the predicate p.
     */
@@ -185,8 +199,10 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
   /**
     * slice
     *
-    * @param from the index at which to begin the slice.
-    *             @param until the index at which to end the slice
+    * TEST
+    *
+    * @param from  the index at which to begin the slice.
+    * @param until the index at which to end the slice
     * @return a Table like this Table but with slice(from, until) rows.
     */
   override def slice(from: Int, until: Int): Table[Row] = processRows(_.slice(from, until))
@@ -202,6 +218,8 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
   /**
     * takeRight
     *
+    * TEST
+    *
     * @param n the number of rows to takeRight.
     * @return a Table like this Table but with takeRight(n) rows.
     */
@@ -209,6 +227,8 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
 
   /**
     * takeWhile
+    *
+    * TEST
     *
     * @param p the predicate.
     * @return a Table like this Table but with takeWhile(p) rows.
@@ -420,7 +440,7 @@ case class Header(xs: Seq[String]) {
     * TEST this.
     *
     * @param other the other Header.
-    * @return a Header made up of these colukns and those of other, in that order.
+    * @return a Header made up of these columns and those of other, in that order.
     */
   def ++(other: Header): Header = Header(xs ++ other.xs)
 }

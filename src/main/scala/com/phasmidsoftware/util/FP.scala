@@ -17,9 +17,7 @@ object FP {
     * @tparam X the underlying type
     * @return a Try of Iterator[X]
     */
-  def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] = xys.foldLeft(Try(Seq[X]())) {
-    (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
-  }.map(_.iterator)
+  def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] = sequence(xys.toSeq).map(_.iterator)
 
   /**
     * Sequence method to combine elements of Try.
@@ -68,6 +66,7 @@ object FP {
     * @return a Try[A]
     */
   def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f).flatten
+
   //    try { Using.resource(resource)(f) } catch { case NonFatal(e) => Failure(e) }
 }
 
