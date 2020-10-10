@@ -4,6 +4,8 @@
 
 package com.phasmidsoftware.parse
 
+import org.slf4j.{Logger, LoggerFactory}
+
 import scala.annotation.tailrec
 import scala.util.Try
 import scala.util.matching.Regex
@@ -24,7 +26,7 @@ import scala.util.parsing.combinator.JavaTokenParsers
   */
 class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char, verbose: Boolean = false) extends JavaTokenParsers {
 
-  if (verbose) println(s"delimiter: '${delimiter.regex}', string: '${string.regex}', enclosures: '$enclosures', quote: '$quote', listSeparator: '$listSeparator', ")
+  if (verbose) LineParser.logger.info(s"delimiter: '${delimiter.regex}', string: '${string.regex}', enclosures: '$enclosures', quote: '$quote', listSeparator: '$listSeparator', ")
   runChecks()
 
   override def skipWhitespace: Boolean = false
@@ -97,7 +99,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
     implicit class Trial(x: Try[Unit]) {
       def squawk(): Unit = x match {
-        case scala.util.Failure(z) => System.err.println(z)
+        case scala.util.Failure(z) => LineParser.logger.warn(s"squawk: $z")
         case _ =>
       }
 
@@ -116,10 +118,11 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
 object LineParser {
   def apply(implicit c: RowConfig): LineParser = {
-    // TODO should be logged.
-    //		println(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
+    LineParser.logger.info(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
     new LineParser(c.delimiter, c.string, c.listEnclosure, c.listSep, c.quote)
   }
+
+  val logger: Logger = LoggerFactory.getLogger(LineParser.getClass)
 }
 
 case class ParserException(msg: String, e: Throwable = null) extends Exception(msg, e)

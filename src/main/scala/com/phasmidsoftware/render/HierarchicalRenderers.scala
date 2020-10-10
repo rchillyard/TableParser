@@ -30,6 +30,8 @@ trait HierarchicalRenderers {
   /**
     * Method to return a HierarchicalRenderer[T] where you wish to explicitly define a conversion o a T into a String.
     *
+    * TEST
+    *
     * @param style the style of the resulting renderer.
     * @param attrs a set of base attributes which are explicitly set for this HierarchicalRenderer;
     * @param f     the rendering function to transform a T into a String (overrides the default asString method).

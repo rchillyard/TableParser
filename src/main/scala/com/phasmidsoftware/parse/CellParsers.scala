@@ -495,7 +495,7 @@ trait CellParsers {
           case _ => Failure(ParseLogicException("no field names"))
         }
     }
-    }
+  }
 
 
   /**

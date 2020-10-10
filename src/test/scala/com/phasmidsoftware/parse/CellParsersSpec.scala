@@ -4,8 +4,6 @@
 
 package com.phasmidsoftware.parse
 
-import java.util.GregorianCalendar
-
 import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat

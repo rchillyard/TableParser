@@ -492,6 +492,8 @@ Release Notes
 =============
 
 V1.0.10 -> V1.0.11
+* introduction of logging
+* Table now supports Iterable=>Iterable methods.
 * renaming of Renderer to HierarchicalRenderer and introduction of StringRenderer
 * introduction of JsonRenderer;
 * introduction of TableParserHelper;

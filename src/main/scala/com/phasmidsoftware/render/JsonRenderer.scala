@@ -10,6 +10,8 @@ import spray.json.{JsArray, JsObject, JsValue, JsonWriter, enrichAny}
 /**
   * Abstract Class JsonRenderer which will render a Table[T] as a JsValue.
   *
+  * TEST
+  *
   * @tparam T the underlying type of the Table (i.e. the Row type) for which there must be evidence of JsonWriter[T].
   */
 abstract class JsonRenderer[T: JsonWriter] extends StringRenderer[T] {

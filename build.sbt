@@ -22,6 +22,8 @@ libraryDependencies ++= Seq(
   "io.spray" %%  "spray-json" % "1.3.5",
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
+  "ch.qos.logback" % "logback-classic" % "1.2.3" % "runtime",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 

@@ -337,4 +337,17 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     f.apply(rawTable).head.head shouldBe "Star Wars: Episode VII - The Force Awakens             "
   }
 
+  behavior of "sort"
+
+  it should "sort a Table" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99", "1 3"))
+    implicit object IntPairOrdering extends Ordering[IntPair] {
+      override def compare(x: IntPair, y: IntPair): Int = x.a.compareTo(y.a) match {
+        case 0 => x.b.compareTo(y.b)
+        case cf => cf
+      }
+    }
+    println(iIty map (_.sorted))
+  }
 }
