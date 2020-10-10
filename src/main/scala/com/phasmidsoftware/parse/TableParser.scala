@@ -6,6 +6,7 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -77,6 +78,10 @@ trait TableParser[Table] {
   protected def logFailures(rys: Iterator[Try[Row]]): Iterator[Try[Row]]
 }
 
+object TableParser {
+  val logger: Logger = LoggerFactory.getLogger(TableParser.getClass)
+
+}
 /**
   * Case class to define a StringTableParser that assumes a header to be found in the input file.
   * This class attempts to provide as much built-in functionality as possible.
@@ -176,12 +181,11 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
       val string = s"${e.getLocalizedMessage}${
         if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
       }"
-      // TODO this should be using a logger
-      System.err.println(string)
+      TableParser.logger.warn(string)
     }
 
     val (good, bad) = rys.partition(_.isSuccess)
-    if (bad.isEmpty) System.out.println("forgiving mode is set but there are no failures")
+    if (bad.isEmpty) TableParser.logger.warn("forgiving mode is set but there are no failures")
     bad.map(_.failed.get) foreach (e => logException(e))
     good
   }

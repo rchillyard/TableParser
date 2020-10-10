@@ -492,7 +492,8 @@ Release Notes
 =============
 
 V1.0.10 -> V1.0.11
-* introduction of JsonWritable
+* introduction of logging
+* Table now supports Iterable=>Iterable methods.
 
 V1.0.9 -> V1.0.10
 * build.sbt: changed scalaVersion to 2.13.3
