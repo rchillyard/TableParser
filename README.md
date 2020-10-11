@@ -492,13 +492,13 @@ Release Notes
 =============
 
 V1.0.10 -> V1.0.11
-* introduction of logging
+* introduction of logging;
+* introduction of JSON (spray) for read/write of Table;
 * Table now supports Iterable=>Iterable methods.
 * renaming of Renderer to HierarchicalRenderer and introduction of StringRenderer
-* introduction of JsonRenderer;
 * introduction of TableParserHelper;
 * renamed TableWithoutHeader as UnheadedTable and TableWithHeader as HeadedTable;
-* added various methods, esp. Iterable methods, to Table.
+* added various methods, inc. replaceHeader, to Table.
 * Table parsing is now based on Iterator rather than Iterable.
 * Table rows are now based on Vector (at least for the standard TableWithHeader)
 

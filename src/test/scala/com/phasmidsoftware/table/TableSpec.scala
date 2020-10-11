@@ -26,7 +26,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   object IntPair {
 
     class IntPairParser extends JavaTokenParsers {
-      def pair: Parser[(Int, Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
+      lazy val pair: Parser[(Int, Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
     }
 
     val intPairParser = new IntPairParser

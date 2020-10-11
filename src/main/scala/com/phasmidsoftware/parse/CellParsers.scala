@@ -81,7 +81,7 @@ trait CellParsers {
     *
     * @return a SingleCellParser[Option[String]
     */
-  def cellParserOptionNonEmptyString: CellParser[Option[String]] = new SingleCellParser[Option[String]] {
+  lazy val cellParserOptionNonEmptyString: CellParser[Option[String]] = new SingleCellParser[Option[String]] {
     override def toString: String = s"cellParserOptionNonEmptyString"
 
     private val cp: CellParser[String] = new CellParser[String]() {

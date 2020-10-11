@@ -79,9 +79,9 @@ abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option
 
   override def toString: String = s"""\n${tagString()}$contentString$tagsString${tagString(true)}"""
 
-  private def tagsString = if (tags.isEmpty) "" else tags mkString ""
+  private lazy val tagsString = if (tags.isEmpty) "" else tags mkString ""
 
-  private def contentString: String = content.getOrElse("")
+  private lazy val contentString: String = content.getOrElse("")
 
   private def tagString(close: Boolean = false) = s"<${nameString(close)}${attributeString(close)}>"
 
