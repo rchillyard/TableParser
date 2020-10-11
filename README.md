@@ -439,9 +439,9 @@ If you need to change the order of the rows, you will need to override the _writ
 A type class called _TreeWriter_ is the main type for rendering.
 One of the instance methods of _Table[Row]_ is a method as follows:
 
-    def render[U: TreeWriter](style: String)(implicit rr: Renderer[Row]): U
+    def render[U: TreeWriter](style: String)(implicit rr: HierarchicalRenderer[Row]): U
     
-Providing that you have defined an implicit object of type _TreeWriter[U]_ and a _Renderer[Row]_,
+Providing that you have defined an implicit object of type _TreeWriter[U]_ and a _HierarchicalRenderer[Row]_,
 then the _render_ method will produce an instance of _U_ which will be a tree containing all the rows of this table.
 
 What sort of type is _U_?
@@ -466,8 +466,8 @@ If we have a row type as for example:
 	
 Then, we should define appropriate renderers along the following likes:
 
-	implicit val valueRenderer: Renderer[Double] = renderer("td")
-	implicit val complexRenderer: Renderer[Complex] = renderer2("tr")(Complex)
+	implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")
+	implicit val complexRenderer: HierarchicalRenderer[Complex] = renderer2("tr")(Complex)
 
 We can then write something like:
 
@@ -494,6 +494,13 @@ Release Notes
 V1.0.10 -> V1.0.11
 * introduction of logging
 * Table now supports Iterable=>Iterable methods.
+* renaming of Renderer to HierarchicalRenderer and introduction of StringRenderer
+* introduction of JsonRenderer;
+* introduction of TableParserHelper;
+* renamed TableWithoutHeader as UnheadedTable and TableWithHeader as HeadedTable;
+* added various methods, esp. Iterable methods, to Table.
+* Table parsing is now based on Iterator rather than Iterable.
+* Table rows are now based on Vector (at least for the standard TableWithHeader)
 
 V1.0.9 -> V1.0.10
 * build.sbt: changed scalaVersion to 2.13.3

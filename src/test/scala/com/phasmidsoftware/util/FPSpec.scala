@@ -19,7 +19,7 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "indexFound" in {
     indexFound("junk", 0) shouldBe Success(0)
-    indexFound("junk", -1) should matchPattern { case Failure(FPException("Header column junk not found", null)) => }
+    indexFound("junk", -1) should matchPattern { case Failure(FPException("Header column junk not found", None)) => }
   }
 
   it should "getURLForResource" in {
