@@ -437,6 +437,19 @@ object Table {
       case _ => Failure(ParserException(s"parse method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
   }
+
+  /**
+    * Method to construct one of the standard table types, given an Iterable of T and an optional header.
+    *
+    * @param xs          an Iterable of X.
+    * @param maybeHeader an optional Header.
+    * @tparam X the underlying type of xs.
+    * @return a Table[X] which is either a HeadedTable or an UnheadedTable, as appropriate.
+    */
+  def apply[X](xs: Iterable[X], maybeHeader: Option[Header]): Table[X] = maybeHeader match {
+    case Some(h) => HeadedTable(xs, h)
+    case None => UnheadedTable(xs)
+  }
 }
 
 /**

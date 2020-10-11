@@ -1,10 +1,10 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.parse.{CellParser, TableParserHelper}
-import com.phasmidsoftware.table.{Header, Table}
+import com.phasmidsoftware.table.{HeadedTable, Header, Table, TableJsonFormat}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
-import spray.json.{DefaultJsonProtocol, RootJsonFormat}
+import spray.json._
 
 import scala.util.{Success, Try}
 
@@ -21,6 +21,9 @@ class JsonRendererSpec extends AnyFlatSpec with should.Matchers {
     val wy: Try[String] = for (ts <- tsy) yield ts.render
     wy should matchPattern { case Success(_) => }
     wy.get shouldBe "{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}"
+    implicit object TableReader extends TableJsonFormat[Partnership]
+    val pt = wy.get.parseJson.convertTo[Table[Partnership]]
+    pt should matchPattern { case HeadedTable(_, _) => }
   }
 
   case class Player(first: String, last: String) {
