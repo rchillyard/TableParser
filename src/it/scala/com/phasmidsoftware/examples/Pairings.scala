@@ -5,7 +5,7 @@
 package com.phasmidsoftware.examples
 
 import com.phasmidsoftware.parse.{CellParser, TableParserHelper}
-import com.phasmidsoftware.table.Table
+import com.phasmidsoftware.table.{Header, Table}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat, enrichAny}
 
 import scala.util.{Success, Try}
@@ -73,7 +73,8 @@ object Player extends TableParserHelper[Player]() {
     * @param pt a Table[Player]
     * @return a Table[Partnership]
     */
-  def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toSeq).flatMap(Partnership.create)
+  def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toSeq).flatMap(Partnership.create).
+    replaceHeader(Some(Header.create("playerA", "playerB")))
 }
 
 /**

@@ -64,7 +64,7 @@ trait HierarchicalRenderer[T] {
   *
   * @tparam T the type of object to be rendered.
   */
-@implicitNotFound(msg = "Cannot find an implicit instance of StringHierarchicalRenderer[${T}].")
+@implicitNotFound(msg = "Cannot find an implicit instance of StringRenderer[${T}].")
 trait StringRenderer[T] {
 
   /**

@@ -16,8 +16,17 @@ import spray.json.{JsArray, JsObject, JsValue, JsonWriter, enrichAny}
   */
 abstract class JsonRenderer[T: JsonWriter] extends StringRenderer[T] {
 
+  import spray.json.DefaultJsonProtocol._
+
   def render(r: Renderable[T]): String = r match {
-    case zt: Table[T] => JsObject(Map[String, JsValue]("header" -> JsArray((for (row <- zt.rows) yield row.toJson).toVector))).prettyPrint
+    case zt: Table[T] =>
+      val jso = zt.maybeHeader map (h => h.xs.map(_.toJson))
+      val jSm = Map[String, JsValue]("rows" -> JsArray((zt.rows map (_.toJson)).toVector))
+      val jSm2: Map[String, JsValue] = jso match {
+        case None => jSm
+        case Some(js) => jSm + ("header" -> JsArray(js.toVector))
+      }
+      JsObject(jSm2).prettyPrint
     case _ => throw TableException("render problem")
   }
 }

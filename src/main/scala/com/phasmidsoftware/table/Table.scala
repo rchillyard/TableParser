@@ -30,6 +30,14 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
   val maybeHeader: Option[Header]
 
   /**
+    * Method to clone this Table but with a different Header.
+    *
+    * @param ho an optional Header.
+    * @return a Table[Row] with the same rows as this, but with ho as its maybeHeader.
+    */
+  def replaceHeader(ho: Option[Header]): Table[Row] = unit(rows, ho)
+
+  /**
     * Transform (map) this Table[Row] into a Table[S].
     *
     * @param f a function which transforms a Row into an S.
@@ -71,11 +79,22 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
     * Method to generate a Table[S] for a set of rows.
     * Although declared as an instance method, this method produces its result independent of this.
     *
+    * @param rows        a sequence of S.
+    * @param maybeHeader an optional Header to be used in the resulting Table.
+    * @tparam S the underlying type of the rows and the result.
+    * @return a new instance of Table[S].
+    */
+  def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S]
+
+  /**
+    * Method to generate a Table[S] for a set of rows.
+    * Although declared as an instance method, this method produces its result independent of this.
+    *
     * @param rows a sequence of S.
     * @tparam S the underlying type of the rows and the result.
     * @return a new instance of Table[S].
     */
-  def unit[S](rows: Iterable[S]): Table[S]
+  def unit[S](rows: Iterable[S]): Table[S] = unit(rows, maybeHeader)
 
   /**
     * Method to access the individual rows of this table.
@@ -602,7 +621,18 @@ abstract class BaseTable[Row](rows: Iterable[Row], val maybeHeader: Option[Heade
   * @tparam Row the underlying type of each Row
   */
 case class UnheadedTable[Row](rows: Iterable[Row]) extends BaseTable[Row](rows, None) {
-  def unit[S](rows: Iterable[S]): Table[S] = UnheadedTable(rows)
+  /**
+    * Method to generate a Table[S] for a set of rows.
+    * Although declared as an instance method, this method produces its result independent of this.
+    *
+    * @param rows a sequence of S.
+    * @tparam S the underlying type of the rows and the result.
+    * @return a new instance of Table[S].
+    */
+  override def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+    case Some(h) => HeadedTable(rows, h)
+    case None => UnheadedTable(rows)
+  }
 }
 
 /**
@@ -617,7 +647,18 @@ case class UnheadedTable[Row](rows: Iterable[Row]) extends BaseTable[Row](rows, 
   * @tparam Row the underlying type of each Row
   */
 case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
-  def unit[S](rows: Iterable[S]): Table[S] = HeadedTable(rows, header)
+  /**
+    * Method to generate a Table[S] for a set of rows.
+    * Although declared as an instance method, this method produces its result independent of this.
+    *
+    * @param rows a sequence of S.
+    * @tparam S the underlying type of the rows and the result.
+    * @return a new instance of Table[S].
+    */
+  override def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+    case Some(h) => HeadedTable(rows, h)
+    case None => UnheadedTable(rows)
+  }
 }
 
 /**
@@ -629,6 +670,7 @@ object HeadedTable {
   def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.toVector, header)
 
   def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = HeadedTable(rows, Header.apply[Row]())
+
 }
 
 /**

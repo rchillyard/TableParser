@@ -12,7 +12,7 @@ import scala.util.control.NonFatal
 object Reflection {
 
   /**
-    * This method is borrowed directly from Spray JsonReader.
+    * This method is borrowed directly from Spray ProductFormats.
     *
     * NOTE: Read this if you are getting exceptions thrown by this method (be aware that sys.error throws an exception).
     * You MUST be careful when defining case classes that represent input types or output types.
