@@ -6,24 +6,21 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import spray.json._
 
-import scala.util.{Success, Try}
+import scala.util.Success
 
 class JsonRendererSpec extends AnyFlatSpec with should.Matchers {
+
+  implicit object PartnershipRenderer extends JsonRenderer[Partnership]
+
+  implicit object TableReader extends TableJsonFormat[Partnership]
 
   behavior of "JsonRenderer"
 
   it should "render Partnership table" in {
-
     val strings = List("First, Last", "Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
-    val value1 = Table.parse[Table[Player]](strings.iterator)
-    val tsy = for (pt <- value1) yield Player.convertTable(pt)
-    implicit object PartnershipRenderer extends JsonRenderer[Partnership]
-    val wy: Try[String] = for (ts <- tsy) yield ts.render
-    wy should matchPattern { case Success(_) => }
-    wy.get shouldBe "{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}"
-    implicit object TableReader extends TableJsonFormat[Partnership]
-    val pt = wy.get.parseJson.convertTo[Table[Partnership]]
-    pt should matchPattern { case HeadedTable(_, _) => }
+    val wy = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).render
+    wy should matchPattern { case Success("{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}") => }
+    wy.map(p => p.parseJson.convertTo[Table[Partnership]]) should matchPattern { case Success(HeadedTable(_, _)) => }
   }
 
   case class Player(first: String, last: String) {

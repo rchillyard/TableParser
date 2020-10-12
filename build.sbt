@@ -2,7 +2,7 @@ organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-version := "1.0.11"
+version := "1.0.12-SNAPSHOT"
 
 scalaVersion := "2.13.3"
 

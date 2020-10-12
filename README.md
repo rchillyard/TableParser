@@ -403,7 +403,9 @@ Also, note that the instance of _ColumnHelper_ defined here has the formatter de
 Rendering
 =========
 
-_TableParser_ provides two mechanisms for rendering a table:
+_TableParser_ provides a general mechanism for rendering (serializing to text) tables.
+Indeed, _Table[Row]_ extends _Renderable[Row]_ which supports the _render(implicit rs: StringRenderer[Row])_ method. 
+two mechanisms for rendering a table:
 * one to a straight serialized output, for example, when rendering a table as a CSV file.
 * the other to a hierarchical (i.e. tree-structured) output, such as an HTML file.
 
@@ -434,9 +436,9 @@ The _Writable_ object will take care of inserting the delimiter and quotes as ap
 Columns will appear in the same order as the parameters of _Row_ type (which must be either a _Product_, such as a case class, or an _Array_ or a _Seq_).
 If you need to change the order of the rows, you will need to override the _writeRow_ method of _Writable_.
  
-## Hierarchical output
+## Hierarchical rendering
 
-A type class called _TreeWriter_ is the main type for rendering.
+A type class called _TreeWriter_ is the main type for hierarchical rendering.
 One of the instance methods of _Table[Row]_ is a method as follows:
 
     def render[U: TreeWriter](style: String)(implicit rr: HierarchicalRenderer[Row]): U
@@ -487,6 +489,27 @@ The result of this will be an HTML tree which can be written out thus as a strin
 As with the parsing methods, the conversion between instances of types (especially case classes) and Strings is hierarchical (recursive).
 
 If you need to set HTML attributes for a specific type, for example a row in the above example, then an attribute map can be defined for the _renderer2_ method.
+
+## String Rendering
+
+There is currently only one implementation of String rendering, and that is Json rendering.
+Although Json is indeed a hierarchical serialization format, the manner of creating a Json string masks the hierarchical aspects.
+The implemented Json reader/writer is Spray Json but that could easily be changed in the future.
+
+Although this section is concerned with rendering, it is also true of course to say that Tables can be read from Json strings.
+
+The following example from _JsonRendererSpec.scala_ shows how we can take the following steps:
+* read a table of players from a list of Strings (there are, as shown above, other signatures of parse for files, URLs, etc.);
+* convert to a table of partnerships;
+* write the resulting table to a Json string;
+* check that accuracy of the Json string;
+* check that we can read the string back in as a table.
+
+        val strings = List("First, Last", "Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
+        val wy = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).render
+        wy should matchPattern { case Success("{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}") => }
+        wy.map(p => p.parseJson.convertTo[Table[Partnership]]) should matchPattern { case Success(HeadedTable(_, _)) => }
+
 
 Release Notes
 =============
