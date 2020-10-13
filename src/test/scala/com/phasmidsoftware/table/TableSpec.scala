@@ -32,13 +32,13 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val intPairParser = new IntPairParser
 
     trait IntPairRowParser extends StringParser[IntPair] {
-      override def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
+      def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
         case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse $w"))
       }
 
       //noinspection NotImplementedCode
-      override def parseHeader(w: String): Try[Header] = ???
+      def parseHeader(w: String): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -223,16 +223,16 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty should matchPattern { case Success(_) => }
 
     implicit object StringBuilderWritable extends Writable[StringBuilder] {
-      override def unit: StringBuilder = new StringBuilder
+      def unit: StringBuilder = new StringBuilder
 
       override def delimiter: CharSequence = "|"
 
-      override def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
+      def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
     }
 
     implicit object DummyRenderer$$ extends Renderer[Table[IntPair], String] {
       def render(t: Table[IntPair], attrs: Map[String, String]): String = t match {
-        case t: BaseTable[_] => t.render(StringBuilderWritable).toString
+        case t: RenderableTable[IntPair] => t.RenderToWritable(StringBuilderWritable).toString
         case _ => throw TableException("render problem")
       }
     }
@@ -343,7 +343,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99", "1 3"))
     implicit object IntPairOrdering extends Ordering[IntPair] {
-      override def compare(x: IntPair, y: IntPair): Int = x.a.compareTo(y.a) match {
+      def compare(x: IntPair, y: IntPair): Int = x.a.compareTo(y.a) match {
         case 0 => x.b.compareTo(y.b)
         case cf => cf
       }

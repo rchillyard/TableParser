@@ -60,7 +60,7 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
     * @param header the header already parsed.
     * @return a Try[Row].
     */
-  override def parse(w: String)(header: Header): Try[Row] = for (ws <- parser.parseRow(w); r <- RowValues(Row(ws, header)).convertTo[Row]) yield r
+  def parse(w: String)(header: Header): Try[Row] = for (ws <- parser.parseRow(w); r <- RowValues(Row(ws, header)).convertTo[Row]) yield r
 
   /**
     * Method to parse a String as a Try[Header].
@@ -68,7 +68,7 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
     * @param w the header row as a String.
     * @return a Try[Header].
     */
-  override def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow(w)) yield Header(ws)
+  def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow(w)) yield Header(ws)
 }
 
 object StandardRowParser {
@@ -97,7 +97,7 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
     * @param header the header already parsed.
     * @return a Try[Row].
     */
-  override def parse(ws: Strings)(header: Header): Try[Row] = RowValues(Row(ws, header)).convertTo[Row]
+  def parse(ws: Strings)(header: Header): Try[Row] = RowValues(Row(ws, header)).convertTo[Row]
 
   /**
     * Method to parse a sequence of Strings as a Try[Header].
@@ -105,5 +105,5 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
     * @param ws the header row as a sequence of Strings.
     * @return a Try[Header].
     */
-  override def parseHeader(ws: Strings): Try[Header] = Try(Header(ws))
+  def parseHeader(ws: Strings): Try[Header] = Try(Header(ws))
 }

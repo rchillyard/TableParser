@@ -71,7 +71,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
 
   it should "support fixed header" in {
-    val strings = List("Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
     val tsy: Try[Table[Partnership]] = for (pt <- pty) yield Player.convertTable(pt)
     val sy: Try[Partnerships] = for (ts <- tsy) yield Partnerships((for (t <- ts) yield t.asArray).toArray)
@@ -83,7 +83,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "support fixed header and write to Json" in {
-    val strings = List("Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
     val zty: Try[Table[Partnership]] = for (pt <- pty) yield Player.convertTable(pt)
     implicit val r: Renderer[Table[Partnership], String] = new JsonTableRenderer[Partnership] {}

@@ -12,9 +12,9 @@ class WritableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "Writable"
 
   implicit object StringBuilderWritable extends Writable[StringBuilder] {
-    override def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
+    def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
 
-    override def unit: StringBuilder = new StringBuilder
+    def unit: StringBuilder = new StringBuilder
 
     override def delimiter: CharSequence = "|"
   }
