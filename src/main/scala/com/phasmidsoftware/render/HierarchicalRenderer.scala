@@ -17,25 +17,17 @@ import scala.reflect.ClassTag
   * @tparam T the type of object to be rendered.
   */
 @implicitNotFound(msg = "Cannot find an implicit instance of HierarchicalRenderer[${T}].")
-trait HierarchicalRenderer[T] {
+trait HierarchicalRenderer[T] extends Renderer[T, Node] {
 
   /**
     * Defines the default style for type T.
     */
   val style: String
+
   /**
     * Defines the base attribute set for type T.
     */
   val baseAttrs: Map[String, String] = Map()
-
-  /**
-    * Render an instance of T as a U.
-    * This signature does not support the specification of attributes.
-    *
-    * @param t the input parameter, i.e. the object to be rendered.
-    * @return a new instance of U.
-    */
-  def render(t: T): Node = render(t, Map())
 
   /**
     * Render an instance of T as a U.
@@ -44,7 +36,7 @@ trait HierarchicalRenderer[T] {
     * @param attrs a map of attributes for this value of U.
     * @return a new instance of U.
     */
-  def render(t: T, attrs: Map[String, String]): Node = Node(style, Some(asString(t)), baseAttrs ++ attrs)
+  def render(t: T, attrs: Map[String, String]): Node
 
   /**
     * Method to render content as a String.
@@ -64,16 +56,25 @@ trait HierarchicalRenderer[T] {
   *
   * @tparam T the type of object to be rendered.
   */
-@implicitNotFound(msg = "Cannot find an implicit instance of StringRenderer[${T}].")
-trait StringRenderer[T] {
+@implicitNotFound(msg = "Cannot find an implicit instance of Renderer[${T}].")
+trait Renderer[T, O] {
 
   /**
-    * TODO introduce Writable for String
+    * Render an instance of T as an O, qualifying the rendering with no attributes.
     *
-    * @param r a Renderable object to render
-    * @return
+    * @param t a T to be rendered.
+    * @return an instance of type O.
     */
-  def render(r: Renderable[T]): String
+  def render(t: T): O = render(t, Map())
+
+  /**
+    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
+    *
+    * @param t     the input parameter, i.e. the T object to render.
+    * @param attrs a map of attributes for this value of O.
+    * @return an instance of type O.
+    */
+  def render(t: T, attrs: Map[String, String]): O
 }
 
 /**
@@ -83,9 +84,29 @@ trait StringRenderer[T] {
   */
 trait UntaggedHierarchicalRenderer[T] extends HierarchicalRenderer[T] {
   val style: String = ""
+
+  /**
+    * Render an instance of T as a U.
+    *
+    * @param t     the input parameter, i.e. the object to be rendered.
+    * @param attrs a map of attributes for this value of U.
+    * @return a new instance of U.
+    */
+  def render(t: T, attrs: Map[String, String]): Node = Node(style, Some(asString(t)), baseAttrs ++ attrs)
+
 }
 
-abstract class TaggedHierarchicalRenderer[T](val style: String, override val baseAttrs: Map[String, String] = Map()) extends HierarchicalRenderer[T]
+abstract class TaggedHierarchicalRenderer[T](val style: String, override val baseAttrs: Map[String, String] = Map()) extends HierarchicalRenderer[T] {
+
+  /**
+    * Render an instance of T as a U.
+    *
+    * @param t     the input parameter, i.e. the object to be rendered.
+    * @param attrs a map of attributes for this value of U.
+    * @return a new instance of U.
+    */
+  def render(t: T, attrs: Map[String, String]): Node = Node(style, Some(asString(t)), baseAttrs ++ attrs)
+}
 
 abstract class ProductHierarchicalRenderer[T <: Product : ClassTag](val style: String, override val baseAttrs: Map[String, String] = Map()) extends HierarchicalRenderer[T] {
   override def render(t: T, attrs: Map[String, String]): Node = Node(style, attrs, nodes(t))

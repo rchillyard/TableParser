@@ -230,15 +230,15 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       override def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
     }
 
-    implicit object DummyStringRenderer$ extends StringRenderer[IntPair] {
-      def render(r: Renderable[IntPair]): String = r match {
+    implicit object DummyRenderer$$ extends Renderer[Table[IntPair], String] {
+      def render(t: Table[IntPair], attrs: Map[String, String]): String = t match {
         case t: BaseTable[_] => t.render(StringBuilderWritable).toString
         case _ => throw TableException("render problem")
       }
     }
 
     val sy = iIty map {
-      case r: Renderable[_] => r.render
+      case r: Table[IntPair] => implicitly[Renderer[Table[IntPair], String]].render(r)
       case _ => fail("cannot render table")
     }
     sy should matchPattern { case Success(_) => }

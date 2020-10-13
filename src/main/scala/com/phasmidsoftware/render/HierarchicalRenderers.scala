@@ -51,8 +51,16 @@ trait HierarchicalRenderers {
     * @param attrs the attributes.
     * @return a HierarchicalRenderer[ Seq[String] ]
     */
-  def headerRenderer(style: String, attrs: Map[String, String] = Map(), sequenced: Boolean)(stringRenderer: HierarchicalRenderer[String]): HierarchicalRenderer[Header] = new TaggedHierarchicalRenderer[Header](style, attrs) {
-    override def render(h: Header, attrs: Map[String, String]): Node = Node(style, attrs, headerElements(h).map((t: String) => stringRenderer.render(t)))
+  def headerRenderer(style: String, attrs: Map[String, String] = Map(), sequenced: Boolean)(renderer: HierarchicalRenderer[String]): HierarchicalRenderer[Header] = new TaggedHierarchicalRenderer[Header](style, attrs) {
+
+    /**
+      * CONSIDER should we define a different sub-class of HierarchicalRenderer for this case?
+      *
+      * @param h     the Header.
+      * @param attrs a map of attributes for this kind of output.
+      * @return an instance of type String.
+      */
+    override def render(h: Header, attrs: Map[String, String]): Node = Node(style, attrs, headerElements(h).map((t: String) => renderer.render(t)))
 
     private def headerElements(h: Header): Seq[String] = {
       if (sequenced) "" +: h.xs

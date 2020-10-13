@@ -6,20 +6,20 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import spray.json._
 
-import scala.util.Success
+import scala.util.{Success, Try}
 
-class JsonRendererSpec extends AnyFlatSpec with should.Matchers {
+class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
 
-  implicit object PartnershipRenderer extends JsonRenderer[Partnership]
+  implicit object PartnershipTableRenderer$ extends JsonTableRenderer[Partnership]
 
-  implicit object TableReader extends TableJsonFormat[Partnership]
-
-  behavior of "JsonRenderer"
+  behavior of "JsonTableRenderer"
 
   it should "render Partnership table" in {
     val strings = List("First, Last", "Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
-    val wy = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).render
+    val z: Renderer[Table[Partnership], String] = implicitly[Renderer[Table[Partnership], String]]
+    val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings)) yield z.render(Player.convertTable(pt))
     wy should matchPattern { case Success("{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}") => }
+    implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}
     wy.map(p => p.parseJson.convertTo[Table[Partnership]]) should matchPattern { case Success(HeadedTable(_, _)) => }
   }
 
@@ -27,8 +27,10 @@ class JsonRendererSpec extends AnyFlatSpec with should.Matchers {
     def nickname: String = s"$first ${last.head}"
   }
 
-  object Player extends TableParserHelper[Player]() {
+  object Player extends TableParserHelper[Player]() with DefaultJsonProtocol {
     def cellParser: CellParser[Player] = cellParser2(apply)
+
+    implicit val playerFormat: RootJsonFormat[Player] = jsonFormat2(apply)
 
     /**
       * Method to transform a Table[Player] into a Table[Partnership].

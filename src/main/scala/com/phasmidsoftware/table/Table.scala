@@ -22,7 +22,7 @@ import scala.util.{Failure, Try}
   *
   * @tparam Row the type of each row.
   */
-trait Table[Row] extends Iterable[Row] with Renderable[Row] {
+trait Table[Row] extends Iterable[Row] {
 
   /**
     * Optional value of the Header of this Table, if there is one.
@@ -544,8 +544,6 @@ object Header {
 
 /**
   * CONSIDER eliminating this base class
-  *
-  * CONSIDER promoting render, etc. methods to Renderable.
   *
   * @param rows        the rows of the table
   * @param maybeHeader (optional) header
