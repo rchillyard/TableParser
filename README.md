@@ -29,7 +29,7 @@ together with something like, for instance, a Json writer.
 Quick Intro
 ===========
 
-This library contains an application CsvToJSON which takes a CSV file, parses it, transforms the data,
+This library contains an application Pairings which takes a CSV file, parses it, transforms the data,
 and outputs a JSON file.
 The minimum code necessary to read parse the CSV file as a table of "Player"s, using as many defaults as possible is:
 
@@ -285,44 +285,41 @@ The other case classes look like this:
 The _MovieParser_ object looks like this:
 
     object MovieParser extends CellParsers {
-      def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
-      implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelCaseColumnNameMapper _,
-        "title" -> "movie_title",
-        "imdb" -> "movie_imdb_link")
-      implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelCaseColumnNameMapper _,
-        "facebookLikes" -> "movie_facebook_likes",
-        "numUsersReview" -> "num_user_for_reviews",
-        "numUsersVoted" -> "num_voted_users",
-        "numCriticReviews" -> "num_critic_for_reviews",
-        "totalFacebookLikes" -> "cast_total_facebook_likes")
-      implicit val ratingColumnHelper: ColumnHelper[Rating] = columnHelper()
-      implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelCaseColumnNameMapper _)
-      implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
-      implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
-      implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
-      implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
-      implicit val formatParser: CellParser[Format] = cellParser4(Format)
-      implicit val productionParser: CellParser[Production] = cellParser4(Production)
-      implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
-      implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
-      implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
-      implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
-      implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
-      implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
-      implicit object MovieConfig extends DefaultRowConfig {
-        override val string: Regex = """[^,]*""".r
-        override val delimiter: Regex = """,""".r
-        override val listEnclosure: String = ""
-      }
-      implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
-      implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
-        type Row = Movie
-        def hasHeader: Boolean = true
-        override def forgiving: Boolean = true
-        def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-        override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
-      }
+        def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+        implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelCaseColumnNameMapper _,
+            "title" -> "movie_title",
+            "imdb" -> "movie_imdb_link")
+        implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelCaseColumnNameMapper _,
+            "facebookLikes" -> "movie_facebook_likes",
+            "numUsersReview" -> "num_user_for_reviews",
+            "numUsersVoted" -> "num_voted_users",
+            "numCriticReviews" -> "num_critic_for_reviews",
+            "totalFacebookLikes" -> "cast_total_facebook_likes")
+        implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelCaseColumnNameMapper _)
+        implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
+        implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
+        implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
+        implicit val formatParser: CellParser[Format] = cellParser4(Format)
+        implicit val productionParser: CellParser[Production] = cellParser4(Production)
+        implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
+        implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
+        implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
+        implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
+        implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
+        implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
+        implicit object MovieConfig extends DefaultRowConfig {
+            override val string: Regex = """[^,]*""".r
+            override val delimiter: Regex = """,""".r
+            override val listEnclosure: String = ""
+        }
+        implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
+        implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+            type Row = Movie
+            val maybeFixedHeader: Option[Header] = None
+            override val forgiving: Boolean = true
+            val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+            protected def builder(rows: Iterator[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
+        }
     }
 
 In this code,
@@ -371,21 +368,20 @@ The example comes from a report on the submissions to a Scala exam. Only one que
       case class Submission(username: String, last_name: String, first_name: String, questions: Seq[Question])
       object Submissions extends CellParsers {
         def baseColumnNameMapper(w: String): String = w.replaceAll("(_)", " ")
-        implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(baseColumnNameMapper _)
-        implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"))
+        implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace _, Some("$c $x"))
+        implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"), "questionId" -> "question_ID")
         implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
         implicit val questionParser: CellParser[Question] = cellParser6(Question)
         implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
         implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
         implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
         implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
-          type Row = Submission
-          def hasHeader: Boolean = true
-          override def forgiving: Boolean = false
-          def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
-          def builder(rows: Seq[Row]): Table[Submission] = TableWithoutHeader(rows)
+            type Row = Submission
+            val maybeFixedHeader: Option[Header] = None
+            protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+            override val forgiving: Boolean = false
+            val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
         }
-      }
       val rows: Seq[Seq[String]] = Seq(
           Seq("Username", "Last Name", "First Name", "Question ID 1", "Question 1", "Answer 1", "Possible Points 1", "Auto Score 1", "Manual Score 1"),
           Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
@@ -439,10 +435,10 @@ If you need to change the order of the rows, you will need to override the _writ
 A type class called _TreeWriter_ is the main type for hierarchical rendering.
 One of the instance methods of _Table\[Row]_ is a method as follows:
 
-    def render\[U: TreeWriter](style: String)(implicit rr: HierarchicalRenderer[Row]): U
+    def renderHierarchical\[U: TreeWriter](style: String)(implicit rr: HierarchicalRenderer[Row]): U
     
 Providing that you have defined an implicit object of type _TreeWriter\[U]_ and a _HierarchicalRenderer\[Row]_,
-then the _render_ method will produce an instance of _U_ which will be a tree containing all the rows of this table.
+then the _renderHierarchical_ method will produce an instance of _U_ which will be a tree containing all the rows of this table.
 
 What sort of type is _U_?
 An XML node would be appropriate.
@@ -471,8 +467,8 @@ Then, we should define appropriate renderers along the following likes:
 
 We can then write something like:
 
-	val table = TableWithoutHeader(Seq(Complex(0, 1), Complex(-1, 0)))
-	val h = table.render("table", Map("border"->"1"))
+	val table = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header.create("r", "i"))
+	val h = table.renderHierarchical("table", Map("border" -> "1"))
 	 
 The result of this will be an HTML tree which can be written out thus as a string:
 	 
@@ -497,7 +493,7 @@ The implemented Json reader/writer is Spray Json but that could easily be change
 Although this section is concerned with rendering, it is also true of course to say that tables can be read from Json strings.
 
 The following example from _JsonRendererSpec.scala_ shows how we can take the following steps
-(note that the definition of Player is mentioned elsewhere):
+(for the definitions of Player, Partnerhip, please see the spec file itself):
 * read a table of players from a list of Strings (there are, as shown above, other signatures of parse for files, URLs, etc.);
 * convert to a table of partnerships;
 * write the resulting table to a Json string;
@@ -507,7 +503,6 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
     val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).asInstanceOf[Renderable[Partnership]].render
-    val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings)) yield z.render(Player.convertTable(pt))
     wy should matchPattern { case Success("{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}") => }
     implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}
     wy.map(p => p.parseJson.convertTo[Table[Partnership]]) should matchPattern { case Success(HeadedTable(_, _)) => }
