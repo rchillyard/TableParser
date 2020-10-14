@@ -19,7 +19,7 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "indexFound" in {
     indexFound("junk", 0) shouldBe Success(0)
-    indexFound("junk", -1) should matchPattern { case Failure(TableParserException("Header column junk not found", null)) => }
+    indexFound("junk", -1) should matchPattern { case Failure(FPException("Header column junk not found", None)) => }
   }
 
   it should "getURLForResource" in {
@@ -30,7 +30,7 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "sequence" in {
     val try1 = Success(1)
     val try2 = Success(2)
-    val try3 = Failure(TableParserException(""))
+    val try3 = Failure(FPException(""))
     sequence(Seq(try1, try2)) shouldBe Success(Seq(1, 2))
     sequence(Seq(try1, try3)) should matchPattern { case Failure(_) => }
   }

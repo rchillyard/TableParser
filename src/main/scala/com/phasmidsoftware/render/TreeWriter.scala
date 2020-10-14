@@ -48,7 +48,7 @@ case class Node(style: String, content: Option[String], attributes: Map[String, 
     *
     * @return a subtree rooted at this, but with nodes trimmed.
     */
-  def trim: Node = this match {
+  lazy val trim: Node = this match {
     case Node(s, wo, kVm, ns) => Node(s, wo, kVm, for (n <- ns; x <- doTrim(n)) yield x)
   }
 

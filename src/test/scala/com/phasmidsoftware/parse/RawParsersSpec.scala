@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.table.{RawTable, Table, TableWithHeader}
+import com.phasmidsoftware.table.{HeadedTable, RawTable, Table}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
@@ -23,7 +23,7 @@ class RawParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val mty: Try[RawTable] = Table.parse(rows)
-    mty should matchPattern { case Success(TableWithHeader(_, _)) => }
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
     val stringSeqTable: RawTable = mty.get
     stringSeqTable.size shouldBe 1
     stringSeqTable.head(1) shouldBe "Doug Walker"

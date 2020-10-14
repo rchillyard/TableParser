@@ -154,11 +154,11 @@ object MovieParser extends CellParsers {
 
     val maybeFixedHeader: Option[Header] = None
 
-    override def forgiving: Boolean = true
+    override val forgiving: Boolean = true
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    def builder(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
+    protected def builder(rows: Iterator[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
   }
 
 }

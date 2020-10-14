@@ -32,7 +32,7 @@ trait CellParsers {
     def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = {
       def getTryP(i: Int) = implicitly[CellParser[P]].parse(Some(s"$i"), row, columns)
 
-      FP.sequence(LazyList.from(start).map(getTryP).takeWhile(_.isSuccess).toList)
+      FP.sequence(LazyList.from(start).map(getTryP).takeWhile(_.isSuccess))
     }
   }
 
@@ -81,7 +81,7 @@ trait CellParsers {
     *
     * @return a SingleCellParser[Option[String]
     */
-  def cellParserOptionNonEmptyString: CellParser[Option[String]] = new SingleCellParser[Option[String]] {
+  lazy val cellParserOptionNonEmptyString: CellParser[Option[String]] = new SingleCellParser[Option[String]] {
     override def toString: String = s"cellParserOptionNonEmptyString"
 
     private val cp: CellParser[String] = new CellParser[String]() {
@@ -495,7 +495,7 @@ trait CellParsers {
           case _ => Failure(ParseLogicException("no field names"))
         }
     }
-    }
+  }
 
 
   /**

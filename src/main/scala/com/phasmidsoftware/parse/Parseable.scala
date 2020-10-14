@@ -208,6 +208,7 @@ object ParseableOption {
 
   implicit object ParseableOptionString extends ParseableOption[String]
 
+  // TEST most of these
   implicit object ParseableOptionBoolean extends ParseableOption[Boolean]
 
   implicit object ParseableOptionByte extends ParseableOption[Byte]
@@ -240,11 +241,11 @@ object ParseableOption {
   */
 class ListParser() extends JavaTokenParsers {
 
-  def list: Parser[StringList] = "{" ~> strings <~ "}" | singleton
+  lazy val list: Parser[StringList] = "{" ~> strings <~ "}" | singleton
 
-  def strings: Parser[StringList] = repsep("""[^,}]+""".r, ",")
+  lazy val strings: Parser[StringList] = repsep("""[^,}]+""".r, ",")
 
-  def singleton: Parser[StringList] = """\w*""".r ^^ { w: String => List(w) }
+  lazy val singleton: Parser[StringList] = """\w*""".r ^^ { w: String => List(w) }
 }
 
 case class ParseLogicException(msg: String, e: Throwable = null) extends Exception(msg, e)

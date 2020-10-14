@@ -5,7 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.ParserException
-import com.phasmidsoftware.util.TableParserException
+import com.phasmidsoftware.util.FPException
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
@@ -38,8 +38,8 @@ class RowSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "fail apply(String) when appropriate" in {
     val f: String => Try[String] = Row(Seq("1", "2", "Junk"), Header(Seq("A", "B", "c")))
-    an[TableParserException] should be thrownBy f("x").get
-    the[TableParserException] thrownBy f("x").get should have message "Header column x not found"
+    an[FPException] should be thrownBy f("x").get
+    the[FPException] thrownBy f("x").get should have message "Header column x not found"
   }
 
 }

@@ -4,6 +4,8 @@
 
 package com.phasmidsoftware.parse
 
+import org.slf4j.{Logger, LoggerFactory}
+
 import scala.annotation.tailrec
 import scala.util.Try
 import scala.util.matching.Regex
@@ -24,7 +26,7 @@ import scala.util.parsing.combinator.JavaTokenParsers
   */
 class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char, verbose: Boolean = false) extends JavaTokenParsers {
 
-  if (verbose) println(s"delimiter: '${delimiter.regex}', string: '${string.regex}', enclosures: '$enclosures', quote: '$quote', listSeparator: '$listSeparator', ")
+  if (verbose) LineParser.logger.info(s"delimiter: '${delimiter.regex}', string: '${string.regex}', enclosures: '$enclosures', quote: '$quote', listSeparator: '$listSeparator', ")
   runChecks()
 
   override def skipWhitespace: Boolean = false
@@ -35,33 +37,33 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
     case Error(x, _) => scala.util.Failure(formException(w, x))
   }
 
-  def row: Parser[Strings] = rep1sep(cell, delimiter)
+  lazy val row: Parser[Strings] = rep1sep(cell, delimiter)
 
-  def cell: Parser[String] = quotedString | list | string | failure("invalid string")
+  lazy val cell: Parser[String] = quotedString | list | string | failure("invalid string")
 
-  def quotedString: Parser[String] = quotedStringWithQuotes | pureQuotedString
+  lazy val quotedString: Parser[String] = quotedStringWithQuotes | pureQuotedString
 
-  def pureQuotedString: Parser[String] = quote ~> stringInQuotes <~ quote
+  lazy val pureQuotedString: Parser[String] = quote ~> stringInQuotes <~ quote
 
-  def stringInQuotes: Parser[String] = s"""[^$quote]*""".r
+  lazy val stringInQuotes: Parser[String] = s"""[^$quote]*""".r
 
-  def quotedStringWithQuotes: Parser[String] = quotedStringWithQuotesAsList ^^ (ws => ws.mkString(s"$quote"))
+  lazy val quotedStringWithQuotes: Parser[String] = quotedStringWithQuotesAsList ^^ (ws => ws.mkString(s"$quote"))
 
-  def quotedStringWithQuotesAsList: Parser[Seq[String]] = quote ~> repsep(stringInQuotes, s"$quote$quote") <~ quote
+  lazy val quotedStringWithQuotesAsList: Parser[Seq[String]] = quote ~> repsep(stringInQuotes, s"$quote$quote") <~ quote
 
-  def list: Parser[String] = getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
+  lazy val list: Parser[String] = getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
 
-  private def component: Parser[String] = s"""[^,$listSeparator}]+""".r
+  private lazy val component: Parser[String] = s"""[^,$listSeparator}]+""".r
 
-  private def getOpenChar: Parser[String] = s"${enclosures.headOption.getOrElse("")}"
+  private lazy val getOpenChar: Parser[String] = s"${enclosures.headOption.getOrElse("")}"
 
-  private def getCloseChar: Parser[String] = s"${enclosures.lastOption.getOrElse("")}"
+  private lazy val getCloseChar: Parser[String] = s"${enclosures.lastOption.getOrElse("")}"
 
   private def formException(row: String, x: String) = ParserException(s"Cannot parse row '$row' due to: $x")
 
   override def toString: String = s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 
-  private def getDelimiterChar: Char = {
+  private lazy val getDelimiterChar: Char = {
     @tailrec
     def inner(w: Seq[Char], escaped: Boolean): Char =
       w match {
@@ -97,7 +99,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
     implicit class Trial(x: Try[Unit]) {
       def squawk(): Unit = x match {
-        case scala.util.Failure(z) => System.err.println(z)
+        case scala.util.Failure(z) => LineParser.logger.warn(s"squawk: $z")
         case _ =>
       }
 
@@ -116,10 +118,11 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
 object LineParser {
   def apply(implicit c: RowConfig): LineParser = {
-    // TODO should be logged.
-    //		println(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
+    LineParser.logger.info(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
     new LineParser(c.delimiter, c.string, c.listEnclosure, c.listSep, c.quote)
   }
+
+  val logger: Logger = LoggerFactory.getLogger(LineParser.getClass)
 }
 
 case class ParserException(msg: String, e: Throwable = null) extends Exception(msg, e)

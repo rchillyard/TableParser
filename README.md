@@ -35,19 +35,16 @@ The minimum code necessary to read parse the CSV file as a table of "Player"s, u
 
     case class Player(first: String, last: String)
 
-    object Player extends CellParsers {
-      implicit val playerParser: CellParser[Player] = cellParser2(Player.apply)
+    object Player extends TableParserHelper[Player]() {
+      def cellParser: CellParser[Player] = cellParser2(apply)
     }
 
-    def parsePlayerTable(inputFile: String): Try[Table[Player]] = {
-        implicit val ptt: TableParser[Table[Player]] = StringTableParserWithHeader[Player]()
-        Table.parseFile[Table[Player]](inputFile)
-    }
+    val pty: Try[Table[Player]] = Table.parseFile[Table[Player]]("players.csv")
 
-This assumes that the source input contains a header row which includes column names corresponding to the parameters
+This assumes that the source input file ("players.csv") contains a header row which includes column names corresponding to the parameters
 of the case class _Player_ (in this case "first" and "last").
 
-The input file looks like this:
+The input file looks something like this (the first and last columns are required, others are ignored):
 
     Id,First,Last,
     1,Adam,Sullivan,
@@ -173,6 +170,16 @@ _rowParser_ is the specific parser for the _Row_ type (see below).
 _builder_ is used by the _parse_ method.
 _parse_ is the main method of _TableParser_ and takes a _Seq[String]_ and yields a _Try[Table]_.
 
+Associated with _TableParser_ is an abstract class called _TableParserHelper_ whose purpose is to make your coding job easier.
+_TableParserHelper_ is designed to be extended (i.e. sub-classed) by the companion object of the case class that you
+wish to parse from a row of your input.
+Doing it this way makes it easier for the implicit TableParser instance to be found.
+You can also set up your application along the lines of the examples below, such as the Movie example.
+
+The constructor for _TableParserHelper_ takes two parameters, both of which can be defaulted:
+* sourceHasHeaderRow: Boolean = true
+* forgiving: Boolean = false
+
 ## RowParser
 
 _RowParser_ is a trait which defines how a line of text is to be parsed as a _Row_.
@@ -233,6 +240,17 @@ to the value in another (key) column: _cellParser2Conditional_.
 In this case, you must supply a _Map_ which specifies which parser is to be used for each possible value of the key column.
 If the value in that column is not one of the keys of the map, an exception will be thrown.
 For an example of this, please see the example in _CellParsersSpec_ ("conditionally parse").
+
+## Caveats
+
+A case class which represents a row (or part of a row) of the table you want to create from parsing,
+or which you want to render must abide by certain rules:
+* There should not be any fields defined in the body of the case class.
+So, no <i>val, var</i> or <i>lazy val</i>.
+Instead, any behavior you want to add to the class, beyond the parameters (fields) of the class,
+must be defined using _def_.
+
+
 
 ## Example: Movie
 
@@ -421,9 +439,9 @@ If you need to change the order of the rows, you will need to override the _writ
 A type class called _TreeWriter_ is the main type for rendering.
 One of the instance methods of _Table[Row]_ is a method as follows:
 
-    def render[U: TreeWriter](style: String)(implicit rr: Renderer[Row]): U
+    def render[U: TreeWriter](style: String)(implicit rr: HierarchicalRenderer[Row]): U
     
-Providing that you have defined an implicit object of type _TreeWriter[U]_ and a _Renderer[Row]_,
+Providing that you have defined an implicit object of type _TreeWriter[U]_ and a _HierarchicalRenderer[Row]_,
 then the _render_ method will produce an instance of _U_ which will be a tree containing all the rows of this table.
 
 What sort of type is _U_?
@@ -448,8 +466,8 @@ If we have a row type as for example:
 	
 Then, we should define appropriate renderers along the following likes:
 
-	implicit val valueRenderer: Renderer[Double] = renderer("td")
-	implicit val complexRenderer: Renderer[Complex] = renderer2("tr")(Complex)
+	implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")
+	implicit val complexRenderer: HierarchicalRenderer[Complex] = renderer2("tr")(Complex)
 
 We can then write something like:
 
@@ -472,6 +490,17 @@ If you need to set HTML attributes for a specific type, for example a row in the
 
 Release Notes
 =============
+
+V1.0.10 -> V1.0.11
+* introduction of logging;
+* introduction of JSON (spray) for read/write of Table;
+* Table now supports Iterable=>Iterable methods.
+* renaming of Renderer to HierarchicalRenderer and introduction of StringRenderer
+* introduction of TableParserHelper;
+* renamed TableWithoutHeader as UnheadedTable and TableWithHeader as HeadedTable;
+* added various methods, inc. replaceHeader, to Table.
+* Table parsing is now based on Iterator rather than Iterable.
+* Table rows are now based on Vector (at least for the standard TableWithHeader)
 
 V1.0.9 -> V1.0.10
 * build.sbt: changed scalaVersion to 2.13.3

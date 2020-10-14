@@ -14,7 +14,7 @@ case class RawTableTransformation(transformers: Map[String, Transformation[Strin
     t.map[RawRow](RawRowTransformation(xm))
   }
 
-//  def map[Z](f: RawTable => Z): Transformation[RawTable, Z] = f compose apply
+  //  def map[Z](f: RawTable => Z): Transformation[RawTable, Z] = f compose apply
 }
 
 /**
