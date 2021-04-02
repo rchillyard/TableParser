@@ -93,6 +93,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   private def runChecks(): Unit = {
     def check[X](parser: Parser[X], input: String, matchedValue: X) = Try(parseAll(parser, input) match {
       case Success(`matchedValue`, _) =>
+      case Success(z, _) => throw ParserException(s"Warning: (LineParser constructor validity check): '$input' did not result in $matchedValue but instead matched: $z")
       case Failure(z, _) => throw ParserException(s"Warning: (LineParser constructor validity check): '$input' did not result in $matchedValue because: $z")
       case Error(z, _) => throw ParserException(s"Warning: (LineParser constructor validity check): '$input' did not result in $matchedValue because: $z")
     })
