@@ -1,10 +1,10 @@
 package com.phasmidsoftware.table
 
-import org.scalatest.{flatspec, matchers}
-
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.util._
 
-class MovieFuncSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
+class MovieFuncSpec extends AnyFlatSpec with Matchers {
 
   behavior of "Movie table"
 
@@ -16,12 +16,13 @@ class MovieFuncSpec extends flatspec.AnyFlatSpec with matchers.should.Matchers {
   it should "be ingested properly" in {
     import MovieParser._
 
-    val x: Try[Table[Movie]] = Table.parseResource("movie_metadata.csv")
-    x should matchPattern { case Success(HeadedTable(_, _)) => }
-    val mt = x.get
-    println(s"Movie: successfully read ${mt.size} rows")
-    mt.size shouldBe 1567
-    mt take 10 foreach println
+    val mty: Try[Table[Movie]] = Table.parseResource("movie_metadata.csv")
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    for (mt <- mty) {
+      println(s"Movie: successfully read ${mt.size} rows")
+      mt.size shouldBe 1567
+      mt take 10 foreach println
+    }
   }
 
 }

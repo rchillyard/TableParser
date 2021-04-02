@@ -18,7 +18,7 @@ import scala.reflect.ClassTag
   * @tparam T the type of object to be rendered.
   * @tparam O the type of the serialization result.
   */
-@implicitNotFound(msg = "Cannot find an implicit instance of Renderer[${T}].")
+@implicitNotFound(msg = "Cannot find an implicit instance of Renderer[${T},{O}].")
 trait Renderer[T, O] {
 
   /**
