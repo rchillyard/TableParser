@@ -528,9 +528,9 @@ trait CellParsers {
     * @return a new instance of ColumnHelper[T]
     */
   def columnHelper[T](columnNameMapper: String => String, maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = new ColumnHelper[T] {
-    override val maybePrefix_ : Option[String] = maybePrefix
-    override val aliases_ : Seq[(String, String)] = aliases
-    override val columnNameMapper_ : String => String = columnNameMapper
+    val maybePrefix_ : Option[String] = maybePrefix
+    val aliases_ : Seq[(String, String)] = aliases
+    val columnNameMapper_ : String => String = columnNameMapper
   }
 
   /**

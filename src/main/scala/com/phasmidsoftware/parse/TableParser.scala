@@ -250,4 +250,4 @@ abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true
   implicit val ptp: TableParser[Table[X]] = if (sourceHasHeaderRow) HeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)
 }
 
-case class TableParserException(msg: String, e: Option[Throwable] = None) extends Exception(msg, e.getOrElse(null))
+case class TableParserException(msg: String, e: Option[Throwable] = None) extends Exception(msg, e.orNull)

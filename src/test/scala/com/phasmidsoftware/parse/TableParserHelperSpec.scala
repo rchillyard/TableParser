@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.render.{Renderable, StringRenderer}
+import com.phasmidsoftware.render.{JsonTableRenderer, Renderer}
 import com.phasmidsoftware.table._
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -39,10 +39,12 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   case class Partnership(playerA: String, playerB: String) {
-    val asArray: Array[String] = Array(playerA, playerB)
+    def asArray: Array[String] = Array(playerA, playerB)
   }
 
-  object Partnership {
+  object Partnership extends DefaultJsonProtocol {
+    implicit val partnershipFormat: RootJsonFormat[Partnership] = jsonFormat2(apply)
+
     def apply(players: Iterable[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
   }
 
@@ -69,7 +71,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
 
   it should "support fixed header" in {
-    val strings = List("Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
     val tsy: Try[Table[Partnership]] = for (pt <- pty) yield Player.convertTable(pt)
     val sy: Try[Partnerships] = for (ts <- tsy) yield Partnerships((for (t <- ts) yield t.asArray).toArray)
@@ -81,19 +83,11 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "support fixed header and write to Json" in {
-
-    trait JsonRenderer[T] extends StringRenderer[T]
-    implicit object JsonRendererPartnerships extends JsonRenderer[Partnership] {
-      def render(r: Renderable[Partnership]): String = r match {
-        case zt: Table[Partnership] =>
-          Partnerships((for (z <- zt) yield z.asArray).toArray).prettyPrint
-        case _ => throw TableException("render problem")
-      }
-    }
-    val strings = List("Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
     val zty: Try[Table[Partnership]] = for (pt <- pty) yield Player.convertTable(pt)
-    val wy: Try[String] = for (zt <- zty) yield zt.render
+    implicit val r: Renderer[Table[Partnership], String] = new JsonTableRenderer[Partnership] {}
+    val wy: Try[String] = for (zt <- zty) yield implicitly[Renderer[Table[Partnership], String]].render(zt)
 
     wy should matchPattern { case Success(_) => }
     wy foreach println

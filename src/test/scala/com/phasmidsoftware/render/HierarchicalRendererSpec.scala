@@ -107,14 +107,14 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   it should "render a table of Complexes in HTML without a header" in {
     import Complex1._
     val table = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header.create("r", "i"))
-    val h = table.render("table", Map("border" -> "1"))
+    val h = table.renderHierarchical("table", Map("border" -> "1"))
     h shouldBe """<table>: "" (border -> 1) [<thead>: "" () [<tr>: "" () [<th>: "r" () [] ,<th>: "i" () [] ] ] ,<tbody>: "" () [<complex>: "" () [<>: "0.0" (name -> r) [] ,<>: "1.0" (name -> i) [] ] ,<complex>: "" () [<>: "-1.0" (name -> r) [] ,<>: "0.0" (name -> i) [] ] ] ] """
   }
 
   it should "render a table of sequenced Complexes in HTML without a header" in {
     import Complex2._
     val table = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header.create("r", "i"))
-    val h = table.renderSequenced("table", Map("border" -> "1"))
+    val h = table.renderHierarchicalSequenced("table", Map("border" -> "1"))
     println(h.toString)
     h.toString shouldBe
       """
@@ -138,7 +138,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   it should "render a table of sequenced Complexes in HTML with a header" in {
     import Complex2._
     val table = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header(Seq("real", "imaginary")))
-    val h = table.renderSequenced("table", Map("border" -> "1"))
+    val h = table.renderHierarchicalSequenced("table", Map("border" -> "1"))
     h.toString shouldBe
       """
 <table border="1">

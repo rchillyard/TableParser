@@ -34,7 +34,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val intPairParser = new IntPairParser
 
     trait IntPairRowParser extends StringParser[IntPair] {
-      override def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
+      def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
         case intPairParser.Success((x: Int, y: Int), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse $w"))
       }
@@ -300,7 +300,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None // Some(header)
 
-      protected override def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
@@ -367,7 +367,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object SubmissionTableParser extends StringTableParser[Table[Submission]] {
       type Row = Submission
 
-      protected override def builder(rows: Iterator[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
 
       val maybeFixedHeader: Option[Header] = None // Some(header)
 
@@ -423,7 +423,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "support header defined in a header row in the input" in {
-    val strings = List("First, Last", "Adam,Sullivan", "Amy,Avergun", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
     val tsy: Try[Table[Partnership]] = for (pt <- pty) yield Player.convertTable(pt)
     val sy: Try[Partnerships] = for (ts <- tsy) yield Partnerships((for (t <- ts) yield t.asArray).toArray)

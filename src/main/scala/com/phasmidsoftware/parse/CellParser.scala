@@ -139,31 +139,31 @@ object CellParser {
   }
 
   implicit object LongCellParser$ extends SingleCellParser[Long] {
-    override def convertString(w: String): Try[Long] = implicitly[Parseable[Long]].parse(w)
+    def convertString(w: String): Try[Long] = implicitly[Parseable[Long]].parse(w)
 
     override def toString: String = "LongCellParser$"
   }
 
   implicit object BigIntCellParser$ extends SingleCellParser[BigInt] {
-    override def convertString(w: String): Try[BigInt] = implicitly[Parseable[BigInt]].parse(w)
+    def convertString(w: String): Try[BigInt] = implicitly[Parseable[BigInt]].parse(w)
 
     override def toString: String = "BigIntCellParser$"
   }
 
   implicit object FloatCellParser$ extends SingleCellParser[Float] {
-    override def convertString(w: String): Try[Float] = implicitly[Parseable[Float]].parse(w)
+    def convertString(w: String): Try[Float] = implicitly[Parseable[Float]].parse(w)
 
     override def toString: String = "FloatCellParser$"
   }
 
   implicit object DoubleCellParser$ extends SingleCellParser[Double] {
-    override def convertString(w: String): Try[Double] = implicitly[Parseable[Double]].parse(w)
+    def convertString(w: String): Try[Double] = implicitly[Parseable[Double]].parse(w)
 
     override def toString: String = "DoubleCellParser$"
   }
 
   implicit object BigDecimalCellParser$ extends SingleCellParser[BigDecimal] {
-    override def convertString(w: String): Try[BigDecimal] = implicitly[Parseable[BigDecimal]].parse(w)
+    def convertString(w: String): Try[BigDecimal] = implicitly[Parseable[BigDecimal]].parse(w)
 
     override def toString: String = "BigDecimalCellParser$"
   }
@@ -172,15 +172,15 @@ object CellParser {
     * This parser succeeds on empty strings.
     */
   implicit object StringCellParser$ extends SingleCellParser[String] {
-    override def convertString(w: String): Try[String] = Success(w)
+    def convertString(w: String): Try[String] = Success(w)
 
     override def toString: String = "StringCellParser$"
   }
 
   implicit object DateTimeParser$ extends SingleCellParser[LocalDate] {
-    override def toString: String = "DateTimeParser$"
+    def convertString(w: String): Try[LocalDate] = implicitly[Parseable[LocalDate]].parse(w)
 
-    override def convertString(w: String): Try[LocalDate] = implicitly[Parseable[LocalDate]].parse(w)
+    override def toString: String = "DateTimeParser$"
   }
 
   // TEST
@@ -192,14 +192,14 @@ object CellParser {
 
   // TEST
   implicit object FileParser$ extends SingleCellParser[File] {
-    override def convertString(w: String): Try[File] = implicitly[Parseable[File]].parse(w)
+    def convertString(w: String): Try[File] = implicitly[Parseable[File]].parse(w)
 
     override def toString: String = "FileParser$"
   }
 
   // TODO why do we have both OptionParser and ParseableOption?
   abstract class OptionParser[T: Parseable] extends SingleCellParser[Option[T]] {
-    override def convertString(w: String): Try[Option[T]] = implicitly[Parseable[T]].parse(w).map(Option(_)).recoverWith[Option[T]] {
+    def convertString(w: String): Try[Option[T]] = implicitly[Parseable[T]].parse(w).map(Option(_)).recoverWith[Option[T]] {
       case _: BlankException => Success(None)
     }
   }

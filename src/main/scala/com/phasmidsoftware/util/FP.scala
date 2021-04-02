@@ -70,4 +70,4 @@ object FP {
   //    try { Using.resource(resource)(f) } catch { case NonFatal(e) => Failure(e) }
 }
 
-case class FPException(msg: String, eo: Option[Throwable] = None) extends Exception(msg, eo.getOrElse(null))
+case class FPException(msg: String, eo: Option[Throwable] = None) extends Exception(msg, eo.orNull)

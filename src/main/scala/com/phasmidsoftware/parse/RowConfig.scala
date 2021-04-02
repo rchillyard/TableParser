@@ -41,11 +41,11 @@ trait DefaultRowConfig extends RowConfig {
   /**
     * the "listSep" character (see LineParser). defaults to "|"
     */
-  override val listSep: Char = '|'
+  val listSep: Char = '|'
   /**
     * the "listEnclosure" characters (see LineParser). defaults to "{}"
     */
-  override val listEnclosure: String = "{}"
+  val listEnclosure: String = "{}"
   /**
     * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
     */

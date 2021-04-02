@@ -25,9 +25,9 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       "Color,James Cameron,723,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,237000000,2009,936,7.9,1.78,33000"
     )
 
-    val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Success(HeadedTable(_, _)) => }
-    val mt = x.get
+    val mty: Try[Table[Movie]] = Table.parse(movies)
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    val mt: Table[Movie] = mty.get
     println(s"Movie: successfully parsed ${mt.size} rows")
     println(mt)
     mt.size shouldBe 1
