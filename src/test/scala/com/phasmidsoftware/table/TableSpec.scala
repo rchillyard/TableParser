@@ -276,12 +276,12 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "prepend" in {
-    val xs = Header.prepend("x", Header.alphabet.toStream).take(100).toList
+    val xs = Header.prepend("x", Header.alphabet.to(LazyList)).take(100).toList
     xs shouldBe Seq("xA", "xB", "xC", "xD", "xE", "xF", "xG", "xH", "xI", "xJ", "xK", "xL", "xM", "xN", "xO", "xP", "xQ", "xR", "xS", "xT", "xU", "xV", "xW", "xX", "xY", "xZ")
   }
 
   it should "multiply" in {
-    val xs = Header.multiply(List("A", "B"), Header.alphabet.toStream)
+    val xs = Header.multiply(List("A", "B"), Header.alphabet.to(LazyList))
     xs shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", "AW", "AX", "AY", "AZ", "BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", "BM", "BN", "BO", "BP", "BQ", "BR", "BS", "BT", "BU", "BV", "BW", "BX", "BY", "BZ")
   }
 
@@ -302,7 +302,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val rows = Seq(
       movieHeader,
-      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
     val mty: Try[RawTable] = Table.parse(rows)
@@ -322,7 +322,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val rows = Seq(
       movieHeader,
-      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
     val mty: Try[RawTable] = Table.parse(rows)

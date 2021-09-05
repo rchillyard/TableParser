@@ -42,7 +42,7 @@ trait Table[Row] extends Iterable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] where each row has value f(x) where x is the value of the corresponding row in this.
     */
-  def map[S](f: Row => S): Table[S] = unit(rows map f)
+  override def map[S](f: Row => S): Table[S] = unit(rows map f)
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].
@@ -193,7 +193,7 @@ trait Table[Row] extends Iterable[Row] {
     *
     * @return a Table[Row] without any rows.
     */
-  def empty: Table[Row] = unit(Seq.empty)
+  override def empty: Table[Row] = unit(Seq.empty)
 
   /**
     * Method to filter the rows of a table.
@@ -631,10 +631,10 @@ case class Header(xs: Seq[String]) {
 object Header {
 
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
-  lazy val numbers: Stream[Int] = Stream.from(1)
-  lazy val generateNumbers: Stream[String] = numbers map (_.toString)
-  //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
-  //  lazy val generateLetters: Stream[String] = recursiveLetters
+  lazy val numbers: LazyList[Int] = LazyList.from(1)
+  lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
+  //  lazy val recursiveLetters: LazyList[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
+  //  lazy val generateLetters: LazyList[String] = recursiveLetters
   val alphabet: List[String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray.map(_.toString).toList
 
   private def intToString(letters: Boolean)(n: Int): String = if (letters) {
@@ -654,17 +654,17 @@ object Header {
   }
   else n.toString
 
-  lazy val generateLetters: Stream[String] = numbers map intToString(letters = true)
+  lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
 
-  def multiply(prefixes: List[String], strings: Stream[String]): Stream[String] = {
+  def multiply(prefixes: List[String], strings: LazyList[String]): LazyList[String] = {
     prefixes collect {
       case "x" => "x"
     }
-    val wss: List[Stream[String]] = prefixes map (prepend(_, strings))
-    wss.foldLeft(Stream.empty[String])(_ #::: _)
+    val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
+    wss.foldLeft(LazyList.empty[String])(_ #::: _)
   }
 
-  def prepend(prefix: String, stream: Stream[String]): Stream[String] = stream map (prefix + _)
+  def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
 
   /**
     * This method constructs a new Header based on Excel row/column names.
