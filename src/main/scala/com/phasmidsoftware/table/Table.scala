@@ -22,7 +22,7 @@ import scala.util.{Failure, Try}
   *
   * @tparam Row the type of each row.
   */
-trait Table[Row] extends Iterable[Row] with Renderable[Row] {
+trait Table[Row] extends Iterable[Row] {
 
   /**
     * Optional value of the Header of this Table, if there is one.
@@ -48,6 +48,8 @@ trait Table[Row] extends Iterable[Row] with Renderable[Row] {
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].
+    *
+    * CONSIDER rewriting this method or redefining it as it can be a major source of inefficiency.
     *
     * @param f a function which transforms a Row into an IterableOnce[S].
     * @tparam S the type of the rows of the result.
@@ -453,6 +455,157 @@ object Table {
 }
 
 /**
+  * CONSIDER eliminating this base class
+  *
+  * @param rows        the rows of the table
+  * @param maybeHeader (optional) header
+  * @tparam Row the underlying type of each Row
+  */
+abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option[Header]) extends Table[Row] with Renderable[Row] {
+  self =>
+  /**
+    *
+    * @param ev implicit evidence for Renderer of Table of X.
+    * @tparam O the type of the result.
+    * @return an instance of O.
+    */
+  def render[O](implicit ev: Renderer[Table[Row], O]): O = ev.render(this)
+
+  /**
+    * CONSIDER redefining the definition of Renderer such that we can accommodate the various different types of output.
+    *
+    * Method to render a table in a sequential (serialized) fashion.
+    *
+    * @tparam O a type which supports Writable (via evidence of type Writable[O])
+    * @return a new (or possibly old) instance of O.
+    */
+  def RenderToWritable[O: Writable]: O = {
+    val ww = implicitly[Writable[O]]
+    val o1 = ww.unit
+    val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
+    rows map {
+      case p: Product => ww.writeRow(o2)(p)
+      case xs: Seq[Any] => ww.writeRowElements(o2)(xs)
+      case xs: Array[Any] => ww.writeRowElements(o2)(xs.toIndexedSeq)
+      case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
+    }
+    o1
+  }
+
+  /**
+    * Method to render a table in a hierarchical fashion.
+    *
+    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
+    * outputting each row as you go.
+    *
+    * @param style      the "style" to be used for the node which will represent this table.
+    * @param attributes the attributes to be applied to the top level node for this table.
+    * @param xr         an (implicit) HierarchicalRenderer[Row]
+    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
+    * @return a new instance of U which represents this Table as a tree of some sort.
+    */
+  def renderHierarchical[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit xr: HierarchicalRenderer[Row]): U = {
+    object TableRenderers extends HierarchicalRenderers {
+      val rowsRenderer: HierarchicalRenderer[Seq[Row]] = sequenceRenderer[Row]("tbody")
+      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
+      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
+    }
+    import TableRenderers._
+    val node: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
+    implicitly[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows.toSeq))))
+  }
+
+  /**
+    * Method to render a table in a hierarchical fashion.
+    *
+    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
+    * outputting each row as you go.
+    *
+    * @param style      the "style" to be used for the node which will represent this table.
+    * @param attributes the attributes to be applied to the top level node for this table.
+    * @param rr         an (implicit) HierarchicalRenderer[ Indexed [ Row ] ]
+    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
+    * @return a new instance of U which represents this Table as a tree of some sort.
+    */
+  def renderHierarchicalSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: HierarchicalRenderer[Indexed[Row]]): U = {
+    object TableRenderers extends HierarchicalRenderers {
+      val rowsRenderer: HierarchicalRenderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("tbody")
+      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
+      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
+    }
+    import TableRenderers._
+    val headerNode: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
+    val tableNode = Node(style, attributes, headerNode +: Seq(rowsRenderer.render(Indexed.index(rows))))
+    val trimmed = tableNode.trim
+    implicitly[TreeWriter[U]].evaluate(trimmed)
+  }
+}
+
+/**
+  * Concrete case class implementing RenderableTable without a Header.
+  *
+  * NOTE: the existence or not of a Header in a RenderableTable only affects how the table is rendered.
+  * The parsing of a table always has a header of some sort.
+  *
+  * TEST this: it is currently not used.
+  *
+  * @param rows the rows of the table.
+  * @tparam Row the underlying type of each Row
+  */
+case class UnheadedTable[Row](rows: Iterable[Row]) extends RenderableTable[Row](rows, None) {
+  /**
+    * Method to generate a Table[S] for a set of rows.
+    * Although declared as an instance method, this method produces its result independent of this.
+    *
+    * @param rows a sequence of S.
+    * @tparam S the underlying type of the rows and the result.
+    * @return a new instance of Table[S].
+    */
+  override def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+    case Some(h) => HeadedTable(rows, h)
+    case None => UnheadedTable(rows)
+  }
+}
+
+/**
+  * Concrete case class implementing RenderableTable with a Header.
+  * The unit and apply methods are such that rows is in fact an Array[Row].
+  *
+  * NOTE: the existence or not of a Header in a RenderableTable only affects how the table is rendered.
+  * The parsing of a table always has a header of some sort.
+  *
+  * @param rows   the rows of the table, stored as an Array.
+  * @param header the header.
+  * @tparam Row the underlying type of each Row
+  */
+case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends RenderableTable[Row](rows, Some(header)) {
+  /**
+    * Method to generate a Table[S] for a set of rows.
+    * Although declared as an instance method, this method produces its result independent of this.
+    *
+    * @param rows a sequence of S.
+    * @tparam S the underlying type of the rows and the result.
+    * @return a new instance of Table[S].
+    */
+  override def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+    case Some(h) => HeadedTable(rows, h)
+    case None => UnheadedTable(rows)
+  }
+}
+
+/**
+  * Companion object for HeadedTable.
+  * The apply methods provided arbitrarily use Vector as the collection for the rows of the table.
+  * CONSIDER using something else such as Array.
+  */
+object HeadedTable {
+  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.toVector, header)
+
+  def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = HeadedTable(rows, Header.apply[Row]())
+
+}
+
+/**
   * Case class to represent a header.
   *
   * @param xs the sequence of column names.
@@ -540,150 +693,6 @@ object Header {
     * @return a Header.
     */
   def create(ws: String*): Header = apply(ws)
-}
-
-/**
-  * CONSIDER eliminating this base class
-  *
-  * CONSIDER promoting render, etc. methods to Renderable.
-  *
-  * @param rows        the rows of the table
-  * @param maybeHeader (optional) header
-  * @tparam Row the underlying type of each Row
-  */
-abstract class BaseTable[Row](rows: Iterable[Row], val maybeHeader: Option[Header]) extends Table[Row] {
-  self =>
-
-  /**
-    * Method to render a table in a sequential (serialized) fashion.
-    *
-    * @tparam O a type which supports Writable (via evidence of type Writable[O])
-    * @return a new (or possibly old) instance of O.
-    */
-  def render[O: Writable]: O = {
-    val ww = implicitly[Writable[O]]
-    val o1 = ww.unit
-    val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
-    rows map {
-      case p: Product => ww.writeRow(o2)(p)
-      case xs: Seq[Any] => ww.writeRowElements(o2)(xs)
-      case xs: Array[Any] => ww.writeRowElements(o2)(xs.toIndexedSeq)
-      case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
-    }
-    o1
-  }
-
-  /**
-    * Method to render a table in a hierarchical fashion.
-    *
-    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
-    * outputting each row as you go.
-    *
-    * @param style      the "style" to be used for the node which will represent this table.
-    * @param attributes the attributes to be applied to the top level node for this table.
-    * @param rr         an (implicit) HierarchicalRenderer[Row]
-    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
-    * @return a new instance of U which represents this Table as a tree of some sort.
-    */
-  def render[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: HierarchicalRenderer[Row]): U = {
-    object TableRenderers extends HierarchicalRenderers {
-      val rowsRenderer: HierarchicalRenderer[Seq[Row]] = sequenceRenderer[Row]("tbody")
-      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
-      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
-    }
-    import TableRenderers._
-    val node: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
-    implicitly[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows.toSeq))))
-  }
-
-  /**
-    * Method to render a table in a hierarchical fashion.
-    *
-    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
-    * outputting each row as you go.
-    *
-    * @param style      the "style" to be used for the node which will represent this table.
-    * @param attributes the attributes to be applied to the top level node for this table.
-    * @param rr         an (implicit) HierarchicalRenderer[ Indexed [ Row ] ]
-    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
-    * @return a new instance of U which represents this Table as a tree of some sort.
-    */
-  def renderSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: HierarchicalRenderer[Indexed[Row]]): U = {
-    object TableRenderers extends HierarchicalRenderers {
-      val rowsRenderer: HierarchicalRenderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("tbody")
-      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
-      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
-    }
-    import TableRenderers._
-    val headerNode: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
-    val tableNode = Node(style, attributes, headerNode +: Seq(rowsRenderer.render(Indexed.index(rows))))
-    val trimmed = tableNode.trim
-    implicitly[TreeWriter[U]].evaluate(trimmed)
-  }
-}
-
-/**
-  * Concrete case class implementing BaseTable without a Header.
-  *
-  * NOTE: the existence or not of a Header in a BaseTable only affects how the table is rendered.
-  * The parsing of a table always has a header of some sort.
-  *
-  * TEST this: it is currently not used.
-  *
-  * @param rows the rows of the table.
-  * @tparam Row the underlying type of each Row
-  */
-case class UnheadedTable[Row](rows: Iterable[Row]) extends BaseTable[Row](rows, None) {
-  /**
-    * Method to generate a Table[S] for a set of rows.
-    * Although declared as an instance method, this method produces its result independent of this.
-    *
-    * @param rows a sequence of S.
-    * @tparam S the underlying type of the rows and the result.
-    * @return a new instance of Table[S].
-    */
-  override def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(rows, h)
-    case None => UnheadedTable(rows)
-  }
-}
-
-/**
-  * Concrete case class implementing BaseTable with a Header.
-  * The unit and apply methods are such that rows is in fact an Array[Row].
-  *
-  * NOTE: the existence or not of a Header in a BaseTable only affects how the table is rendered.
-  * The parsing of a table always has a header of some sort.
-  *
-  * @param rows   the rows of the table, stored as an Array.
-  * @param header the header.
-  * @tparam Row the underlying type of each Row
-  */
-case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends BaseTable[Row](rows, Some(header)) {
-  /**
-    * Method to generate a Table[S] for a set of rows.
-    * Although declared as an instance method, this method produces its result independent of this.
-    *
-    * @param rows a sequence of S.
-    * @tparam S the underlying type of the rows and the result.
-    * @return a new instance of Table[S].
-    */
-  override def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(rows, h)
-    case None => UnheadedTable(rows)
-  }
-}
-
-/**
-  * Companion object for HeadedTable.
-  * The apply methods provided arbitrarily use Vector as the collection for the rows of the table.
-  * CONSIDER using something else such as Array.
-  */
-object HeadedTable {
-  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.toVector, header)
-
-  def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = HeadedTable(rows, Header.apply[Row]())
-
 }
 
 /**

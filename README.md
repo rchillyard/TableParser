@@ -29,7 +29,7 @@ together with something like, for instance, a Json writer.
 Quick Intro
 ===========
 
-This library contains an application CsvToJSON which takes a CSV file, parses it, transforms the data,
+This library contains an application Pairings which takes a CSV file, parses it, transforms the data,
 and outputs a JSON file.
 The minimum code necessary to read parse the CSV file as a table of "Player"s, using as many defaults as possible is:
 
@@ -43,13 +43,14 @@ The minimum code necessary to read parse the CSV file as a table of "Player"s, u
 
 This assumes that the source input file ("players.csv") contains a header row which includes column names corresponding to the parameters
 of the case class _Player_ (in this case "first" and "last").
+If, for example, your CSV file does not have a header row, then you make a minor change to the line _object Player..._
 
 The input file looks something like this (the first and last columns are required, others are ignored):
 
     Id,First,Last,
     1,Adam,Sullivan,
-    2,Amy,Avergun,
-    3,Ann,Peterson,
+    2,Amy,Avagadro,
+    3,Annaa,Peterson,
 
 etc...
 
@@ -82,14 +83,14 @@ handle _12^h_ attributes altogether.
 The names of the parameters of a case class do not necessarily have to be the same as the column from which the value derives.
 The _ColumnHelper_ class is available to manage the mapping between parameters and columns.
 
-The result of parsing a table file (CSV, etc.) will be a _Table[Row]_, wrapped in _Try_.
-There are object methods to parse most forms of text: _File, Resource, InputStream, URL, Seq[String]_, etc. (see _Table_ below).
+The result of parsing a table file (CSV, etc.) will be a _Table\[Row]_, wrapped in _Try_.
+There are object methods to parse most forms of text: _File, Resource, InputStream, URL, Seq\[String]_, etc. (see _Table_ below).
 
-The parser responsible for parsing the contents of a cell is called _CellParser[T]_ where T is the type of the value in the cell in question.
+The parser responsible for parsing the contents of a cell is called _CellParser\[T]_ where T is the type of the value in the cell in question.
 T is covariant so that if you have alternative parsers which generate different sub-classes of trait, for instance, this can be done.
 
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
-an implicit instance of _CellParser[T]_ must be in scope.
+an implicit instance of _CellParser\[T]_ must be in scope.
 This is achieved via invoking a method (from object _Parsers_) of the following form:
 where _f_ is a function which takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
 and where _T_ is the type to be constructed:
@@ -104,7 +105,7 @@ If you have created additional apply methods, you will need to define a function
 Or, more simply, do as for _ratingParser_ in the example below.
 
 Note that _P1_, _P2_, ... _Pn_ each have a context bound on _CellParser_ (that's to say, there is implicit
-evidence of type _CellParser[P]_).
+evidence of type _CellParser\[P]_).
 This is the mechanism which saves the programmer from having to specify explicit conversions.
 _T_ is bound to be a subtype of _Product_ and has two context bounds: _ClassTag_ and _ColumnHelper_.
 
@@ -113,32 +114,32 @@ See section on _CellParsers_ below.
 ## Table
 
 The _Table_ class has several methods for manipulation:
-*  def iterator: Iterator[Row]
-*  def rows: Seq[Row]
-*  def maybeHeader: Option[Header]
-*  def map[S](f: Row => S): Table[S]
-*  def flatMap[U](f: Row => Table[U]): Table[U]
-*  def unit[S](rows: Seq[S], maybeHeader: Option[Header]): Table[S]
-*  def ++[U >: Row](table: Table[U]): Table[U]
+*  def iterator: Iterator\[Row]
+*  def rows: Seq\[Row]
+*  def maybeHeader: Option\[Header]
+*  def map\[S](f: Row => S): Table\[S]
+*  def flatMap\[U](f: Row => Table\[U]): Table\[U]
+*  def unit\[S](rows: Seq\[S], maybeHeader: Option\[Header]): Table\[S]
+*  def ++\[U >: Row](table: Table\[U]): Table\[U]
 
 It is to be expected that _join_ methods will be added later.
 
 The following object methods are available for parsing text:
-*  def parse[T: TableParser](ws: Seq[String]): Try[T]
-*  def parse[T: TableParser](ws: Iterator[String]): Try[T]
-*  def parse[T: TableParser](x: => Source): Try[T]
-*  def parse[T: TableParser](u: URI)(implicit codec: Codec): Try[T]
-*  def parse[T: TableParser](u: URI, enc: String): Try[T]
-*  def parseInputStream[T: TableParser](i: InputStream)(implicit codec: Codec): Try[T]
-*  def parseInputStream[T: TableParser](i: InputStream, enc: String): Try[T]
-*  def parseFile[T: TableParser](f: File)(implicit codec: Codec): Try[T]
-*  def parseFile[T: TableParser](f: File, enc: String): Try[T]
-*  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T]
-*  def parseFile[T: TableParser](pathname: String, enc: String): Try[T]
-*  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T]
-*  def parseResource[T: TableParser](u: URL, enc: String): Try[T]
-*  def parseResource[T: TableParser](u: URL)(implicit codec: Codec): Try[T]
-*  def parseSequence[T: TableParser](wss: Seq[Seq[String]]): Try[T]
+*  def parse\[T: TableParser](ws: Seq\[String]): Try\[T]
+*  def parse\[T: TableParser](ws: Iterator\[String]): Try\[T]
+*  def parse\[T: TableParser](x: => Source): Try\[T]
+*  def parse\[T: TableParser](u: URI)(implicit codec: Codec): Try\[T]
+*  def parse\[T: TableParser](u: URI, enc: String): Try\[T]
+*  def parseInputStream\[T: TableParser](i: InputStream)(implicit codec: Codec): Try\[T]
+*  def parseInputStream\[T: TableParser](i: InputStream, enc: String): Try\[T]
+*  def parseFile\[T: TableParser](f: File)(implicit codec: Codec): Try\[T]
+*  def parseFile\[T: TableParser](f: File, enc: String): Try\[T]
+*  def parseFile\[T: TableParser](pathname: String)(implicit codec: Codec): Try\[T]
+*  def parseFile\[T: TableParser](pathname: String, enc: String): Try\[T]
+*  def parseResource\[T: TableParser](s: String, clazz: Class\[_] = getClass)(implicit codec: Codec): Try\[T]
+*  def parseResource\[T: TableParser](u: URL, enc: String): Try\[T]
+*  def parseResource\[T: TableParser](u: URL)(implicit codec: Codec): Try\[T]
+*  def parseSequence\[T: TableParser](wss: Seq\[Seq\[String]]): Try\[T]
 
 Please note that, in the case of a parameter being an Auto-closeable object such as InputStream or Source,
 it is the caller's responsibility to close it after parsing.
@@ -168,7 +169,7 @@ will not invalidate your dataset as a whole.
 In forgiving mode, any exceptions thrown in the parsing of a row are collected and then printed to _System.err_ at the conclusion of the parsing of the table.
 _rowParser_ is the specific parser for the _Row_ type (see below).
 _builder_ is used by the _parse_ method.
-_parse_ is the main method of _TableParser_ and takes a _Seq[String]_ and yields a _Try[Table]_.
+_parse_ is the main method of _TableParser_ and takes a _Seq\[String]_ and yields a _Try\[Table]_.
 
 Associated with _TableParser_ is an abstract class called _TableParserHelper_ whose purpose is to make your coding job easier.
 _TableParserHelper_ is designed to be extended (i.e. sub-classed) by the companion object of the case class that you
@@ -184,7 +185,7 @@ The constructor for _TableParserHelper_ takes two parameters, both of which can 
 
 _RowParser_ is a trait which defines how a line of text is to be parsed as a _Row_.
 _Row_ is a parametric type which, in subtypes of _RowParser_, is context-bound to _CellParser_.
-A second parametric type _Input_ is defined: this will take on values of _String_ or _Seq[String]_, according to the form of input.
+A second parametric type _Input_ is defined: this will take on values of _String_ or _Seq\[String]_, according to the form of input.
 Typically, the _StandardRowParser_ is used, which takes as its constructor parameter a _LineParser_.
 
 The methods of _RowParser_ are:
@@ -219,14 +220,14 @@ The methods of _StringsParser_ are:
 
 There are a number of methods which return an instance of _CellParser_ for various situations:
 
-* def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]]
-* def cellParserSeq[P: CellParser]: CellParser[Seq[P]]
-* def cellParserOption[P: CellParser]: CellParser[Option[P]]
-* def cellParserOptionNonEmptyString: CellParser[Option[String]]
-* def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T]
-* def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T, fields: Seq[String] = Nil): CellParser[T]
+* def cellParserRepetition\[P: CellParser : ColumnHelper](start: Int = 1): CellParser\[Seq\[P]]
+* def cellParserSeq\[P: CellParser]: CellParser\[Seq\[P]]
+* def cellParserOption\[P: CellParser]: CellParser\[Option\[P]]
+* def cellParserOptionNonEmptyString: CellParser\[Option\[String]]
+* def cellParser\[P: CellParser, T: ClassTag](construct: P => T): CellParser\[T]
+* def cellParser1\[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T, fields: Seq\[String] = Nil): CellParser\[T]
 * etc. through cellParser12...
-* def cellParser2Conditional[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map[K, CellParser[P]], fields: Seq[String] = Nil): CellParser[T]
+* def cellParser2Conditional\[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map\[K, CellParser\[P]], fields: Seq\[String] = Nil): CellParser\[T]
 
 The methods of form _cellParserN_ are the parsers which are used to parse into case classes.
 Ensure that you have the correct number for N: the number of fields/parameters in the case class you are instantiating.
@@ -250,15 +251,12 @@ So, no <i>val, var</i> or <i>lazy val</i>.
 Instead, any behavior you want to add to the class, beyond the parameters (fields) of the class,
 must be defined using _def_.
 
-
-
 ## Example: Movie
 
 In this example, we parse the IMDB Movie dataset from Kaggle.
 The basic structure of the application code will look something like this:
 
         import MovieParser._
-    
         val x: Try[Table[Movie]] = Table.parseResource("movie_metadata.csv")
      
 In this example, the row type is _Movie_, a case class with eleven parameters.
@@ -287,44 +285,41 @@ The other case classes look like this:
 The _MovieParser_ object looks like this:
 
     object MovieParser extends CellParsers {
-      def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
-      implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelCaseColumnNameMapper _,
-        "title" -> "movie_title",
-        "imdb" -> "movie_imdb_link")
-      implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelCaseColumnNameMapper _,
-        "facebookLikes" -> "movie_facebook_likes",
-        "numUsersReview" -> "num_user_for_reviews",
-        "numUsersVoted" -> "num_voted_users",
-        "numCriticReviews" -> "num_critic_for_reviews",
-        "totalFacebookLikes" -> "cast_total_facebook_likes")
-      implicit val ratingColumnHelper: ColumnHelper[Rating] = columnHelper()
-      implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelCaseColumnNameMapper _)
-      implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
-      implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
-      implicit val attributeSetColumnHelper: ColumnHelper[AttributeSet] = columnHelper()
-      implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
-      implicit val formatParser: CellParser[Format] = cellParser4(Format)
-      implicit val productionParser: CellParser[Production] = cellParser4(Production)
-      implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
-      implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
-      implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
-      implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
-      implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
-      implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
-      implicit object MovieConfig extends DefaultRowConfig {
-        override val string: Regex = """[^,]*""".r
-        override val delimiter: Regex = """,""".r
-        override val listEnclosure: String = ""
-      }
-      implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
-      implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
-        type Row = Movie
-        def hasHeader: Boolean = true
-        override def forgiving: Boolean = true
-        def rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-        override def builderWithHeader(rows: Seq[Row], header: Header): Table[Row] = TableWithHeader(rows, header)
-      }
+        def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+        implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelCaseColumnNameMapper _,
+            "title" -> "movie_title",
+            "imdb" -> "movie_imdb_link")
+        implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelCaseColumnNameMapper _,
+            "facebookLikes" -> "movie_facebook_likes",
+            "numUsersReview" -> "num_user_for_reviews",
+            "numUsersVoted" -> "num_voted_users",
+            "numCriticReviews" -> "num_critic_for_reviews",
+            "totalFacebookLikes" -> "cast_total_facebook_likes")
+        implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelCaseColumnNameMapper _)
+        implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
+        implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
+        implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
+        implicit val formatParser: CellParser[Format] = cellParser4(Format)
+        implicit val productionParser: CellParser[Production] = cellParser4(Production)
+        implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
+        implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
+        implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
+        implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
+        implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
+        implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
+        implicit object MovieConfig extends DefaultRowConfig {
+            override val string: Regex = """[^,]*""".r
+            override val delimiter: Regex = """,""".r
+            override val listEnclosure: String = ""
+        }
+        implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
+        implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+            type Row = Movie
+            val maybeFixedHeader: Option[Header] = None
+            override val forgiving: Boolean = true
+            val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+            protected def builder(rows: Iterator[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
+        }
     }
 
 In this code,
@@ -373,21 +368,20 @@ The example comes from a report on the submissions to a Scala exam. Only one que
       case class Submission(username: String, last_name: String, first_name: String, questions: Seq[Question])
       object Submissions extends CellParsers {
         def baseColumnNameMapper(w: String): String = w.replaceAll("(_)", " ")
-        implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(baseColumnNameMapper _)
-        implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"))
+        implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace _, Some("$c $x"))
+        implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"), "questionId" -> "question_ID")
         implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
         implicit val questionParser: CellParser[Question] = cellParser6(Question)
         implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
         implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
         implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
         implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
-          type Row = Submission
-          def hasHeader: Boolean = true
-          override def forgiving: Boolean = false
-          def rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
-          def builder(rows: Seq[Row]): Table[Submission] = TableWithoutHeader(rows)
+            type Row = Submission
+            val maybeFixedHeader: Option[Header] = None
+            protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+            override val forgiving: Boolean = false
+            val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
         }
-      }
       val rows: Seq[Seq[String]] = Seq(
           Seq("Username", "Last Name", "First Name", "Question ID 1", "Question 1", "Answer 1", "Possible Points 1", "Auto Score 1", "Manual Score 1"),
           Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
@@ -403,13 +397,15 @@ Also, note that the instance of _ColumnHelper_ defined here has the formatter de
 Rendering
 =========
 
-_TableParser_ provides two mechanisms for rendering a table:
+_TableParser_ provides a general mechanism for rendering (serializing to text) tables.
+Indeed, _Table\[Row]_ extends _Renderable\[Row]_ which supports the _render(implicit rs: StringRenderer\[Row])_ method. 
+two mechanisms for rendering a table:
 * one to a straight serialized output, for example, when rendering a table as a CSV file.
 * the other to a hierarchical (i.e. tree-structured) output, such as an HTML file.
 
 ## Non-hierarchical output
 
-For this type of output, the application programmer must provide an instance of _Writer[O]_ which is, for example a _StringBuilder_,
+For this type of output, the application programmer must provide an instance of _Writer\[O]_ which is, for example a _StringBuilder_,
 _BufferedOutput_, or perhaps an I/O Monad.
 
 The non-hierarchical output does not support the same customization of renderings as does the hierarchical output.
@@ -418,8 +414,8 @@ It's intended more as a straight, quick-and-dirty output mechanism to a CSV file
 Here, for example, is an appropriate definition.
 
 	implicit object StringBuilderWriteable extends Writable[StringBuilder] {
-		override def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
-		override def unit: StringBuilder = new StringBuilder
+		def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
+		def unit: StringBuilder = new StringBuilder
 		override def delimiter: CharSequence = "|"
 	}
 	
@@ -434,15 +430,15 @@ The _Writable_ object will take care of inserting the delimiter and quotes as ap
 Columns will appear in the same order as the parameters of _Row_ type (which must be either a _Product_, such as a case class, or an _Array_ or a _Seq_).
 If you need to change the order of the rows, you will need to override the _writeRow_ method of _Writable_.
  
-## Hierarchical output
+## Hierarchical rendering
 
-A type class called _TreeWriter_ is the main type for rendering.
-One of the instance methods of _Table[Row]_ is a method as follows:
+A type class called _TreeWriter_ is the main type for hierarchical rendering.
+One of the instance methods of _Table\[Row]_ is a method as follows:
 
-    def render[U: TreeWriter](style: String)(implicit rr: HierarchicalRenderer[Row]): U
+    def renderHierarchical\[U: TreeWriter](style: String)(implicit rr: HierarchicalRenderer[Row]): U
     
-Providing that you have defined an implicit object of type _TreeWriter[U]_ and a _HierarchicalRenderer[Row]_,
-then the _render_ method will produce an instance of _U_ which will be a tree containing all the rows of this table.
+Providing that you have defined an implicit object of type _TreeWriter\[U]_ and a _HierarchicalRenderer\[Row]_,
+then the _renderHierarchical_ method will produce an instance of _U_ which will be a tree containing all the rows of this table.
 
 What sort of type is _U_?
 An XML node would be appropriate.
@@ -471,8 +467,8 @@ Then, we should define appropriate renderers along the following likes:
 
 We can then write something like:
 
-	val table = TableWithoutHeader(Seq(Complex(0, 1), Complex(-1, 0)))
-	val h = table.render("table", Map("border"->"1"))
+	val table = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header.create("r", "i"))
+	val h = table.renderHierarchical("table", Map("border" -> "1"))
 	 
 The result of this will be an HTML tree which can be written out thus as a string:
 	 
@@ -488,8 +484,34 @@ As with the parsing methods, the conversion between instances of types (especial
 
 If you need to set HTML attributes for a specific type, for example a row in the above example, then an attribute map can be defined for the _renderer2_ method.
 
+## String Rendering
+
+There is currently only one implementation of String rendering, and that is Json rendering.
+Although Json is indeed a hierarchical serialization format, the manner of creating a Json string masks the hierarchical aspects.
+The implemented Json reader/writer is Spray Json but that could easily be changed in the future.
+
+Although this section is concerned with rendering, it is also true of course to say that tables can be read from Json strings.
+
+The following example from _JsonRendererSpec.scala_ shows how we can take the following steps
+(for the definitions of Player, Partnerhip, please see the spec file itself):
+* read a table of players from a list of Strings (there are, as shown above, other signatures of parse for files, URLs, etc.);
+* convert to a table of partnerships;
+* write the resulting table to a Json string;
+* check the accuracy of the Json string;
+* check that we can read the string back in as a table.
+
+
+    val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
+    val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).asInstanceOf[Renderable[Partnership]].render
+    wy should matchPattern { case Success("{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}") => }
+    implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}
+    wy.map(p => p.parseJson.convertTo[Table[Partnership]]) should matchPattern { case Success(HeadedTable(_, _)) => }
+
 Release Notes
 =============
+
+V1.0.11 -> V1.0.12
+* mostly internal refactoring: restored Renderable interface (though different from before)
 
 V1.0.10 -> V1.0.11
 * introduction of logging;
@@ -546,7 +568,7 @@ V1.0.1 -> V1.0.2
 
 V1.0.0 -> V.1.0.1
 * Fixed Issue #1;
-* Added parsing of Seq[Seq[String]];
+* Added parsing of Seq\[Seq\[String]];
 * Added cellParserRepetition;
 * Implemented closing of Source in _Table.parse_ methods;
 * Added encoding parameters to _Table.parse_ methods.
