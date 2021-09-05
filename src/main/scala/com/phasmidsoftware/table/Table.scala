@@ -4,14 +4,12 @@
 
 package com.phasmidsoftware.table
 
-import java.io.{File, InputStream}
-import java.net.{URI, URL}
-
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.Reflection
-
+import java.io.{File, InputStream}
+import java.net.{URI, URL}
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
@@ -44,7 +42,7 @@ trait Table[Row] extends Iterable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] where each row has value f(x) where x is the value of the corresponding row in this.
     */
-  override def map[S](f: Row => S): Table[S] = unit(rows map f)
+  def map[S](f: Row => S): Table[S] = unit(rows map f)
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].
@@ -55,7 +53,7 @@ trait Table[Row] extends Iterable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
     */
-  override def flatMap[S](f: Row => IterableOnce[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(Iterable.from(e)))
+  def flatMap[S](f: Row => Iterable[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
 
   /**
     * Method to zip to Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
@@ -195,7 +193,7 @@ trait Table[Row] extends Iterable[Row] {
     *
     * @return a Table[Row] without any rows.
     */
-  override def empty: Table[Row] = unit(Seq.empty)
+  def empty: Table[Row] = unit(Seq.empty)
 
   /**
     * Method to filter the rows of a table.
@@ -633,8 +631,8 @@ case class Header(xs: Seq[String]) {
 object Header {
 
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
-  lazy val numbers: LazyList[Int] = LazyList.from(1)
-  lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
+  lazy val numbers: Stream[Int] = Stream.from(1)
+  lazy val generateNumbers: Stream[String] = numbers map (_.toString)
   //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
   //  lazy val generateLetters: Stream[String] = recursiveLetters
   val alphabet: List[String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray.map(_.toString).toList
@@ -656,14 +654,17 @@ object Header {
   }
   else n.toString
 
-  lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
+  lazy val generateLetters: Stream[String] = numbers map intToString(letters = true)
 
-  def multiply(prefixes: List[String], strings: LazyList[String]): LazyList[String] = {
-    val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
-    wss.foldLeft(LazyList.empty[String])(_ #::: _)
+  def multiply(prefixes: List[String], strings: Stream[String]): Stream[String] = {
+    prefixes collect {
+      case "x" => "x"
+    }
+    val wss: List[Stream[String]] = prefixes map (prepend(_, strings))
+    wss.foldLeft(Stream.empty[String])(_ #::: _)
   }
 
-  def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
+  def prepend(prefix: String, stream: Stream[String]): Stream[String] = stream map (prefix + _)
 
   /**
     * This method constructs a new Header based on Excel row/column names.

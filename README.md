@@ -1,5 +1,11 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/app/scalaprof/TableParser?utm_source=github.com&utm_medium=referral&utm_content=rchillyard/TableParser&utm_campaign=Badge_Grade_Settings)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.phasmidsoftware/tableparser_2.13/badge.svg?color=blue)](https://maven-badges.herokuapp.com/maven-central/com.phasmidsoftware_2.13/tableparser/)
 [![CircleCI](https://circleci.com/gh/rchillyard/TableParser.svg?style=svg)](https://circleci.com/gh/rchillyard/TableParser)
+![GitHub Top Languages](https://img.shields.io/github/languages/top/rchillyard/TableParser)
+![GitHub](https://img.shields.io/github/license/rchillyard/TableParser)
+![GitHub last commit](https://img.shields.io/github/last-commit/rchillyard/TableParser)
+![GitHub issues](https://img.shields.io/github/issues-raw/rchillyard/TableParser)
+![GitHub issues by-label](https://img.shields.io/github/issues/rchillyard/TableParser/bug)
 
 # Introduction to TableParser
 
@@ -232,7 +238,7 @@ There are a number of methods which return an instance of _CellParser_ for vario
 The methods of form _cellParserN_ are the parsers which are used to parse into case classes.
 Ensure that you have the correct number for N: the number of fields/parameters in the case class you are instantiating.
 In some situations, the reflection code is unable to get the field names in order (for example when there are public
-lazy vals).
+lazy values).
 In such a case, add the second parameter to _explicitly_ give the field names in order.
 Normally, of course, you can leave this parameter unset.
 
@@ -493,7 +499,7 @@ The implemented Json reader/writer is Spray Json but that could easily be change
 Although this section is concerned with rendering, it is also true of course to say that tables can be read from Json strings.
 
 The following example from _JsonRendererSpec.scala_ shows how we can take the following steps
-(for the definitions of Player, Partnerhip, please see the spec file itself):
+(for the definitions of Player, Partnership, please see the spec file itself):
 * read a table of players from a list of Strings (there are, as shown above, other signatures of parse for files, URLs, etc.);
 * convert to a table of partnerships;
 * write the resulting table to a Json string;
