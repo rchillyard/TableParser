@@ -4,15 +4,13 @@
 
 package com.phasmidsoftware.table
 
-import java.io.{File, InputStream}
-import java.net.URL
-
 import com.phasmidsoftware.parse.{RawParsers, RowParser, StringParser, StringTableParser}
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP.safeResource
+import java.io.{File, InputStream}
+import java.net.URL
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -278,12 +276,12 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "prepend" in {
-    val xs = Header.prepend("x", Header.alphabet.to(LazyList)).take(100).toList
+    val xs = Header.prepend("x", Header.alphabet.toStream).take(100).toList
     xs shouldBe Seq("xA", "xB", "xC", "xD", "xE", "xF", "xG", "xH", "xI", "xJ", "xK", "xL", "xM", "xN", "xO", "xP", "xQ", "xR", "xS", "xT", "xU", "xV", "xW", "xX", "xY", "xZ")
   }
 
   it should "multiply" in {
-    val xs = Header.multiply(List("A", "B"), Header.alphabet.to(LazyList))
+    val xs = Header.multiply(List("A", "B"), Header.alphabet.toStream)
     xs shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", "AW", "AX", "AY", "AZ", "BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", "BM", "BN", "BO", "BP", "BQ", "BR", "BS", "BT", "BU", "BV", "BW", "BX", "BY", "BZ")
   }
 

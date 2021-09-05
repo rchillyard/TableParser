@@ -7,7 +7,6 @@ package com.phasmidsoftware.parse
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP
 import org.slf4j.{Logger, LoggerFactory}
-
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
@@ -144,13 +143,16 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     * @return a Try[Table]
     */
   def parse(xs: Iterator[Input]): Try[Table] = {
-    def separateHeaderAndRows(h: Input, t: Iterable[Input]): Try[Table] = for (ws <- rowParser.parseHeader(h); rs <- parseRows(t.iterator, ws)) yield rs
+    def separateHeaderAndRows(h: Input, t: Iterable[Input]): Try[Table] =
+      for (ws <- rowParser.parseHeader(h); rs <- parseRows(t.iterator, ws)) yield rs
 
     maybeFixedHeader match {
       case Some(h) => parseRows(xs, h)
       case None => // NOTE: it is possible that we still don't really have a header encoded in the data either
-        xs.toSeq match {
-          case h :: t => separateHeaderAndRows(h, t)
+        val seq = xs.toList
+        seq match {
+          case h :: t =>
+            separateHeaderAndRows(h, t)
           case _ => Failure(ParserException("no rows to parse"))
         }
     }

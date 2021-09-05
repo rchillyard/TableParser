@@ -4,7 +4,7 @@ name := "TableParser"
 
 version := "1.0.12"
 
-scalaVersion := "2.13.4"
+scalaVersion := "2.12.13"
 
 scalacOptions += "-deprecation"
 
@@ -27,4 +27,3 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 
-// publishTo := sonatypePublishToBundle.value

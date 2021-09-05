@@ -18,7 +18,7 @@ ThisBuild / scmInfo := Some(
   )
 
   ThisBuild / description := "This project is a Scala library for facilitate comparisons in a functional style."
-  ThisBuild / licenses := List("Apache2.0" -> new URL("http://www.apache.org/licenses/LICENSE-2.0"))
+  ThisBuild / licenses := List("Apache-2.0" -> new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))
   ThisBuild / homepage := Some(url("https://github.com/rchillyard/TableParser"))
 
   // Remove all additional repository other than Maven Central from POM
