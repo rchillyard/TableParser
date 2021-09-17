@@ -67,7 +67,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-Current version: 1.0.10.
+Current version: 1.0.13.
 
 See release notes below for history.
 
@@ -515,6 +515,9 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+
+V1.0.12 -> V1.0.13
+* mostly concerned with publishing TableParser in Maven Central
 
 V1.0.11 -> V1.0.12
 * mostly internal refactoring: restored Renderable interface (though different from before)
