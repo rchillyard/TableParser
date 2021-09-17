@@ -6,7 +6,6 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.{FP, Reflection}
-
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -128,6 +127,7 @@ trait CellParsers {
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
+          // CONSIDER renaming f1 as f0 in all of theses cellParserN methods.
           case f1 :: Nil => readCell[T, P1](wo, row, columns)(f1).map(construct)
           case _ => Failure(ParseLogicException("non-unique field name"))
         }

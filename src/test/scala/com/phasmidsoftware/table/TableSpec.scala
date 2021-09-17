@@ -4,15 +4,13 @@
 
 package com.phasmidsoftware.table
 
-import java.io.{File, InputStream}
-import java.net.URL
-
 import com.phasmidsoftware.parse.{RawParsers, RowParser, StringParser, StringTableParser}
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP.safeResource
+import java.io.{File, InputStream}
+import java.net.URL
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -304,7 +302,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val rows = Seq(
       movieHeader,
-      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
     val mty: Try[RawTable] = Table.parse(rows)
@@ -324,7 +322,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val rows = Seq(
       movieHeader,
-      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
     val mty: Try[RawTable] = Table.parse(rows)

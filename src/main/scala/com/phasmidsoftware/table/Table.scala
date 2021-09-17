@@ -4,14 +4,12 @@
 
 package com.phasmidsoftware.table
 
-import java.io.{File, InputStream}
-import java.net.{URI, URL}
-
 import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.Reflection
-
+import java.io.{File, InputStream}
+import java.net.{URI, URL}
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
@@ -55,7 +53,7 @@ trait Table[Row] extends Iterable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
     */
-  override def flatMap[S](f: Row => IterableOnce[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(Iterable.from(e)))
+  def flatMap[S](f: Row => Iterable[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
 
   /**
     * Method to zip to Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
@@ -635,8 +633,8 @@ object Header {
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
   lazy val numbers: LazyList[Int] = LazyList.from(1)
   lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
-  //  lazy val recursiveLetters: Stream[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
-  //  lazy val generateLetters: Stream[String] = recursiveLetters
+  //  lazy val recursiveLetters: LazyList[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
+  //  lazy val generateLetters: LazyList[String] = recursiveLetters
   val alphabet: List[String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray.map(_.toString).toList
 
   private def intToString(letters: Boolean)(n: Int): String = if (letters) {
@@ -659,6 +657,9 @@ object Header {
   lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
 
   def multiply(prefixes: List[String], strings: LazyList[String]): LazyList[String] = {
+    prefixes collect {
+      case "x" => "x"
+    }
     val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
     wss.foldLeft(LazyList.empty[String])(_ #::: _)
   }
