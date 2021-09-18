@@ -4,10 +4,12 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.{ParserException, StringTableParser, StringsTableParser, TableParser}
+import com.phasmidsoftware.RawRow
+import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.Reflection
+
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -436,6 +438,19 @@ object Table {
       case parser: StringsTableParser[T] => parser.parse(wss)
       case _ => Failure(ParserException(s"parse method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
+  }
+
+  /**
+    * Method to parse a table from an File as a table of Seq[String].
+    *
+    * @param s     the resource name.
+    * @param clazz the class for which the resource should be sought (defaults to the calling class).
+    * @param codec (implicit) the encoding.
+    * @return a Try of Table[RawRow] where RawRow is a Seq[String].
+    */
+  def parseResourceRaw(s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser
+    parseResource[Table[RawRow]](s, clazz)
   }
 
   /**

@@ -7,3 +7,4 @@ project/target/
 target/
 /.scannerwork/
 /.bsp/sbt.json
+/src/it/resources/AIRBNB*.csv

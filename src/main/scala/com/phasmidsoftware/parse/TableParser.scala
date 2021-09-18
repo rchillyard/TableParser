@@ -4,9 +4,11 @@
 
 package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.RawRow
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 import scala.util.{Failure, Try}
@@ -80,7 +82,24 @@ trait TableParser[Table] {
 object TableParser {
   val logger: Logger = LoggerFactory.getLogger(TableParser.getClass)
 
+
 }
+
+object RawTableParser extends StringTableParser[Table[Seq[String]]] {
+  type Row = RawRow
+
+  val maybeFixedHeader: Option[Header] = None
+
+  override val forgiving: Boolean = true
+
+  implicit val stringSeqParser: CellParser[RawRow] = new CellParsers {}.cellParserSeq
+
+  val rowParser: RowParser[Row, String] = StandardRowParser[RawRow]
+
+  // CONSIDER why do we have a concrete Table type mentioned here?
+  protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+}
+
 /**
   * Case class to define a StringTableParser that assumes a header to be found in the input file.
   * This class attempts to provide as much built-in functionality as possible.
