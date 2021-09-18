@@ -165,18 +165,15 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     * @return a Try[Table]
     */
   def parse(xs: Iterator[Input]): Try[Table] = {
-    def separateHeaderAndRows(h: Input, t: Iterable[Input]): Try[Table] =
-      for (ws <- rowParser.parseHeader(h); rs <- parseRows(t.iterator, ws)) yield rs
+    def separateHeaderAndRows(h: Input, t: Iterator[Input]): Try[Table] =
+      for (ws <- rowParser.parseHeader(h); rs <- parseRows(t, ws)) yield rs
 
     maybeFixedHeader match {
       case Some(h) => parseRows(xs, h)
-      case None => // NOTE: it is possible that we still don't really have a header encoded in the data either
-        val seq = xs.toList
-        seq match {
-          case h :: t =>
-            separateHeaderAndRows(h, t)
-          case _ => Failure(ParserException("no rows to parse"))
-        }
+      case None =>
+        // NOTE: it is possible that we still don't really have a header encoded in the data either
+        if (xs.hasNext) separateHeaderAndRows(xs.next(), xs)
+        else Failure(ParserException("no rows to parse"))
     }
   }
 
