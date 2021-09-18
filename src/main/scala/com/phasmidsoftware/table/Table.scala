@@ -441,15 +441,43 @@ object Table {
   }
 
   /**
-    * Method to parse a table from an File as a table of Seq[String].
+    * Method to parse a table from a File as a table of Seq[String].
     *
-    * @param s     the resource name.
-    * @param clazz the class for which the resource should be sought (defaults to the calling class).
-    * @param codec (implicit) the encoding.
+    * @param f                the file.
+    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
+    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
+    * @param codec            (implicit) the encoding.
     * @return a Try of Table[RawRow] where RawRow is a Seq[String].
     */
-  def parseResourceRaw(s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser
+  def parseFileRaw(f: File, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser(maybeFixedHeader, forgiving)
+    parseFile[Table[RawRow]](f)
+  }
+
+  /**
+    * Method to parse a table from a File as a table of Seq[String].
+    *
+    * @param pathname the path name.
+    * @param codec    (implicit) the encoding.
+    * @return a Try of Table[RawRow] where RawRow is a Seq[String].
+    */
+  def parseFileRaw(pathname: String)(implicit codec: Codec): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser(None)
+    parseFile[Table[RawRow]](pathname)
+  }
+
+  /**
+    * Method to parse a table from a resource as a table of Seq[String].
+    *
+    * @param s                the resource name.
+    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
+    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
+    * @param clazz            the class for which the resource should be sought (defaults to the calling class).
+    * @param codec            (implicit) the encoding.
+    * @return a Try of Table[RawRow] where RawRow is a Seq[String].
+    */
+  def parseResourceRaw(s: String, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser(maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 

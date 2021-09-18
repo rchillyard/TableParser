@@ -85,12 +85,15 @@ object TableParser {
 
 }
 
-object RawTableParser extends StringTableParser[Table[Seq[String]]] {
+/**
+  * Class used to parse files as a Table of Seq[String].
+  * That's to say, no parsing of individual (or groups of) columns.
+  *
+  * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
+  * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
+  */
+case class RawTableParser(maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = true) extends StringTableParser[Table[Seq[String]]] {
   type Row = RawRow
-
-  val maybeFixedHeader: Option[Header] = None
-
-  override val forgiving: Boolean = true
 
   implicit val stringSeqParser: CellParser[RawRow] = new CellParsers {}.cellParserSeq
 

@@ -17,7 +17,7 @@ class AirBNBFuncSpec extends AnyFlatSpec with Matchers {
   it should "be ingested properly" in {
     //    val airBNBFile = "/AIRBNB.Listing.csv"
     val airBNBFile = "/airbnb.csv"
-    val mty: Try[RawTable] = Table.parseResourceRaw(airBNBFile, classOf[AirBNBFuncSpec])
+    val mty: Try[RawTable] = Table.parseResourceRaw(airBNBFile)
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
       println(s"AirBNB: successfully read ${mt.size} rows")
