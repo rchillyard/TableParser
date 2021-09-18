@@ -14,7 +14,7 @@ import scala.util.{Failure, Try}
   * @param ws  the (raw) Strings that make up the row.
   * @param hdr is the Header containing the column names.
   */
-case class Row(ws: Seq[String], hdr: Header) extends (String => Try[String]) {
+case class Row(ws: Seq[String], hdr: Header, index: Int) extends (String => Try[String]) {
 
   /**
     * Method to yield the value for a given column name

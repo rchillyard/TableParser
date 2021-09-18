@@ -31,10 +31,10 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   override def skipWhitespace: Boolean = false
 
-  def parseRow(w: String): Try[Strings] = parseAll(row, w) match {
+  def parseRow(indexedString: (String, Int)): Try[Strings] = parseAll(row, indexedString._1) match {
     case Success(s, _) => scala.util.Success(s)
-    case Failure(x, _) => scala.util.Failure(formException(w, x))
-    case Error(x, _) => scala.util.Failure(formException(w, x))
+    case Failure(x, _) => scala.util.Failure(formException(indexedString, x))
+    case Error(x, _) => scala.util.Failure(formException(indexedString, x))
   }
 
   lazy val row: Parser[Strings] = rep1sep(cell, delimiter)
@@ -59,7 +59,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   private lazy val getCloseChar: Parser[String] = s"${enclosures.lastOption.getOrElse("")}"
 
-  private def formException(row: String, x: String) = ParserException(s"Cannot parse row '$row' due to: $x")
+  private def formException(indexedString: (String, Int), x: String) = ParserException(s"Cannot parse row ${indexedString._2}: '${indexedString._1}' due to: $x")
 
   override def toString: String = s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 

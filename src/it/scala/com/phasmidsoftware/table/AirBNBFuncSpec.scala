@@ -15,14 +15,17 @@ class AirBNBFuncSpec extends AnyFlatSpec with Matchers {
     * TableParser library itself.
     */
   it should "be ingested properly" in {
-    //    val airBNBFile = "/AIRBNB.Listing.csv"
-    val airBNBFile = "/airbnb.csv"
+    //        val airBNBFile = "/AIRBNB.Listing.csv"
+    //    val airBNBFile = "/airbnb.csv"
+    val airBNBFile = "/airbnb2.csv"
     val mty: Try[RawTable] = Table.parseResourceRaw(airBNBFile)
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
-    for (mt <- mty) {
-      println(s"AirBNB: successfully read ${mt.size} rows")
-      mt.size shouldBe 2
-      mt take 10 foreach println
+    mty match {
+      case Success(HeadedTable(r, h)) =>
+        println(s"AirBNB: successfully read ${r.size} rows")
+        println(s"AirBNB: successfully read ${h.size} columns")
+        r.size shouldBe 967
+        r take 10 foreach println
     }
   }
 

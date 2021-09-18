@@ -189,8 +189,8 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     * @tparam T the parametric type of the resulting Table. T corresponds to Input in the calling method, i.e. a Row.
     * @return a Try of Table
     */
-  protected def doParseRows[T](ts: Iterator[T], header: Header, f: T => Header => Try[Row]): Try[Table] = {
-    val rys = for (t <- ts) yield f(t)(header)
+  protected def doParseRows[T](ts: Iterator[T], header: Header, f: ((T, Int)) => Header => Try[Row]): Try[Table] = {
+    val rys: Iterator[Try[Row]] = for (t <- ts.zipWithIndex) yield f(t)(header)
     for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
   }
 

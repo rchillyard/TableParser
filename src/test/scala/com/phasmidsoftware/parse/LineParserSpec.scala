@@ -28,9 +28,9 @@ class LineParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse cell" in {
     p1.parseAll(p1.cell, "Hello") should matchPattern { case p1.Success("Hello", _) => }
     p2.parseAll(p2.cell, "Hello") should matchPattern { case p2.Success("Hello", _) => }
-    p3.parseAll(p3.cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") should matchPattern { case p3.Success("http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", _) => }
-    p3.parse(p3.cell, "http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0") should matchPattern { case p3.Success("http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1", _) => }
-    p1.parse(p1.cell, "http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0") should matchPattern { case p1.Success("http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1", _) => }
+    p3.parseAll(p3.cell, "https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") should matchPattern { case p3.Success("https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", _) => }
+    p3.parse(p3.cell, "https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0") should matchPattern { case p3.Success("https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1", _) => }
+    p1.parse(p1.cell, "https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0") should matchPattern { case p1.Success("https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1", _) => }
     p1.parseAll(p1.cell, helloQuoteGoodbye) should matchPattern { case p1.Success(`HelloGoodbye`, _) => }
   }
 
@@ -69,10 +69,10 @@ class LineParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parseRow" in {
-    p1.parseRow(hgSerial) should matchPattern { case Success(Seq("Hello", "Goodbye")) => }
-    p2.parseRow(hgTabbed) should matchPattern { case Success(Seq("Hello", "Goodbye")) => }
-    p3.parseRow(hgSerialWithList) should matchPattern { case Success(Seq("Hello", "{Goodbye,From,Me}")) => }
-    p1.parseRow(helloQuoteGoodbye) should matchPattern { case Success(Seq(`HelloGoodbye`)) => }
+    p1.parseRow((hgSerial, 0)) should matchPattern { case Success(Seq("Hello", "Goodbye")) => }
+    p2.parseRow((hgTabbed, 0)) should matchPattern { case Success(Seq("Hello", "Goodbye")) => }
+    p3.parseRow((hgSerialWithList, 0)) should matchPattern { case Success(Seq("Hello", "{Goodbye,From,Me}")) => }
+    p1.parseRow((helloQuoteGoodbye, 0)) should matchPattern { case Success(Seq(`HelloGoodbye`)) => }
   }
 
 }

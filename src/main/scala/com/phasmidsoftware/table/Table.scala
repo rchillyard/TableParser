@@ -58,7 +58,7 @@ trait Table[Row] extends Iterable[Row] {
   def flatMap[S](f: Row => Iterable[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
 
   /**
-    * Method to zip to Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
+    * Method to zip two Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
     *
     * TEST
     *
@@ -524,10 +524,10 @@ abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option
     val ww = implicitly[Writable[O]]
     val o1 = ww.unit
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
-    rows map {
+    (if (rows.knownSize > -1) rows else rows.toList) map {
       case p: Product => ww.writeRow(o2)(p)
-      case xs: Seq[Any] => ww.writeRowElements(o2)(xs)
-      case xs: Array[Any] => ww.writeRowElements(o2)(xs.toIndexedSeq)
+      case xs: Seq[Row] => ww.writeRowElements(o2)(xs)
+      case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq)
       case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     }
     o1
@@ -640,7 +640,7 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
   * CONSIDER using something else such as Array.
   */
 object HeadedTable {
-  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.toVector, header)
+  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.to(LazyList), header)
 
   def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = HeadedTable(rows, Header.apply[Row]())
 
@@ -652,6 +652,13 @@ object HeadedTable {
   * @param xs the sequence of column names.
   */
 case class Header(xs: Seq[String]) {
+  /**
+    * Get the number of columns.
+    *
+    * @return the size of the header sequence.
+    */
+  def size: Int = xs.length
+
   /**
     * Get the index of w in this Header, ignoring case.
     *

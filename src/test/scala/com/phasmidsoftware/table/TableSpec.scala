@@ -7,10 +7,11 @@ package com.phasmidsoftware.table
 import com.phasmidsoftware.parse.{RawParsers, RowParser, StringParser, StringTableParser}
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP.safeResource
-import java.io.{File, InputStream}
-import java.net.URL
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+
+import java.io.{File, InputStream}
+import java.net.URL
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -30,9 +31,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val intPairParser = new IntPairParser
 
     trait IntPairRowParser extends StringParser[IntPair] {
-      def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
+      def parse(indexedString: (String, Int))(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, indexedString._1) match {
         case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
-        case _ => Failure(TableException(s"unable to parse $w"))
+        case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
       }
 
       //noinspection NotImplementedCode
