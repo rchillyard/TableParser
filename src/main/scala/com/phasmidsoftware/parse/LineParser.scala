@@ -31,8 +31,18 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   override def skipWhitespace: Boolean = false
 
+  /**
+    * Method to parse a Row.
+    *
+    * NOTE: the expression "end of input expected" must be the same as the failure defined in (trait) Parsers: def phrase[T](p: Parser[T]): Parser[T]
+    * It's a shame that they didn't make it a constant in Parsers!
+    *
+    * @param indexedString a tuple of String and Int denoting the line and its index in the file.
+    * @return a Try[Strings].
+    */
   def parseRow(indexedString: (String, Int)): Try[Strings] = parseAll(row, indexedString._1) match {
     case Success(s, _) => scala.util.Success(s)
+    case Failure("end of input expected", _) => scala.util.Failure(MultiLineException(indexedString))
     case Failure(x, _) => scala.util.Failure(formException(indexedString, x))
     case Error(x, _) => scala.util.Failure(formException(indexedString, x))
   }
@@ -41,7 +51,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   lazy val cell: Parser[String] = quotedString | list | string | failure("invalid string")
 
-  lazy val quotedString: Parser[String] = quotedStringWithQuotes | pureQuotedString
+  lazy val quotedString: Parser[String] = quotedStringWithQuotes | pureQuotedString | failure("invalid quoted string")
 
   lazy val pureQuotedString: Parser[String] = quote ~> stringInQuotes <~ quote
 
@@ -53,6 +63,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   lazy val list: Parser[String] = getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
 
+  // TODO why is this complaining about repeated characters?
   private lazy val component: Parser[String] = s"""[^,$listSeparator}]+""".r
 
   private lazy val getOpenChar: Parser[String] = s"${enclosures.headOption.getOrElse("")}"
@@ -127,3 +138,5 @@ object LineParser {
 }
 
 case class ParserException(msg: String, e: Throwable = null) extends Exception(msg, e)
+
+case class MultiLineException[X](x: X) extends Exception("multi-line exception")

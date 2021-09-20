@@ -55,7 +55,7 @@ trait DefaultRowConfig extends RowConfig {
     * CONSIDER making the string regex derive from the delimiter
     */
   val string: Regex =
-    """[^,]*""".r
+    """[^,"]*""".r
   /**
     * the "quote" Char (see LineParser). defaults to ".
     */

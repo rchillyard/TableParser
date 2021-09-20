@@ -48,7 +48,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
 
 
-      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
+      protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -348,5 +348,18 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       }
     }
     println(iIty map (_.sorted))
+  }
+
+  behavior of "parseResourceRaw"
+  it should "parse quotes spanning newlines" in {
+    val mty: Try[RawTable] = Table.parseResourceRaw("multiline.csv")
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    mty match {
+      case Success(HeadedTable(r, h)) =>
+        println(s"parseResourceRaw: successfully read ${r.size} rows")
+        println(s"parseResourceRaw: successfully read ${h.size} columns")
+        r.size shouldBe 4
+        r take 4 foreach println
+    }
   }
 }

@@ -22,6 +22,7 @@ class LineParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   val p3 = new LineParser(", *".r, """[\w_\?:=\./]+""".r, "", '|', quote = '\'')
   //  val p4 = new LineParser("""\|""".r, """[^|]*""".r, "{}", ',', quote = '"')
   private val helloQuoteGoodbye = """"Hello ""Goodbye""""
+  private val helloQuoteGoodbyeWithNewline = """"Hello \nme old mate" "Goodbye""""
   private val HelloGoodbye = """Hello "Goodbye"""
   val HelloCommaGoodbye = """{Hello,Goodbye}"""
 
@@ -52,6 +53,11 @@ class LineParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse quotedString with internal quotes" in {
     p1.parseAll(p1.quotedString, helloQuoteGoodbye) should matchPattern { case p1.Success(`HelloGoodbye`, _) => }
+  }
+
+  it should "fail to parse quotedString with internal newline" in {
+    p1.parseAll(p1.quotedString, helloQuoteGoodbyeWithNewline) should matchPattern { case p1.Failure("end of input expected", _) => }
+    p1.parseAll(p1.cell, helloQuoteGoodbyeWithNewline) should matchPattern { case p1.Failure("end of input expected", _) => }
   }
 
   it should "parse list" in {

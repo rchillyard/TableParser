@@ -15,7 +15,7 @@ object FP {
     * @tparam X the underlying type
     * @return a Try of Iterator[X]
     */
-  def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] = sequence(xys.toSeq).map(_.iterator)
+  def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] = sequence(xys.to(List)).map(_.iterator)
 
   /**
     * Sequence method to combine elements of Try.
@@ -25,10 +25,28 @@ object FP {
     * @return a Try of Seq[X]
     *         NOTE: that the output collection type will be Seq, regardless of the input type
     */
-  def sequence[X](xys: Iterable[Try[X]]): Try[Seq[X]] = xys.foldLeft(Try(Seq[X]())) {
-    (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
-  }
+  def sequence[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
+    xys.foldLeft(Try(Seq[X]())) {
+      (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
+    }
 
+  /**
+    * Method to partition an  method to combine elements of Try.
+    *
+    * @param xys an Iterator of Try[X]
+    * @tparam X the underlying type
+    * @return a tuple of two iterators of Try[X], the first one being successes, the second one being failures.
+    */
+  def partition[X](xys: Iterator[Try[X]]): (Iterator[Try[X]], Iterator[Try[X]]) = xys.partition(_.isSuccess)
+
+  /**
+    * Method to partition an  method to combine elements of Try.
+    *
+    * @param xys a Seq of Try[X]
+    * @tparam X the underlying type
+    * @return a tuple of two Seqs of Try[X], the first one being successes, the second one being failures.
+    */
+  def partition[X](xys: Seq[Try[X]]): (Seq[Try[X]], Seq[Try[X]]) = xys.partition(_.isSuccess)
 
   /**
     * Method to yield a Try[URL] for a resource name and a given class.

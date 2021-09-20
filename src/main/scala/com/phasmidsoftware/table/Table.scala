@@ -640,10 +640,9 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
   * CONSIDER using something else such as Array.
   */
 object HeadedTable {
-  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.to(LazyList), header)
+  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.to(List), header)
 
   def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = HeadedTable(rows, Header.apply[Row]())
-
 }
 
 /**

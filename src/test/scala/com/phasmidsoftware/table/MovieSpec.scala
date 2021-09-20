@@ -22,7 +22,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val movies = Seq(
       movieHeader,
-      "Color,James Cameron,723,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,237000000,2009,936,7.9,1.78,33000"
+      "Color,James Cameron,723,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,237000000,2009,936,7.9,1.78,33000"
     )
 
     val mty: Try[Table[Movie]] = Table.parse(movies)
@@ -39,7 +39,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val movies = Seq(
       movieHeader,
-      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
+      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
     )
 
     val x: Try[Table[Movie]] = Table.parse(movies)
@@ -59,12 +59,13 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      protected def builder(rows: Iterator[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterable[Movie], header: Header): Table[Row] =
+        HeadedTable(rows, header)
     }
 
     val movies = Seq(
       movieHeader,
-      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-,,2009,936,7.9,1.78,33000"
+      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-,,2009,936,7.9,1.78,33000"
     )
     val x: Try[Table[Movie]] = Table.parse(movies)
     x should matchPattern { case Failure(_) => }
@@ -78,7 +79,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
-      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+      def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
@@ -87,7 +88,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val movies = Seq(
       movieHeader,
-      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
     val mty = Table.parse(movies)
@@ -103,7 +104,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
-      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+      def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
@@ -112,7 +113,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val movies = Seq(
       movieHeader,
-      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,http://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
     val mty = Table.parse(movies)

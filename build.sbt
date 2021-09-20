@@ -19,6 +19,7 @@ lazy val scalaParserCombinatorsVersion = "1.1.2"
 lazy val nScalaTimeVersion = "2.24.0"
 
 libraryDependencies ++= Seq(
+  "com.phasmidsoftware" %% "flog" % "1.0.8",
   "io.spray" %%  "spray-json" % "1.3.5",
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
