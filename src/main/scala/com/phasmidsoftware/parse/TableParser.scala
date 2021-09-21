@@ -9,9 +9,10 @@ import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP.partition
 import com.phasmidsoftware.util.{FP, FunctionIterator, Joinable}
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
   * Type class to parse a set of rows as a Table.
@@ -78,20 +79,10 @@ trait TableParser[Table] {
     * @return a Try[Table]
     */
   def parse(xs: Iterator[Input]): Try[Table]
-
-  /**
-    * Method to log any failures (only in forgiving mode).
-    *
-    * @param rys the sequence of Try[Row]
-    * @return a sequence of Try[Row] which will all be of type Success.
-    */
-  protected def logFailures(rys: Iterator[Try[Row]]): Iterator[Try[Row]]
 }
 
 object TableParser {
   val logger: Logger = LoggerFactory.getLogger(TableParser.getClass)
-
-
 }
 
 /**
@@ -217,27 +208,13 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
     def handleFailures(rys: List[Try[Row]]) = if (forgiving) {
       val (good, bad) = partition(rys)
-      bad foreach (ry => AbstractTableParser.logException(ry.failed.get))
+      bad foreach AbstractTableParser.logException[Row]
       FP.sequence(good)
     }
     else
       FP.sequence(rys)
 
     for (rs <- handleFailures(mapTsToRows.toList)) yield builder(rs, header)
-  }
-
-  /**
-    * Method to log any failures (only in forgiving mode).
-    *
-    * @param rys the sequence of Try[Row]
-    * @return a sequence of Try[Row] which will all be of type Success.
-    */
-  protected def logFailures(rys: Iterator[Try[Row]]): Iterator[Try[Row]] = {
-
-    val (good, bad) = rys.partition(_.isSuccess)
-    if (bad.isEmpty) TableParser.logger.warn("forgiving mode is set but there are no failures")
-    bad.map(_.failed.get) foreach AbstractTableParser.logException
-    good
   }
 }
 
@@ -247,6 +224,11 @@ object AbstractTableParser {
       if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
     }"
     TableParser.logger.warn(string)
+  }
+
+  def logException[X](xy: Try[X]): Unit = xy match {
+    case Success(_) =>
+    case Failure(exception) => logException(exception)
   }
 }
 
