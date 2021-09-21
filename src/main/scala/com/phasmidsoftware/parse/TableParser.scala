@@ -58,6 +58,13 @@ trait TableParser[Table] {
   protected val forgiving: Boolean = false
 
   /**
+    * Value to determine whether it is acceptable to have a quoted string span more than one line.
+    *
+    * @return true if quoted strings may span more than one line.
+    */
+  protected val multiline: Boolean = false
+
+  /**
     * Method to define a row parser.
     *
     * @return a RowParser[Row, Input].
@@ -94,7 +101,7 @@ object TableParser {
   * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
   * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
   */
-case class RawTableParser(maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = true) extends StringTableParser[Table[Seq[String]]] {
+case class RawTableParser(maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = true, override val multiline: Boolean = true) extends StringTableParser[Table[Seq[String]]] {
   type Row = RawRow
 
   implicit val stringSeqParser: CellParser[RawRow] = new CellParsers {}.cellParserSeq
@@ -184,10 +191,12 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     *
     * CONSIDER convert T to Input
     *
+    * CONSIDER switch order of f
+    *
     * @param ts     a sequence of Ts.
     * @param header the Header.
-    * @param f      a curried function which transforms a T into a function which is of type Header => Try[Row].
-    * @tparam T the parametric type of the resulting Table. T corresponds to Input in the calling method, i.e. a Row.
+    * @param f      a curried function which transforms a (T, Int) into a function which is of type Header => Try[Row].
+    * @tparam T the parametric type of the resulting Table. T corresponds to Input in the calling method, i.e. a Row. Must be Joinable.
     * @return a Try of Table
     */
   protected def doParseRows[T: Joinable](ts: Iterator[T], header: Header, f: ((T, Int)) => Header => Try[Row]): Try[Table] = {
@@ -201,15 +210,20 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
       def valid(t: (T, Int)): Boolean = tj.valid(t._1)
     }
 
-    val rys: List[Try[Row]] = (for (z <- new FunctionIterator[(T, Int), Row](f(_)(header))(ts.zipWithIndex)) yield z).toList
-    val rsy = if (forgiving) {
+    def mapTsToRows = if (multiline)
+      for (z <- new FunctionIterator[(T, Int), Row](f(_)(header))(ts.zipWithIndex)) yield z
+    else
+      for (z <- ts.zipWithIndex) yield f(z)(header)
+
+    def handleFailures(rys: List[Try[Row]]) = if (forgiving) {
       val (good, bad) = partition(rys)
-      bad foreach (ry => logException(ry.failed.get))
+      bad foreach (ry => AbstractTableParser.logException(ry.failed.get))
       FP.sequence(good)
     }
     else
       FP.sequence(rys)
-    for (rs <- rsy) yield builder(rs, header)
+
+    for (rs <- handleFailures(mapTsToRows.toList)) yield builder(rs, header)
   }
 
   /**
@@ -222,18 +236,18 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
     val (good, bad) = rys.partition(_.isSuccess)
     if (bad.isEmpty) TableParser.logger.warn("forgiving mode is set but there are no failures")
-    bad.map(_.failed.get) foreach logException
+    bad.map(_.failed.get) foreach AbstractTableParser.logException
     good
   }
+}
 
-  // CONSIDER moving to object
+object AbstractTableParser {
   def logException(e: Throwable): Unit = {
     val string = s"${e.getLocalizedMessage}${
       if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
     }"
     TableParser.logger.warn(string)
   }
-
 }
 
 /**

@@ -9,7 +9,6 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.Reflection
-
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -479,6 +478,17 @@ object Table {
   def parseResourceRaw(s: String, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
+  }
+
+  /**
+    * Method to parse a table of raw rows from an Iterable of String.
+    *
+    * @param ws the Strings.
+    * @return a Try of Table[RawRow]
+    */
+  def parseRaw(ws: Iterable[String], maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser(maybeFixedHeader, forgiving, multiline)
+    parse(ws.iterator)
   }
 
   /**

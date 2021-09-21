@@ -35,7 +35,7 @@ class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends 
     def invokeFunction(xy: Try[X]) = xy match {
       case Success(x) =>
         if (xj.valid(x)) f(x)
-        else Failure(InvalidInputException(x))
+        else Failure(InvalidInputException)
       case Failure(x) => Failure(x)
     }
 
@@ -49,7 +49,7 @@ class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends 
           inner(Success(x2))
         }
         else Failure(IteratorExhaustedException)
-      case Failure(InvalidInputException(_)) => Failure(IteratorExhaustedException)
+      case Failure(InvalidInputException) => Failure(IteratorExhaustedException)
       case f@Failure(_) => f
     }
 
@@ -60,5 +60,4 @@ class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends 
 
 case object IteratorExhaustedException extends Exception("iterator exhausted")
 
-// CONSIDER removing the parameter x
-case class InvalidInputException[X](x: X) extends Exception(s"invalid input: $x")
+case object InvalidInputException extends Exception(s"invalid input")
