@@ -5,7 +5,8 @@
 package com.phasmidsoftware.util
 
 import java.net.URL
-import scala.util.{Failure, Success, Try}
+import scala.util.Using.Releasable
+import scala.util.{Failure, Success, Try, Using}
 
 object FP {
   /**
@@ -81,7 +82,7 @@ object FP {
     * @tparam A the underlying type of the result.
     * @return a Try[A]
     */
-  def safeResource[R, A](resource: => R)(f: R => Try[A]): Try[A] = Try(f(resource)).flatten
+  def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f).flatten
 }
 
 case class FPException(msg: String, eo: Option[Throwable] = None) extends Exception(msg, eo.orNull)
