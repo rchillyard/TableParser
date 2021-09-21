@@ -517,7 +517,7 @@ Release Notes
 =============
 
 V1.0.13 -> V1.0.14
-* ?
+* Enabled multi-line quoted strings.
 
 V1.0.12 -> V1.0.13
 * mostly concerned with publishing TableParser in Maven Central

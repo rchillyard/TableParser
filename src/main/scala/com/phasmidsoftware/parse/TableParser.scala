@@ -6,14 +6,12 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.RawRow
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
-import com.phasmidsoftware.util.FP
 import com.phasmidsoftware.util.FP.partition
+import com.phasmidsoftware.util.{FP, FunctionIterator, Joinable}
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.annotation.{implicitNotFound, tailrec}
-import scala.collection.AbstractIterator
+import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 /**
   * Type class to parse a set of rows as a Table.
@@ -198,22 +196,19 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
       def join(t1: (T, Int), t2: (T, Int)): (T, Int) = tj.join(t1._1, t2._1) -> (if (t1._2 >= 0) t1._2 else t2._2)
 
-      def zero: (T, Int) = tj.zero -> -1
+      val zero: (T, Int) = tj.zero -> -1
 
       def valid(t: (T, Int)): Boolean = tj.valid(t._1)
     }
 
-    // CONSIDER move the takeFromIterator logic into FunctionIterator and leave the f(_)(header) logic here.
-    def doTry = AbstractTableParser.takeFromIterator[(T, Int), Row](f(_)(header))(ts.zipWithIndex)
-
-    val rys: Iterator[Try[Row]] = for (z <- new FunctionIterator[Row](doTry)) yield z
+    val rys: List[Try[Row]] = (for (z <- new FunctionIterator[(T, Int), Row](f(_)(header))(ts.zipWithIndex)) yield z).toList
     val rsy = if (forgiving) {
-      val (good, bad) = partition(rys.toList)
+      val (good, bad) = partition(rys)
       bad foreach (ry => logException(ry.failed.get))
       FP.sequence(good)
     }
     else
-      FP.sequence(rys.toList)
+      FP.sequence(rys)
     for (rs <- rsy) yield builder(rs, header)
   }
 
@@ -240,97 +235,6 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   }
 
 }
-
-trait Joinable[T] {
-  def join(t1: T, t2: T): T
-
-  def zero: T
-
-  def valid(t: T): Boolean
-}
-
-object Joinable {
-  implicit object JoinableString extends Joinable[String] {
-    def join(t1: String, t2: String): String = t1 + t2
-
-    def zero: String = ""
-
-    def valid(t: String): Boolean = t.nonEmpty
-  }
-
-  implicit object JoinableStrings extends Joinable[Strings] {
-    def join(t1: Strings, t2: Strings): Strings = t1 ++ t2
-
-    def zero: Strings = Nil
-
-    def valid(t: Strings): Boolean = t.nonEmpty
-  }
-}
-
-/**
-  * This iterator gets its input from a call-by-name value, which is essentially a parameterless function.
-  *
-  * @param f the call-by-name value.
-  * @tparam R the underlying type of f and also the result.
-  */
-class FunctionIterator[R](f: => Try[R]) extends AbstractIterator[Try[R]] {
-  // NOTE: yes, this has to be a var here.
-  var ry: Try[R] = Failure(new Exception("FunctionIterator: uninitialized"))
-
-  def hasNext: Boolean = f match {
-    case Success(r) =>
-      ry = Success(r); true
-    case Failure(IteratorExhaustedException) =>
-      false // NOTE: normal end of iterator
-    case Failure(f@MultiLineException(_)) =>
-      throw f // NOTE: this would be a logic error
-    case f@Failure(_) =>
-      ry = f; true
-  }
-
-  def next(): Try[R] = ry
-}
-
-object AbstractTableParser {
-
-  def takeFromIterator[X: Joinable, Y](f: X => Try[Y])(xs: Iterator[X]): Try[Y] = {
-    val xj = implicitly[Joinable[X]]
-    // TODO remove ok
-    var ok = true
-
-    def invokeFunction(xy: Try[X]) = xy match {
-      case Success(x) =>
-        if (xj.valid(x))
-          f(x)
-        else
-          Failure(InvalidInputException(x))
-      case Failure(x) =>
-        Failure(x)
-    }
-
-    @tailrec
-    def inner(xy: Try[X]): Try[Y] = invokeFunction(xy) match {
-      case Success(y) => Success(y)
-      case Failure(MultiLineException(x: X)) =>
-        if (!ok) Failure(new Exception("AbstractTableParser: logic error"))
-        if (xs.hasNext) {
-          val x1 = xs.next()
-          val x2: X = xj.join(x, x1)
-          inner(Success(x2))
-        }
-        else {
-          ok = false
-          Failure(IteratorExhaustedException)
-        }
-      case Failure(InvalidInputException(_)) => Failure(IteratorExhaustedException)
-      case f@Failure(_) => f
-    }
-
-    inner(Failure(MultiLineException(xj.zero)))
-  }
-}
-
-case object IteratorExhaustedException extends Exception("iterator exhausted")
 
 /**
   * Abstract class to extend AbstractTableParser but with Input = String.
@@ -391,6 +295,3 @@ abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true
 }
 
 case class TableParserException(msg: String, e: Option[Throwable] = None) extends Exception(msg, e.orNull)
-
-// CONSIDER removing the parameter x
-case class InvalidInputException[X](x: X) extends Exception(s"invalid input: $x")
