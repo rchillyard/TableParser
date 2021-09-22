@@ -21,6 +21,15 @@ object FP {
   /**
     * Sequence method to combine elements of Try.
     *
+    * @param xos an Iterator of Try[X]
+    * @tparam X the underlying type
+    * @return a Try of Iterator[X]
+    */
+  def sequence[X](xos: Iterator[Option[X]]): Option[Iterator[X]] = sequence(xos.to(List)).map(_.iterator)
+
+  /**
+    * Sequence method to combine elements of Try.
+    *
     * @param xys an Iterable of Try[X]
     * @tparam X the underlying type
     * @return a Try of Seq[X]
@@ -29,6 +38,19 @@ object FP {
   def sequence[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
     xys.foldLeft(Try(Seq[X]())) {
       (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
+    }
+
+  /**
+    * Sequence method to combine elements of Try.
+    *
+    * @param xos an Iterable of Option[X]
+    * @tparam X the underlying type
+    * @return an Option of Seq[X]
+    *         NOTE: that the output collection type will be Seq, regardless of the input type
+    */
+  def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
+    xos.foldLeft(Option(Seq[X]())) {
+      (xso, xo) => for (xs <- xso; x <- xo) yield xs :+ x
     }
 
   /**

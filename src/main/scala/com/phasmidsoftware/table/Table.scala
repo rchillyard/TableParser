@@ -9,6 +9,7 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.Reflection
+
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -254,6 +255,10 @@ trait Table[Row] extends Iterable[Row] {
     * @return a Table like this Table but with takeWhile(p) rows.
     */
   override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
+
+  def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
+
+  def column(name: String): Iterator[Option[String]]
 }
 
 object Table {
@@ -616,11 +621,13 @@ case class UnheadedTable[Row](rows: Iterable[Row]) extends RenderableTable[Row](
     case Some(h) => HeadedTable(rows, h)
     case None => UnheadedTable(rows)
   }
+
+  def column(name: String): Iterator[Option[String]] = Iterator.empty
 }
 
 /**
   * Concrete case class implementing RenderableTable with a Header.
-  * The unit and apply methods are such that rows is in fact an Array[Row].
+  * The unit and apply methods are such that rows is in fact an Array[Row] (??).
   *
   * NOTE: the existence or not of a Header in a RenderableTable only affects how the table is rendered.
   * The parsing of a table always has a header of some sort.
@@ -642,6 +649,15 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
     case Some(h) => HeadedTable(rows, h)
     case None => UnheadedTable(rows)
   }
+
+  def column(name: String): Iterator[Option[String]] = {
+    val maybeIndex = maybeColumnNames map (_.indexOf(name))
+    rows.iterator map {
+      case ws: Seq[Any] => maybeIndex map (ws(_).toString)
+      case _ => None
+    }
+  }
+
 }
 
 /**
