@@ -517,7 +517,8 @@ Release Notes
 =============
 
 V1.0.13 -> V1.0.14
-* ?
+* Enabled multi-line quoted strings: if a quoted string spans more than one line, this is acceptable.
+* Implemented _Table.parseResourceRaw_ and _Table.parseFileRaw_ for those situations where you just want to parse an input file into a _Table\[Seq\[String]]_.
 
 V1.0.12 -> V1.0.13
 * mostly concerned with publishing TableParser in Maven Central

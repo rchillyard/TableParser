@@ -56,11 +56,12 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
   /**
     * Method to parse a String and return a Try[Row].
     *
-    * @param indexedString      the row and index as a (String., Int)
-    * @param header the header already parsed.
+    * @param indexedString the row and index as a (String., Int)
+    * @param header        the header already parsed.
     * @return a Try[Row].
     */
-  def parse(indexedString: (String, Int))(header: Header): Try[Row] = for (ws <- parser.parseRow(indexedString); r <- RowValues(Row(ws, header, indexedString._2)).convertTo[Row]) yield r
+  def parse(indexedString: (String, Int))(header: Header): Try[Row] =
+    for (ws <- parser.parseRow(indexedString); r <- doConversion(indexedString, header, ws)) yield r
 
   /**
     * Method to parse a String as a Try[Header].
@@ -69,6 +70,9 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
     * @return a Try[Header].
     */
   def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow((w, -1))) yield Header(ws)
+
+  private def doConversion(indexedString: (String, Int), header: Header, ws: Strings) =
+    RowValues(Row(ws, header, indexedString._2)).convertTo[Row]
 }
 
 object StandardRowParser {
@@ -93,12 +97,12 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
   /**
     * Method to parse a sequence of String into a Try[Row].
     *
-    *
-    * @param indexedString      the rows and index as a (Strings., Int)
-    * @param header the header already parsed.
+    * @param indexedString the rows and index as a (Strings., Int)
+    * @param header        the header already parsed.
     * @return a Try[Row].
     */
-  def parse(indexedString: (Strings, Int))(header: Header): Try[Row] = RowValues(Row(indexedString._1, header, indexedString._2)).convertTo[Row]
+  def parse(indexedString: (Strings, Int))(header: Header): Try[Row] =
+    RowValues(Row(indexedString._1, header, indexedString._2)).convertTo[Row]
 
   /**
     * Method to parse a sequence of Strings as a Try[Header].

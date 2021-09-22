@@ -31,7 +31,7 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
     // CONSIDER why do we have a concrete Table type mentioned here?
-    protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+    protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
   }
 
 }

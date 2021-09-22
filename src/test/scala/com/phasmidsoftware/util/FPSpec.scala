@@ -4,12 +4,11 @@
 
 package com.phasmidsoftware.util
 
-import java.io.InputStream
-
 import com.phasmidsoftware.util.FP._
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
+import java.io.InputStream
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -32,7 +31,23 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val try2 = Success(2)
     val try3 = Failure(FPException(""))
     sequence(Seq(try1, try2)) shouldBe Success(Seq(1, 2))
-    sequence(Seq(try1, try3)) should matchPattern { case Failure(_) => }
+    val result: Try[Seq[Int]] = sequence(Seq(try1, try3))
+    result should matchPattern { case Failure(_) => }
+  }
+
+  it should "partition 1" in {
+    val try1 = Success(1)
+    val try2 = Success(2)
+    val (good, bad) = partition(Seq(try1, try2).iterator)
+    good.toSeq shouldBe List(try1, try2)
+    bad.isEmpty shouldBe true
+  }
+  it should "partition 2" in {
+    val try1 = Success(1)
+    val try3 = Failure(FPException(""))
+    val (good, bad) = partition(Seq(try1, try3).iterator)
+    good.toSeq shouldBe List(try1)
+    bad.toSeq shouldBe List(try3)
   }
 
   behavior of "safeResource"

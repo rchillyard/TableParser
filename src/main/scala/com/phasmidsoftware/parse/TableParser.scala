@@ -6,12 +6,13 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.RawRow
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
-import com.phasmidsoftware.util.FP
+import com.phasmidsoftware.util.FP.partition
+import com.phasmidsoftware.util.{FP, FunctionIterator, Joinable}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
   * Type class to parse a set of rows as a Table.
@@ -42,11 +43,13 @@ trait TableParser[Table] {
     * Default method to create a new table.
     * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
     *
+    * CONSIDER changing Iterable back to Iterator as it was at V1.0.13.
+    *
     * @param rows   the rows which will make up the table.
     * @param header the Header, derived either from the program or the data.
     * @return an instance of Table.
     */
-  protected def builder(rows: Iterator[Row], header: Header): Table
+  protected def builder(rows: Iterable[Row], header: Header): Table
 
   /**
     * Method to determine how errors are handled.
@@ -54,6 +57,13 @@ trait TableParser[Table] {
     * @return true if individual errors are logged but do not cause parsing to fail.
     */
   protected val forgiving: Boolean = false
+
+  /**
+    * Value to determine whether it is acceptable to have a quoted string span more than one line.
+    *
+    * @return true if quoted strings may span more than one line.
+    */
+  protected val multiline: Boolean = false
 
   /**
     * Method to define a row parser.
@@ -69,20 +79,10 @@ trait TableParser[Table] {
     * @return a Try[Table]
     */
   def parse(xs: Iterator[Input]): Try[Table]
-
-  /**
-    * Method to log any failures (only in forgiving mode).
-    *
-    * @param rys the sequence of Try[Row]
-    * @return a sequence of Try[Row] which will all be of type Success.
-    */
-  protected def logFailures(rys: Iterator[Try[Row]]): Iterator[Try[Row]]
 }
 
 object TableParser {
   val logger: Logger = LoggerFactory.getLogger(TableParser.getClass)
-
-
 }
 
 /**
@@ -92,7 +92,7 @@ object TableParser {
   * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
   * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
   */
-case class RawTableParser(maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = true) extends StringTableParser[Table[Seq[String]]] {
+case class RawTableParser(maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = true, override val multiline: Boolean = true) extends StringTableParser[Table[Seq[String]]] {
   type Row = RawRow
 
   implicit val stringSeqParser: CellParser[RawRow] = new CellParsers {}.cellParserSeq
@@ -100,7 +100,7 @@ case class RawTableParser(maybeFixedHeader: Option[Header] = None, override val 
   val rowParser: RowParser[Row, String] = StandardRowParser[RawRow]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
-  protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+  protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 }
 
 /**
@@ -121,7 +121,7 @@ case class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: O
   type Row = X
 
 
-  protected def builder(rows: Iterator[X], header: Header): Table[Row] = maybeFixedHeader match {
+  protected def builder(rows: Iterable[X], header: Header): Table[Row] = maybeFixedHeader match {
     case Some(h) => HeadedTable(rows, h)
     case None => HeadedTable(rows, Header[Row]()) // CHECK
   }
@@ -180,37 +180,56 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   /**
     * Common code for parsing rows.
     *
+    * CONSIDER convert T to Input
+    *
+    * CONSIDER switch order of f
+    *
     * @param ts     a sequence of Ts.
     * @param header the Header.
-    * @param f      a curried function which transforms a T into a function which is of type Header => Try[Row].
-    * @tparam T the parametric type of the resulting Table. T corresponds to Input in the calling method, i.e. a Row.
+    * @param f      a curried function which transforms a (T, Int) into a function which is of type Header => Try[Row].
+    * @tparam T the parametric type of the resulting Table. T corresponds to Input in the calling method, i.e. a Row. Must be Joinable.
     * @return a Try of Table
     */
-  protected def doParseRows[T](ts: Iterator[T], header: Header, f: ((T, Int)) => Header => Try[Row]): Try[Table] = {
-    val rys: Iterator[Try[Row]] = for (t <- ts.zipWithIndex) yield f(t)(header)
-    for (rs <- FP.sequence(if (forgiving) logFailures(rys) else rys)) yield builder(rs, header)
-  }
+  protected def doParseRows[T: Joinable](ts: Iterator[T], header: Header, f: ((T, Int)) => Header => Try[Row]): Try[Table] = {
+    implicit object Z extends Joinable[(T, Int)] {
+      private val tj: Joinable[T] = implicitly[Joinable[T]]
 
-  /**
-    * Method to log any failures (only in forgiving mode).
-    *
-    * @param rys the sequence of Try[Row]
-    * @return a sequence of Try[Row] which will all be of type Success.
-    */
-  protected def logFailures(rys: Iterator[Try[Row]]): Iterator[Try[Row]] = {
-    def logException(e: Throwable): Unit = {
-      val string = s"${e.getLocalizedMessage}${
-        if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
-      }"
-      TableParser.logger.warn(string)
+      def join(t1: (T, Int), t2: (T, Int)): (T, Int) = tj.join(t1._1, t2._1) -> (if (t1._2 >= 0) t1._2 else t2._2)
+
+      val zero: (T, Int) = tj.zero -> -1
+
+      def valid(t: (T, Int)): Boolean = tj.valid(t._1)
     }
 
-    val (good, bad) = rys.partition(_.isSuccess)
-    if (bad.isEmpty) TableParser.logger.warn("forgiving mode is set but there are no failures")
-    bad.map(_.failed.get) foreach (e => logException(e))
-    good
+    def mapTsToRows = if (multiline)
+      for (z <- new FunctionIterator[(T, Int), Row](f(_)(header))(ts.zipWithIndex)) yield z
+    else
+      for (z <- ts.zipWithIndex) yield f(z)(header)
+
+    def handleFailures(rys: List[Try[Row]]) = if (forgiving) {
+      val (good, bad) = partition(rys)
+      bad foreach AbstractTableParser.logException[Row]
+      FP.sequence(good)
+    }
+    else
+      FP.sequence(rys)
+
+    for (rs <- handleFailures(mapTsToRows.toList)) yield builder(rs, header)
+  }
+}
+
+object AbstractTableParser {
+  def logException(e: Throwable): Unit = {
+    val string = s"${e.getLocalizedMessage}${
+      if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
+    }"
+    TableParser.logger.warn(string)
   }
 
+  def logException[X](xy: Try[X]): Unit = xy match {
+    case Success(_) =>
+    case Failure(exception) => logException(exception)
+  }
 }
 
 /**

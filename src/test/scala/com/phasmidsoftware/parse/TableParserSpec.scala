@@ -4,12 +4,12 @@
 
 package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.RawRow
 import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -46,7 +46,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object IntPairRowParser extends IntPairRowParser
 
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
-      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, header)
+      protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, header)
 
       type Row = IntPair
 
@@ -106,7 +106,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
@@ -159,13 +159,22 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   }
 
-  it should "parse empty sequence" in {
+  it should "fail empty sequence" in {
     import DailyRaptorReport._
 
     val raw = Seq(headerRaptors,
       "")
-    val x = for (r <- Table.parse(raw)) yield r
-    x should matchPattern { case Failure(_) => }
+    val xty: Try[Table[DailyRaptorReport]] = for (r <- Table.parse(raw)) yield r
+    xty.isSuccess shouldBe false
+  }
+
+  it should "parse empty sequence" in {
+
+    val raw = Seq(headerRaptors,
+      "")
+    val xty: Try[Table[RawRow]] = for (r <- Table.parseRaw(raw)) yield r
+    xty.isSuccess shouldBe true
+    xty.get.size shouldBe 0
   }
 
   object DailyRaptorReportSeq {
@@ -200,7 +209,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
-      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
     }
 
     implicit object DailyRaptorReportStringsTableParser extends DailyRaptorReportStringsTableParser
@@ -251,7 +260,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = Some(Header.create(header: _*))
 
-      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = HeadedTable(rows, header)
+      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = HeadedTable(rows, header)
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -300,7 +309,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None // Some(header)
 
-      protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
@@ -367,7 +376,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object SubmissionTableParser extends StringTableParser[Table[Submission]] {
       type Row = Submission
 
-      protected def builder(rows: Iterator[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
+      protected def builder(rows: Iterable[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
 
       val maybeFixedHeader: Option[Header] = None // Some(header)
 
