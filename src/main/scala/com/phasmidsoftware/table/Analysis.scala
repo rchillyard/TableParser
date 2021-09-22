@@ -3,6 +3,8 @@ package com.phasmidsoftware.table
 import com.phasmidsoftware.util.FP
 import com.phasmidsoftware.util.FP.sequence
 
+import scala.util.Try
+
 case class Analysis(rows: Int, columns: Int, columnMap: Map[String, Column]) {
   override def toString: String = s"Analysis: rows: $rows, columns: $columns, $showColumnMap"
 
@@ -48,8 +50,9 @@ object Column {
   def make(xs: Iterator[String]): Option[Column] = {
     val (ws, nulls) = xs.toList.partition(_.nonEmpty)
     val optional = nulls.nonEmpty
-    val co1: Option[Column] = for (xs <- sequence(for (w <- ws) yield w.toIntOption); ys = xs map (_.toDouble)) yield Column("Int", optional, Statistics.make(ys))
-    lazy val co2: Option[Column] = for (xs <- sequence(for (w <- ws) yield w.toDoubleOption); ys = xs) yield Column("Double", optional, Statistics.make(ys))
+    // 2.12 the following two lines
+    val co1: Option[Column] = for (xs <- sequence(for (w <- ws) yield Try(w.toInt).toOption); ys = xs map (_.toDouble)) yield Column("Int", optional, Statistics.make(ys))
+    lazy val co2: Option[Column] = for (xs <- sequence(for (w <- ws) yield Try(w.toDouble).toOption); ys = xs) yield Column("Double", optional, Statistics.make(ys))
     co1 orElse co2 orElse Some(Column("String", optional, None))
   }
 }

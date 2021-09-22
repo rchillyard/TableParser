@@ -5,8 +5,29 @@
 package com.phasmidsoftware.util
 
 import java.net.URL
-import scala.util.Using.Releasable
-import scala.util.{Failure, Success, Try, Using}
+import scala.io.BufferedSource
+import scala.util.{Failure, Success, Try}
+
+// Only required for scala 2.12...
+trait Releasable[T] {
+  def release(t: T) = t match {
+    case x: AutoCloseable => x.close()
+    case _ =>
+  }
+}
+
+object Releasable {
+  implicit object ReleaseableBufferedSource extends Releasable[BufferedSource]
+}
+
+case class Using[R: Releasable, T](r: R)(f: R => T) extends (() => Try[T]) {
+  override def apply(): Try[T] = {
+    val ty = Try(f(r))
+    implicitly[Releasable[R]].release(r)
+    ty
+  }
+}
+// ... end of 2.12 stuff
 
 object FP {
   /**
@@ -16,7 +37,7 @@ object FP {
     * @tparam X the underlying type
     * @return a Try of Iterator[X]
     */
-  def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] = sequence(xys.to(List)).map(_.iterator)
+  def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] = sequence(xys.toList).map(_.iterator) // 2.12
 
   /**
     * Sequence method to combine elements of Try.
@@ -25,7 +46,7 @@ object FP {
     * @tparam X the underlying type
     * @return a Try of Iterator[X]
     */
-  def sequence[X](xos: Iterator[Option[X]]): Option[Iterator[X]] = sequence(xos.to(List)).map(_.iterator)
+  def sequence[X](xos: Iterator[Option[X]]): Option[Iterator[X]] = sequence(xos.toList).map(_.iterator) // 2.12
 
   /**
     * Sequence method to combine elements of Try.
@@ -104,7 +125,7 @@ object FP {
     * @tparam A the underlying type of the result.
     * @return a Try[A]
     */
-  def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f).flatten
+  def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f)(implicitly[Releasable[R]])().flatten // 2.12
 }
 
 case class FPException(msg: String, eo: Option[Throwable] = None) extends Exception(msg, eo.orNull)

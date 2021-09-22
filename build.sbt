@@ -4,7 +4,7 @@ name := "TableParser"
 
 version := "1.0.14"
 
-scalaVersion := "2.13.6"
+scalaVersion := "2.12.9"
 
 scalacOptions += "-deprecation"
 
@@ -19,7 +19,7 @@ lazy val scalaParserCombinatorsVersion = "1.1.2"
 lazy val nScalaTimeVersion = "2.28.0"
 
 libraryDependencies ++= Seq(
-  "com.phasmidsoftware" %% "flog" % "1.0.8",
+//  "com.phasmidsoftware" %% "flog" % "1.0.8",
   "io.spray" %%  "spray-json" % "1.3.6",
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,

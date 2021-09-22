@@ -44,7 +44,8 @@ trait Table[Row] extends Iterable[Row] {
     * @tparam S the type of the rows of the result.
     * @return a Table[S] where each row has value f(x) where x is the value of the corresponding row in this.
     */
-  override def map[S](f: Row => S): Table[S] = unit(rows map f)
+  // override // 2.12
+  def map[S](f: Row => S): Table[S] = unit(rows map f)
 
   /**
     * Transform (flatMap) this Table[Row] into a Table[S].
@@ -195,7 +196,8 @@ trait Table[Row] extends Iterable[Row] {
     *
     * @return a Table[Row] without any rows.
     */
-  override def empty: Table[Row] = unit(Seq.empty)
+  // override 2.12
+  def empty: Table[Row] = unit(Seq.empty)
 
   /**
     * Method to filter the rows of a table.
@@ -295,6 +297,8 @@ object Table {
     * @return a Try[T]
     */
   def parse[T: TableParser](x: => Source): Try[T] = for (z <- Try(x.getLines()); y <- parse(z)) yield y
+
+  import com.phasmidsoftware.util.Releasable // Only required for 2.12
 
   /**
     * Method to parse a table from a URI with an implicit encoding.
@@ -539,7 +543,8 @@ abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option
     val ww = implicitly[Writable[O]]
     val o1 = ww.unit
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
-    (if (rows.knownSize > -1) rows else rows.toList) map {
+    (if (rows.hasDefiniteSize) rows else rows.toList) map { // 2.12
+//      (if (rows.knownSize > -1) rows else rows.toList) map {
       case p: Product => ww.writeRow(o2)(p)
       case xs: Seq[Row] => ww.writeRowElements(o2)(xs)
       case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq)
@@ -666,7 +671,7 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
   * CONSIDER using something else such as Array.
   */
 object HeadedTable {
-  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.to(List), header)
+  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.toList, header) // 2.12
 
   def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = HeadedTable(rows, Header.apply[Row]())
 }
@@ -705,8 +710,10 @@ case class Header(xs: Seq[String]) {
 
 object Header {
 
+  type LazyList[T] = Stream[T] // 2.12
+
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
-  lazy val numbers: LazyList[Int] = LazyList.from(1)
+  lazy val numbers: LazyList[Int] = Stream.from(1) // 2.12
   lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
   //  lazy val recursiveLetters: LazyList[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
   //  lazy val generateLetters: LazyList[String] = recursiveLetters
@@ -736,7 +743,7 @@ object Header {
       case "x" => "x"
     }
     val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
-    wss.foldLeft(LazyList.empty[String])(_ #::: _)
+    wss.foldLeft(Stream.empty[String])(_ #::: _) // 2.12
   }
 
   def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
