@@ -19,13 +19,15 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
     val mty: Try[RawTable] = Table.parseResourceRaw(airBNBFile)
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     mty match {
-      case Success(t@HeadedTable(r, _)) =>
+      case Success(t@HeadedTable(_, _)) =>
         val analysis = Analysis(t)
         analysis.rows shouldBe 254
         analysis.columns shouldBe 87
         analysis.columnMap.size shouldBe 87
-        analysis.columnMap("bedrooms") should matchPattern { case Column("Int", _) => }
-      //        r take 254 foreach println
+        analysis.columnMap("bedrooms") should matchPattern { case Column("Int", false, _) => }
+        analysis.columnMap("accommodates").toString shouldBe "Int (range: 1.0-10.0, mean: 2.783464566929134, stdDev: 1.7670324685210184)"
+        analysis.columnMap("license").toString shouldBe "optional Int"
+      //        println(analysis)
     }
   }
 
