@@ -19,7 +19,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
     val mty: Try[RawTable] = Table.parseResourceRaw(airBNBFile)
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     mty match {
-      case Success(t@HeadedTable(_, _)) =>
+      case Success(t) =>
         val analysis = Analysis(t)
         analysis.rows shouldBe 254
         analysis.columns shouldBe 87

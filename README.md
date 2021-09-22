@@ -11,7 +11,7 @@
 
 A functional parser of tables implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.
-But other formats are perfectly possible to parse.
+However, it is perfectly possible to parse other formats.
 
 _TableParser_ aims to make it as simple as possible to ingest a fully-typed tabular dataset.
 The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
@@ -78,10 +78,27 @@ The _Table_ trait expresses the result of parsing from a representation of a tab
 Each row is represented by a parametric type _Row_.
 Typically, this _Row_ type is a case class with one parameter corresponding to one column in the table file.
 However, some table files will have too many columns to be practical for this correspondence.
-It is normal, therefore, to group the columns together logically so that each parameter itself refers to
-a class which extends _Product_ (i.e. a case class or tuple).
+In such a situation, you have two choices:
+(1) parsing each row as a list of String (also known as a "raw" row);
+(2) parsing each row as a hierarchical arrangement of case classes (or tuples).
+Typically, especially if the dataset is new to you,
+you will start with (1) and run an analysis on the columns to help you design the classes for option (2).
 
-In general, a class hierarchy will model the columns of the table.
+For the first option, you will do something like the following (see the _AnalysisSpec_ unit tests):
+
+    Table.parseResourceRaw(resourceName) match {
+      case Success(t@HeadedTable(_, _)) => println(Analysis(t))
+      case _ =>
+    }
+
+This analysis will give you a list of columns, each showing its name,
+whether or not it is optional (i.e. contains nulls), and (if it's a numerical column),
+its range, mean, and standard deviation.
+
+Incidentally, this raw parser has three signatures, one for resources, one for files, and one for a sequence of Strings.
+And the default for raw row parsing is to allow quoted strings to span multiple lines.
+
+But, if not parsing as raw rows, you will need to design a class hierarchy to model the columns of the table.
 _TableParser_ will take care of any depth of case classes/tuples.
 Currently, there is a limit of 12 parameters per case class/tuple so with a depth of _h_ classes/tuples you could
 handle _12^h_ attributes altogether.
@@ -162,6 +179,7 @@ It is defined thus:
       type Row
       def hasHeader: Boolean
       def forgiving: Boolean = false
+      def multiline: Boolean = false
       def rowParser: RowParser[Row]
       def builder(rows: Seq[Row]): Table
       def parse(ws: Seq[String]): Try[Table] = ...
@@ -171,8 +189,9 @@ The type _Row_ defines the specific row type (for example, _Movie_, in the examp
 _hasHeader_ is used to define if there is a header row in the first line of the file (or sequence of strings) to be parsed.
 _forgiving_, which defaults to _false_, can be set to _true_ if you expect that some rows will not parse, but where this
 will not invalidate your dataset as a whole.
+_multiline_ is used to allow (or disallow when false) quoted strings to span multiple lines.
 
-In forgiving mode, any exceptions thrown in the parsing of a row are collected and then printed to _System.err_ at the conclusion of the parsing of the table.
+In forgiving mode, any exceptions thrown in the parsing of a row are collected and then logged.
 _rowParser_ is the specific parser for the _Row_ type (see below).
 _builder_ is used by the _parse_ method.
 _parse_ is the main method of _TableParser_ and takes a _Seq\[String]_ and yields a _Try\[Table]_.
@@ -518,6 +537,7 @@ Release Notes
 
 V1.0.13 -> V1.0.14
 * Enabled multi-line quoted strings: if a quoted string spans more than one line, this is acceptable.
+* Implemented analysis of raw-row tables.  
 * Implemented _Table.parseResourceRaw_ and _Table.parseFileRaw_ for those situations where you just want to parse an input file into a _Table\[Seq\[String]]_.
 
 V1.0.12 -> V1.0.13
