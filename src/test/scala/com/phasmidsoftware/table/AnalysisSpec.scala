@@ -1,5 +1,6 @@
 package com.phasmidsoftware.table
 
+import com.phasmidsoftware.parse.TableParser
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -16,7 +17,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
     */
   it should "be correct for airbnb2.csv" in {
     val airBNBFile = "/airbnb2.csv"
-    val mty: Try[RawTable] = Table.parseResourceRaw(airBNBFile)
+    val mty: Try[RawTable] = Table.parseResourceRaw(airBNBFile, TableParser.includeAll)
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     mty match {
       case Success(t) =>

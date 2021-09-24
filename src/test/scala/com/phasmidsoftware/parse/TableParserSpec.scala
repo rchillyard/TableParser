@@ -10,6 +10,7 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+
 import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -156,7 +157,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     //noinspection ScalaDeprecation
     val date = new LocalDate(2018, 9, 16)
     x.get.rows.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
-
   }
 
   it should "fail empty sequence" in {
@@ -172,7 +172,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val raw = Seq(headerRaptors,
       "")
-    val xty: Try[Table[RawRow]] = for (r <- Table.parseRaw(raw)) yield r
+    val xty: Try[Table[RawRow]] = for (r <- Table.parseRaw(raw, TableParser.includeAll)) yield r
     xty.isSuccess shouldBe true
     xty.get.size shouldBe 0
   }
