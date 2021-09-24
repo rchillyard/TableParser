@@ -20,10 +20,11 @@ object Releasable {
   implicit object ReleaseableBufferedSource extends Releasable[BufferedSource]
 }
 
-case class Using[R: Releasable, T](r: R)(f: R => T) extends (() => Try[T]) {
+class Using[R: Releasable, T](r: => R)(f: R => T) extends (() => Try[T]) {
   override def apply(): Try[T] = {
     val ty = Try(f(r))
-    implicitly[Releasable[R]].release(r)
+    if (ty.isSuccess)
+      implicitly[Releasable[R]].release(r)
     ty
   }
 }
@@ -125,7 +126,7 @@ object FP {
     * @tparam A the underlying type of the result.
     * @return a Try[A]
     */
-  def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f)(implicitly[Releasable[R]])().flatten // 2.12
+  def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = new Using(resource)(f)(implicitly[Releasable[R]])().flatten // 2.12
 }
 
 case class FPException(msg: String, eo: Option[Throwable] = None) extends Exception(msg, eo.orNull)

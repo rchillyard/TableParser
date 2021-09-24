@@ -141,7 +141,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  it should "return failure(2)" in {
+  // 2.12
+  ignore should "return failure(2)" in {
     lazy val i: InputStream = getClass.getResourceAsStream("emptyResource.txt")
     val wy = safeResource(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
     wy should matchPattern { case Failure(_) => }
