@@ -5,6 +5,7 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.RawRow
+import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP.partition
 import com.phasmidsoftware.util.{FP, FunctionIterator, Joinable}
@@ -12,7 +13,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 /**
   * Type class to parse a set of rows as a Table.
@@ -66,6 +67,12 @@ trait TableParser[Table] {
   protected val multiline: Boolean = false
 
   /**
+    * Function to determine whether or not a row should be included in the table.
+    * Typically used for random sampling.
+    */
+  protected val predicate: Try[Row] => Boolean = includeAll
+
+  /**
     * Method to define a row parser.
     *
     * @return a RowParser[Row, Input].
@@ -82,17 +89,37 @@ trait TableParser[Table] {
 }
 
 object TableParser {
+  val r: Random = new Random()
+
   val logger: Logger = LoggerFactory.getLogger(TableParser.getClass)
+
+  /**
+    * Method to return a random sampling function.
+    *
+    * @param n this is the sample factor: approximately one in every n successful results will form part of the result.
+    * @return a Try[Any] => Boolean function which is always yields false if its input is a failure, otherwise,
+    *         it chooses every nth value (approximately).
+    */
+  def sampler(n: Int): Try[Any] => Boolean = {
+    case Success(_) => r.nextInt(n) == 0
+    case _ => false
+  }
+
+  /**
+    * a function which always evaluates as true, regardless of the successfulness of the input.
+    */
+  val includeAll: Try[Any] => Boolean = _ => true
 }
 
 /**
   * Class used to parse files as a Table of Seq[String].
   * That's to say, no parsing of individual (or groups of) columns.
   *
+  * @param predicate        a predicate which, if true, allows inclusion of the input row.
   * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
   * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
   */
-case class RawTableParser(maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = true, override val multiline: Boolean = true) extends StringTableParser[Table[Seq[String]]] {
+case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = true, override val multiline: Boolean = true) extends StringTableParser[Table[Seq[String]]] {
   type Row = RawRow
 
   implicit val stringSeqParser: CellParser[RawRow] = new CellParsers {}.cellParserSeq
@@ -206,15 +233,15 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     else
       for (z <- ts.zipWithIndex) yield f(z)(header)
 
-    def handleFailures(rys: List[Try[Row]]) = if (forgiving) {
+    def handleFailures(rys: Iterator[Try[Row]]) = if (forgiving) {
       val (good, bad) = partition(rys)
       bad foreach AbstractTableParser.logException[Row]
-      FP.sequence(good)
+      FP.sequence(good filter predicate)
     }
     else
-      FP.sequence(rys)
+      FP.sequence(rys filter predicate)
 
-    for (rs <- handleFailures(mapTsToRows.toList)) yield builder(rs, header)
+    for (rs <- handleFailures(mapTsToRows)) yield builder(rs.toList, header)
   }
 }
 

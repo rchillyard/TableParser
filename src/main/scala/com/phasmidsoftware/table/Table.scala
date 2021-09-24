@@ -5,6 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.RawRow
+import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
@@ -457,8 +458,8 @@ object Table {
     * @param codec            (implicit) the encoding.
     * @return a Try of Table[RawRow] where RawRow is a Seq[String].
     */
-  def parseFileRaw(f: File, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(maybeFixedHeader, forgiving)
+  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](f)
   }
 
@@ -469,8 +470,8 @@ object Table {
     * @param codec    (implicit) the encoding.
     * @return a Try of Table[RawRow] where RawRow is a Seq[String].
     */
-  def parseFileRaw(pathname: String)(implicit codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(None)
+  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
     parseFile[Table[RawRow]](pathname)
   }
 
@@ -484,8 +485,8 @@ object Table {
     * @param codec            (implicit) the encoding.
     * @return a Try of Table[RawRow] where RawRow is a Seq[String].
     */
-  def parseResourceRaw(s: String, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(maybeFixedHeader, forgiving)
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 
@@ -495,8 +496,8 @@ object Table {
     * @param ws the Strings.
     * @return a Try of Table[RawRow]
     */
-  def parseRaw(ws: Iterable[String], maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(maybeFixedHeader, forgiving, multiline)
+  def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
   }
 

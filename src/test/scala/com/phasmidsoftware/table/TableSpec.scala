@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.{RawParsers, RowParser, StringParser, StringTableParser}
+import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP.safeResource
 import org.scalatest.flatspec
@@ -354,7 +354,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "parseResourceRaw"
   it should "parse quotes spanning newlines" in {
-    val mty: Try[RawTable] = Table.parseResourceRaw("multiline.csv")
+    val mty: Try[RawTable] = Table.parseResourceRaw("multiline.csv", TableParser.includeAll)
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     mty match {
       case Success(HeadedTable(r, h)) =>
