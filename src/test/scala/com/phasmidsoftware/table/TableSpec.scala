@@ -352,9 +352,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "parseResourceRaw"
   it should "parse quotes spanning newlines" in {
-    val mty: Try[RawTable] = Table.parseResourceRaw("multiline.csv", TableParser.includeAll)
-    mty should matchPattern { case Success(HeadedTable(_, _)) => }
-    mty match {
+    val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
+    val wsty = TryUsing(Source.fromURL(classOf[TableSpec].getResource("multiline.csv")))(parser parse _)
+    wsty should matchPattern { case Success(HeadedTable(_, _)) => }
+    wsty match {
       case Success(HeadedTable(r, h)) =>
         println(s"parseResourceRaw: successfully read ${r.size} rows")
         println(s"parseResourceRaw: successfully read ${h.size} columns")

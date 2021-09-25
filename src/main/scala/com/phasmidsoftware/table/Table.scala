@@ -474,6 +474,8 @@ object Table {
   /**
     * Method to parse a table from a resource as a table of Seq[String].
     *
+    * NOTE no longer used.
+    *
     * @param s                the resource name.
     * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
     * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
@@ -658,7 +660,6 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
       case _ => None
     }
   }
-
 }
 
 /**

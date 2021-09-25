@@ -23,7 +23,7 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
     val source = Source.fromURL(classOf[AirBNBSpec].getResource(airBNBFile))
 
     // Set up the parser (we set the predicate only for demonstration purposes)
-    val parser = RawTableParser().setPredicate(TableParser.sampler(2))
+    val parser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
 
     // Create the table
     val ssty = parser parse source
@@ -33,7 +33,7 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
       case Success(t@HeadedTable(r, _)) =>
         val analysis = Analysis(t)
         println(s"AirBNB: $analysis")
-        analysis.rows shouldBe 127 +- 16
+        analysis.rows shouldBe 127 +- 32
         r take 100 foreach println
     }
   }
