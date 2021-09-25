@@ -6,7 +6,7 @@ package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
-import com.phasmidsoftware.util.FP.safeResource
+import com.phasmidsoftware.util.TryUsing
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
@@ -142,7 +142,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "return failure(2)" in {
     lazy val i: InputStream = getClass.getResourceAsStream("emptyResource.txt")
-    val wy = safeResource(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
+    val wy = TryUsing(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
     wy should matchPattern { case Failure(_) => }
     wy.recover {
       case _: NoSuchElementException => Success(())

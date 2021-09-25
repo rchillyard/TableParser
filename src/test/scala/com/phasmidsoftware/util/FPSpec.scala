@@ -50,16 +50,16 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
     bad.toSeq shouldBe List(try3)
   }
 
-  behavior of "safeResource"
+  behavior of "TryUsing"
 
   it should "return success" in {
     lazy val i: InputStream = getClass.getResourceAsStream("oneLineResource.txt")
-    val zy: Try[String] = safeResource(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
+    val zy: Try[String] = TryUsing(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
     zy should matchPattern { case Success("Hello World!") => }
   }
 
   it should "return failure(0)" in {
-    val wy = safeResource(Source.fromResource(null))(s => Try(s.getLines().toList.head))
+    val wy = TryUsing(Source.fromResource(null))(s => Try(s.getLines().toList.head))
     wy should matchPattern { case Failure(_) => }
     wy.recover {
       case _: NullPointerException => Success(())
@@ -69,7 +69,7 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "return failure(1)" in {
     lazy val i: InputStream = getClass.getResourceAsStream(null)
-    val wy = safeResource(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
+    val wy = TryUsing(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
     wy should matchPattern { case Failure(_) => }
     wy.recover {
       case _: NullPointerException => Success(())
@@ -79,7 +79,7 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "return failure(2)" in {
     lazy val i: InputStream = getClass.getResourceAsStream("emptyResource.txt")
-    val wy = safeResource(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
+    val wy = TryUsing(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
     wy should matchPattern { case Failure(_) => }
     wy.recover {
       case _: NoSuchElementException => Success(())

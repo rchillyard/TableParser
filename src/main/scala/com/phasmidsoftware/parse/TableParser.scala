@@ -12,6 +12,7 @@ import com.phasmidsoftware.util.{FP, FunctionIterator, Joinable}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.implicitNotFound
+import scala.io.Source
 import scala.reflect.ClassTag
 import scala.util.{Failure, Random, Success, Try}
 
@@ -40,6 +41,8 @@ trait TableParser[Table] {
     */
   protected val maybeFixedHeader: Option[Header]
 
+  //  protected def setHeader(header: Header): TableParser[Table]
+
   /**
     * Default method to create a new table.
     * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
@@ -59,6 +62,8 @@ trait TableParser[Table] {
     */
   protected val forgiving: Boolean = false
 
+  //  protected def setForgiving(forgiving: Boolean): TableParser[Table]
+
   /**
     * Value to determine whether it is acceptable to have a quoted string span more than one line.
     *
@@ -66,11 +71,15 @@ trait TableParser[Table] {
     */
   protected val multiline: Boolean = false
 
+  //  protected def setMultiline(multiline: Boolean): TableParser[Table]
+
   /**
     * Function to determine whether or not a row should be included in the table.
     * Typically used for random sampling.
     */
   protected val predicate: Try[Row] => Boolean = includeAll
+
+  //  protected def setPredicate(predicate: Boolean): TableParser[Table]
 
   /**
     * Method to define a row parser.
@@ -78,6 +87,8 @@ trait TableParser[Table] {
     * @return a RowParser[Row, Input].
     */
   protected val rowParser: RowParser[Row, Input]
+
+  //  protected def setRowParser(rowParser: RowParser[Row, Input]): TableParser[Table]
 
   /**
     * Method to parse a table based on a sequence of Inputs.
@@ -89,6 +100,13 @@ trait TableParser[Table] {
 }
 
 object TableParser {
+
+  implicit class ImplicitParser[T](p: StringTableParser[T]) {
+    def parse(xs: Iterator[String]): Try[T] = p.parse(xs)
+
+    def parse(s: Source): Try[T] = parse(s.getLines())
+  }
+
   val r: Random = new Random()
 
   val logger: Logger = LoggerFactory.getLogger(TableParser.getClass)

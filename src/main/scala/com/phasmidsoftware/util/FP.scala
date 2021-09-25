@@ -94,7 +94,9 @@ object FP {
     case x if x >= 0 => Success(x)
     case _ => Failure(FPException(s"Header column $w not found"))
   }
+}
 
+object TryUsing {
   /**
     * This method is to Using.apply as flatMap is to Map.
     *
@@ -104,7 +106,7 @@ object FP {
     * @tparam A the underlying type of the result.
     * @return a Try[A]
     */
-  def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f).flatten
+  def apply[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f).flatten
 }
 
 case class FPException(msg: String, eo: Option[Throwable] = None) extends Exception(msg, eo.orNull)
