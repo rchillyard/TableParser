@@ -15,11 +15,11 @@ class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "implicit class"
 
-  val source: Source = Source.fromURL(classOf[Table[_]].getResource("movie_metadata.csv"))
+  private val source = Source.fromURL(classOf[Table[_]].getResource("movie_metadata.csv"))
 
-  val parser: StringTableParser[Table[Movie]] = MovieTableParser
+  private val parser = MovieTableParser
 
-  val ty: Try[Table[Movie]] = parser parse source
+  private val ty = parser parse source
 
   ty match {
     case Success(t) => println(s"Table read with ${t.rows} rows")
