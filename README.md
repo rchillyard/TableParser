@@ -180,6 +180,7 @@ It is defined thus:
       def hasHeader: Boolean
       def forgiving: Boolean = false
       def multiline: Boolean = false
+      val predicate: Try[Row] => Boolean = includeAll
       def rowParser: RowParser[Row]
       def builder(rows: Seq[Row]): Table
       def parse(ws: Seq[String]): Try[Table] = ...
@@ -195,6 +196,12 @@ In forgiving mode, any exceptions thrown in the parsing of a row are collected a
 _rowParser_ is the specific parser for the _Row_ type (see below).
 _builder_ is used by the _parse_ method.
 _parse_ is the main method of _TableParser_ and takes a _Seq\[String]_ and yields a _Try\[Table]_.
+
+The predicate is used to filter rows (which are the results of parsing).
+By default, all rows are included.
+_TableParser_ also provides a method (_sampler_) to create a random sampling function.
+Note, however, that a significant part of the time for building a table from a large file is just reading and parsing the file.
+Sampling will not reduce this portion of the time.
 
 Associated with _TableParser_ is an abstract class called _TableParserHelper_ whose purpose is to make your coding job easier.
 _TableParserHelper_ is designed to be extended (i.e. sub-classed) by the companion object of the case class that you
@@ -537,7 +544,8 @@ Release Notes
 
 V1.0.13 -> V1.0.14
 * Enabled multi-line quoted strings: if a quoted string spans more than one line, this is acceptable.
-* Implemented analysis of raw-row tables.  
+* Implemented analysis of raw-row tables.
+* Implemented sampling of input.
 * Implemented _Table.parseResourceRaw_ and _Table.parseFileRaw_ for those situations where you just want to parse an input file into a _Table\[Seq\[String]]_.
 
 V1.0.12 -> V1.0.13
