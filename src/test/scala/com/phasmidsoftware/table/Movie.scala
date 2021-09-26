@@ -149,7 +149,7 @@ object MovieParser extends CellParsers {
 
   implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
 
-  implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+  trait MovieTableParser extends StringTableParser[Table[Movie]] {
     type Row = Movie
 
     val maybeFixedHeader: Option[Header] = None
@@ -160,6 +160,8 @@ object MovieParser extends CellParsers {
 
     protected def builder(rows: Iterable[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
   }
+
+  implicit object MovieTableParser extends MovieTableParser
 }
 
 object Name {
