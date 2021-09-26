@@ -27,7 +27,7 @@ class AirBNBFuncSpec extends AnyFlatSpec with Matchers {
       case Success(HeadedTable(r, h)) =>
         println(s"AirBNB: successfully read ${r.size} rows")
         println(s"AirBNB: successfully read ${h.size} columns")
-        r.size shouldBe linesInFile / n +- 100
+        r.size shouldBe linesInFile / n +- 200
         r take 254 foreach println
       case _ =>
     }

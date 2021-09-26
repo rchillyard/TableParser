@@ -5,7 +5,9 @@
 package com.phasmidsoftware.util
 
 import java.net.URL
-import scala.io.BufferedSource
+import scala.io.{BufferedSource, Source}
+import scala.util.{Failure, Success, Try}
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 // Only required for scala 2.12...
@@ -17,7 +19,8 @@ trait Releasable[T] {
 }
 
 object Releasable {
-  implicit object ReleaseableBufferedSource extends Releasable[BufferedSource]
+  implicit object ReleasableBufferedSource extends Releasable[BufferedSource]
+  implicit object ReleasableSource extends Releasable[Source]
 }
 
 class Using[R: Releasable, T](r: => R)(f: R => T) extends (() => Try[T]) {
@@ -31,6 +34,7 @@ class Using[R: Releasable, T](r: => R)(f: R => T) extends (() => Try[T]) {
 // ... end of 2.12 stuff
 
 object FP {
+
   /**
     * Sequence method to combine elements of Try.
     *
@@ -94,13 +98,22 @@ object FP {
   def partition[X](xys: Seq[Try[X]]): (Seq[Try[X]], Seq[Try[X]]) = xys.partition(_.isSuccess)
 
   /**
+    * Method to yield a URL for a given resourceForClass in the classpath for C.
+    *
+    * @param resourceName the name of the resourceForClass.
+    * @tparam C a class of the package containing the resourceForClass.
+    * @return a Try[URL].
+    */
+  def resource[C: ClassTag](resourceName: String): Try[URL] = resourceForClass(resourceName, implicitly[ClassTag[C]].runtimeClass)
+
+  /**
     * Method to yield a Try[URL] for a resource name and a given class.
     *
     * @param resourceName the name of the resource.
-    * @param clazz        the class, relative to which, the resource can be found.
+    * @param clazz        the class, relative to which, the resource can be found (defaults to the caller's class).
     * @return a Try[URL]
     */
-  def getURLForResource(resourceName: String, clazz: Class[_] = getClass): Try[URL] = Option(clazz.getResource(resourceName)) match {
+  def resourceForClass(resourceName: String, clazz: Class[_] = getClass): Try[URL] = Option(clazz.getResource(resourceName)) match {
     case Some(u) => Success(u)
     case None => Failure(FPException(s"$resourceName is not a valid resource for $clazz"))
   }
@@ -116,16 +129,31 @@ object FP {
     case x if x >= 0 => Success(x)
     case _ => Failure(FPException(s"Header column $w not found"))
   }
+}
 
+object TryUsing {
   /**
     * This method is to Using.apply as flatMap is to Map.
     *
-    * @param resource a resource which is used by f and will be managed via Using.resource
+    * @param resource a resource which is used by f and will be managed via Using.apply
     * @param f        a function of R => Try[A].
     * @tparam R the resource type.
     * @tparam A the underlying type of the result.
     * @return a Try[A]
     */
+  def apply[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = new Using(resource)(f)(implicitly[Releasable[R]])().flatten // 2.12
+
+  /**
+    * This method is similar to apply(r) but it takes a Try[R] as its parameter.
+    * The definition of f is the same as in the other apply, however.
+    *
+    * @param ry a Try[R] which is passed into f and will be managed via Using.apply
+    * @param f  a function of R => Try[A].
+    * @tparam R the resource type.
+    * @tparam A the underlying type of the result.
+    * @return a Try[A]
+    */
+  def tryIt[R: Releasable, A](ry: => Try[R])(f: R => Try[A]): Try[A] = for (r <- ry; a <- apply(r)(f)) yield a
   def safeResource[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = new Using(resource)(f)(implicitly[Releasable[R]])().flatten // 2.12
 }
 

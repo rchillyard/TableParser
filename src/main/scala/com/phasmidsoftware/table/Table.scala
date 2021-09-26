@@ -9,7 +9,7 @@ import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
-import com.phasmidsoftware.util.Reflection
+import com.phasmidsoftware.util.{Reflection, TryUsing}
 
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
@@ -309,7 +309,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = safeResource(Source.fromURI(u))(parse(_))
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = TryUsing(Source.fromURI(u))(parse(_))
 
   /**
     * Method to parse a table from a URI with an explicit encoding.
@@ -334,7 +334,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = safeResource(Source.fromInputStream(i))(parse(_))
+  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = TryUsing(Source.fromInputStream(i))(parse(_))
 
   /**
     * Method to parse a table from an InputStream with an explicit encoding.
@@ -374,7 +374,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = safeResource(Source.fromFile(f))(parse(_))
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = TryUsing(Source.fromFile(f))(parse(_))
 
   /**
     * Method to parse a table from a File.
@@ -410,7 +410,7 @@ object Table {
     * @return a Try[T]
     */
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
-    safeResource(Source.fromURL(clazz.getResource(s)))(parse(_))
+    TryUsing(Source.fromURL(clazz.getResource(s)))(parse(_))
 
   /**
     * Method to parse a table from a URL.
@@ -432,7 +432,7 @@ object Table {
     * @tparam T the type of the resulting table.
     * @return a Try[T]
     */
-  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = safeResource(Source.fromURL(u, enc))(parse(_))
+  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = TryUsing(Source.fromURL(u, enc))(parse(_))
 
   /**
     * Method to parse a table from a Seq of Seq of String.
@@ -477,6 +477,8 @@ object Table {
 
   /**
     * Method to parse a table from a resource as a table of Seq[String].
+    *
+    * NOTE no longer used.
     *
     * @param s                the resource name.
     * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
@@ -663,7 +665,6 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
       case _ => None
     }
   }
-
 }
 
 /**

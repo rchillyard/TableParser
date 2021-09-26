@@ -6,7 +6,8 @@ package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
-import com.phasmidsoftware.util.FP.safeResource
+import com.phasmidsoftware.util.FP.resource
+import com.phasmidsoftware.util.TryUsing
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
@@ -144,7 +145,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   // 2.12
   ignore should "return failure(2)" in {
     lazy val i: InputStream = getClass.getResourceAsStream("emptyResource.txt")
-    val wy = safeResource(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
+    val wy = TryUsing(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
     wy should matchPattern { case Failure(_) => }
     wy.recover {
       case _: NoSuchElementException => Success(())
@@ -355,9 +356,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "parseResourceRaw"
   it should "parse quotes spanning newlines" in {
-    val mty: Try[RawTable] = Table.parseResourceRaw("multiline.csv", TableParser.includeAll)
-    mty should matchPattern { case Success(HeadedTable(_, _)) => }
-    mty match {
+    val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
+    val sy = resource[TableSpec]("multiline.csv") map Source.fromURL
+    val wsty = parser parse sy
+    wsty should matchPattern { case Success(HeadedTable(_, _)) => }
+    wsty match {
       case Success(HeadedTable(r, h)) =>
         println(s"parseResourceRaw: successfully read ${r.size} rows")
         println(s"parseResourceRaw: successfully read ${h.size} columns")

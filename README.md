@@ -35,8 +35,13 @@ together with something like, for instance, a Json writer.
 Quick Intro
 ===========
 
-This library contains an application Pairings which takes a CSV file, parses it, transforms the data,
+The simplest way to get an introduction to TableParser is to consult the airbnb.sc and movie.sc worksheets.
+These give detailed descriptions of each stage of the process.
+
+Another way to see how it works is to look at this application Pairings which takes a CSV file, parses it, transforms the data,
 and outputs a JSON file.
+This way of parsing is a little different than what is shown in the worksheets.
+But both are effective.
 The minimum code necessary to read parse the CSV file as a table of "Player"s, using as many defaults as possible is:
 
     case class Player(first: String, last: String)
@@ -164,11 +169,21 @@ The following object methods are available for parsing text:
 *  def parseResource\[T: TableParser](u: URL)(implicit codec: Codec): Try\[T]
 *  def parseSequence\[T: TableParser](wss: Seq\[Seq\[String]]): Try\[T]
 
-Please note that, in the case of a parameter being an Auto-closeable object such as InputStream or Source,
+Please note that, in the case of a parameter being an Auto-closeable object such as _InputStream_ or Source,
 it is the caller's responsibility to close it after parsing.
 However, if the parameter is a File, or filename, or URL/URI, then any Source object that is instantiated within
 the parse method will be closed.
 This applies also to the parseInputStream methods: the internally defined Source will be closed (but not the stream).
+
+Additionally, there is an implicit class called _ImplicitParser_ (defined in the _TableParser_ companion object)
+which allows for expressions such as:
+
+    parser parse source
+
+This is the recommended way to parse because it is the simplest.
+It also allows chaining of "lens" methods to configure the parser, for example:
+
+    val parser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
 
 ## TableParser
 
@@ -233,7 +248,6 @@ These define, respectively, the delimiter regex, the string regex, list enclosur
 Rather than invoke the constructor directly, it is easier to invoke the companion object's _apply_ method, which takes a single implicit parameter: a _RowConfig_.
 Two consecutive quote characters, within a quoted string, will be parsed as a single quote character.
 The _LineParser_ constructor will perform some basic checks that its parameters are consistent.
-
 
 ## StringsParser
 
@@ -546,6 +560,7 @@ V1.0.13 -> V1.0.14
 * Enabled multi-line quoted strings: if a quoted string spans more than one line, this is acceptable.
 * Implemented analysis of raw-row tables.
 * Implemented sampling of input.
+* Provided a new mechanism for configuring and using parsers (see the worksheets).
 * Implemented _Table.parseResourceRaw_ and _Table.parseFileRaw_ for those situations where you just want to parse an input file into a _Table\[Seq\[String]]_.
 
 V1.0.12 -> V1.0.13
