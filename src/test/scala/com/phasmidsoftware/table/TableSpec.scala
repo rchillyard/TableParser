@@ -355,7 +355,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse quotes spanning newlines" in {
     val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
     val sy = resource[TableSpec]("multiline.csv") map Source.fromURL
-    val wsty = TryUsing.tryIt(sy)(parser parse _)
+    val wsty = parser parse sy
     wsty should matchPattern { case Success(HeadedTable(_, _)) => }
     wsty match {
       case Success(HeadedTable(r, h)) =>

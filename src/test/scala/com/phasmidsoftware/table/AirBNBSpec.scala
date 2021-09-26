@@ -2,7 +2,6 @@ package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.util.FP.resource
-import com.phasmidsoftware.util.TryUsing
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -28,7 +27,7 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
     val parser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
 
     // Create the table
-    val wsty: Try[Table[Seq[String]]] = TryUsing.tryIt(sy)(parser parse _)
+    val wsty: Try[Table[Seq[String]]] = parser parse sy
 
     wsty should matchPattern { case Success(HeadedTable(_, _)) => }
     wsty match {

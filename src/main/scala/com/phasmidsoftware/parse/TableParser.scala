@@ -8,7 +8,7 @@ import com.phasmidsoftware.RawRow
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP.partition
-import com.phasmidsoftware.util.{FP, FunctionIterator, Joinable}
+import com.phasmidsoftware.util.{FP, FunctionIterator, Joinable, TryUsing}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.implicitNotFound
@@ -108,11 +108,21 @@ object TableParser {
 
     /**
       * Method to parse a Source.
+      * NOTE the source s will be closed after parsing has been completed (no resource leaks).
       *
-      * @param s aSource.
+      * @param s a Source.
       * @return a Try[T].
       */
-    def parse(s: Source): Try[T] = parse(s.getLines())
+    def parse(s: Source): Try[T] = TryUsing(s)(x => parse(x.getLines()))
+
+    /**
+      * Method to parse a Try[Source].
+      * NOTE the underlying source of sy will be closed after parsing has been completed (no resource leaks).
+      *
+      * @param sy a Source.
+      * @return a Try[T].
+      */
+    def parse(sy: Try[Source]): Try[T] = sy flatMap parse
   }
 
   val r: Random = new Random()
