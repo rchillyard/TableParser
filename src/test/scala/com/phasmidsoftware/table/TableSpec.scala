@@ -6,6 +6,7 @@ package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
+import com.phasmidsoftware.util.FP.resource
 import com.phasmidsoftware.util.TryUsing
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -353,7 +354,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "parseResourceRaw"
   it should "parse quotes spanning newlines" in {
     val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
-    val wsty = TryUsing(Source.fromURL(classOf[TableSpec].getResource("multiline.csv")))(parser parse _)
+    val sy = resource[TableSpec]("multiline.csv") map Source.fromURL
+    val wsty = TryUsing.tryIt(sy)(parser parse _)
     wsty should matchPattern { case Success(HeadedTable(_, _)) => }
     wsty match {
       case Success(HeadedTable(r, h)) =>

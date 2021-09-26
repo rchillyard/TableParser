@@ -1,6 +1,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
+import com.phasmidsoftware.util.FP.resource
 import com.phasmidsoftware.util.TryUsing
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -20,7 +21,8 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
   it should "be correct for airbnb2.csv" in {
     val airBNBFile = "/airbnb2.csv"
     val parser = RawTableParser(TableParser.includeAll, None, forgiving = true).setMultiline(true)
-    val wsty: Try[Table[Seq[String]]] = TryUsing(Source.fromURL(classOf[AnalysisSpec].getResource(airBNBFile)))(parser parse _)
+    val sy: Try[Source] = resource[AnalysisSpec](airBNBFile) map Source.fromURL
+    val wsty = TryUsing.tryIt(sy)(parser parse _)
     wsty should matchPattern { case Success(HeadedTable(_, _)) => }
     wsty match {
       case Success(t) =>

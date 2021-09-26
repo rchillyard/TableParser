@@ -13,12 +13,7 @@ val parser: StringTableParser[MovieTable] = MovieTableParser
 
 import com.phasmidsoftware.parse.TableParser._
 
-val z = 3 times "Hello"
-//val z = implicitly[Parse[MovieTable]]
-
-//val ty: Try[Table[Movie]] = parser.parse(source)
-
-val ty: Try[MovieTable] = parser.parse(source)
+val ty: Try[MovieTable] = parser parse source
 
 ty match {
   case Success(t) => println(t.rows)

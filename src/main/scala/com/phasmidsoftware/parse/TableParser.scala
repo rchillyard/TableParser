@@ -91,9 +91,27 @@ trait TableParser[Table] {
 
 object TableParser {
 
+  /**
+    * Class to allow the simplification of an expression to parse a source, given a StringTableParser.
+    *
+    * @param p a StringTableParser.
+    * @tparam T the underlying type of p (T will be Table[_]).
+    */
   implicit class ImplicitParser[T](p: StringTableParser[T]) {
+    /**
+      * Method to parse an iterator of String.
+      *
+      * @param xs an Iterator[String].
+      * @return a Try[T].
+      */
     def parse(xs: Iterator[String]): Try[T] = p.parse(xs)
 
+    /**
+      * Method to parse a Source.
+      *
+      * @param s aSource.
+      * @return a Try[T].
+      */
     def parse(s: Source): Try[T] = parse(s.getLines())
   }
 

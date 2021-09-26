@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.util
 
+import com.phasmidsoftware.table.TableSpec
 import com.phasmidsoftware.util.FP._
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -19,11 +20,6 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "indexFound" in {
     indexFound("junk", 0) shouldBe Success(0)
     indexFound("junk", -1) should matchPattern { case Failure(FPException("Header column junk not found", None)) => }
-  }
-
-  it should "getURLForResource" in {
-    getURLForResource("testFile.txt", getClass) should matchPattern { case Success(_) => }
-    getURLForResource(".txt", getClass) should matchPattern { case Failure(_) => }
   }
 
   it should "sequence" in {
@@ -85,6 +81,24 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case _: NoSuchElementException => Success(())
       case e => fail(s"wrong exception: $e")
     }
+  }
+
+  behavior of "resource"
+  it should "get proper URL for FP" in {
+    resource[FPSpec]("oneLineResource.txt").isSuccess shouldBe true
+  }
+  it should "get fail to find URL in wrong package" in {
+    resource[FPSpec]("multiline.csv").isSuccess shouldBe false
+  }
+  it should "get URL from TableSpec package" in {
+    resource[TableSpec]("multiline.csv").isSuccess shouldBe true
+  }
+
+  behavior of "resourceForClass"
+  it should "get resources in this package" in {
+    resourceForClass("testFile.txt", getClass) should matchPattern { case Success(_) => }
+    resourceForClass("testFile.txt") should matchPattern { case Success(_) => }
+    resourceForClass(".txt", getClass) should matchPattern { case Failure(_) => }
   }
 
 }

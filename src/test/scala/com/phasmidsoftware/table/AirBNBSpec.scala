@@ -1,6 +1,8 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
+import com.phasmidsoftware.util.FP.resource
+import com.phasmidsoftware.util.TryUsing
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -20,16 +22,16 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
     val airBNBFile = "/airbnb2.csv"
 
     // Set up the source
-    val source = Source.fromURL(classOf[AirBNBSpec].getResource(airBNBFile))
+    val sy: Try[Source] = for (u <- resource[AirBNBSpec](airBNBFile)) yield Source.fromURL(u)
 
     // Set up the parser (we set the predicate only for demonstration purposes)
     val parser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
 
     // Create the table
-    val ssty = parser parse source
+    val wsty: Try[Table[Seq[String]]] = TryUsing.tryIt(sy)(parser parse _)
 
-    ssty should matchPattern { case Success(HeadedTable(_, _)) => }
-    ssty match {
+    wsty should matchPattern { case Success(HeadedTable(_, _)) => }
+    wsty match {
       case Success(t@HeadedTable(r, _)) =>
         val analysis = Analysis(t)
         println(s"AirBNB: $analysis")
@@ -37,5 +39,4 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
         r take 100 foreach println
     }
   }
-
 }
