@@ -11,7 +11,7 @@
 
 A functional parser of tables implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.
-But other formats are perfectly possible to parse.
+However, it is perfectly possible to parse other formats.
 
 _TableParser_ aims to make it as simple as possible to ingest a fully-typed tabular dataset.
 The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
@@ -35,8 +35,13 @@ together with something like, for instance, a Json writer.
 Quick Intro
 ===========
 
-This library contains an application Pairings which takes a CSV file, parses it, transforms the data,
+The simplest way to get an introduction to TableParser is to consult the airbnb.sc and movie.sc worksheets.
+These give detailed descriptions of each stage of the process.
+
+Another way to see how it works is to look at this application Pairings which takes a CSV file, parses it, transforms the data,
 and outputs a JSON file.
+This way of parsing is a little different than what is shown in the worksheets.
+But both are effective.
 The minimum code necessary to read parse the CSV file as a table of "Player"s, using as many defaults as possible is:
 
     case class Player(first: String, last: String)
@@ -67,7 +72,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-Current version: 1.0.13.
+Current version: 1.0.14.
 
 See release notes below for history.
 
@@ -78,10 +83,27 @@ The _Table_ trait expresses the result of parsing from a representation of a tab
 Each row is represented by a parametric type _Row_.
 Typically, this _Row_ type is a case class with one parameter corresponding to one column in the table file.
 However, some table files will have too many columns to be practical for this correspondence.
-It is normal, therefore, to group the columns together logically so that each parameter itself refers to
-a class which extends _Product_ (i.e. a case class or tuple).
+In such a situation, you have two choices:
+(1) parsing each row as a list of String (also known as a "raw" row);
+(2) parsing each row as a hierarchical arrangement of case classes (or tuples).
+Typically, especially if the dataset is new to you,
+you will start with (1) and run an analysis on the columns to help you design the classes for option (2).
 
-In general, a class hierarchy will model the columns of the table.
+For the first option, you will do something like the following (see the _AnalysisSpec_ unit tests):
+
+    Table.parseResourceRaw(resourceName) match {
+      case Success(t@HeadedTable(_, _)) => println(Analysis(t))
+      case _ =>
+    }
+
+This analysis will give you a list of columns, each showing its name,
+whether or not it is optional (i.e. contains nulls), and (if it's a numerical column),
+its range, mean, and standard deviation.
+
+Incidentally, this raw parser has three signatures, one for resources, one for files, and one for a sequence of Strings.
+And the default for raw row parsing is to allow quoted strings to span multiple lines.
+
+But, if not parsing as raw rows, you will need to design a class hierarchy to model the columns of the table.
 _TableParser_ will take care of any depth of case classes/tuples.
 Currently, there is a limit of 12 parameters per case class/tuple so with a depth of _h_ classes/tuples you could
 handle _12^h_ attributes altogether.
@@ -147,11 +169,21 @@ The following object methods are available for parsing text:
 *  def parseResource\[T: TableParser](u: URL)(implicit codec: Codec): Try\[T]
 *  def parseSequence\[T: TableParser](wss: Seq\[Seq\[String]]): Try\[T]
 
-Please note that, in the case of a parameter being an Auto-closeable object such as InputStream or Source,
+Please note that, in the case of a parameter being an Auto-closeable object such as _InputStream_ or Source,
 it is the caller's responsibility to close it after parsing.
 However, if the parameter is a File, or filename, or URL/URI, then any Source object that is instantiated within
 the parse method will be closed.
 This applies also to the parseInputStream methods: the internally defined Source will be closed (but not the stream).
+
+Additionally, there is an implicit class called _ImplicitParser_ (defined in the _TableParser_ companion object)
+which allows for expressions such as:
+
+    parser parse source
+
+This is the recommended way to parse because it is the simplest.
+It also allows chaining of "lens" methods to configure the parser, for example:
+
+    val parser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
 
 ## TableParser
 
@@ -162,6 +194,8 @@ It is defined thus:
       type Row
       def hasHeader: Boolean
       def forgiving: Boolean = false
+      def multiline: Boolean = false
+      val predicate: Try[Row] => Boolean = includeAll
       def rowParser: RowParser[Row]
       def builder(rows: Seq[Row]): Table
       def parse(ws: Seq[String]): Try[Table] = ...
@@ -171,11 +205,18 @@ The type _Row_ defines the specific row type (for example, _Movie_, in the examp
 _hasHeader_ is used to define if there is a header row in the first line of the file (or sequence of strings) to be parsed.
 _forgiving_, which defaults to _false_, can be set to _true_ if you expect that some rows will not parse, but where this
 will not invalidate your dataset as a whole.
+_multiline_ is used to allow (or disallow when false) quoted strings to span multiple lines.
 
-In forgiving mode, any exceptions thrown in the parsing of a row are collected and then printed to _System.err_ at the conclusion of the parsing of the table.
+In forgiving mode, any exceptions thrown in the parsing of a row are collected and then logged.
 _rowParser_ is the specific parser for the _Row_ type (see below).
 _builder_ is used by the _parse_ method.
 _parse_ is the main method of _TableParser_ and takes a _Seq\[String]_ and yields a _Try\[Table]_.
+
+The predicate is used to filter rows (which are the results of parsing).
+By default, all rows are included.
+_TableParser_ also provides a method (_sampler_) to create a random sampling function.
+Note, however, that a significant part of the time for building a table from a large file is just reading and parsing the file.
+Sampling will not reduce this portion of the time.
 
 Associated with _TableParser_ is an abstract class called _TableParserHelper_ whose purpose is to make your coding job easier.
 _TableParserHelper_ is designed to be extended (i.e. sub-classed) by the companion object of the case class that you
@@ -207,7 +248,6 @@ These define, respectively, the delimiter regex, the string regex, list enclosur
 Rather than invoke the constructor directly, it is easier to invoke the companion object's _apply_ method, which takes a single implicit parameter: a _RowConfig_.
 Two consecutive quote characters, within a quoted string, will be parsed as a single quote character.
 The _LineParser_ constructor will perform some basic checks that its parameters are consistent.
-
 
 ## StringsParser
 
@@ -515,6 +555,13 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+
+V1.0.13 -> V1.0.14
+* Enabled multi-line quoted strings: if a quoted string spans more than one line, this is acceptable.
+* Implemented analysis of raw-row tables.
+* Implemented sampling of input.
+* Provided a new mechanism for configuring and using parsers (see the worksheets).
+* Implemented _Table.parseResourceRaw_ and _Table.parseFileRaw_ for those situations where you just want to parse an input file into a _Table\[Seq\[String]]_.
 
 V1.0.12 -> V1.0.13
 * mostly concerned with publishing TableParser in Maven Central

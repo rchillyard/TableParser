@@ -31,17 +31,27 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   override def skipWhitespace: Boolean = false
 
-  def parseRow(w: String): Try[Strings] = parseAll(row, w) match {
+  /**
+    * Method to parse a Row.
+    *
+    * NOTE: the expression "end of input expected" must be the same as the failure defined in (trait) Parsers: def phrase[T](p: Parser[T]): Parser[T]
+    * It's a shame that they didn't make it a constant in Parsers!
+    *
+    * @param indexedString a tuple of String and Int denoting the line and its index in the file.
+    * @return a Try[Strings].
+    */
+  def parseRow(indexedString: (String, Int)): Try[Strings] = parseAll(row, indexedString._1) match {
     case Success(s, _) => scala.util.Success(s)
-    case Failure(x, _) => scala.util.Failure(formException(w, x))
-    case Error(x, _) => scala.util.Failure(formException(w, x))
+    case Failure("end of input expected", _) => scala.util.Failure(MultiLineException(indexedString))
+    case Failure(x, _) => scala.util.Failure(formException(indexedString, x))
+    case Error(x, _) => scala.util.Failure(formException(indexedString, x))
   }
 
   lazy val row: Parser[Strings] = rep1sep(cell, delimiter)
 
   lazy val cell: Parser[String] = quotedString | list | string | failure("invalid string")
 
-  lazy val quotedString: Parser[String] = quotedStringWithQuotes | pureQuotedString
+  lazy val quotedString: Parser[String] = quotedStringWithQuotes | pureQuotedString | failure("invalid quoted string")
 
   lazy val pureQuotedString: Parser[String] = quote ~> stringInQuotes <~ quote
 
@@ -53,13 +63,14 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   lazy val list: Parser[String] = getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
 
+  // TODO why is this complaining about repeated characters?
   private lazy val component: Parser[String] = s"""[^,$listSeparator}]+""".r
 
   private lazy val getOpenChar: Parser[String] = s"${enclosures.headOption.getOrElse("")}"
 
   private lazy val getCloseChar: Parser[String] = s"${enclosures.lastOption.getOrElse("")}"
 
-  private def formException(row: String, x: String) = ParserException(s"Cannot parse row '$row' due to: $x")
+  private def formException(indexedString: (String, Int), x: String) = ParserException(s"Cannot parse row ${indexedString._2}: '${indexedString._1}' due to: $x")
 
   override def toString: String = s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 
@@ -127,3 +138,5 @@ object LineParser {
 }
 
 case class ParserException(msg: String, e: Throwable = null) extends Exception(msg, e)
+
+case class MultiLineException[X](x: X) extends Exception("multi-line exception")
