@@ -27,14 +27,14 @@ class StringsParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import HawkCountParser._
 
     val parser = StandardStringsParser[HawkCount]()
-    val hawkCount: Try[HawkCount] = parser.parse(Seq("Red-tailed Hawk", "1027"))(header)
+    val hawkCount: Try[HawkCount] = parser.parse((Seq("Red-tailed Hawk", "1027"), 0))(header)
     hawkCount shouldBe Success(HawkCount("Red-tailed Hawk", 1027))
   }
 
   it should "parse quoted string" in {
     import HawkCountParser._
     val parser = StandardStringsParser[HawkCount]()
-    val hawkCount: Try[HawkCount] = parser.parse(Seq(""""Red-tailed Hawk"""", "1027"))(header)
+    val hawkCount: Try[HawkCount] = parser.parse((Seq(""""Red-tailed Hawk"""", "1027"), 0))(header)
     hawkCount shouldBe Success(HawkCount(""""Red-tailed Hawk"""", 1027))
   }
 

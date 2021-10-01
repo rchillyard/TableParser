@@ -21,11 +21,11 @@ trait RowParser[Row, Input] {
   /**
     * Parse the Input, resulting in a Try[Row]
     *
-    * @param x      the Input to be parsed.
-    * @param header the header already parsed.
+    * @param indexedRow the Input, and its index to be parsed.
+    * @param header     the header already parsed.
     * @return a Try[Row].
     */
-  def parse(x: Input)(header: Header): Try[Row]
+  def parse(indexedRow: (Input, Int))(header: Header): Try[Row]
 
   /**
     * Parse the Input, resulting in a Try[Header]
@@ -56,11 +56,12 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
   /**
     * Method to parse a String and return a Try[Row].
     *
-    * @param w      the row as a String.
-    * @param header the header already parsed.
+    * @param indexedString the row and index as a (String., Int)
+    * @param header        the header already parsed.
     * @return a Try[Row].
     */
-  def parse(w: String)(header: Header): Try[Row] = for (ws <- parser.parseRow(w); r <- RowValues(Row(ws, header)).convertTo[Row]) yield r
+  def parse(indexedString: (String, Int))(header: Header): Try[Row] =
+    for (ws <- parser.parseRow(indexedString); r <- doConversion(indexedString, header, ws)) yield r
 
   /**
     * Method to parse a String as a Try[Header].
@@ -68,7 +69,10 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
     * @param w the header row as a String.
     * @return a Try[Header].
     */
-  def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow(w)) yield Header(ws)
+  def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow((w, -1))) yield Header(ws)
+
+  private def doConversion(indexedString: (String, Int), header: Header, ws: Strings) =
+    RowValues(Row(ws, header, indexedString._2)).convertTo[Row]
 }
 
 object StandardRowParser {
@@ -93,11 +97,12 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
   /**
     * Method to parse a sequence of String into a Try[Row].
     *
-    * @param ws     a sequence of Strings.
-    * @param header the header already parsed.
+    * @param indexedString the rows and index as a (Strings., Int)
+    * @param header        the header already parsed.
     * @return a Try[Row].
     */
-  def parse(ws: Strings)(header: Header): Try[Row] = RowValues(Row(ws, header)).convertTo[Row]
+  def parse(indexedString: (Strings, Int))(header: Header): Try[Row] =
+    RowValues(Row(indexedString._1, header, indexedString._2)).convertTo[Row]
 
   /**
     * Method to parse a sequence of Strings as a Try[Header].

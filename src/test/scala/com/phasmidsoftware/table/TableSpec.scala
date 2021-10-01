@@ -4,13 +4,15 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.{RawParsers, RowParser, StringParser, StringTableParser}
+import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
-import com.phasmidsoftware.util.FP.safeResource
-import java.io.{File, InputStream}
-import java.net.URL
+import com.phasmidsoftware.util.FP.resource
+import com.phasmidsoftware.util.TryUsing
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+
+import java.io.{File, InputStream}
+import java.net.URL
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -30,9 +32,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val intPairParser = new IntPairParser
 
     trait IntPairRowParser extends StringParser[IntPair] {
-      def parse(w: String)(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, w) match {
+      def parse(indexedString: (String, Int))(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, indexedString._1) match {
         case intPairParser.Success((x, y), _) => Success(IntPair(x, y))
-        case _ => Failure(TableException(s"unable to parse $w"))
+        case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
       }
 
       //noinspection NotImplementedCode
@@ -47,7 +49,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
 
 
-      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
+      protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -141,7 +143,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "return failure(2)" in {
     lazy val i: InputStream = getClass.getResourceAsStream("emptyResource.txt")
-    val wy = safeResource(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
+    val wy = TryUsing(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
     wy should matchPattern { case Failure(_) => }
     wy.recover {
       case _: NoSuchElementException => Success(())
@@ -347,5 +349,20 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       }
     }
     println(iIty map (_.sorted))
+  }
+
+  behavior of "parseResourceRaw"
+  it should "parse quotes spanning newlines" in {
+    val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
+    val sy = resource[TableSpec]("multiline.csv") map Source.fromURL
+    val wsty = parser parse sy
+    wsty should matchPattern { case Success(HeadedTable(_, _)) => }
+    wsty match {
+      case Success(HeadedTable(r, h)) =>
+        println(s"parseResourceRaw: successfully read ${r.size} rows")
+        println(s"parseResourceRaw: successfully read ${h.size} columns")
+        r.size shouldBe 4
+        r take 4 foreach println
+    }
   }
 }
