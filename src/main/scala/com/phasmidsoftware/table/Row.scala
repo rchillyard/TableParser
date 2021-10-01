@@ -24,7 +24,6 @@ case class Row(ws: Seq[String], hdr: Header) extends (String => Try[String]) {
     *
     * @param w the column name.
     * @return the value as a String.
-    * @throws ParserException if w is not contained in hdr.
     */
   def apply(w: String): Try[String] = hdr.getIndex(w).flatMap { i => apply(i) }.recoverWith[String] { case _: IndexOutOfBoundsException => Failure[String](ParserException(s"Row: unknown column: $w")) }
 
@@ -33,7 +32,6 @@ case class Row(ws: Seq[String], hdr: Header) extends (String => Try[String]) {
     *
     * @param x an index from 0 thru length-1.
     * @return the value as a String.
-    * @throws ParserException if x is out of range.
     */
   def apply(x: Int): Try[String] = Try(ws(x)) recoverWith {
     case e: IndexOutOfBoundsException if x == -1 => Failure(e)

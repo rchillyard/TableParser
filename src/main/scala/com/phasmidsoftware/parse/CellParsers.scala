@@ -174,7 +174,6 @@ trait CellParsers {
     * @tparam P the type of the second field of the Product type T.
     * @tparam T the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types K and P and thence into a T.
-    * @throws NoSuchElementException if the key (from the first K-type parameter) is not present in the map given by parsers.
     */
   def cellParser2Conditional[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map[K, CellParser[P]], fields: Seq[String] = Nil): CellParser[T] = {
     new MultiCellParser[T] {
