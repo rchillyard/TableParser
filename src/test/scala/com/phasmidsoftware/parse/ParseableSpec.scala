@@ -59,7 +59,7 @@ class ParseableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "ListParser"
   it should "parse a list" in {
-    val p = new ListParser
+    val p = ListParser
     p.parseAll(p.list, "{1,2,3}") should matchPattern { case p.Success(_, _) => }
     p.parseAll(p.list, "{1,2-3,3}") should matchPattern { case p.Success(_, _) => }
     p.parseAll(p.list, "1") should matchPattern { case p.Success(_, _) => }
