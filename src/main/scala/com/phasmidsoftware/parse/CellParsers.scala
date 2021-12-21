@@ -6,6 +6,7 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.{FP, Reflection}
+
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -580,11 +581,7 @@ trait CellParsers {
   }
 }
 
-/**
-  * This companion object comprises CellParser[T] objects which represent conversions that are fixed,
-  * i.e. they don't depend on some other parameter such as the formatter in DateTime conversions.
-  */
-object CellParsers
+object StdCellParsers extends CellParsers
 
 /**
   * CONSIDER: do we really need this exception?

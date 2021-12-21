@@ -172,7 +172,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
 
   type Row = RawRow
 
-  implicit val stringSeqParser: CellParser[RawRow] = new CellParsers {}.cellParserSeq
+  implicit val stringSeqParser: CellParser[RawRow] = StdCellParsers.cellParserSeq
 
   val rowParser: RowParser[Row, String] = StandardRowParser[RawRow]
 
