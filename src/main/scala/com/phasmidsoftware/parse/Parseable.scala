@@ -4,11 +4,10 @@
 
 package com.phasmidsoftware.parse
 
-import java.io.File
-import java.net.URL
-
 import org.joda.time.LocalDate
 
+import java.io.File
+import java.net.URL
 import scala.annotation.implicitNotFound
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -175,16 +174,14 @@ object Parseable {
     * @param w the String to parse.
     * @return a Try[StringList].
     */
-  def split(w: String): Try[StringList] = parser.parseAll(parser.list, w) match {
-    case parser.Success(ws: StringList, _) => Success(ws)
-    case parser.Failure(msg, _) => Failure(ParseLogicException(s"cannot split string '$w': $msg"))
-    case parser.Error(msg, _) => Failure(ParseLogicException(s"cannot split string '$w': $msg"))
+  def split(w: String): Try[StringList] = ListParser.parseAll(ListParser.list, w) match {
+    case ListParser.Success(ws: StringList, _) => Success(ws)
+    case ListParser.Failure(msg, _) => Failure(ParseLogicException(s"cannot split string '$w': $msg"))
+    case ListParser.Error(msg, _) => Failure(ParseLogicException(s"cannot split string '$w': $msg"))
     case _ => Failure(ParseLogicException(s"cannot split string '$w'"))
   }
 
   private def lift[T](f: String => T): String => Try[T] = w => Try(f(w))
-
-  private val parser = new ListParser()
 
   private def parseAndRecover[T](w: String)(f: String => Try[T])(msg: String => String): Try[T] =
     f(w).recoverWith {
@@ -236,10 +233,10 @@ object ParseableOption {
 }
 
 /**
-  * This class is a parser of lists.
+  * This object is a parser of lists.
   * A list is considered to be enclosed by {} and separated by commas.
   */
-class ListParser() extends JavaTokenParsers {
+object ListParser extends JavaTokenParsers {
 
   lazy val list: Parser[StringList] = "{" ~> strings <~ "}" | singleton
 

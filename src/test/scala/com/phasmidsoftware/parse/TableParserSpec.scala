@@ -28,15 +28,13 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   object IntPair {
 
-    class IntPairParser extends JavaTokenParsers {
+    object IntPairParser extends JavaTokenParsers {
       def pair: Parser[(Int, Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
     }
 
-    val intPairParser = new IntPairParser
-
     trait IntPairRowParser extends StringParser[IntPair] {
-      def parse(indexedString: (String, Int))(header: Header): Try[IntPair] = intPairParser.parseAll(intPairParser.pair, indexedString._1) match {
-        case intPairParser.Success((x: Int, y: Int), _) => Success(IntPair(x, y))
+      def parse(indexedString: (String, Int))(header: Header): Try[IntPair] = IntPairParser.parseAll(IntPairParser.pair, indexedString._1) match {
+        case IntPairParser.Success((x: Int, y: Int), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
       }
 

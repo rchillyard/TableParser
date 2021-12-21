@@ -183,7 +183,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse optional non-empty String" in {
-    val parser = new CellParsers {}.cellParserOptionNonEmptyString
+    val parser = StdCellParsers.cellParserOptionNonEmptyString
     parser.convertString("Hello") shouldBe Success(Some("Hello"))
     parser.convertString("") shouldBe Success(None)
   }
@@ -195,13 +195,13 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
     case class Int1(x: Int) extends IsInt
     case class Int2(x: Int) extends IsInt
     case class MyInt(s: Int, z: IsInt)
-    val cellParsers = new CellParsers {}
-    implicit val int1ColumnHelper: ColumnHelper[Int1] = cellParsers.columnHelper()
-    implicit val int2ColumnHelper: ColumnHelper[Int2] = cellParsers.columnHelper()
-    implicit val myIntColumnHelper: ColumnHelper[MyInt] = cellParsers.columnHelper()
-    implicit val int1Parser: CellParser[IsInt] = cellParsers.cellParser1(Int1)
-    implicit val int2Parser: CellParser[IsInt] = cellParsers.cellParser1(Int2)
-    implicit val parser: CellParser[MyInt] = cellParsers.cellParser2Conditional(MyInt.apply, Map(1 -> int1Parser, 2 -> int2Parser))
+    val p = StdCellParsers
+    implicit val int1ColumnHelper: ColumnHelper[Int1] = p.columnHelper()
+    implicit val int2ColumnHelper: ColumnHelper[Int2] = p.columnHelper()
+    implicit val myIntColumnHelper: ColumnHelper[MyInt] = p.columnHelper()
+    implicit val int1Parser: CellParser[IsInt] = p.cellParser1(Int1)
+    implicit val int2Parser: CellParser[IsInt] = p.cellParser1(Int2)
+    implicit val parser: CellParser[MyInt] = p.cellParser2Conditional(MyInt.apply, Map(1 -> int1Parser, 2 -> int2Parser))
 
     RowValues(Row(Seq("1", "2"), Header.create("s", "z"), 0)).convertTo[MyInt].get.z shouldBe Int1(2)
     RowValues(Row(Seq("2", "2"), Header.create("s", "z"), 1)).convertTo[MyInt].get.z shouldBe Int2(2)
@@ -211,157 +211,145 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse with cellParser1" in {
     case class T(a: Int)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser1(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser1(T)
     parser.toString shouldBe s"MultiCellParser: cellParser1 for ${classOf[T].getName}"
     val header = Header.create("a")
     val row = Row(Seq("1"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1))
-    val badParser: CellParser[T] = cellParsers.cellParser1(T, Seq("a", "b"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser1(T, Seq("a", "b"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser2" in {
     case class T(a: Int, b: Double)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser2(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser2(T)
     parser.toString shouldBe s"MultiCellParser: cellParser2 for ${classOf[T].getName}"
     val header = Header.create("a", "b")
     val row = Row(Seq("1", "2"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0))
-    val badParser: CellParser[T] = cellParsers.cellParser2(T, Seq("a"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser2(T, Seq("a"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser3" in {
     case class T(a: Int, b: Double, c: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser3(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser3(T)
     parser.toString shouldBe s"MultiCellParser: cellParser3 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c")
     val row = Row(Seq("1", "2", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, c = true))
-    val badParser: CellParser[T] = cellParsers.cellParser3(T, Seq("a", "b"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser3(T, Seq("a", "b"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser4" in {
     case class T(a: Int, b: Double, c: String, d: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser4(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser4(T)
     parser.toString shouldBe s"MultiCellParser: cellParser4 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c", "d")
     val row = Row(Seq("1", "2", "x", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", d = true))
-    val badParser: CellParser[T] = cellParsers.cellParser4(T, Seq("a", "b", "c"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser4(T, Seq("a", "b", "c"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser5" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser5(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser5(T)
     parser.toString shouldBe s"MultiCellParser: cellParser5 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c", "d", "e")
     val row = Row(Seq("1", "2", "x", "128", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", 128, e = true))
-    val badParser: CellParser[T] = cellParsers.cellParser5(T, Seq("a", "b", "c"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser5(T, Seq("a", "b", "c"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser6" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser6(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser6(T)
     parser.toString shouldBe s"MultiCellParser: cellParser6 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c", "d", "e", "f")
     val row = Row(Seq("1", "2", "x", "128", "7", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", 128, 7, f = true))
-    val badParser: CellParser[T] = cellParsers.cellParser6(T, Seq("a", "b", "c"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser6(T, Seq("a", "b", "c"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser7" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser7(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser7(T)
     parser.toString shouldBe s"MultiCellParser: cellParser7 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", 128, 7, 3.14f, g = true))
-    val badParser: CellParser[T] = cellParsers.cellParser7(T, Seq("a", "b", "c"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser7(T, Seq("a", "b", "c"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser8" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser8(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser8(T)
     parser.toString shouldBe s"MultiCellParser: cellParser8 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", 128, 7, 3.14f, BigInt(1000000), h = true))
-    val badParser: CellParser[T] = cellParsers.cellParser8(T, Seq("a", "b", "c"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser8(T, Seq("a", "b", "c"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser9" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser9(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser9(T)
     parser.toString shouldBe s"MultiCellParser: cellParser9 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", 128, 7, 3.14f, BigInt(1000000), BigDecimal(3.1415927), i = true))
-    val badParser: CellParser[T] = cellParsers.cellParser9(T, Seq("a", "b", "c"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser9(T, Seq("a", "b", "c"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser10" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Int, j: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser10(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser10(T)
     parser.toString shouldBe s"MultiCellParser: cellParser10 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "99", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", 128, 7, 3.14f, BigInt(1000000), BigDecimal(3.1415927), 99, j = true))
-    val badParser: CellParser[T] = cellParsers.cellParser10(T, Seq("a", "b", "c"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser10(T, Seq("a", "b", "c"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser11" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Int, j: Char, k: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser11(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser11(T)
     parser.toString shouldBe s"MultiCellParser: cellParser11 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "99", "a", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", 128, 7, 3.14f, BigInt(1000000), BigDecimal(3.1415927), 99, 'a', k = true))
-    val badParser: CellParser[T] = cellParsers.cellParser11(T, Seq("a", "b", "c"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser11(T, Seq("a", "b", "c"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
   it should "parse with cellParser12" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Int, j: Char, k: Double, l: Boolean)
-    val cellParsers = new CellParsers {}
-    implicit val columnHelper: ColumnHelper[T] = cellParsers.columnHelper()
-    val parser: CellParser[T] = cellParsers.cellParser12(T)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser12(T)
     parser.toString shouldBe s"MultiCellParser: cellParser12 for ${classOf[T].getName}"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "99", "a", "3.1415927", "true"), header, 0)
     parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", 128, 7, 3.14f, BigInt(1000000), BigDecimal(3.1415927), 99, 'a', 3.1415927, l = true))
-    val badParser: CellParser[T] = cellParsers.cellParser12(T, Seq("a", "b", "c"))
+    val badParser: CellParser[T] = StdCellParsers.cellParser12(T, Seq("a", "b", "c"))
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
