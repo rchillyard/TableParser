@@ -556,6 +556,12 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 Release Notes
 =============
 
+V1.0.15 -> V1.1.0
+* Enable cryptographic capabilities
+
+V1.0.14 -> V1.0.15
+* Minor changes
+
 V1.0.13 -> V1.0.14
 * Enabled multi-line quoted strings: if a quoted string spans more than one line, this is acceptable.
 * Implemented analysis of raw-row tables.
