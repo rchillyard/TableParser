@@ -257,6 +257,18 @@ trait Table[Row] extends Iterable[Row] {
     */
   override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
 
+  /**
+    * Method to render this Table as a CSV file with (maybe) header.
+    *
+    * TODO use CsvAttributes
+    *
+    * @param renderer implicit value of Renderer[Row, String]
+    * @return an Iterable[String]
+    */
+  def toCSV(delimiter: String = ",", quote: String = """"""")(implicit renderer: CsvRenderer[Row]): Iterable[String] = {
+    CsvTableRenderer[Row](delimiter, quote).render(this)
+  }
+
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
 
   def column(name: String): Iterator[Option[String]]

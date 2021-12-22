@@ -530,6 +530,11 @@ As with the parsing methods, the conversion between instances of types (especial
 
 If you need to set HTML attributes for a specific type, for example a row in the above example, then an attribute map can be defined for the _renderer2_ method.
 
+## CSV Rendering
+
+If you simply need to write a table to CSV (comma-separated value) format, then use the _toCsv_ method.
+More control can be gained by using _CsvTableRenderer\[T] and CsvRenderer\[T]_ for a particular type _T_.
+
 ## String Rendering
 
 There is currently only one implementation of String rendering, and that is Json rendering.
@@ -556,8 +561,11 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 Release Notes
 =============
 
-V1.0.15 -> V1.1.0
+V1.1.0 -> V1.1.1
 * Enable cryptographic capabilities
+
+V1.0.15 -> V1.1.0
+* Enable CSV-rendering
 
 V1.0.14 -> V1.0.15
 * Minor changes

@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.render
 
+import com.phasmidsoftware.table.{CsvAttributes, Table}
 import org.joda.time.LocalDate
 
 import scala.annotation.implicitNotFound
@@ -149,4 +150,38 @@ object HierarchicalRenderer {
   implicit object LocalDateHierarchicalRenderer extends LocalDateHierarchicalRenderer
 
 }
+
+trait CsvRenderer[T] extends Renderer[T, String] {
+  val csvAttributes: CsvAttributes
+}
+
+// TODO use CsvAttributes
+case class CsvTableRenderer[T: CsvRenderer](delim: String, qu: String = """"""") extends Renderer[Table[T], Seq[String]] {
+  /**
+    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
+    *
+    * @param t     the input parameter, i.e. the Table[T] instance to render.
+    * @param attrs a map of attributes for this value of O.
+    * @return an instance of type O.
+    */
+  def render(t: Table[T], attrs: Map[String, String]): Seq[String] = t match {
+    case x: Table[_] =>
+      implicit object StringBuilderWritable extends Writable[StringBuilder] {
+        def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
+
+        def unit: StringBuilder = new StringBuilder
+
+        override def delimiter: CharSequence = delim
+
+        override def quote: CharSequence = qu
+      }
+
+      val sw = implicitly[Writable[StringBuilder]]
+      val tc = implicitly[CsvRenderer[T]]
+      val hdr = x.maybeHeader.foldLeft(Seq[String]())(_ :+ _.xs.mkString(sw.delimiter.toString))
+      val zs = for (x <- x.rows; o = sw.unit; sb = sw.writeRaw(o)(tc.render(x, Map()))) yield sb.toString()
+      hdr ++ zs
+  }
+}
+
 

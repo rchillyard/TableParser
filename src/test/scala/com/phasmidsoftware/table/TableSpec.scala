@@ -199,7 +199,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     def apply(x: String, a: String): HTML = apply(x, Some(a), Map.empty, Nil)
 
     def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Map.empty, hs)
-
   }
 
   object IntPairHTML extends HierarchicalRenderers {
@@ -212,10 +211,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit val intPairRenderer: HierarchicalRenderer[IntPair] = renderer2("IntPair")(IntPair.apply)
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
-
   }
 
-  it should "render the parsed table to CSV" in {
+  it should "render the table to CSV" in {
     import IntPair._
     val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
     iIty should matchPattern { case Success(_) => }
@@ -241,6 +239,42 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
     sy should matchPattern { case Success(_) => }
     sy.get shouldBe "a|b\n1|2\n42|99\n"
+  }
+
+  it should "render another parsed table to CSV" in {
+    import IntPair._
+
+    implicit object IntPairCsvRenderer extends CsvRenderer[IntPair] {
+      val csvAttributes: CsvAttributes = CsvAttributes(", ")
+
+      def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
+    }
+
+    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
+    iIty should matchPattern { case Success(_) => }
+    val iIt = iIty.get
+    val ws = iIt.toCSV(", ")
+    ws.head shouldBe "a, b"
+    ws.tail.head shouldBe "1, 2"
+    ws.tail.tail.head shouldBe "42, 99"
+  }
+
+  it should "render another parsed table to CSV with delim, quote" in {
+    import IntPair._
+
+    implicit object IntPairCsvRenderer extends CsvRenderer[IntPair] {
+      val csvAttributes: CsvAttributes = CsvAttributes("|")
+
+      def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
+    }
+
+    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
+    iIty should matchPattern { case Success(_) => }
+    val iIt = iIty.get
+    val ws = iIt.toCSV("|", "'")
+    ws.head shouldBe "a|b"
+    ws.tail.head shouldBe "1|2"
+    ws.tail.tail.head shouldBe "42|99"
   }
 
   //  it should "render the parsed table with TreeWriter" in {
@@ -361,6 +395,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
         println(s"parseResourceRaw: successfully read ${h.size} columns")
         r.size shouldBe 4
         r take 4 foreach println
+      case _ => fail("should succeed")
     }
   }
 }
