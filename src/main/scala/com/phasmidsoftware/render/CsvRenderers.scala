@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.render
 
-import com.phasmidsoftware.table.{CsvAttributes, Indexed}
+import com.phasmidsoftware.table.CsvAttributes
 import com.phasmidsoftware.util.Reflection
 
 import scala.reflect.ClassTag
@@ -12,8 +12,8 @@ import scala.reflect.ClassTag
 /**
   * Trait to define various renderers for rendering instance of case classes (with their various parameters),
   * containers (Seq and Option), etc. to CSV output.
-  * CONSIDER merging this code with HierarchicalRenderers
   *
+  * CONSIDER a mechanism to ensure that objects involving case classes are presented in the same order as specified by the header.
   */
 trait CsvRenderers {
 
@@ -30,111 +30,75 @@ trait CsvRenderers {
 
     val csvAttributes: CsvAttributes = ca
   }
-//
-//  /**
-//    *
-//    * @param overallStyle the style of the Node which will be created by this HierarchicalRenderer.
-//    * @param indexStyle   the style of the Index node which will form part of the Node created by this HierarchicalRenderer.
-//    * @tparam T the underlying type of the first parameter of the input to the render method.
-//    * @return a HierarchicalRenderer[ Indexed[T] ].
-//    */
-//  def indexedRenderer[T: HierarchicalRenderer](overallStyle: String, indexStyle: String): HierarchicalRenderer[Indexed[T]] = new HierarchicalRenderer[Indexed[T]] {
-//    /**
-//      * Render an instance of Indexed[T] as a U.
-//      *
-//      * @param ti    the input parameter, i.e. the object to be rendered.
-//      * @param attrs a map of attributes for this value of U.
-//      * @return a new instance of U.
-//      */
-//    override def render(ti: Indexed[T], attrs: Map[String, String]): Node = {
-//      val sequence = new TaggedHierarchicalRenderer[Int](indexStyle) {}.render(ti.i)
-//      val value = implicitly[HierarchicalRenderer[T]].render(ti.t)
-//      Node(style, attrs, Seq(sequence, value))
-//    }
-//
-//    /**
-//      * Defines the default style for type T.
-//      */
-//    val style: String = overallStyle
-//  }
-//
-//  /**
-//    * Method to return a HierarchicalRenderer[ Option[T] ].
-//    * NOTE: there are no identifiers generated with this HierarchicalRenderer.
-//    *
-//    * @tparam T the underlying type of the first parameter of the input to the render method.
-//    * @return a HierarchicalRenderer[ Option[T] ].
-//    */
-//  def optionRenderer[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[Option[T]] = new TaggedHierarchicalRenderer[Option[T]](style, attrs) {
-//    override def render(to: Option[T], attrs: Map[String, String]): Node = to match {
-//      case Some(t) => Node(style, attrs, Seq(implicitly[HierarchicalRenderer[T]].render(t)))
-//      case None => Node("", None, Map(), Nil)
-//    }
-//  }
-//
-//  /**
-//    * Method to return a HierarchicalRenderer[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
-//    *
-//    * NOTE: be careful using this particular method it only applies where T is a 1-tuple (e.g. a case class with one field -- not common).
-//    * It probably shouldn't ever be used in practice. It can cause strange initialization errors!
-//    * This note may be irrelevant now that we have overridden convertString to fix issue #1.
-//    *
-//    * @param construct a function P => T, usually the apply method of a case class.
-//    *                  The sole purpose of this function is for type inference--it is never actually invoked.
-//    * @tparam P1 the type of the (single) field of the Product type T.
-//    * @tparam T  the underlying type of the first parameter of the input to the render method.
-//    * @return a HierarchicalRenderer[T].
-//    */
-//  def renderer1[P1: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: P1 => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
-//
-//    protected def nodes(t: T): Seq[Node] = {
-//      val Array(p1) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
-//      Seq(
-//        implicitly[HierarchicalRenderer[P1]].render(t.productElement(0).asInstanceOf[P1], nameAttr(p1))
-//      )
-//    }
-//  }
-//
-//  /**
-//    * Method to return a HierarchicalRenderer[T] where T is a 2-ary Product and which is based on a function to convert a (P1,P2) into a T.
-//    *
-//    * @param construct a function (P1,P2) => T, usually the apply method of a case class.
-//    *                  The sole purpose of this function is for type inference--it is never actually invoked.
-//    * @tparam P1 the type of the first field of the Product type T.
-//    * @tparam P2 the type of the second field of the Product type T.
-//    * @tparam T  the underlying type of the first parameter of the input to the render method.
-//    * @return a HierarchicalRenderer[T].
-//    */
-//  def renderer2[P1: HierarchicalRenderer, P2: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2) => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
-//
-//    protected def nodes(t: T): Seq[Node] = {
-//      val Array(p1, p2) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
-//      Seq(
-//        implicitly[HierarchicalRenderer[P1]].render(t.productElement(0).asInstanceOf[P1], nameAttr(p1))
-//        , implicitly[HierarchicalRenderer[P2]].render(t.productElement(1).asInstanceOf[P2], nameAttr(p2))
-//      )
-//    }
-//  }
-//
-//  /**
-//    * Method to return a HierarchicalRenderer[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
-//    *
-//    * @param construct a function (P1,P2,P3) => T, usually the apply method of a case class.
-//    *                  The sole purpose of this function is for type inference--it is never actually invoked.
-//    * @tparam P1 the type of the first field of the Product type T.
-//    * @tparam P2 the type of the second field of the Product type T.
-//    * @tparam P3 the type of the third field of the Product type T.
-//    * @tparam T  the underlying type of the first parameter of the input to the render method.
-//    * @return a HierarchicalRenderer[T].
-//    */
-//  def renderer3[P1: HierarchicalRenderer, P2: HierarchicalRenderer, P3: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2, P3) => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
-//
-//    protected def nodes(t: T): Seq[Node] = {
-//      val Array(p1, p2, p3) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
-//      Seq(
-//        implicitly[HierarchicalRenderer[P1]].render(t.productElement(0).asInstanceOf[P1], nameAttr(p1))
-//        , implicitly[HierarchicalRenderer[P2]].render(t.productElement(1).asInstanceOf[P2], nameAttr(p2))
-//        , implicitly[HierarchicalRenderer[P3]].render(t.productElement(2).asInstanceOf[P3], nameAttr(p3))
+
+  /**
+    * Method to return a HierarchicalRenderer[ Option[T] ].
+    * NOTE: there are no identifiers generated with this HierarchicalRenderer.
+    *
+    * @tparam T the underlying type of the first parameter of the input to the render method.
+    * @return a HierarchicalRenderer[ Option[T] ].
+    */
+  def optionRenderer[T: CsvRenderer](implicit ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
+    val csvAttributes: CsvAttributes = ca
+
+    def render(to: Option[T], attrs: Map[String, String]): String = (to map (t => implicitly[CsvRenderer[T]].render(t))).getOrElse("")
+  }
+
+  /**
+    * Method to return a CsvRenderer[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
+    *
+    * NOTE: be careful using this particular method it only applies where T is a 1-tuple (e.g. a case class with one field -- not common).
+    *
+    * @param construct a function P => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the (single) field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a HierarchicalRenderer[T].
+    */
+  def renderer1[P1: CsvRenderer, T <: Product : ClassTag](construct: P1 => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
+
+    protected def elements(t: T): Seq[String] = Seq(
+      implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
+    )
+  }
+
+  /**
+    * Method to return a CsvRenderer[T] where T is a 2-ary Product and which is based on a function to convert a (P1,P2) into a T.
+    *
+    * @param construct a function (P1,P2) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a CsvRenderer[T].
+    */
+  def renderer2[P1: CsvRenderer, P2: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
+
+    protected def elements(t: T): Seq[String] = Seq(
+      implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
+      , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
+    )
+  }
+  //
+  //  /**
+  //    * Method to return a HierarchicalRenderer[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
+  //    *
+  //    * @param construct a function (P1,P2,P3) => T, usually the apply method of a case class.
+  //    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+  //    * @tparam P1 the type of the first field of the Product type T.
+  //    * @tparam P2 the type of the second field of the Product type T.
+  //    * @tparam P3 the type of the third field of the Product type T.
+  //    * @tparam T  the underlying type of the first parameter of the input to the render method.
+  //    * @return a HierarchicalRenderer[T].
+  //    */
+  //  def renderer3[P1: HierarchicalRenderer, P2: HierarchicalRenderer, P3: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2, P3) => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
+  //
+  //    protected def nodes(t: T): Seq[Node] = {
+  //      val Array(p1, p2, p3) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
+  //      Seq(
+  //        implicitly[HierarchicalRenderer[P1]].render(t.productElement(0).asInstanceOf[P1], nameAttr(p1))
+  //        , implicitly[HierarchicalRenderer[P2]].render(t.productElement(1).asInstanceOf[P2], nameAttr(p2))
+  //        , implicitly[HierarchicalRenderer[P3]].render(t.productElement(2).asInstanceOf[P3], nameAttr(p3))
 //      )
 //    }
 //  }
@@ -418,22 +382,47 @@ trait CsvRenderers {
 //
 //    protected def nodes(t: T): Seq[Node] = {
 //      val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
-//      Seq(
-//        implicitly[HierarchicalRenderer[P1]].render(t.productElement(0).asInstanceOf[P1], nameAttr(p1))
-//        , implicitly[HierarchicalRenderer[P2]].render(t.productElement(1).asInstanceOf[P2], nameAttr(p2))
-//        , implicitly[HierarchicalRenderer[P3]].render(t.productElement(2).asInstanceOf[P3], nameAttr(p3))
-//        , implicitly[HierarchicalRenderer[P4]].render(t.productElement(3).asInstanceOf[P4], nameAttr(p4))
-//        , implicitly[HierarchicalRenderer[P5]].render(t.productElement(4).asInstanceOf[P5], nameAttr(p5))
-//        , implicitly[HierarchicalRenderer[P6]].render(t.productElement(5).asInstanceOf[P6], nameAttr(p6))
-//        , implicitly[HierarchicalRenderer[P7]].render(t.productElement(6).asInstanceOf[P7], nameAttr(p7))
-//        , implicitly[HierarchicalRenderer[P8]].render(t.productElement(7).asInstanceOf[P8], nameAttr(p8))
-//        , implicitly[HierarchicalRenderer[P9]].render(t.productElement(8).asInstanceOf[P9], nameAttr(p9))
-//        , implicitly[HierarchicalRenderer[P10]].render(t.productElement(9).asInstanceOf[P10], nameAttr(p10))
-//        , implicitly[HierarchicalRenderer[P11]].render(t.productElement(10).asInstanceOf[P11], nameAttr(p11))
-//        , implicitly[HierarchicalRenderer[P12]].render(t.productElement(11).asInstanceOf[P12], nameAttr(p12))
-//      )
-//    }
-//  }
-//
-//  def nameAttr(value: String): Map[String, String] = Map("name" -> value)
+  //      Seq(
+  //        implicitly[HierarchicalRenderer[P1]].render(t.productElement(0).asInstanceOf[P1], nameAttr(p1))
+  //        , implicitly[HierarchicalRenderer[P2]].render(t.productElement(1).asInstanceOf[P2], nameAttr(p2))
+  //        , implicitly[HierarchicalRenderer[P3]].render(t.productElement(2).asInstanceOf[P3], nameAttr(p3))
+  //        , implicitly[HierarchicalRenderer[P4]].render(t.productElement(3).asInstanceOf[P4], nameAttr(p4))
+  //        , implicitly[HierarchicalRenderer[P5]].render(t.productElement(4).asInstanceOf[P5], nameAttr(p5))
+  //        , implicitly[HierarchicalRenderer[P6]].render(t.productElement(5).asInstanceOf[P6], nameAttr(p6))
+  //        , implicitly[HierarchicalRenderer[P7]].render(t.productElement(6).asInstanceOf[P7], nameAttr(p7))
+  //        , implicitly[HierarchicalRenderer[P8]].render(t.productElement(7).asInstanceOf[P8], nameAttr(p8))
+  //        , implicitly[HierarchicalRenderer[P9]].render(t.productElement(8).asInstanceOf[P9], nameAttr(p9))
+  //        , implicitly[HierarchicalRenderer[P10]].render(t.productElement(9).asInstanceOf[P10], nameAttr(p10))
+  //        , implicitly[HierarchicalRenderer[P11]].render(t.productElement(10).asInstanceOf[P11], nameAttr(p11))
+  //        , implicitly[HierarchicalRenderer[P12]].render(t.productElement(11).asInstanceOf[P12], nameAttr(p12))
+  //      )
+  //    }
+  //  }
+  //
+  //  def nameAttr(value: String): Map[String, String] = Map("name" -> value)
+}
+
+
+abstract class ProductCsvRenderer[T <: Product : ClassTag](implicit c: CsvAttributes) extends CsvRenderer[T] {
+  protected def elements(t: T): Seq[String]
+
+  val csvAttributes: CsvAttributes = c
+
+  def render(t: T, attrs: Map[String, String]): String = elements(t) mkString csvAttributes.delimiter
+
+}
+
+object CsvRenderers {
+  implicit object CsvRendererInt extends CsvRenderer[Int] {
+    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+    /**
+      * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
+      *
+      * @param t     the input parameter, i.e. the T object to render.
+      * @param attrs a map of attributes for this value of O.
+      * @return an instance of type O.
+      */
+    def render(t: Int, attrs: Map[String, String]): String = t.toString
+  }
 }

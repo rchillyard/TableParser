@@ -151,12 +151,17 @@ object HierarchicalRenderer {
 
 }
 
+/**
+  * Type class for rendering instances to CSV.
+  *
+  * @tparam T the type of object to be rendered.
+  */
 trait CsvRenderer[T] extends Renderer[T, String] {
+  // CONSIDER removing this abstract val.
   val csvAttributes: CsvAttributes
 }
 
-// TODO use CsvAttributes
-case class CsvTableRenderer[T: CsvRenderer](delim: String, qu: String = """"""") extends Renderer[Table[T], Seq[String]] {
+case class CsvTableRenderer[T: CsvRenderer]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], Seq[String]] {
   /**
     * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
     *
@@ -171,9 +176,9 @@ case class CsvTableRenderer[T: CsvRenderer](delim: String, qu: String = """"""")
 
         def unit: StringBuilder = new StringBuilder
 
-        override def delimiter: CharSequence = delim
+        override def delimiter: CharSequence = csvAttributes.delimiter
 
-        override def quote: CharSequence = qu
+        override def quote: CharSequence = csvAttributes.quote
       }
 
       val sw = implicitly[Writable[StringBuilder]]

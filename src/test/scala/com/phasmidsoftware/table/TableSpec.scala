@@ -250,10 +250,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
     }
 
+    implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
     val iIt = iIty.get
-    val ws = iIt.toCSV(", ")
+    val ws = iIt.toCSV
     ws.head shouldBe "a, b"
     ws.tail.head shouldBe "1, 2"
     ws.tail.tail.head shouldBe "42, 99"
@@ -268,10 +269,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
     }
 
+    implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
     val iIt = iIty.get
-    val ws = iIt.toCSV("|", "'")
+    val ws = iIt.toCSV
     ws.head shouldBe "a|b"
     ws.tail.head shouldBe "1|2"
     ws.tail.tail.head shouldBe "42|99"

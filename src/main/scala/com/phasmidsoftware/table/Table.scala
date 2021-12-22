@@ -260,13 +260,11 @@ trait Table[Row] extends Iterable[Row] {
   /**
     * Method to render this Table as a CSV file with (maybe) header.
     *
-    * TODO use CsvAttributes
-    *
     * @param renderer implicit value of Renderer[Row, String]
     * @return an Iterable[String]
     */
-  def toCSV(delimiter: String = ",", quote: String = """"""")(implicit renderer: CsvRenderer[Row]): Iterable[String] = {
-    CsvTableRenderer[Row](delimiter, quote).render(this)
+  def toCSV(implicit renderer: CsvRenderer[Row], csvAttributes: CsvAttributes): Iterable[String] = {
+    CsvTableRenderer[Row]().render(this)
   }
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
