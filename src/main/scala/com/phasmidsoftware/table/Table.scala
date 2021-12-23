@@ -10,7 +10,6 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{Reflection, TryUsing}
-
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -258,14 +257,16 @@ trait Table[Row] extends Iterable[Row] {
   override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
 
   /**
-    * Method to render this Table as a CSV file with (maybe) header.
-    *
-    * @param renderer implicit value of Renderer[Row, String]
-    * @return an Iterable[String]
-    */
+   * Method to render this Table as a CSV file with (maybe) header.
+   *
+   * @param renderer implicit value of Renderer[Row, String]
+   * @return an Iterable[String]
+   */
   def toCSV(implicit renderer: CsvRenderer[Row], csvAttributes: CsvAttributes): Iterable[String] = {
     CsvTableRenderer[Row]().render(this)
   }
+
+  def generateCsvHeader(implicit csvAttributes: CsvAttributes): String = ???
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
 

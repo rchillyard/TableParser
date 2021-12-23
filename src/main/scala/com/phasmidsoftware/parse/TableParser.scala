@@ -5,12 +5,12 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.RawRow
+import com.phasmidsoftware.parse.AbstractTableParser.logException
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP.partition
 import com.phasmidsoftware.util.{FP, FunctionIterator, Joinable, TryUsing}
 import org.slf4j.{Logger, LoggerFactory}
-
 import scala.annotation.implicitNotFound
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -255,13 +255,15 @@ object HeadedStringTableParser {
   */
 abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
+  protected def failureHandler(ry: Try[Row]): Unit = logException[Row](ry)
+
   /**
-    * Abstract method to parse a sequence of Inputs, with a given header.
-    *
-    * @param xs     the sequence of Inputs, one for each row
-    * @param header the header to be used.
-    * @return a Try[Table]
-    */
+   * Abstract method to parse a sequence of Inputs, with a given header.
+   *
+   * @param xs     the sequence of Inputs, one for each row
+   * @param header the header to be used.
+   * @return a Try[Table]
+   */
   def parseRows(xs: Iterator[Input], header: Header): Try[Table]
 
   /**
@@ -284,18 +286,18 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   }
 
   /**
-    * Common code for parsing rows.
-    *
-    * CONSIDER convert T to Input
-    *
-    * CONSIDER switch order of f
-    *
-    * @param ts     a sequence of Ts.
-    * @param header the Header.
-    * @param f      a curried function which transforms a (T, Int) into a function which is of type Header => Try[Row].
-    * @tparam T the parametric type of the resulting Table. T corresponds to Input in the calling method, i.e. a Row. Must be Joinable.
-    * @return a Try of Table
-    */
+   * Common code for parsing rows.
+   *
+   * CONSIDER convert T to Input
+   *
+   * CONSIDER switch order of f
+   *
+   * @param ts             a sequence of Ts.
+   * @param header         the Header.
+   * @param f              a curried function which transforms a (T, Int) into a function which is of type Header => Try[Row].
+   * @tparam T the parametric type of the resulting Table. T corresponds to Input in the calling method, i.e. a Row. Must be Joinable.
+   * @return a Try of Table
+   */
   protected def doParseRows[T: Joinable](ts: Iterator[T], header: Header, f: ((T, Int)) => Header => Try[Row]): Try[Table] = {
     implicit object Z extends Joinable[(T, Int)] {
       private val tj: Joinable[T] = implicitly[Joinable[T]]
@@ -314,7 +316,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
     def handleFailures(rys: Iterator[Try[Row]]) = if (forgiving) {
       val (good, bad) = partition(rys)
-      bad foreach AbstractTableParser.logException[Row]
+      bad foreach failureHandler //AbstractTableParser.logException[Row]
       FP.sequence(good filter predicate)
     }
     else
