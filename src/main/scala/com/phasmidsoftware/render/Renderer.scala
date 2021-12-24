@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.render
 
-import com.phasmidsoftware.table.{CsvAttributes, Table}
+import com.phasmidsoftware.table.{CsvAttributes, CsvGenerator, Table}
 import org.joda.time.LocalDate
 
 import scala.annotation.implicitNotFound
@@ -161,7 +161,7 @@ trait CsvRenderer[T] extends Renderer[T, String] {
   val csvAttributes: CsvAttributes
 }
 
-case class CsvTableRenderer[T: CsvRenderer]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], Seq[String]] {
+case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], Seq[String]] {
   /**
     * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
     *
@@ -183,9 +183,10 @@ case class CsvTableRenderer[T: CsvRenderer]()(implicit csvAttributes: CsvAttribu
 
       val sw = implicitly[Writable[StringBuilder]]
       val tc = implicitly[CsvRenderer[T]]
-      val hdr = x.maybeHeader.foldLeft(Seq[String]())(_ :+ _.xs.mkString(sw.delimiter.toString))
-      val zs = for (x <- x.rows; o = sw.unit; sb = sw.writeRaw(o)(tc.render(x, Map()))) yield sb.toString()
-      hdr ++ zs
+      val tg = implicitly[CsvGenerator[T]]
+      val hdr: String = tg.toColumnNames(None, None, "")
+      val zs: Seq[String] = for (x <- x.rows.toSeq; o = sw.unit; sb = sw.writeRaw(o)(tc.render(x, Map()))) yield sb.toString()
+      hdr +: zs
   }
 }
 

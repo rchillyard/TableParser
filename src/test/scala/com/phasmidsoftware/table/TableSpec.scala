@@ -250,6 +250,12 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
     }
 
+    implicit object IntPairCsvGenerator extends CsvGenerator[IntPair] {
+      val csvAttributes: CsvAttributes = CsvAttributes(", ")
+
+      def toColumnNames(to: Option[IntPair], wo: Option[String], name: String): String = s"a${csvAttributes.delimiter}b"
+    }
+
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
@@ -262,14 +268,20 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "render another parsed table to CSV with delim, quote" in {
     import IntPair._
+    implicit val myCsvAttributes: CsvAttributes = CsvAttributes("|")
 
     implicit object IntPairCsvRenderer extends CsvRenderer[IntPair] {
-      val csvAttributes: CsvAttributes = CsvAttributes("|")
+      val csvAttributes: CsvAttributes = myCsvAttributes
 
       def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
     }
 
-    implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
+    implicit object IntPairCsvGenerator extends CsvGenerator[IntPair] {
+      val csvAttributes: CsvAttributes = myCsvAttributes
+
+      def toColumnNames(to: Option[IntPair], wo: Option[String], name: String): String = s"a${csvAttributes.delimiter}b"
+    }
+
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
     val iIt = iIty.get
