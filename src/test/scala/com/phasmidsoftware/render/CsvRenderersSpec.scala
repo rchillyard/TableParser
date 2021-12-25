@@ -160,7 +160,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
       implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
-      implicit val intPairCellParser: CellParser[Hawks] = cellParser2(Hawks.apply)
+      implicit val hawksCellParser: CellParser[Hawks] = cellParser2(Hawks.apply)
       implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser3(DailyRaptorReport.apply)
     }
 
@@ -213,25 +213,73 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     ws.tail.head shouldBe "2018-09-12, Dense Fog/Light Rain, 0, 0"
   }
 
-  //  it should "render a table 2" in {
-  //    val csvRenderers = new CsvRenderers {}
-  //    import CsvRenderers._
-  //    val csvGenerators = new CsvGenerators {}
-  //    import CsvGenerators._
-  //    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
-  //    case class Junk(rty: IntPair, y: Option[Double])
-  //    implicit val intPairCsvRenderer: CsvRenderer[IntPair] = csvRenderers.renderer2(IntPair.apply)
-  //    implicit val intPairCsvGenerator: CsvGenerator[IntPair] = csvGenerators.generators2(IntPair.apply)
-  //    implicit val optCsvRenderer: CsvRenderer[Option[Double]] = csvRenderers.optionRenderer
-  //    implicit val optCsvGenerator: CsvGenerator[Option[Double]] = csvGenerators.optionGenerator
-  //    implicit val junkCsvRenderer: CsvRenderer[Junk] = csvRenderers.renderer2(Junk)
-  ////    import IntPair._
-  //    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
-  //    iIty should matchPattern { case Success(_) => }
-  //    val iIt = iIty.get
-  //    val ws = CsvTableRenderer[Junk]().render(iIt)
-  //    ws.head shouldBe "a, b"
-  //    ws.tail.head shouldBe "1, 2"
-  //    ws.tail.tail.head shouldBe "42, 99"
-  //  }
+  case class WeatherHawks(weather: String, hawks: Hawks)
+
+  case class NestedRaptorReport(date: LocalDate, weatherHawks: WeatherHawks)
+
+  object NestedRaptorReport {
+
+    object NestedRaptorReportParser extends CellParsers {
+      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+
+      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
+
+      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
+      implicit val dailyRaptorReportColumnHelper: ColumnHelper[NestedRaptorReport] = columnHelper()
+      implicit val hawksCellParser: CellParser[Hawks] = cellParser2(Hawks.apply)
+      implicit val weatherHawksCellParser: CellParser[WeatherHawks] = cellParser2(WeatherHawks.apply)
+      implicit val dailyRaptorReportParser: CellParser[NestedRaptorReport] = cellParser2(NestedRaptorReport.apply)
+    }
+
+    import NestedRaptorReportParser._
+
+    trait NestedRaptorReportConfig extends DefaultRowConfig {
+      override val string: Regex = """[\w/\- ]+""".r
+      override val delimiter: Regex = """\t""".r
+    }
+
+    implicit object NestedRaptorReportConfig extends NestedRaptorReportConfig
+
+    implicit val parser: StandardRowParser[NestedRaptorReport] = StandardRowParser[NestedRaptorReport](LineParser.apply)
+
+    trait NestedRaptorReportTableParser extends StringTableParser[Table[NestedRaptorReport]] {
+      type Row = NestedRaptorReport
+
+      val maybeFixedHeader: Option[Header] = None
+
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+
+      protected def builder(rows: Iterable[NestedRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+    }
+
+    implicit object NestedRaptorReportTableParser extends NestedRaptorReportTableParser
+  }
+
+
+  it should "parse and output raptors from raptors.csv with a more nested type" in {
+    import NestedRaptorReport._
+
+    val rty: Try[Table[NestedRaptorReport]] = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
+    rty should matchPattern { case Success(HeadedTable(_, _)) => }
+    val rt = rty.get
+    rt.rows.size shouldBe 13
+    import CsvGenerators._
+    import CsvRenderers._
+    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+    implicit val hawksCsvRenderer: CsvRenderer[Hawks] = new CsvRenderers {}.renderer2(Hawks.apply)
+    implicit val hawksCsvGenerator: CsvProductGenerator[Hawks] = new CsvGenerators {}.generators2(Hawks.apply)
+    implicit val weatherHawksCsvRenderer: CsvRenderer[WeatherHawks] = new CsvRenderers {}.renderer2(WeatherHawks.apply)
+    implicit val weatherHawksCsvGenerator: CsvProductGenerator[WeatherHawks] = new CsvGenerators {}.generators2(WeatherHawks.apply)
+    implicit val dateCsvRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
+      val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+      def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
+    }
+    implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new BaseCsvGenerator[LocalDate]
+    implicit val DRRCsvRenderer: CsvRenderer[NestedRaptorReport] = new CsvRenderers {}.renderer2(NestedRaptorReport.apply)
+    implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = new CsvGenerators {}.generators2(NestedRaptorReport.apply)
+    val ws: Iterable[String] = rt.toCSV
+    ws.head shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt"
+    ws.tail.head shouldBe "2018-09-12, Dense Fog/Light Rain, 0, 0"
+  }
 }

@@ -35,7 +35,6 @@ trait CsvGenerator[T] {
   def toColumnName(to: Option[T], po: Option[String], name: String): String
 }
 
-
 trait CsvProductGenerator[T] extends CsvGenerator[T] {
   def fieldNames(implicit tc: ClassTag[T]): Array[String] = Reflection.extractFieldNames(tc)
 
@@ -59,4 +58,13 @@ class BaseCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T] {
   val csvAttributes: CsvAttributes = ca
 
   def toColumnName(to: Option[T], po: Option[String], name: String): String = (po map (w => s"$w.")).getOrElse("") + name
+
+  def merge(po: Option[String], no: Option[String]): Option[String] = po match {
+    case Some(p) =>
+      no match {
+        case Some(n) => Some(s"$p.$n")
+        case None => po
+      }
+    case None => no
+  }
 }

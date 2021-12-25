@@ -461,7 +461,7 @@ trait CsvGenerators {
     private val Array(p1) = fieldNames
 
     def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String = Seq(
-      implicitly[CsvGenerator[P1]].toColumnName(None, no, p1) // merge po and no
+      implicitly[CsvGenerator[P1]].toColumnName(None, merge(po, no), p1)
     ) mkString c.delimiter
   }
 
@@ -479,8 +479,8 @@ trait CsvGenerators {
     private val Array(p1, p2) = fieldNames
 
     def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String = Seq(
-      implicitly[CsvGenerator[P1]].toColumnName(None, no, p1) // TODO merge
-      , implicitly[CsvGenerator[P2]].toColumnName(None, no, p2)
+      implicitly[CsvGenerator[P1]].toColumnName(None, merge(po, no), p1)
+      , implicitly[CsvGenerator[P2]].toColumnName(None, merge(po, no), p2)
     ) mkString c.delimiter
   }
 
@@ -499,9 +499,9 @@ trait CsvGenerators {
     private val Array(p1, p2, p3) = fieldNames
 
     def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String = Seq(
-      implicitly[CsvGenerator[P1]].toColumnName(None, no, p1)
-      , implicitly[CsvGenerator[P2]].toColumnName(None, no, p2)
-      , implicitly[CsvGenerator[P3]].toColumnName(None, no, p3)
+      implicitly[CsvGenerator[P1]].toColumnName(None, merge(po, no), p1)
+      , implicitly[CsvGenerator[P2]].toColumnName(None, merge(po, no), p2)
+      , implicitly[CsvGenerator[P3]].toColumnName(None, merge(po, no), p3)
     ) mkString c.delimiter
   }
   //
