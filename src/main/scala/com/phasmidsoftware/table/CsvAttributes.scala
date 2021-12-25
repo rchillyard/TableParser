@@ -24,8 +24,15 @@ trait CsvGenerator[T] {
     * CONSIDER is "to" actually necessary?
     *
     * @param to an optional T value (ignored).
-    * @param wo the name of the parent.
+    * @param po the (optional) name of the parent.
+    * @param no the (optional) name of this column.
     * @return a list of names of the form parent.column.
     */
-  def toColumnNames(to: Option[T], wo: Option[String], name: String): String
+  def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String
+}
+
+class BaseCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T] {
+  val csvAttributes: CsvAttributes = ca
+
+  def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String = (po map (w => s"$w.")).getOrElse("") + no.getOrElse("")
 }

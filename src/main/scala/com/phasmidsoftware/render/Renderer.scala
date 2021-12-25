@@ -184,7 +184,7 @@ case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttribu
       val sw = implicitly[Writable[StringBuilder]]
       val tc = implicitly[CsvRenderer[T]]
       val tg = implicitly[CsvGenerator[T]]
-      val hdr: String = tg.toColumnNames(None, None, "")
+      val hdr: String = tg.toColumnNames(None, None, None)
       val zs: Seq[String] = for (x <- x.rows.toSeq; o = sw.unit; sb = sw.writeRaw(o)(tc.render(x, Map()))) yield sb.toString()
       hdr +: zs
   }

@@ -1,11 +1,14 @@
 package com.phasmidsoftware.render
 
-import com.phasmidsoftware.parse.{RowParser, StringParser, StringTableParser}
+import com.phasmidsoftware.parse._
 import com.phasmidsoftware.table._
+import org.joda.time.LocalDate
+import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 
 import java.io.File
+import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
@@ -48,6 +51,22 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   }
 
+  behavior of "CsvGenerators"
+
+  it should "generate header for an Int" in {
+    import CsvGenerators._
+    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+    implicitly[CsvGenerator[Int]].toColumnNames(None, None, Some("x")) shouldBe "x"
+    implicitly[CsvGenerator[Int]].toColumnNames(None, Some("x"), Some("y")) shouldBe "x.y"
+  }
+
+  it should "generate header for an Option[Int]" in {
+    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+    implicit val optionIntGenerator: CsvGenerator[Option[Int]] = new CsvGenerators {}.optionGenerator
+    optionIntGenerator.toColumnNames(None, None, Some("x")) shouldBe "x"
+    implicitly[CsvGenerator[Option[Int]]].toColumnNames(None, Some("x"), Some("y")) shouldBe "x.y"
+  }
+
   behavior of "CsvRenderers"
 
   it should "render an Option[Int]" in {
@@ -76,7 +95,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   behavior of "CsvTableRenderer"
 
-  it should "render a table" in {
+  it should "render a table 1" in {
     val csvRenderers = new CsvRenderers {}
     import CsvRenderers._
     val csvGenerators = new CsvGenerators {}
@@ -93,4 +112,129 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     ws.tail.head shouldBe "1, 2"
     ws.tail.tail.head shouldBe "42, 99"
   }
+
+  case class Hawks(bw: Int, rt: Int) {
+    def map(f: Int => Int): Hawks = Hawks(f(bw), f(rt))
+  }
+
+  object Hawks {
+
+    object HawksParser extends JavaTokenParsers {
+      lazy val pair: Parser[(Int, Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
+    }
+
+    trait HawksRowParser extends StringParser[Hawks] {
+      def parse(indexedString: (String, Int))(header: Header): Try[Hawks] = HawksParser.parseAll(HawksParser.pair, indexedString._1) match {
+        case HawksParser.Success((x, y), _) => Success(Hawks(x, y))
+        case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
+      }
+
+      //noinspection NotImplementedCode
+      def parseHeader(w: String): Try[Header] = ???
+    }
+
+    implicit object HawksRowParser extends HawksRowParser
+
+    trait HawksTableParser extends StringTableParser[Table[Hawks]] {
+      type Row = Hawks
+
+      val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
+
+
+      protected def builder(rows: Iterable[Hawks], header: Header): Table[Hawks] = HeadedTable(rows, Header[Hawks]())
+
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    }
+
+    implicit object HawksTableParser extends HawksTableParser
+
+  }
+
+  case class DailyRaptorReport(date: LocalDate, weather: String, hawks: Hawks)
+
+  object DailyRaptorReport {
+
+    object DailyRaptorReportParser extends CellParsers {
+
+      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+
+      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
+
+      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
+      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
+      implicit val intPairCellParser: CellParser[Hawks] = cellParser2(Hawks.apply)
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser3(DailyRaptorReport.apply)
+    }
+
+    import DailyRaptorReportParser._
+
+    trait DailyRaptorReportConfig extends DefaultRowConfig {
+      override val string: Regex = """[\w/\- ]+""".r
+      override val delimiter: Regex = """\t""".r
+    }
+
+    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+
+    implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
+
+    trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
+      type Row = DailyRaptorReport
+
+      val maybeFixedHeader: Option[Header] = None
+
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+
+      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+    }
+
+    implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
+
+  }
+
+  it should "parse and output raptors from raptors.csv" in {
+    import DailyRaptorReport._
+
+    val rty: Try[Table[DailyRaptorReport]] = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
+    rty should matchPattern { case Success(HeadedTable(_, _)) => }
+    val rt = rty.get
+    rt.rows.size shouldBe 13
+    import CsvGenerators._
+    import CsvRenderers._
+    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+    implicit val intPairCsvRenderer: CsvRenderer[Hawks] = new CsvRenderers {}.renderer2(Hawks.apply)
+    implicit val intPairCsvGenerator: CsvGenerator[Hawks] = new CsvGenerators {}.generators2(Hawks.apply)
+    implicit val dateCsvRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
+      val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+      def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
+    }
+    implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new BaseCsvGenerator[LocalDate]
+    implicit val DRRCsvRenderer: CsvRenderer[DailyRaptorReport] = new CsvRenderers {}.renderer3(DailyRaptorReport.apply)
+    implicit val DRRCsvGenerator: CsvGenerator[DailyRaptorReport] = new CsvGenerators {}.generators3(DailyRaptorReport.apply)
+    val output: Iterable[String] = rt.toCSV
+    output.head shouldBe "date, weather, hawks.bw, hawks.rt"
+    output.tail.head shouldBe "2018-09-12, Dense Fog/Light Rain, 0, 0"
+  }
+
+  //  it should "render a table 2" in {
+  //    val csvRenderers = new CsvRenderers {}
+  //    import CsvRenderers._
+  //    val csvGenerators = new CsvGenerators {}
+  //    import CsvGenerators._
+  //    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+  //    case class Junk(rty: IntPair, y: Option[Double])
+  //    implicit val intPairCsvRenderer: CsvRenderer[IntPair] = csvRenderers.renderer2(IntPair.apply)
+  //    implicit val intPairCsvGenerator: CsvGenerator[IntPair] = csvGenerators.generators2(IntPair.apply)
+  //    implicit val optCsvRenderer: CsvRenderer[Option[Double]] = csvRenderers.optionRenderer
+  //    implicit val optCsvGenerator: CsvGenerator[Option[Double]] = csvGenerators.optionGenerator
+  //    implicit val junkCsvRenderer: CsvRenderer[Junk] = csvRenderers.renderer2(Junk)
+  ////    import IntPair._
+  //    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
+  //    iIty should matchPattern { case Success(_) => }
+  //    val iIt = iIty.get
+  //    val ws = CsvTableRenderer[Junk]().render(iIt)
+  //    ws.head shouldBe "a, b"
+  //    ws.tail.head shouldBe "1, 2"
+  //    ws.tail.tail.head shouldBe "42, 99"
+  //  }
 }
