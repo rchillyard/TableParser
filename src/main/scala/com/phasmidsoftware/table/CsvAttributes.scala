@@ -1,5 +1,9 @@
 package com.phasmidsoftware.table
 
+import com.phasmidsoftware.util.Reflection
+
+import scala.reflect.ClassTag
+
 case class CsvAttributes(delimiter: String, quote: String)
 
 object CsvAttributes {
@@ -23,16 +27,36 @@ trait CsvGenerator[T] {
     *
     * CONSIDER is "to" actually necessary?
     *
+    * @param to   an optional T value (ignored).
+    * @param po   the (optional) name of the parent.
+    * @param name the name of this column.
+    * @return a list of names of the form parent.column.
+    */
+  def toColumnName(to: Option[T], po: Option[String], name: String): String
+}
+
+
+trait CsvProductGenerator[T] extends CsvGenerator[T] {
+  def fieldNames(implicit tc: ClassTag[T]): Array[String] = Reflection.extractFieldNames(tc)
+
+  /**
+    * Method to generate a list of appropriate column names for a value of t.
+    *
+    * CONSIDER is "to" actually necessary?
+    *
     * @param to an optional T value (ignored).
     * @param po the (optional) name of the parent.
     * @param no the (optional) name of this column.
     * @return a list of names of the form parent.column.
     */
   def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String
+
+  override def toColumnName(to: Option[T], po: Option[String], name: String): String = toColumnNames(to, po, Some(name))
+
 }
 
 class BaseCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T] {
   val csvAttributes: CsvAttributes = ca
 
-  def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String = (po map (w => s"$w.")).getOrElse("") + no.getOrElse("")
+  def toColumnName(to: Option[T], po: Option[String], name: String): String = (po map (w => s"$w.")).getOrElse("") + name
 }

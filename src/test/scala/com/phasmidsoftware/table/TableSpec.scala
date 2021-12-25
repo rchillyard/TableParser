@@ -250,7 +250,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
     }
 
-    implicit object IntPairCsvGenerator extends CsvGenerator[IntPair] {
+    implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
       val csvAttributes: CsvAttributes = CsvAttributes(", ")
 
       def toColumnNames(to: Option[IntPair], po: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
@@ -276,7 +276,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
     }
 
-    implicit object IntPairCsvGenerator extends CsvGenerator[IntPair] {
+    implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
       val csvAttributes: CsvAttributes = myCsvAttributes
 
       def toColumnNames(to: Option[IntPair], wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"

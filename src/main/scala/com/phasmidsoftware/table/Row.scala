@@ -49,6 +49,10 @@ case class Row(ws: Seq[String], hdr: Header, index: Int) extends (String => Try[
   override def toString(): String = s"""Row: ${ws.mkString("[", ",", "]")} with header=$hdr"""
 }
 
+object Row {
+  // TODO define implicit evidence for CsvRenderer and CsvGenerator
+}
+
 /**
   * A wrapper class to index a T.
   *

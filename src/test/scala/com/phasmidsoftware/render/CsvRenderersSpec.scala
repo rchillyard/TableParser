@@ -56,15 +56,15 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   it should "generate header for an Int" in {
     import CsvGenerators._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
-    implicitly[CsvGenerator[Int]].toColumnNames(None, None, Some("x")) shouldBe "x"
-    implicitly[CsvGenerator[Int]].toColumnNames(None, Some("x"), Some("y")) shouldBe "x.y"
+    implicitly[CsvGenerator[Int]].toColumnName(None, None, "x") shouldBe "x"
+    implicitly[CsvGenerator[Int]].toColumnName(None, Some("x"), "y") shouldBe "x.y"
   }
 
   it should "generate header for an Option[Int]" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicit val optionIntGenerator: CsvGenerator[Option[Int]] = new CsvGenerators {}.optionGenerator
-    optionIntGenerator.toColumnNames(None, None, Some("x")) shouldBe "x"
-    implicitly[CsvGenerator[Option[Int]]].toColumnNames(None, Some("x"), Some("y")) shouldBe "x.y"
+    optionIntGenerator.toColumnName(None, None, "x") shouldBe "x"
+    implicitly[CsvGenerator[Option[Int]]].toColumnName(None, Some("x"), "y") shouldBe "x.y"
   }
 
   behavior of "CsvRenderers"
@@ -102,7 +102,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import CsvGenerators._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicit val intPairCsvRenderer: CsvRenderer[IntPair] = csvRenderers.renderer2(IntPair.apply)
-    implicit val intPairCsvGenerator: CsvGenerator[IntPair] = csvGenerators.generators2(IntPair.apply)
+    implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = csvGenerators.generators2(IntPair.apply)
     import IntPair._
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
@@ -147,7 +147,6 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     }
 
     implicit object HawksTableParser extends HawksTableParser
-
   }
 
   case class DailyRaptorReport(date: LocalDate, weather: String, hawks: Hawks)
@@ -155,7 +154,6 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   object DailyRaptorReport {
 
     object DailyRaptorReportParser extends CellParsers {
-
       private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
 
       def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
@@ -188,7 +186,6 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
-
   }
 
   it should "parse and output raptors from raptors.csv" in {
@@ -202,7 +199,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicit val intPairCsvRenderer: CsvRenderer[Hawks] = new CsvRenderers {}.renderer2(Hawks.apply)
-    implicit val intPairCsvGenerator: CsvGenerator[Hawks] = new CsvGenerators {}.generators2(Hawks.apply)
+    implicit val intPairCsvGenerator: CsvProductGenerator[Hawks] = new CsvGenerators {}.generators2(Hawks.apply)
     implicit val dateCsvRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
       val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
 
@@ -210,10 +207,10 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     }
     implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new BaseCsvGenerator[LocalDate]
     implicit val DRRCsvRenderer: CsvRenderer[DailyRaptorReport] = new CsvRenderers {}.renderer3(DailyRaptorReport.apply)
-    implicit val DRRCsvGenerator: CsvGenerator[DailyRaptorReport] = new CsvGenerators {}.generators3(DailyRaptorReport.apply)
-    val output: Iterable[String] = rt.toCSV
-    output.head shouldBe "date, weather, hawks.bw, hawks.rt"
-    output.tail.head shouldBe "2018-09-12, Dense Fog/Light Rain, 0, 0"
+    implicit val DRRCsvGenerator: CsvProductGenerator[DailyRaptorReport] = new CsvGenerators {}.generators3(DailyRaptorReport.apply)
+    val ws: Iterable[String] = rt.toCSV
+    ws.head shouldBe "date, weather, hawks.bw, hawks.rt"
+    ws.tail.head shouldBe "2018-09-12, Dense Fog/Light Rain, 0, 0"
   }
 
   //  it should "render a table 2" in {
