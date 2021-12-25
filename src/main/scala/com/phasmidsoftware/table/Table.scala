@@ -258,9 +258,11 @@ trait Table[Row] extends Iterable[Row] {
   override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
 
   /**
-    * Method to render this Table as a CSV file with (maybe) header.
+    * Method to render this Table[T] as a CSV file with (maybe) header.
     *
-    * @param renderer implicit value of Renderer[Row, String]
+    * @param renderer      implicit value of CsvRenderer[Row].
+    * @param generator     implicit value of CsvProductGenerator[Row].
+    * @param csvAttributes implicit value of CsvAttributes.
     * @return an Iterable[String]
     */
   def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvProductGenerator[Row], csvAttributes: CsvAttributes): Iterable[String] =
@@ -520,6 +522,23 @@ object Table {
     case Some(h) => HeadedTable(xs, h)
     case None => UnheadedTable(xs)
   }
+
+
+  /**
+    * Method to render this Table[Row] as a CSV file with header.
+    *
+    * @param csvAttributes implicit value of CsvAttributes.
+    * @return an Iterable[String]
+    */
+  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): Iterable[String] = {
+    t.maybeHeader match {
+      case Some(hdr) =>
+        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        CsvTableRenderer[Row]().render(t)
+      case _ => throw TableException("cannot write this Table to CSV (no header)")
+    }
+  }
+
 }
 
 /**

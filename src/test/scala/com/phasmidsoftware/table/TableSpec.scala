@@ -412,4 +412,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case _ => fail("should succeed")
     }
   }
+
+  behavior of "Table[Row]"
+  it should "work" in {
+    val hdr = Header(Seq("a", "b"))
+    val row1 = Row(Seq("1", "2"), hdr, 1)
+    val table = Table(Seq(row1), Some(hdr))
+    val ws = Table.toCSVRow(table)
+    ws.head shouldBe "a,b"
+    ws.tail.head shouldBe "1,2"
+  }
 }
