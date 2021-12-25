@@ -46,8 +46,7 @@ case class Row(ws: Seq[String], hdr: Header, index: Int) extends (String => Try[
     * @return the index, which might be -1
     */
   def getIndex(column: String): Int = hdr.getIndex(column).getOrElse(-1)
-
-
+  
   override def toString(): String = s"""Row: ${ws.mkString("[", ",", "]")} with header=$hdr"""
 }
 
@@ -58,17 +57,17 @@ object Row {
     def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
   }
 
+  /**
+    * Method to yield a CsvGenerator[Row].
+    *
+    * @param hdr the Header.
+    * @param c CsvAttributes.
+    * @return a new CsvGenerator[Row].
+    */
   def csvGenerator(hdr: Header)(implicit c: CsvAttributes): CsvGenerator[Row] = new CsvGenerator[Row] {
     val csvAttributes: CsvAttributes = c
 
-    /**
-      *
-      * @param to   an optional T value (ignored).
-      * @param po   the (optional) name of the parent (ignored).
-      * @param name the name of this column (ignored).
-      *  @return a list of names of the form parent.column.
-      */
-    def toColumnName(to: Option[Row], po: Option[String], name: String): String = hdr.xs.mkString(c.delimiter)
+    def toColumnName(po: Option[String], name: String): String = hdr.xs.mkString(c.delimiter)
   }
 
 }

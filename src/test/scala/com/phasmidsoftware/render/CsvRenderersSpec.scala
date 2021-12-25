@@ -56,15 +56,15 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   it should "generate header for an Int" in {
     import CsvGenerators._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
-    implicitly[CsvGenerator[Int]].toColumnName(None, None, "x") shouldBe "x"
-    implicitly[CsvGenerator[Int]].toColumnName(None, Some("x"), "y") shouldBe "x.y"
+    implicitly[CsvGenerator[Int]].toColumnName(None, "x") shouldBe "x"
+    implicitly[CsvGenerator[Int]].toColumnName(Some("x"), "y") shouldBe "x.y"
   }
 
   it should "generate header for an Option[Int]" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicit val optionIntGenerator: CsvGenerator[Option[Int]] = new CsvGenerators {}.optionGenerator
-    optionIntGenerator.toColumnName(None, None, "x") shouldBe "x"
-    implicitly[CsvGenerator[Option[Int]]].toColumnName(None, Some("x"), "y") shouldBe "x.y"
+    optionIntGenerator.toColumnName(None, "x") shouldBe "x"
+    implicitly[CsvGenerator[Option[Int]]].toColumnName(Some("x"), "y") shouldBe "x.y"
   }
 
   behavior of "CsvRenderers"

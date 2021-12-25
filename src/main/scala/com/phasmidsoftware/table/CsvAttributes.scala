@@ -12,9 +12,10 @@ object CsvAttributes {
   def apply(delimiter: String): CsvAttributes = CsvAttributes(delimiter, """"""")
 }
 
-
 /**
-  * Type class for rendering headers to CSV.
+  * Trait (type class?) for generating headers for CSV output.
+  *
+  * NOTE: this is an unusual type class in that none of its methods reference type T.
   *
   * @tparam T the type of the objects to be rendered by CSV.
   */
@@ -25,39 +26,39 @@ trait CsvGenerator[T] {
   /**
     * Method to generate a list of appropriate column names for a value of t.
     *
-    * CONSIDER is "to" actually necessary?
-    *
-    * @param to   an optional T value (ignored).
     * @param po   the (optional) name of the parent.
     * @param name the name of this column.
     * @return a list of names of the form parent.column.
     */
-  def toColumnName(to: Option[T], po: Option[String], name: String): String
+  def toColumnName(po: Option[String], name: String): String
 }
 
+/**
+  * Trait (type class?) for generating headers for CSV output.
+  *
+  * NOTE: this is an unusual type class in that none of its methods reference type T.
+  *
+  * @tparam T the type of the objects to be rendered by CSV.
+  */
 trait CsvProductGenerator[T] extends CsvGenerator[T] {
   def fieldNames(implicit tc: ClassTag[T]): Array[String] = Reflection.extractFieldNames(tc)
 
   /**
     * Method to generate a list of appropriate column names for a value of t.
     *
-    * CONSIDER is "to" actually necessary?
-    *
-    * @param to an optional T value (ignored).
     * @param po the (optional) name of the parent.
     * @param no the (optional) name of this column.
     * @return a list of names of the form parent.column.
     */
-  def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String
+  def toColumnNames(po: Option[String], no: Option[String]): String
 
-  override def toColumnName(to: Option[T], po: Option[String], name: String): String = toColumnNames(to, po, Some(name))
-
+  override def toColumnName(po: Option[String], name: String): String = toColumnNames(po, Some(name))
 }
 
 class BaseCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T] {
   val csvAttributes: CsvAttributes = ca
 
-  def toColumnName(to: Option[T], po: Option[String], name: String): String = (po map (w => s"$w.")).getOrElse("") + name
+  def toColumnName(po: Option[String], name: String): String = (po map (w => s"$w.")).getOrElse("") + name
 
   def merge(po: Option[String], no: Option[String]): Option[String] = po match {
     case Some(p) =>

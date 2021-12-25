@@ -253,7 +253,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
       val csvAttributes: CsvAttributes = CsvAttributes(", ")
 
-      def toColumnNames(to: Option[IntPair], po: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
+      def toColumnNames(po: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
     }
 
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
@@ -279,7 +279,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
       val csvAttributes: CsvAttributes = myCsvAttributes
 
-      def toColumnNames(to: Option[IntPair], wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
+      def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
     }
 
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))

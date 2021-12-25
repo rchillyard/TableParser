@@ -185,8 +185,8 @@ case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttribu
       val tc = implicitly[CsvRenderer[T]]
       val tg = implicitly[CsvGenerator[T]]
       val hdr = tg match {
-        case _tg: CsvProductGenerator[_] => _tg.toColumnNames(None, None, None)
-        case _tg: CsvGenerator[_] => _tg.toColumnName(None, None, "")
+        case _tg: CsvProductGenerator[_] => _tg.toColumnNames(None, None)
+        case _tg: CsvGenerator[_] => _tg.toColumnName(None, "")
       }
       val zs: Seq[String] = for (x <- x.rows.toSeq; o = sw.unit; sb = sw.writeRaw(o)(tc.render(x, Map()))) yield sb.toString()
       hdr +: zs

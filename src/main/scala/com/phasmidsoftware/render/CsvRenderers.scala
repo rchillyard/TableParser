@@ -460,8 +460,8 @@ trait CsvGenerators {
   def generator1[P1: CsvGenerator, T <: Product : ClassTag](construct: P1 => T)(implicit c: CsvAttributes): CsvGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1) = fieldNames
 
-    def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String = Seq(
-      implicitly[CsvGenerator[P1]].toColumnName(None, merge(po, no), p1)
+    def toColumnNames(po: Option[String], no: Option[String]): String = Seq(
+      implicitly[CsvGenerator[P1]].toColumnName(merge(po, no), p1)
     ) mkString c.delimiter
   }
 
@@ -478,9 +478,9 @@ trait CsvGenerators {
   def generators2[P1: CsvGenerator, P2: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2) = fieldNames
 
-    def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String = Seq(
-      implicitly[CsvGenerator[P1]].toColumnName(None, merge(po, no), p1)
-      , implicitly[CsvGenerator[P2]].toColumnName(None, merge(po, no), p2)
+    def toColumnNames(po: Option[String], no: Option[String]): String = Seq(
+      implicitly[CsvGenerator[P1]].toColumnName(merge(po, no), p1)
+      , implicitly[CsvGenerator[P2]].toColumnName(merge(po, no), p2)
     ) mkString c.delimiter
   }
 
@@ -498,10 +498,10 @@ trait CsvGenerators {
   def generators3[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3) = fieldNames
 
-    def toColumnNames(to: Option[T], po: Option[String], no: Option[String]): String = Seq(
-      implicitly[CsvGenerator[P1]].toColumnName(None, merge(po, no), p1)
-      , implicitly[CsvGenerator[P2]].toColumnName(None, merge(po, no), p2)
-      , implicitly[CsvGenerator[P3]].toColumnName(None, merge(po, no), p3)
+    def toColumnNames(po: Option[String], no: Option[String]): String = Seq(
+      implicitly[CsvGenerator[P1]].toColumnName(merge(po, no), p1)
+      , implicitly[CsvGenerator[P2]].toColumnName(merge(po, no), p2)
+      , implicitly[CsvGenerator[P3]].toColumnName(merge(po, no), p3)
     ) mkString c.delimiter
   }
   //
