@@ -16,7 +16,7 @@ import java.net.{URI, URL}
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Random, Try}
 
 /**
   * A Table of Rows.
@@ -125,7 +125,7 @@ trait Table[Row] extends Iterable[Row] {
     * @param n the desired row.
     * @return a new Table[Row] consisting only the row requested.
     */
-  def select(n: Int): Table[Row] = Table(toIndexedSeq.slice(n - 1, n), maybeHeader)
+  def select(n: Int): Table[Row] = processRows(_.slice(n - 1, n))
 
   /**
     * Method to yield a Seq of the rows of this Table.
@@ -180,7 +180,14 @@ trait Table[Row] extends Iterable[Row] {
     * @tparam S the underlying type of the resulting Table (a super-type of Row and for which there is evidence of Ordering[S]).
     * @return a Table[S].
     */
-  def sorted[S >: Row : Ordering]: Table[S] = processRows(rs => (rs map (_.asInstanceOf[S])).toSeq.sorted)
+  def sort[S >: Row : Ordering]: Table[S] = processRows(rs => (rs map (_.asInstanceOf[S])).toSeq.sorted)
+
+  /**
+    * Method to shuffle this Table[Row].
+    *
+    * @return a Table[Row].
+    */
+  lazy val shuffle: Table[Row] = processRows(rs => Random.shuffle(rs))
 
   /**
     * drop
@@ -246,8 +253,8 @@ trait Table[Row] extends Iterable[Row] {
     *
     * TEST
     *
-    * @param from  the index at which to begin the slice.
-    * @param until the index at which to end the slice
+    * @param from  the index at which to begin the slice (1-based counting).
+    * @param until the index at which to end the slice (1-based counting).
     * @return a Table like this Table but with slice(from, until) rows.
     */
   override def slice(from: Int, until: Int): Table[Row] = processRows(_.slice(from, until))

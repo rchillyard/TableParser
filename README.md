@@ -141,18 +141,26 @@ See section on _CellParsers_ below.
 
 ## Table
 
-The _Table_ class has several methods for manipulation:
-*  def iterator: Iterator\[Row]
-*  def rows: Seq\[Row]
-*  def maybeHeader: Option\[Header]
-*  def map\[S](f: Row => S): Table\[S]
-*  def flatMap\[U](f: Row => Table\[U]): Table\[U]
-*  def unit\[S](rows: Seq\[S], maybeHeader: Option\[Header]): Table\[S]
-*  def ++\[U >: Row](table: Table\[U]): Table\[U]
+The _Table_ class, which implements _Iterable\[Row]_, also has several methods for manipulation:
+* def rows: Seq\[Row]
+* def maybeHeader: Option\[Header]
+* def flatMap\[U](f: Row => Iterable\[U]): Table\[U]
+* def unit\[S](rows: Iterable\[S], maybeHeader: Option\[Header]): Table\[S]
+* def ++\[U >: Row](table: Table\[U]): Table\[U]
+* def processRows\[S](f: Iterable\[Row] => Iterable\[S]): Table\[S]
+* def processRows\[R, S](f: (Iterable\[Row], Iterable\[R]) => Iterable\[S])(other: Table\[R]): Table\[S]
+* def sort\[S >: Row : Ordering]: Table\[S]
+* def select(range: Range): Table\[Row]
+* def select(n: Int): Table\[Row]
+* lazy val shuffle: Table\[Row]
+* def toCSV(implicit renderer: CsvRenderer\[Row], generator: CsvProductGenerator\[Row], csvAttributes: CsvAttributes): Iterable\[String]
+* def maybeColumnNames: Option\[Seq\[String]]
+* def column(name: String): Iterator\[Option\[String]]
+* 
 
-It is to be expected that _join_ methods will be added later.
+It is to be expected that _join_ methods will be added later (based upone the second signature of processRows).
 
-The following object methods are available for parsing text:
+The following **object** methods are available for parsing text:
 *  def parse\[T: TableParser](ws: Seq\[String]): Try\[T]
 *  def parse\[T: TableParser](ws: Iterator\[String]): Try\[T]
 *  def parse\[T: TableParser](x: => Source): Try\[T]
@@ -535,6 +543,19 @@ If you need to set HTML attributes for a specific type, for example a row in the
 If you simply need to write a table to CSV (comma-separated value) format, then use the _toCsv_ method.
 More control can be gained by using _CsvTableRenderer\[T] and CsvRenderer\[T]_ for a particular type _T_.
 
+These require customizable (implicit) evidence parameters and is defined as follows:
+
+    case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], Seq[String]]
+
+CsvRenderer\[T] determines the layout of the rows, while CsvGenerator\[T] determines the header.
+CsvAttributes specify the delimiter and quote characters for the output.
+Instances of each can be created using methods in CsvRenderers and CsvGenerators respectively.
+Appropriate methods are:
+* sequenceRenderer, optionRenderer, renderer1,  renderer2, renderer3, etc.
+* sequenceGenerator, optionGenerato, generator1,  generator2, generator3, etc.
+
+As usual, the standard types are pre-defined (for Int, Double, etc.).
+
 ## String Rendering
 
 There is currently only one implementation of String rendering, and that is Json rendering.
@@ -565,7 +586,7 @@ V1.1.0 -> V1.1.1
 * Enable cryptographic capabilities
 
 V1.0.15 -> V1.1.0
-* Enable CSV-rendering
+* Enable CSV-rendering and selection of table rows.
 
 V1.0.14 -> V1.0.15
 * Minor changes
