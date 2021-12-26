@@ -107,11 +107,34 @@ trait Table[Row] extends Iterable[Row] {
   def rows: Iterable[Row]
 
   /**
+    * Method to select those rows defined by the given range.
+    * NOTE: the rows are numbered 1..N.
+    *
+    * @param range a Range
+    * @return a new Table[Row] consisting only of those rows in the given range.
+    */
+  def select(range: Range): Table[Row] = {
+    val ys: IndexedSeq[Row] = asOneBasedIndexedSequence
+    Table(for (i <- range) yield ys(i), maybeHeader)
+  }
+
+  /**
+    * Method to select those rows defined by the given range.
+    * NOTE: the rows are numbered 1..N.
+    *
+    * @param n the desired row.
+    * @return a new Table[Row] consisting only the row requested.
+    */
+  def select(n: Int): Table[Row] = Table(toIndexedSeq.slice(n - 1, n), maybeHeader)
+
+  /**
     * Method to yield a Seq of the rows of this Table.
     *
     * @return a Seq[Row]
     */
-  override def toSeq: Seq[Row] = { lazy val rs = rows.toSeq; rs }
+  override def toSeq: Seq[Row] = {
+    lazy val rs = rows.toSeq; rs
+  }
 
   /**
     * Method to yield an Array from the rows of this Table.
@@ -271,10 +294,15 @@ trait Table[Row] extends Iterable[Row] {
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
 
   def column(name: String): Iterator[Option[String]]
+
+  private lazy val asOneBasedIndexedSequence = new IndexedSeq[Row]() {
+    def apply(i: Int): Row = rows.toIndexedSeq(i - 1)
+
+    def length: Int = rows.size
+  }
 }
 
 object Table {
-
   /**
     * Primary method to parse a table from an Iterator of String.
     * This method is, in turn, invoked by all other parse methods defined below (other than parseSequence).
@@ -523,7 +551,6 @@ object Table {
     case None => UnheadedTable(xs)
   }
 
-
   /**
     * Method to render this Table[Row] as a CSV file with header.
     *
@@ -538,7 +565,6 @@ object Table {
       case _ => throw TableException("cannot write this Table to CSV (no header)")
     }
   }
-
 }
 
 /**

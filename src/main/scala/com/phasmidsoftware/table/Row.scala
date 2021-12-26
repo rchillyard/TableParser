@@ -46,7 +46,7 @@ case class Row(ws: Seq[String], hdr: Header, index: Int) extends (String => Try[
     * @return the index, which might be -1
     */
   def getIndex(column: String): Int = hdr.getIndex(column).getOrElse(-1)
-  
+
   override def toString(): String = s"""Row: ${ws.mkString("[", ",", "]")} with header=$hdr"""
 }
 

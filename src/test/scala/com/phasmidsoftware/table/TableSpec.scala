@@ -385,16 +385,34 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "sort"
 
-  it should "sort a Table" in {
+  it should "sort a Table and then select" in {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99", "1 3"))
+    iIty should matchPattern { case Success(_) => }
+    val table = iIty.get
+    table.select(1).size shouldBe 1
+    table.select(1).head shouldBe IntPair(1, 2)
+    table.select(2).head shouldBe IntPair(42, 99)
+    val z = table.select(3)
+    z.head shouldBe IntPair(1, 3)
+
     implicit object IntPairOrdering extends Ordering[IntPair] {
       def compare(x: IntPair, y: IntPair): Int = x.a.compareTo(y.a) match {
         case 0 => x.b.compareTo(y.b)
         case cf => cf
       }
     }
-    println(iIty map (_.sorted))
+    val triedSorted = iIty map (_.sorted)
+    triedSorted should matchPattern { case Success(_) => }
+    val sorted = triedSorted.get
+    val row1 = sorted.select(Range(2, 3))
+    row1.size shouldBe 1
+    row1.head shouldBe IntPair(1, 3)
+    val row2 = sorted.select(Range(3, 4))
+    row2.size shouldBe 1
+    row2.head shouldBe IntPair(42, 99)
+    val rows02 = sorted.select(Range(1, 4, 2))
+    rows02.size shouldBe 2
   }
 
   behavior of "parseResourceRaw"
