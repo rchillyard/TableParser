@@ -319,7 +319,7 @@ object Table {
     * @return a Try[T]
     */
   def parse[T: TableParser](ws: Iterator[String]): Try[T] = implicitly[TableParser[T]] match {
-    case parser: StringTableParser[T] => parser.parse(ws)
+    case parser: StringTableParser[T] => parser.parse(ws, 1)
     case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
 
@@ -486,7 +486,7 @@ object Table {
   def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] = {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
-      case parser: StringsTableParser[T] => parser.parse(wss)
+      case parser: StringsTableParser[T] => parser.parse(wss, 1)
       case _ => Failure(ParserException(s"parse method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
   }
@@ -737,9 +737,10 @@ object HeadedTable {
 /**
   * Case class to represent a header.
   *
-  * @param xs the sequence of column names.
+  * @param xs  the sequence of column names.
+  * @param xss a sequence of sequeence of String representing any additional header lines.
   */
-case class Header(xs: Seq[String]) {
+case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
   /**
     * Get the number of columns.
     *
@@ -763,7 +764,7 @@ case class Header(xs: Seq[String]) {
     * @param other the other Header.
     * @return a Header made up of these columns and those of other, in that order.
     */
-  def ++(other: Header): Header = Header(xs ++ other.xs)
+  def ++(other: Header): Header = Header(xs ++ other.xs, for (xs <- xss; ys <- other.xss) yield xs ++ ys)
 }
 
 object Header {
@@ -805,13 +806,22 @@ object Header {
   def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
 
   /**
+    * This method constructs a new Header based on a header spanning several lines.
+    * Only the first becomes the true header, the remainder become the "preface."
+    *
+    * @param wss a sequence of sequence of String.
+    * @return a Header.
+    */
+  def apply(wss: Seq[Seq[String]]): Header = apply(wss.head, wss.tail)
+
+  /**
     * This method constructs a new Header based on Excel row/column names.
     *
     * @param letters true if we want the sequence A B C D E ... Z AA AB ... BA BB ...
     *                false is we just want numbers.
     * @return a
     */
-  def apply(letters: Boolean, length: Int): Header = Header(numbers map intToString(letters) take length toList)
+  def apply(letters: Boolean, length: Int): Header = Header(numbers map intToString(letters) take length toList, Nil)
 
   /**
     * This method constructs a new Header based on the fields of the class X.
@@ -823,7 +833,7 @@ object Header {
     * @tparam X a class X which is not necessarily a Product.
     * @return a List of field names.
     */
-  def apply[X: ClassTag](): Header = Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList)
+  def apply[X: ClassTag](): Header = Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList, Nil)
 
   /**
     * Create a Header from a variable list of parameters.
@@ -831,7 +841,7 @@ object Header {
     * @param ws a variable list of Strings.
     * @return a Header.
     */
-  def create(ws: String*): Header = apply(ws)
+  def create(ws: String*): Header = apply(ws, Nil)
 }
 
 /**

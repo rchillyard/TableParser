@@ -9,8 +9,9 @@ import com.phasmidsoftware.parse.AbstractTableParser.logException
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP.partition
-import com.phasmidsoftware.util.{FP, FunctionIterator, Joinable, TryUsing}
+import com.phasmidsoftware.util._
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.annotation.implicitNotFound
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -86,7 +87,7 @@ trait TableParser[Table] {
     * @param xs the sequence of Inputs, one for each row
     * @return a Try[Table]
     */
-  def parse(xs: Iterator[Input]): Try[Table]
+  def parse(xs: Iterator[Input], n: Int): Try[Table]
 }
 
 object TableParser {
@@ -104,7 +105,7 @@ object TableParser {
       * @param xs an Iterator[String].
       * @return a Try[T].
       */
-    def parse(xs: Iterator[String]): Try[T] = p.parse(xs)
+    def parse(xs: Iterator[String]): Try[T] = p.parse(xs, 1)
 
     /**
       * Method to parse a Source.
@@ -270,19 +271,16 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     * Method to parse a table based on a sequence of Inputs.
     *
     * @param xs the sequence of Inputs, one for each row
+    * @param n  the number of lines that should be used as a Header.
+    *           If n == 0 == maybeFixedHeader.empty then there is a logic error.
     * @return a Try[Table]
     */
-  def parse(xs: Iterator[Input]): Try[Table] = {
-    def separateHeaderAndRows(h: Input, t: Iterator[Input]): Try[Table] =
-      for (ws <- rowParser.parseHeader(h); rs <- parseRows(t, ws)) yield rs
-
-    maybeFixedHeader match {
-      case Some(h) => parseRows(xs, h)
-      case None =>
-        // NOTE: it is possible that we still don't really have a header encoded in the data either
-        if (xs.hasNext) separateHeaderAndRows(xs.next(), xs)
-        else Failure(ParserException("no rows to parse"))
-    }
+  def parse(xs: Iterator[Input], n: Int = 0): Try[Table] = maybeFixedHeader match {
+    case Some(h) if n == 0 => parseRows(xs, h)
+    case None if n > 0 =>
+      val ys = new TeeIterator(n)(xs)
+      for (h <- rowParser.parseHeader(ys.tee); t <- parseRows(ys, h)) yield t
+    case _ => Failure(ParserException(s"AbstractTableParser.parse: logic error: n=$n, maybeFixedHeader=$maybeFixedHeader"))
   }
 
   /**

@@ -37,7 +37,7 @@ class RowSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "fail apply(String) when appropriate" in {
-    val f: String => Try[String] = Row(Seq("1", "2", "Junk"), Header(Seq("A", "B", "c")), 0)
+    val f: String => Try[String] = Row(Seq("1", "2", "Junk"), Header(Seq(Seq("A", "B", "c"))), 0)
     an[FPException] should be thrownBy f("x").get
     the[FPException] thrownBy f("x").get should have message "Header column x not found"
   }

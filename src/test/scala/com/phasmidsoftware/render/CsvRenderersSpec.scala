@@ -31,7 +31,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      def parseHeader(w: String): Try[Header] = ???
+      def parseHeader(w: Seq[String]): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -130,7 +130,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      def parseHeader(w: String): Try[Header] = ???
+      def parseHeader(w: Seq[String]): Try[Header] = ???
     }
 
     implicit object HawksRowParser extends HawksRowParser

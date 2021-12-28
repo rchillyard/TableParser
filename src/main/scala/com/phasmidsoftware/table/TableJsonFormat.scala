@@ -16,7 +16,9 @@ abstract class TableJsonFormat[T: JsonFormat] extends RootJsonFormat[Table[T]] {
 
   def read(json: JsValue): Table[T] = json.asJsObject("JsonObject expected to represent Table") match {
     case JsObject(fields) =>
-      val ho: Option[Header] = fields.get("header") map (j => Header(j.convertTo[List[String]]))
+      def createHeader(j: JsValue): Header = Header(j.convertTo[Seq[String]], Seq[Seq[String]]())
+
+      val ho: Option[Header] = fields.get("header") map createHeader
       val tso: Option[Iterable[T]] = fields.get("rows") map (j => j.convertTo[List[T]])
       tso match {
         case Some(ts) => Table(ts, ho)

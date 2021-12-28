@@ -137,7 +137,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
 
   it should "render a table of sequenced Complexes in HTML with a header" in {
     import Complex2._
-    val table = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header(Seq("real", "imaginary")))
+    val table = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header(Seq(Seq("real", "imaginary"))))
     val h = table.renderHierarchicalSequenced("table", Map("border" -> "1"))
     h.toString shouldBe
       """

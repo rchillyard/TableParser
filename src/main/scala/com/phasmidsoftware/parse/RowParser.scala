@@ -5,6 +5,7 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{Header, Row}
+import com.phasmidsoftware.util.FP
 
 import scala.annotation.implicitNotFound
 import scala.util.Try
@@ -32,10 +33,10 @@ trait RowParser[Row, Input] {
     *
     * CONSIDER making this share the same signature as parse but for different Row type.
     *
-    * @param x the Input to be parsed.
+    * @param xs a sequence of Inputs to be parsed.
     * @return a Try[Header]
     */
-  def parseHeader(x: Input): Try[Header]
+  def parseHeader(xs: Seq[Input]): Try[Header]
 }
 
 /**
@@ -66,10 +67,13 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
   /**
     * Method to parse a String as a Try[Header].
     *
-    * @param w the header row as a String.
+    * @param xs the header row(s) as a String.
     * @return a Try[Header].
     */
-  def parseHeader(w: String): Try[Header] = for (ws <- parser.parseRow((w, -1))) yield Header(ws)
+  def parseHeader(xs: Seq[String]): Try[Header] = {
+    val wsys: Seq[Try[Strings]] = for (x <- xs.tail) yield parser.parseRow(x, -1)
+    for (w <- Try(xs.head); ws <- parser.parseRow((w, -1)); wss <- FP.sequence(wsys)) yield Header(ws, wss)
+  }
 
   private def doConversion(indexedString: (String, Int), header: Header, ws: Strings) =
     RowValues(Row(ws, header, indexedString._2)).convertTo[Row]
@@ -110,5 +114,5 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
     * @param ws the header row as a sequence of Strings.
     * @return a Try[Header].
     */
-  def parseHeader(ws: Strings): Try[Header] = Try(Header(ws))
+  def parseHeader(ws: Seq[Strings]): Try[Header] = Try(Header(ws))
 }

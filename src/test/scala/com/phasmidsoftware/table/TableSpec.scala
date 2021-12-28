@@ -36,7 +36,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      def parseHeader(w: String): Try[Header] = ???
+      def parseHeader(w: Seq[String]): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -443,7 +443,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Table[Row]"
   it should "work" in {
-    val hdr = Header(Seq("a", "b"))
+    val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
     val ws = Table.toCSVRow(table)

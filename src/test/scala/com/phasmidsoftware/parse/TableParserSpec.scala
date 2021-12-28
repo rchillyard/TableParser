@@ -39,7 +39,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      override def parseHeader(w: String): Try[Header] = ???
+      override def parseHeader(w: Seq[String]): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -123,7 +123,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val rowParser = implicitly[RowParser[DailyRaptorReport, String]]
     val firstRow = headerRaptors
     val row = "09/16/2018\t" + partlyCloudy + "\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410"
-    val Success(header) = rowParser.parseHeader(firstRow)
+    val Success(header) = rowParser.parseHeader(Seq(firstRow))
 
     val hawkCount: Try[DailyRaptorReport] = parser.parse((row, 0))(header)
     hawkCount should matchPattern { case Success(DailyRaptorReport(_, `partlyCloudy`, 3308, 5)) => }
