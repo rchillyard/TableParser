@@ -51,6 +51,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = Some(Header.create("x", "y"))
 
+      val headerRowsToRead: Int = 0
+
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
 
@@ -102,6 +104,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       type Row = DailyRaptorReport
 
       val maybeFixedHeader: Option[Header] = None
+
+      val headerRowsToRead: Int = 1
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
@@ -205,6 +209,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
+      val headerRowsToRead: Int = 1
+
       val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
       protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
@@ -258,6 +264,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = Some(Header.create(header: _*))
 
+      val headerRowsToRead: Int = 0
+
       protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = HeadedTable(rows, header)
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
@@ -306,6 +314,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       type Row = Submission
 
       val maybeFixedHeader: Option[Header] = None // Some(header)
+
+      val headerRowsToRead: Int = 1
 
       protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
@@ -377,6 +387,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       protected def builder(rows: Iterable[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
 
       val maybeFixedHeader: Option[Header] = None // Some(header)
+
+      val headerRowsToRead: Int = 1
 
       override val forgiving: Boolean = true
 

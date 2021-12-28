@@ -19,7 +19,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
     * These are application-specific and are not indicative of any bugs in the
     * TableParser library itself.
     */
-  it should "be ingested properly" in {
+  ignore should "be ingested properly" in {
     import TeamProjectParser._
 
     val mty: Try[Table[TeamProject]] = Table.parseResource("CSYE7200-FALL2021-Project.csv", classOf[ProjectsFuncSpec])

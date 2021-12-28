@@ -41,6 +41,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
 
+      val headerRowsToRead: Int = 0
 
       protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
@@ -140,6 +141,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
 
+      val headerRowsToRead: Int = 0
 
       protected def builder(rows: Iterable[Hawks], header: Header): Table[Hawks] = HeadedTable(rows, Header[Hawks]())
 
@@ -179,6 +181,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
       type Row = DailyRaptorReport
 
       val maybeFixedHeader: Option[Header] = None
+
+      val headerRowsToRead: Int = 1
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
@@ -246,6 +250,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
       type Row = NestedRaptorReport
 
       val maybeFixedHeader: Option[Header] = None
+
+      val headerRowsToRead: Int = 1
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 

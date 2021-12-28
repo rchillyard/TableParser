@@ -319,7 +319,7 @@ object Table {
     * @return a Try[T]
     */
   def parse[T: TableParser](ws: Iterator[String]): Try[T] = implicitly[TableParser[T]] match {
-    case parser: StringTableParser[T] => parser.parse(ws, 1)
+    case parser: StringTableParser[T] => parser.parse(ws, parser.headerRowsToRead)
     case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
 
@@ -738,7 +738,7 @@ object HeadedTable {
   * Case class to represent a header.
   *
   * @param xs  the sequence of column names.
-  * @param xss a sequence of sequeence of String representing any additional header lines.
+  * @param xss a sequence of sequence of String representing any additional header lines.
   */
 case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
   /**

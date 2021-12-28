@@ -46,6 +46,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
 
+      val headerRowsToRead: Int = 0
 
       protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 

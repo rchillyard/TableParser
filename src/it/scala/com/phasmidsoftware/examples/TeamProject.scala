@@ -65,6 +65,8 @@ object TeamProjectParser extends CellParsers {
 
     val maybeFixedHeader: Option[Header] = None
 
+    val headerRowsToRead: Int = 2
+
     override val forgiving: Boolean = true
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]

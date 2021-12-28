@@ -55,6 +55,8 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
+      val headerRowsToRead: Int = 1
+
       override val forgiving: Boolean = false
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
@@ -78,6 +80,8 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       type Row = Movie
 
       val maybeFixedHeader: Option[Header] = None
+
+      val headerRowsToRead: Int = 1
 
       def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
@@ -103,6 +107,8 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       type Row = Movie
 
       val maybeFixedHeader: Option[Header] = None
+
+      val headerRowsToRead: Int = 1
 
       def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 

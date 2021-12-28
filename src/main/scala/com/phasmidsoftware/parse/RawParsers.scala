@@ -13,7 +13,7 @@ import com.phasmidsoftware.table.{HeadedTable, Header, Table}
   * @param maybeHeader a header if appropriate.
   * @param forgiving   true if we want this parser to be forgiving (defaults to false).
   */
-abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = false) extends CellParsers {
+abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = false, headerRows: Int = 1) extends CellParsers {
   self =>
 
   implicit val stringSeqParser: CellParser[RawRow] = cellParserSeq
@@ -25,6 +25,8 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
     type Row = RawRow
 
     val maybeFixedHeader: Option[Header] = maybeHeader
+
+    val headerRowsToRead: Int = headerRows
 
     override val forgiving: Boolean = self.forgiving
 

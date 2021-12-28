@@ -154,6 +154,8 @@ object MovieParser extends CellParsers {
 
     val maybeFixedHeader: Option[Header] = None
 
+    val headerRowsToRead: Int = 1
+
     override val forgiving: Boolean = true
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]

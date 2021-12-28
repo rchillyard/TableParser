@@ -43,6 +43,12 @@ trait TableParser[Table] {
   protected val maybeFixedHeader: Option[Header]
 
   /**
+    * This indicates the number of header rows which must be read from the input.
+    * If maybeFixedHeader exists, then this number should be zero.
+    */
+  val headerRowsToRead: Int
+
+  /**
     * Default method to create a new table.
     * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
     *
@@ -168,7 +174,7 @@ trait CopyableTableParser[Row, Input, Table] {
   * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
   * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
   */
-case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false)
+case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
   extends StringTableParser[Table[Seq[String]]] with CopyableTableParser[RawRow, String, Table[Seq[String]]] {
 
   type Row = RawRow
@@ -207,7 +213,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
   * @see HeadedStringTableParser#create
   * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
   */
-case class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false)
+case class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
   extends StringTableParser[Table[X]] with CopyableTableParser[X, String, Table[X]] {
 
   type Row = X
@@ -245,7 +251,7 @@ object HeadedStringTableParser {
     * @tparam X the underlying type. There must be evidence of CellParser[X] and ClassTag[X].
     * @return a HeadedStringTableParser[X].
     */
-  def create[X: CellParser : ClassTag](forgiving: Boolean): HeadedStringTableParser[X] = HeadedStringTableParser[X](Some(Header.apply[X]()), forgiving)
+  def create[X: CellParser : ClassTag](forgiving: Boolean): HeadedStringTableParser[X] = HeadedStringTableParser[X](Some(Header.apply[X]()), forgiving, 0)
 }
 
 /**
