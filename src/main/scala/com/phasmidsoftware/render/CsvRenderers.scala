@@ -43,6 +43,21 @@ trait CsvRenderers {
   }
 
   /**
+    * Method to return a CsvRenderer[T] which does not output a T at all, only a number of delimiters according to the value of alignment.
+    *
+    * @param alignment (defaults to 1): one more than the number of delimiters to output.
+    *                  If you are skipping a Product (such as a case class instance), then you should carefully count up how many (nested) elements to skip.
+    *                  So, for example, if you are skipping a Product with three members, you would set alignment = 3, even though you only want to output 2 delimiters.
+    * @tparam T the type of the parameter to the render method.
+    * @return a CsvRenderer[T].
+    */
+  def skipRenderer[T](alignment: Int = 1)(implicit ca: CsvAttributes): CsvRenderer[T] = new CsvRenderer[T] {
+    val csvAttributes: CsvAttributes = ca
+
+    def render(t: T, attrs: Map[String, String]): String = ca.delimiter * (alignment - 1)
+  }
+
+  /**
     * Method to return a CsvRenderer[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
     *
     * NOTE: be careful using this particular method it only applies where T is a 1-tuple (e.g. a case class with one field -- not common).
@@ -434,6 +449,20 @@ trait CsvGenerators {
     * @return a CsvGenerator[ Option[T] ].
     */
   def optionGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Option[T]] = new BaseCsvGenerator[Option[T]]
+
+  /**
+    * Method to return a CsvGenerator[T] which does not output a column header for at all.
+    *
+    * @tparam T the type of the column objects.
+    * @return a CsvGenerator[T].
+    */
+  def skipGenerator[T](implicit ca: CsvAttributes): CsvGenerator[T] = new CsvProductGenerator[T] {
+    val csvAttributes: CsvAttributes = ca
+
+    override def toColumnName(po: Option[String], name: String): String = ""
+
+    def toColumnNames(po: Option[String], no: Option[String]): String = ""
+  }
 
   /**
     * Method to return a CsvGenerator[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
