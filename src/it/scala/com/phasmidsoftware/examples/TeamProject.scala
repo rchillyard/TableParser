@@ -35,20 +35,20 @@ case class TeamProject(team: Team, grade: Grade, remarks: String, repository: UR
 
 case class Team(number: Int, member_1: String, member_2: Option[String], member_3: Option[String], member_4: Option[String])
 
-case class Grade(total_score: Int, on_time: Int, scope_scale: Int, planning_presentation: Int, presentation: Int, idea: Int, use_cases: Int, acceptance_criteria: Int, team_execution: Int, code: Int, unit_tests: Int, repo: Int)
+case class Grade(totalScore: Double, onTime: Double, scopeScale: Double, planningPresentation: Double, presentation: Double, idea: Double, useCases: Double, acceptanceCriteria: Double, teamExecution: Double, code: Double, unitTests: Double, repo: Double)
 
 object TeamProjectParser extends CellParsers {
 
-  def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+  def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
 
-  implicit val teamProjectColumnHelper: ColumnHelper[TeamProject] = columnHelper(camelCaseColumnNameMapper _,
-    "title" -> "teamProject_title",
-    "imdb" -> "teamProject_imdb_link")
-  implicit val formatColumnHelper: ColumnHelper[Grade] = columnHelper(camelCaseColumnNameMapper _)
-  implicit val productionColumnHelper: ColumnHelper[Team] = columnHelper(camelCaseColumnNameMapper _)
-  implicit val optionalPrincipalParser: CellParser[Option[String]] = cellParserOption
-  implicit val formatParser: CellParser[Team] = cellParser5(Team)
-  implicit val productionParser: CellParser[Grade] = cellParser12(Grade)
+  def identifierToCapitalizedWordColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", " $1").replaceAll("_", "")
+
+  implicit val teamProjectColumnHelper: ColumnHelper[TeamProject] = columnHelper(camelToSnakeCaseColumnNameMapper _)
+  implicit val gradeColumnHelper: ColumnHelper[Grade] = columnHelper(identifierToCapitalizedWordColumnNameMapper _)
+  implicit val teamColumnHelper: ColumnHelper[Team] = columnHelper(identifierToCapitalizedWordColumnNameMapper _, Some("$x $c"))
+  implicit val optionalStringParser: CellParser[Option[String]] = cellParserOption
+  implicit val teamParser: CellParser[Team] = cellParser5(Team)
+  implicit val gradeParser: CellParser[Grade] = cellParser12(Grade)
   implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
   implicit val teamProjectParser: CellParser[TeamProject] = cellParser4(TeamProject)
 

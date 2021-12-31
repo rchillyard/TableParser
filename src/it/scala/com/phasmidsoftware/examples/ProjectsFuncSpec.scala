@@ -19,15 +19,18 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
     * These are application-specific and are not indicative of any bugs in the
     * TableParser library itself.
     */
-  ignore should "be ingested properly" in {
+  it should "be ingested properly" in {
     import TeamProjectParser._
 
-    val mty: Try[Table[TeamProject]] = Table.parseResource("CSYE7200-FALL2021-Project.csv", classOf[ProjectsFuncSpec])
+    //    val filename = "CSYE7200-FALL2021-Project.csv"
+    val filename = "TeamProject.csv"
+    //    implicit val codec = Codec("utf-16le")
+    val mty: Try[Table[TeamProject]] = Table.parseResource(filename, classOf[ProjectsFuncSpec])
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
       println(s"TeamProject: successfully read ${mt.size} rows")
-      mt.size shouldBe 1567
-      mt take 10 foreach println
+      mt.size shouldBe 5
+      mt foreach println
     }
   }
 

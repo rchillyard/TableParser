@@ -442,6 +442,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
+  behavior of "Header"
+  it should "do lookup" in {
+    val hdr = Header(Seq(Seq("a", "Hello Goodbye", "Team Number")))
+    hdr.getIndex("a") shouldBe Success(0)
+    hdr.getIndex("Hello Goodbye") shouldBe Success(1)
+    hdr.getIndex("team number") shouldBe Success(2)
+  }
+
   behavior of "Table[Row]"
   it should "work" in {
     val hdr = Header(Seq(Seq("a", "b")))

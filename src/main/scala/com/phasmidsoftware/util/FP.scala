@@ -103,7 +103,7 @@ object FP {
     */
   def indexFound(w: String, i: Int): Try[Int] = i match {
     case x if x >= 0 => Success(x)
-    case _ => Failure(FPException(s"Header column $w not found"))
+    case _ => Failure(FPException(s"Header column '$w' not found"))
   }
 }
 

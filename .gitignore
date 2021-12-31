@@ -9,3 +9,5 @@ target/
 /.bsp/sbt.json
 /src/it/resources/AIRBNB.Listing.csv
 /src/it/resources/com/phasmidsoftware/examples/CSYE7200-FALL2021-Project.csv
+
+src/it/resources/com/phasmidsoftware/examples/TeamProject.csv

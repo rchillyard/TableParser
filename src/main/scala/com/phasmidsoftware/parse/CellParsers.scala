@@ -568,15 +568,17 @@ trait CellParsers {
     case ps => ps
   }
 
-  private def readCellWithHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, columns: Header, p: String) = {
+  private def readCellWithHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, header: Header, p: String) = {
+    val columnNames = header.xs
     val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
     if (idx >= 0) for (w <- row(idx); z <- cellParser.parse(CellValue(w)).recoverWith {
       case NonFatal(e) => Failure(InvalidParseException(s"Problem parsing '$w' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e))
     }) yield z
-    else cellParser.parse(Some(columnName), row, columns).recoverWith {
-      case _: UnsupportedOperationException => Failure(ParserException(s"unable to find value for column $columnName in $columns"))
+    else cellParser.parse(Some(columnName), row, header).recoverWith {
+      case _: UnsupportedOperationException =>
+        Failure(ParserException(s"readCellWithHeader: where original name is based on $wo and $p, unable to find value for column '$columnName' in '$columnNames'"))
     }
   }
 }
