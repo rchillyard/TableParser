@@ -224,7 +224,7 @@ trait CellParsers {
     * @param construct a function (P1,P2,P3,P4) => T, usually the apply method of a case class.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
     * @tparam P4 the type of the fourth field of the Product type T.
     * @tparam T  the underlying type of the result, a Product.
     * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3 and P4 and thence into a T
@@ -251,7 +251,7 @@ trait CellParsers {
     * @param construct a function (P1,P2,P3,P4,P5) => T, usually the apply method of a case class.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
     * @tparam P4 the type of the fourth field of the Product type T.
     * @tparam P5 the type of the fifth field of the Product type T.
     * @tparam T  the underlying type of the result, a Product.
@@ -279,7 +279,7 @@ trait CellParsers {
     * @param construct a function (P1,P2,P3,P4,P5,P6) => T, usually the apply method of a case class.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
     * @tparam P4 the type of the fourth field of the Product type T.
     * @tparam P5 the type of the fifth field of the Product type T.
     * @tparam P6 the type of the sixth field of the Product type T.
@@ -308,7 +308,7 @@ trait CellParsers {
     * @param construct a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
     * @tparam P4 the type of the fourth field of the Product type T.
     * @tparam P5 the type of the fifth field of the Product type T.
     * @tparam P6 the type of the sixth field of the Product type T.
@@ -338,7 +338,7 @@ trait CellParsers {
     * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
     * @tparam P4 the type of the fourth field of the Product type T.
     * @tparam P5 the type of the fifth field of the Product type T.
     * @tparam P6 the type of the sixth field of the Product type T.
@@ -369,7 +369,7 @@ trait CellParsers {
     * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9) => T, usually the apply method of a case class.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
     * @tparam P4 the type of the fourth field of the Product type T.
     * @tparam P5 the type of the fifth field of the Product type T.
     * @tparam P6 the type of the sixth field of the Product type T.
@@ -401,7 +401,7 @@ trait CellParsers {
     * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
     * @tparam P1  the type of the first field of the Product type T.
     * @tparam P2  the type of the second field of the Product type T.
-    * @tparam P3  the type of the second field of the Product type T.
+    * @tparam P3  the type of the third field of the Product type T.
     * @tparam P4  the type of the fourth field of the Product type T.
     * @tparam P5  the type of the fifth field of the Product type T.
     * @tparam P6  the type of the sixth field of the Product type T.
@@ -434,7 +434,7 @@ trait CellParsers {
     * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
     * @tparam P1  the type of the first field of the Product type T.
     * @tparam P2  the type of the second field of the Product type T.
-    * @tparam P3  the type of the second field of the Product type T.
+    * @tparam P3  the type of the third field of the Product type T.
     * @tparam P4  the type of the fourth field of the Product type T.
     * @tparam P5  the type of the fifth field of the Product type T.
     * @tparam P6  the type of the sixth field of the Product type T.
@@ -468,7 +468,7 @@ trait CellParsers {
     * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) => T, usually the apply method of a case class.
     * @tparam P1  the type of the first field of the Product type T.
     * @tparam P2  the type of the second field of the Product type T.
-    * @tparam P3  the type of the second field of the Product type T.
+    * @tparam P3  the type of the third field of the Product type T.
     * @tparam P4  the type of the fourth field of the Product type T.
     * @tparam P5  the type of the fifth field of the Product type T.
     * @tparam P6  the type of the sixth field of the Product type T.

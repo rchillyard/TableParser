@@ -103,7 +103,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import CsvGenerators._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicit val intPairCsvRenderer: CsvRenderer[IntPair] = csvRenderers.renderer2(IntPair.apply)
-    implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = csvGenerators.generators2(IntPair.apply)
+    implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = csvGenerators.generator2(IntPair.apply)
     import IntPair._
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
@@ -203,7 +203,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicit val intPairCsvRenderer: CsvRenderer[Hawks] = new CsvRenderers {}.renderer2(Hawks.apply)
-    implicit val intPairCsvGenerator: CsvProductGenerator[Hawks] = new CsvGenerators {}.generators2(Hawks.apply)
+    implicit val intPairCsvGenerator: CsvProductGenerator[Hawks] = new CsvGenerators {}.generator2(Hawks.apply)
     implicit val dateCsvRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
       val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
 
@@ -211,7 +211,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     }
     implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new BaseCsvGenerator[LocalDate]
     implicit val DRRCsvRenderer: CsvRenderer[DailyRaptorReport] = new CsvRenderers {}.renderer3(DailyRaptorReport.apply)
-    implicit val DRRCsvGenerator: CsvProductGenerator[DailyRaptorReport] = new CsvGenerators {}.generators3(DailyRaptorReport.apply)
+    implicit val DRRCsvGenerator: CsvProductGenerator[DailyRaptorReport] = new CsvGenerators {}.generator3(DailyRaptorReport.apply)
     val ws: Iterable[String] = rt.toCSV
     ws.head shouldBe "date, weather, hawks.bw, hawks.rt"
     ws.tail.head shouldBe "2018-09-12, Dense Fog/Light Rain, 0, 0"
@@ -273,9 +273,9 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicit val hawksCsvRenderer: CsvRenderer[Hawks] = new CsvRenderers {}.renderer2(Hawks.apply)
-    implicit val hawksCsvGenerator: CsvProductGenerator[Hawks] = new CsvGenerators {}.generators2(Hawks.apply)
+    implicit val hawksCsvGenerator: CsvProductGenerator[Hawks] = new CsvGenerators {}.generator2(Hawks.apply)
     implicit val weatherHawksCsvRenderer: CsvRenderer[WeatherHawks] = new CsvRenderers {}.renderer2(WeatherHawks.apply)
-    implicit val weatherHawksCsvGenerator: CsvProductGenerator[WeatherHawks] = new CsvGenerators {}.generators2(WeatherHawks.apply)
+    implicit val weatherHawksCsvGenerator: CsvProductGenerator[WeatherHawks] = new CsvGenerators {}.generator2(WeatherHawks.apply)
     implicit val dateCsvRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
       val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
 
@@ -283,7 +283,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     }
     implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new BaseCsvGenerator[LocalDate]
     implicit val DRRCsvRenderer: CsvRenderer[NestedRaptorReport] = new CsvRenderers {}.renderer2(NestedRaptorReport.apply)
-    implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = new CsvGenerators {}.generators2(NestedRaptorReport.apply)
+    implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = new CsvGenerators {}.generator2(NestedRaptorReport.apply)
     val ws: Iterable[String] = rt.toCSV
     ws.head shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt"
     ws.tail.head shouldBe "2018-09-12, Dense Fog/Light Rain, 0, 0"

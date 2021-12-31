@@ -295,7 +295,7 @@ trait Table[Row] extends Iterable[Row] {
     * @param csvAttributes implicit value of CsvAttributes.
     * @return an Iterable[String]
     */
-  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvProductGenerator[Row], csvAttributes: CsvAttributes): Iterable[String] =
+  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Iterable[String] =
     CsvTableRenderer[Row]().render(this)
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)

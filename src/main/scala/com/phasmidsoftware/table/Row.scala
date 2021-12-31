@@ -58,18 +58,17 @@ object Row {
   }
 
   /**
-    * Method to yield a CsvGenerator[Row].
+    * Method to yield a CsvGenerator[T] from an instance of Header.
     *
     * @param hdr the Header.
-    * @param c CsvAttributes.
-    * @return a new CsvGenerator[Row].
+    * @param c   CsvAttributes.
+    * @return a new CsvGenerator[T].
     */
-  def csvGenerator(hdr: Header)(implicit c: CsvAttributes): CsvGenerator[Row] = new CsvGenerator[Row] {
+  def csvGenerator[T](hdr: Header)(implicit c: CsvAttributes): CsvGenerator[T] = new CsvGenerator[T] {
     val csvAttributes: CsvAttributes = c
 
-    def toColumnName(po: Option[String], name: String): String = hdr.xs.mkString(c.delimiter)
+    def toColumnName(po: Option[String], name: String): String = ((hdr.xs +: hdr.xss) map (_.mkString(c.delimiter))).mkString("\n")
   }
-
 }
 
 /**
