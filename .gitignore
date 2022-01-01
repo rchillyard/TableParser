@@ -12,3 +12,5 @@ target/
 /output.csv
 
 src/it/resources/2020VAERSData/
+
+TeamProjectOutput.csv

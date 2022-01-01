@@ -5,6 +5,7 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.table.{CsvAttributes, CsvGenerator, CsvProductGenerator, Table}
+import java.io.{File, FileWriter}
 import org.joda.time.LocalDate
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -147,7 +148,6 @@ object HierarchicalRenderer {
   trait LocalDateHierarchicalRenderer extends UntaggedHierarchicalRenderer[LocalDate]
 
   implicit object LocalDateHierarchicalRenderer extends LocalDateHierarchicalRenderer
-
 }
 
 /**
@@ -160,7 +160,7 @@ trait CsvRenderer[T] extends Renderer[T, String] {
   val csvAttributes: CsvAttributes
 }
 
-case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], String] {
+abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], O] {
   /**
    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
    *
@@ -168,9 +168,9 @@ case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttribu
    * @param attrs a map of attributes for this value of O.
    * @return an instance of type O.
    */
-  def render(t: Table[T], attrs: Map[String, String]): String = t match {
+  def render(t: Table[T], attrs: Map[String, String]): O = t match {
     case x: Table[_] =>
-      val sw = Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote)
+      val sw = implicitly[Writable[O]]
       val tc = implicitly[CsvRenderer[T]]
       val tg = implicitly[CsvGenerator[T]]
       val hdr: String = tg match {
@@ -181,8 +181,26 @@ case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttribu
       sw.writeRawLine(o)(hdr)
       for (x <- x.rows.toSeq) sw.writeRawLine(o)(tc.render(x, Map()))
       sw.close(o)
-      o.toString
+      o
   }
 }
+
+
+/**
+ * Case class to help render a Table to a StringBuilder in CSV format.
+ *
+ * @param csvAttributes implicit instance of CsvAttributes.
+ * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
+ */
+case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, StringBuilder]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote), csvAttributes)
+
+/**
+ * Case class to help render a Table to a File in CSV format.
+ *
+ * @param file          the file to which the table will be written.
+ * @param csvAttributes implicit instance of CsvAttributes.
+ * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
+ */
+case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes)
 
 

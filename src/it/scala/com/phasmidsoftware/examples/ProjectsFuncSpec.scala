@@ -5,6 +5,7 @@ import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.table.Table.parse
 import com.phasmidsoftware.table.{CsvGenerator, HeadedTable, Row, Table}
 import com.phasmidsoftware.util.TryUsing
+import java.io.File
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.io.Source
@@ -29,6 +30,24 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       println(s"TeamProject: successfully read ${mt.size} rows")
       mt.size shouldBe 5
       mt foreach println
+    }
+  }
+
+  it should "be ingested and written out to file using the given header" in {
+    import TeamProjectParser._
+
+    implicit val parser: TableParser[Table[TeamProject]] = implicitly[TableParser[Table[TeamProject]]]
+    val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    for (mt <- mty) {
+      import CsvGenerators._
+      implicit val csvGenerator: CsvGenerator[TeamProject] = mt.maybeHeader match {
+        case Some(h) => Row.csvGenerator(h)
+        case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+      }
+      import CsvRenderers._
+      implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+      mt.writeCSVFile(new File("TeamProjectOutput.csv"))
     }
   }
 

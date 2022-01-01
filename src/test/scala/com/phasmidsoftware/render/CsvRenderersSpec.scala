@@ -93,7 +93,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     intPairCsvRenderer.render(intPair) shouldBe "42, 99"
   }
 
-  behavior of "CsvTableRenderer"
+  behavior of "CsvTableStringRenderer"
 
   it should "render a table 1" in {
     val csvRenderers = new CsvRenderers {}
@@ -106,7 +106,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import IntPair._
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
-    CsvTableRenderer[IntPair]().render(iIty.get) shouldBe "a, b\n1, 2\n42, 99\n"
+    CsvTableStringRenderer[IntPair]().render(iIty.get).toString shouldBe "a, b\n1, 2\n42, 99\n"
   }
 
   case class Hawks(bw: Int, rt: Int) {

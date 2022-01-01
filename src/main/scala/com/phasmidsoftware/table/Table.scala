@@ -287,15 +287,26 @@ trait Table[Row] extends Iterable[Row] {
   override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
 
   /**
-   * Method to render this Table[T] as a CSV file with (maybe) header.
+   * Method to render this Table[T] as a CSV String with (maybe) header.
    *
    * @param renderer      implicit value of CsvRenderer[Row].
    * @param generator     implicit value of CsvProductGenerator[Row].
    * @param csvAttributes implicit value of CsvAttributes.
-   * @return an Iterable[String]
+   * @return a String.
    */
   def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): String =
-    CsvTableRenderer[Row]().render(this)
+    CsvTableStringRenderer[Row]().render(this).toString
+
+  /**
+   * Method to render this Table[T] as a CSV file with (maybe) header.
+   *
+   * @param file          instance of File where the output should be stored.
+   * @param renderer      implicit value of CsvRenderer[Row].
+   * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param csvAttributes implicit value of CsvAttributes.
+   */
+  def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
+    CsvTableFileRenderer[Row](file).render(this)
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
 
@@ -558,8 +569,9 @@ object Table {
   }
 
   /**
-   * Method to render this Table[Row] as a CSV file with header.
+   * Method to render the given Table[Row] as a CSV String with header.
    *
+   * @param t             the Table[Row] to be rendered.
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
@@ -567,8 +579,25 @@ object Table {
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
-        CsvTableRenderer[Row]().render(t)
-      case _ => throw TableException("cannot write this Table to CSV (no header)")
+        t.toCSV
+      case _ => throw TableException("toCSVRow: cannot write this Table to CSV (no header)")
+    }
+  }
+
+  /**
+   * Method to render the given Table[Row] as a CSV String with header.
+   *
+   * @param t             the Table[Row] to be rendered.
+   * @param file          the destination File for the rendering of t.
+   * @param csvAttributes implicit value of CsvAttributes.
+   * @return an Iterable[String]
+   */
+  def writeCSVFileRow(t: Table[Row], file: File)(implicit csvAttributes: CsvAttributes): Unit = {
+    t.maybeHeader match {
+      case Some(hdr) =>
+        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        t.writeCSVFile(file)
+      case _ => throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
     }
   }
 }
