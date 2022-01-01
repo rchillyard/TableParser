@@ -599,7 +599,7 @@ abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option
     * @tparam O a type which supports Writable (via evidence of type Writable[O])
     * @return a new (or possibly old) instance of O.
     */
-  def RenderToWritable[O: Writable]: O = {
+  def renderToWritable[O: Writable]: O = {
     val ww = implicitly[Writable[O]]
     val o1 = ww.unit
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)

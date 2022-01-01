@@ -49,7 +49,7 @@ trait DefaultRowConfig extends RowConfig {
   /**
     * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
     */
-  val delimiter: Regex = ", *".r
+  val delimiter: Regex = """\s*,\s*""".r
   /**
     * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
     * CONSIDER making the string regex derive from the delimiter

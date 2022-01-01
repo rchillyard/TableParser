@@ -4,6 +4,8 @@
 
 package com.phasmidsoftware.render
 
+import java.io.{File, FileWriter}
+
 /**
   * Trait to enable rendering of a table to a sequential (non-hierarchical) output format.
   *
@@ -19,6 +21,11 @@ trait Writable[O] {
     * @return
     */
   def unit: O
+
+  /**
+    * Method to close this Writable, if appropriate.
+    */
+  def close(o: O): Unit = ()
 
   /**
     * Method to write a character sequence to the given instance o.
@@ -102,4 +109,14 @@ trait Writable[O] {
     * @return \n
     */
   def newline: CharSequence = "\n"
+}
+
+object Writable {
+  def fileWritable(file: File): Writable[FileWriter] = new Writable[FileWriter] {
+    def unit: FileWriter = new FileWriter(file)
+
+    def writeRaw(o: FileWriter)(x: CharSequence): FileWriter = o.append(x).asInstanceOf[FileWriter]
+
+    override def close(o: FileWriter): Unit = o.close()
+  }
 }

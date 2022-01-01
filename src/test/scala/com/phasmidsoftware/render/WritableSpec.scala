@@ -7,6 +7,8 @@ package com.phasmidsoftware.render
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
+import java.io.{File, FileWriter}
+
 class WritableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Writable"
@@ -56,6 +58,14 @@ class WritableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     o.toString shouldBe
       """1.0|-1.0
         				|""".stripMargin
+  }
+
+  it should "writeRow to a File" in {
+    val file = new File("output.csv")
+    val fw: Writable[FileWriter] = Writable.fileWritable(file)
+    val o = fw.unit
+    fw.writeRow(o)(Complex(1, -1))
+    fw.close(o)
   }
 
 }

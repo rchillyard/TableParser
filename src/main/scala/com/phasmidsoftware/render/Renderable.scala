@@ -22,7 +22,7 @@ trait Renderable[X] {
   /**
     * Method to render this Renderable to serialized type O without any constraint on O.
     *
-    * CONSIDER combining this with RenderToWritable.
+    * CONSIDER combining this with renderToWritable.
     *
     * CONSIDER generalizing the type of ev.
     *
@@ -40,7 +40,7 @@ trait Renderable[X] {
     * @tparam O a type which supports Writable (via evidence of type Writable[O])
     * @return a new (or possibly old) instance of O.
     */
-  def RenderToWritable[O: Writable]: O
+  def renderToWritable[O: Writable]: O
 
   /**
     * Method to render a table in a hierarchical fashion.
