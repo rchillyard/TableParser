@@ -62,8 +62,8 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   lazy val list: Parser[String] = getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
 
-  // TODO why is this complaining about repeated characters?
-  private lazy val component: Parser[String] = s"""[^,$listSeparator}]+""".r
+  private val regexComponent = s"""[^,$listSeparator}]+"""
+  private lazy val component: Parser[String] = regexComponent.r
 
   private lazy val getOpenChar: Parser[String] = s"${enclosures.headOption.getOrElse("")}"
 
