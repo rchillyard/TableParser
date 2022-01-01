@@ -7,7 +7,6 @@ package com.phasmidsoftware.parse
 import com.phasmidsoftware.table.{Header, Row}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.util.{Failure, Success, Try}
 
 //noinspection NotImplementedCode

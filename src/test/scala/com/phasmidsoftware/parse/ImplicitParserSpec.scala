@@ -2,7 +2,6 @@ package com.phasmidsoftware.parse
 
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.io.BufferedSource
 import scala.util.Failure
 
@@ -10,7 +9,6 @@ class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   import com.phasmidsoftware.table.MovieParser.MovieTableParser
   import com.phasmidsoftware.table.Table
-
   import scala.io.Source
   import scala.util.Success
 

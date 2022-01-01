@@ -4,9 +4,8 @@ import com.phasmidsoftware.parse.{CellParser, TableParserHelper}
 import com.phasmidsoftware.table.{HeadedTable, Header, Table, TableJsonFormat}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
-import spray.json._
-
 import scala.util.{Success, Try}
+import spray.json._
 
 class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
 
@@ -32,14 +31,14 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
     implicit val playerFormat: RootJsonFormat[Player] = jsonFormat2(apply)
 
     /**
-      * Method to transform a Table[Player] into a Table[Partnership].
-      *
-      * The requirements of the application are that the rows of the Player table are grouped by twos
-      * and each resulting entity (an array of length 2) is taken to form a Partnership.
-      *
-      * @param pt a Table[Player]
-      * @return a Table[Partnership]
-      */
+     * Method to transform a Table[Player] into a Table[Partnership].
+     *
+     * The requirements of the application are that the rows of the Player table are grouped by twos
+     * and each resulting entity (an array of length 2) is taken to form a Partnership.
+     *
+     * @param pt a Table[Player]
+     * @return a Table[Partnership]
+     */
     def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Converters.convert(r)).replaceHeader(Some(Header.create("playerA", "playerB")))
   }
 

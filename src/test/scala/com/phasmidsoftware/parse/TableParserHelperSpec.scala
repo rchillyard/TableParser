@@ -8,13 +8,12 @@ import com.phasmidsoftware.render.{JsonTableRenderer, Renderer}
 import com.phasmidsoftware.table._
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+import scala.util.{Success, Try}
 import spray.json.{DefaultJsonProtocol, RootJsonFormat, enrichAny}
 
-import scala.util.{Success, Try}
-
 /**
-  * This tests one aspect of TableParserHelper which cannot be conveniently tested in the same module as the other.
-  */
+ * This tests one aspect of TableParserHelper which cannot be conveniently tested in the same module as the other.
+ */
 class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "TableParserHelper without a header row in the input file"
@@ -27,14 +26,14 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
     lazy val cellParser: CellParser[Player] = cellParser2(apply)
 
     /**
-      * Method to transform a Table[Player] into a Table[Partnership].
-      *
-      * The requirements of the application are that the rows of the Player table are grouped by twos
-      * and each resulting entity (an array of length 2) is taken to form a Partnership.
-      *
-      * @param pt a Table[Player]
-      * @return a Table[Partnership]
-      */
+     * Method to transform a Table[Player] into a Table[Partnership].
+     *
+     * The requirements of the application are that the rows of the Player table are grouped by twos
+     * and each resulting entity (an array of length 2) is taken to form a Partnership.
+     *
+     * @param pt a Table[Player]
+     * @return a Table[Partnership]
+     */
     def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Partnership(r))
   }
 
@@ -52,17 +51,17 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
     def size: Int = partners.length
 
     /**
-      * Method to output these Partnerships as a Json String.
-      *
-      * @return a String with some embedded newlines.
-      */
+     * Method to output these Partnerships as a Json String.
+     *
+     * @return a String with some embedded newlines.
+     */
     def prettyPrint: String = Partnerships.prettyPrint(this)
   }
 
 
   /**
-    * Companion object for Partnerships.
-    */
+   * Companion object for Partnerships.
+   */
   object Partnerships extends DefaultJsonProtocol {
     implicit val partnershipsFormat: RootJsonFormat[Partnerships] = jsonFormat1(apply)
 

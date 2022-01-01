@@ -8,11 +8,10 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP.resource
 import com.phasmidsoftware.util.TryUsing
+import java.io.{File, FileWriter, InputStream}
+import java.net.URL
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
-import java.io.{File, InputStream}
-import java.net.URL
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -36,7 +35,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      def parseHeader(w: String): Try[Header] = ???
+      def parseHeader(w: Seq[String]): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -46,6 +45,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
 
+      val headerRowsToRead: Int = 0
 
       protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
@@ -199,7 +199,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     def apply(x: String, a: String): HTML = apply(x, Some(a), Map.empty, Nil)
 
     def apply(x: String, hs: Seq[HTML]): HTML = apply(x, None, Map.empty, hs)
-
   }
 
   object IntPairHTML extends HierarchicalRenderers {
@@ -212,10 +211,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit val intPairRenderer: HierarchicalRenderer[IntPair] = renderer2("IntPair")(IntPair.apply)
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
-
   }
 
-  it should "render the parsed table to CSV" in {
+  it should "render the table to CSV" in {
     import IntPair._
     val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
     iIty should matchPattern { case Success(_) => }
@@ -230,17 +228,93 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object DummyRenderer$$ extends Renderer[Table[IntPair], String] {
       def render(t: Table[IntPair], attrs: Map[String, String]): String = t match {
-        case t: RenderableTable[IntPair] => t.RenderToWritable(StringBuilderWritable).toString
+        case t: RenderableTable[IntPair] => t.renderToWritable(StringBuilderWritable).toString
         case _ => throw TableException("render problem")
       }
     }
 
-    val sy = iIty map {
+
+    val sy: Try[String] = iIty map {
       case r: Table[IntPair] => implicitly[Renderer[Table[IntPair], String]].render(r)
       case _ => fail("cannot render table")
     }
     sy should matchPattern { case Success(_) => }
     sy.get shouldBe "a|b\n1|2\n42|99\n"
+  }
+
+
+  it should "render the table to CSV using a Writable" in {
+    import IntPair._
+    val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
+    iIty should matchPattern { case Success(_) => }
+    val file = new File("output.csv")
+    implicit val fw: Writable[FileWriter] = Writable.fileWritable(file)
+
+    implicit object FileRenderer extends Renderer[Table[IntPair], FileWriter] {
+      def render(t: Table[IntPair], attrs: Map[String, String]): FileWriter = t match {
+        case pr: RenderableTable[IntPair] => pr.renderToWritable
+        case _ => throw TableException("render problem")
+      }
+    }
+
+    //    implicit object FileCsvRenderer extends CsvRenderer[Table[IntPair]] {
+    //      def render(t: Table[IntPair], attrs: Map[String, String]): FileWriter = t match {
+    //        case pr: RenderableTable[IntPair] => pr.renderToWritable
+    //        case _ => throw TableException("render problem")
+    //      }
+    //    }
+
+    val sy: Try[FileWriter] = iIty map {
+      case r: Table[IntPair] =>
+        val z: Renderer[Table[IntPair], FileWriter] = implicitly[Renderer[Table[IntPair], FileWriter]]
+        z.render(r)
+      case _ => fail("cannot render table")
+    }
+    sy should matchPattern { case Success(_) => }
+  }
+
+  it should "render another parsed table to CSV" in {
+    import IntPair._
+
+    implicit object IntPairCsvRenderer extends CsvRenderer[IntPair] {
+      val csvAttributes: CsvAttributes = CsvAttributes(", ")
+
+      def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
+    }
+
+    implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
+      val csvAttributes: CsvAttributes = CsvAttributes(", ")
+
+      def toColumnNames(po: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
+    }
+
+    implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
+    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
+    iIty should matchPattern { case Success(_) => }
+    val iIt = iIty.get
+    val ws = iIt.toCSV
+    ws shouldBe "a, b\n1, 2\n42, 99\n"
+  }
+
+  it should "render another parsed table to CSV with delim, quote" in {
+    import IntPair._
+    implicit val myCsvAttributes: CsvAttributes = CsvAttributes("|")
+
+    implicit object IntPairCsvRenderer extends CsvRenderer[IntPair] {
+      val csvAttributes: CsvAttributes = myCsvAttributes
+
+      def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
+    }
+
+    implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
+      val csvAttributes: CsvAttributes = myCsvAttributes
+
+      def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
+    }
+
+    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
+    iIty should matchPattern { case Success(_) => }
+    iIty.get.toCSV shouldBe "a|b\n1|2\n42|99\n"
   }
 
   //  it should "render the parsed table with TreeWriter" in {
@@ -337,16 +411,44 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "sort"
 
-  it should "sort a Table" in {
+  it should "sort a Table and then select" in {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99", "1 3"))
+    iIty should matchPattern { case Success(_) => }
+
     implicit object IntPairOrdering extends Ordering[IntPair] {
       def compare(x: IntPair, y: IntPair): Int = x.a.compareTo(y.a) match {
         case 0 => x.b.compareTo(y.b)
         case cf => cf
       }
     }
-    println(iIty map (_.sorted))
+    val triedSorted = iIty map (_.sort)
+    triedSorted should matchPattern { case Success(_) => }
+    val sorted = triedSorted.get
+    val row1 = sorted.select(Range(2, 3))
+    row1.size shouldBe 1
+    row1.head shouldBe IntPair(1, 3)
+  }
+
+  behavior of "select"
+
+  it should "select from a Table" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99", "1 3"))
+    iIty should matchPattern { case Success(_) => }
+    val table = iIty.get
+    table.select(1).size shouldBe 1
+    table.select(1).head shouldBe IntPair(1, 2)
+    table.select(2).head shouldBe IntPair(42, 99)
+    table.select(3).head shouldBe IntPair(1, 3)
+    val row1 = table.select(Range(3, 4))
+    row1.size shouldBe 1
+    row1.head shouldBe IntPair(1, 3)
+    val row2 = table.select(Range(2, 3))
+    row2.size shouldBe 1
+    row2.head shouldBe IntPair(42, 99)
+    val rows02 = table.select(Range(1, 4, 2))
+    rows02.size shouldBe 2
   }
 
   behavior of "parseResourceRaw"
@@ -361,6 +463,23 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
         println(s"parseResourceRaw: successfully read ${h.size} columns")
         r.size shouldBe 4
         r take 4 foreach println
+      case _ => fail("should succeed")
     }
+  }
+
+  behavior of "Header"
+  it should "do lookup" in {
+    val hdr = Header(Seq(Seq("a", "Hello Goodbye", "Team Number")))
+    hdr.getIndex("a") shouldBe Success(0)
+    hdr.getIndex("Hello Goodbye") shouldBe Success(1)
+    hdr.getIndex("team number") shouldBe Success(2)
+  }
+
+  behavior of "Table[Row]"
+  it should "work" in {
+    val hdr = Header(Seq(Seq("a", "b")))
+    val row1 = Row(Seq("1", "2"), hdr, 1)
+    val table = Table(Seq(row1), Some(hdr))
+    Table.toCSVRow(table) shouldBe "a,b\n1,2\n"
   }
 }

@@ -10,7 +10,6 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -39,7 +38,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      override def parseHeader(w: String): Try[Header] = ???
+      override def parseHeader(w: Seq[String]): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -50,6 +49,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       type Row = IntPair
 
       val maybeFixedHeader: Option[Header] = Some(Header.create("x", "y"))
+
+      val headerRowsToRead: Int = 0
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -103,6 +104,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
+      val headerRowsToRead: Int = 1
+
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
       protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
@@ -123,7 +126,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val rowParser = implicitly[RowParser[DailyRaptorReport, String]]
     val firstRow = headerRaptors
     val row = "09/16/2018\t" + partlyCloudy + "\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410"
-    val Success(header) = rowParser.parseHeader(firstRow)
+    val Success(header) = rowParser.parseHeader(Seq(firstRow))
 
     val hawkCount: Try[DailyRaptorReport] = parser.parse((row, 0))(header)
     hawkCount should matchPattern { case Success(DailyRaptorReport(_, `partlyCloudy`, 3308, 5)) => }
@@ -205,6 +208,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
+      val headerRowsToRead: Int = 1
+
       val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
       protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
@@ -258,6 +263,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = Some(Header.create(header: _*))
 
+      val headerRowsToRead: Int = 0
+
       protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = HeadedTable(rows, header)
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
@@ -306,6 +313,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       type Row = Submission
 
       val maybeFixedHeader: Option[Header] = None // Some(header)
+
+      val headerRowsToRead: Int = 1
 
       protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
@@ -378,6 +387,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None // Some(header)
 
+      val headerRowsToRead: Int = 1
+
       override val forgiving: Boolean = true
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
@@ -394,8 +405,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   /**
-    * The following tests relate to the application CsvToJSON
-    */
+   * The following tests relate to the application CsvToJSON
+   */
   behavior of "TableParserHelper"
 
   case class Player(first: String, last: String) {
@@ -406,14 +417,14 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     def cellParser: CellParser[Player] = cellParser2(apply)
 
     /**
-      * Method to transform a Table[Player] into a Table[Partnership].
-      *
-      * The requirements of the application are that the rows of the Player table are grouped by twos
-      * and each resulting entity (an array of length 2) is taken to form a Partnership.
-      *
-      * @param pt a Table[Player]
-      * @return a Table[Partnership]
-      */
+     * Method to transform a Table[Player] into a Table[Partnership].
+     *
+     * The requirements of the application are that the rows of the Player table are grouped by twos
+     * and each resulting entity (an array of length 2) is taken to form a Partnership.
+     *
+     * @param pt a Table[Player]
+     * @return a Table[Partnership]
+     */
     def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Partnership(r))
   }
 

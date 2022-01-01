@@ -5,25 +5,24 @@
 package com.phasmidsoftware.parse
 
 import org.slf4j.{Logger, LoggerFactory}
-
 import scala.annotation.tailrec
 import scala.util.Try
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 
 /**
-  * LineParser: class to parse lines of a CSV file.
-  * NOTE: list elements always appear as a string in the form { element0 , element1 , ... }
-  *
-  * @param delimiter     a Regex used to match a delimiter between cells in a row.
-  * @param string        a Regex used to match the content of a cell.
-  * @param enclosures    the enclosure characters around a list (if any).
-  * @param listSeparator the list separator character.
-  * @param quote         the quote character which is able to preempt the string regex:
-  *                      between two quote characters,
-  *                      there can be any number of any character (other than quote).
-  * @param verbose       will print the various parameters.
-  */
+ * LineParser: class to parse lines of a CSV file.
+ * NOTE: list elements always appear as a string in the form { element0 , element1 , ... }
+ *
+ * @param delimiter     a Regex used to match a delimiter between cells in a row.
+ * @param string        a Regex used to match the content of a cell.
+ * @param enclosures    the enclosure characters around a list (if any).
+ * @param listSeparator the list separator character.
+ * @param quote         the quote character which is able to preempt the string regex:
+ *                      between two quote characters,
+ *                      there can be any number of any character (other than quote).
+ * @param verbose       will print the various parameters.
+ */
 class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char, verbose: Boolean = false) extends JavaTokenParsers {
 
   if (verbose) LineParser.logger.info(s"delimiter: '${delimiter.regex}', string: '${string.regex}', enclosures: '$enclosures', quote: '$quote', listSeparator: '$listSeparator', ")
@@ -32,14 +31,14 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   override def skipWhitespace: Boolean = false
 
   /**
-    * Method to parse a Row.
-    *
-    * NOTE: the expression "end of input expected" must be the same as the failure defined in (trait) Parsers: def phrase[T](p: Parser[T]): Parser[T]
-    * It's a shame that they didn't make it a constant in Parsers!
-    *
-    * @param indexedString a tuple of String and Int denoting the line and its index in the file.
-    * @return a Try[Strings].
-    */
+   * Method to parse a Row.
+   *
+   * NOTE: the expression "end of input expected" must be the same as the failure defined in (trait) Parsers: def phrase[T](p: Parser[T]): Parser[T]
+   * It's a shame that they didn't make it a constant in Parsers!
+   *
+   * @param indexedString a tuple of String and Int denoting the line and its index in the file.
+   * @return a Try[Strings].
+   */
   def parseRow(indexedString: (String, Int)): Try[Strings] = parseAll(row, indexedString._1) match {
     case Success(s, _) => scala.util.Success(s)
     case Failure("end of input expected", _) => scala.util.Failure(MultiLineException(indexedString))
@@ -63,8 +62,8 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   lazy val list: Parser[String] = getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
 
-  // TODO why is this complaining about repeated characters?
-  private lazy val component: Parser[String] = s"""[^,$listSeparator}]+""".r
+  private val regexComponent = s"""[^,$listSeparator}]+"""
+  private lazy val component: Parser[String] = regexComponent.r
 
   private lazy val getOpenChar: Parser[String] = s"${enclosures.headOption.getOrElse("")}"
 
@@ -120,10 +119,10 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
     }
 
     (
-      check(cell, "Hello", "Hello") &&
-        //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
-        check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")
-      ).squawk()
+            check(cell, "Hello", "Hello") &&
+                    //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
+                    check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")
+            ).squawk()
   }
 
 }

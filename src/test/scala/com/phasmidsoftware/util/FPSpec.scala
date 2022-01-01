@@ -6,10 +6,9 @@ package com.phasmidsoftware.util
 
 import com.phasmidsoftware.table.TableSpec
 import com.phasmidsoftware.util.FP._
+import java.io.InputStream
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
-import java.io.InputStream
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -19,7 +18,7 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "indexFound" in {
     indexFound("junk", 0) shouldBe Success(0)
-    indexFound("junk", -1) should matchPattern { case Failure(FPException("Header column junk not found", None)) => }
+    indexFound("junk", -1) should matchPattern { case Failure(FPException("Header column 'junk' not found", None)) => }
   }
 
   it should "sequence" in {
