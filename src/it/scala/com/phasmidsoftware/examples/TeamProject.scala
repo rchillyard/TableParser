@@ -6,7 +6,6 @@ package com.phasmidsoftware.examples
 
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
-
 import java.net.URL
 
 /**
@@ -52,9 +51,7 @@ object TeamProjectParser extends CellParsers {
   implicit val teamProjectParser: CellParser[TeamProject] = cellParser4(TeamProject)
 
   implicit object TeamProjectConfig extends DefaultRowConfig {
-//    override val string: Regex = """[^,]*""".r
-//    override val delimiter: Regex = """\t+""".r
-override val listEnclosure: String = ""
+    override val listEnclosure: String = ""
   }
 
   implicit val parser: StandardRowParser[TeamProject] = StandardRowParser[TeamProject]

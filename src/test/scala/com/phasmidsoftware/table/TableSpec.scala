@@ -8,11 +8,10 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP.resource
 import com.phasmidsoftware.util.TryUsing
-import org.scalatest.flatspec
-import org.scalatest.matchers.should
-
 import java.io.{File, FileWriter, InputStream}
 import java.net.URL
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -294,9 +293,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty should matchPattern { case Success(_) => }
     val iIt = iIty.get
     val ws = iIt.toCSV
-    ws.head shouldBe "a, b"
-    ws.tail.head shouldBe "1, 2"
-    ws.tail.tail.head shouldBe "42, 99"
+    ws shouldBe "a, b\n1, 2\n42, 99\n"
   }
 
   it should "render another parsed table to CSV with delim, quote" in {
@@ -317,11 +314,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
-    val iIt = iIty.get
-    val ws = iIt.toCSV
-    ws.head shouldBe "a|b"
-    ws.tail.head shouldBe "1|2"
-    ws.tail.tail.head shouldBe "42|99"
+    iIty.get.toCSV shouldBe "a|b\n1|2\n42|99\n"
   }
 
   //  it should "render the parsed table with TreeWriter" in {
@@ -487,8 +480,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
-    val ws = Table.toCSVRow(table)
-    ws.head shouldBe "a,b"
-    ws.tail.head shouldBe "1,2"
+    Table.toCSVRow(table) shouldBe "a,b\n1,2\n"
   }
 }

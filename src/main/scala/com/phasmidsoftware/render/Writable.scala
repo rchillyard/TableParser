@@ -28,21 +28,30 @@ trait Writable[O] {
   def close(o: O): Unit = ()
 
   /**
-    * Method to write a character sequence to the given instance o.
-    *
-    * @param o the instance of O whither the parameter x should be written.
-    * @param x the character sequence to be written.
-    * @return an instance of O which represents the updated output structure.
-    */
+   * Method to write a character sequence to the given instance o.
+   *
+   * @param o the instance of O whither the parameter x should be written.
+   * @param x the character sequence to be written.
+   * @return an instance of O which represents the updated output structure.
+   */
   def writeRaw(o: O)(x: CharSequence): O
 
   /**
-    * Method to write a value of type Any to the given instance o, possibly quoted.
-    *
-    * @param o the instance of O whither the xs values should be written.
-    * @param x the row instance to be written.
-    * @return an instance of O which represents the updated output structure.
-    */
+   * Method to write a character sequence to the given instance o followed by a newline.
+   *
+   * @param o the instance of O whither the parameter x should be written.
+   * @param x the character sequence to be written.
+   * @return an instance of O which represents the updated output structure.
+   */
+  def writeRawLine(o: O)(x: CharSequence): O = writeRaw(writeRaw(o)(x))(newline)
+
+  /**
+   * Method to write a value of type Any to the given instance o, possibly quoted.
+   *
+   * @param o the instance of O whither the xs values should be written.
+   * @param x the row instance to be written.
+   * @return an instance of O which represents the updated output structure.
+   */
   def writeRow[Row <: Product](o: O)(x: Row): O = writeRaw(writeRowElements(o)(x.productIterator.toSeq))(newline)
 
   /**
@@ -112,6 +121,12 @@ trait Writable[O] {
 }
 
 object Writable {
+  abstract class StringBuilderWritable(override val delimiter: CharSequence, override val quote: CharSequence) extends Writable[StringBuilder] {
+    def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x)
+
+    def unit: StringBuilder = new StringBuilder
+  }
+
   def fileWritable(file: File): Writable[FileWriter] = new Writable[FileWriter] {
     def unit: FileWriter = new FileWriter(file)
 

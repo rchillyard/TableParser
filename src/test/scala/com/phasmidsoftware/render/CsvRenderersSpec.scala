@@ -2,12 +2,11 @@ package com.phasmidsoftware.render
 
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.table._
+import java.io.File
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
-
-import java.io.File
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -107,11 +106,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import IntPair._
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
-    val iIt = iIty.get
-    val ws = CsvTableRenderer[IntPair]().render(iIt)
-    ws.head shouldBe "a, b"
-    ws.tail.head shouldBe "1, 2"
-    ws.tail.tail.head shouldBe "42, 99"
+    CsvTableRenderer[IntPair]().render(iIty.get) shouldBe "a, b\n1, 2\n42, 99\n"
   }
 
   case class Hawks(bw: Int, rt: Int) {
@@ -212,9 +207,23 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new BaseCsvGenerator[LocalDate]
     implicit val DRRCsvRenderer: CsvRenderer[DailyRaptorReport] = new CsvRenderers {}.renderer3(DailyRaptorReport.apply)
     implicit val DRRCsvGenerator: CsvProductGenerator[DailyRaptorReport] = new CsvGenerators {}.generator3(DailyRaptorReport.apply)
-    val ws: Iterable[String] = rt.toCSV
-    ws.head shouldBe "date, weather, hawks.bw, hawks.rt"
-    ws.tail.head shouldBe "2018-09-12, Dense Fog/Light Rain, 0, 0"
+    val w: String = rt.toCSV
+    w shouldBe
+            """date, weather, hawks.bw, hawks.rt
+              |2018-09-12, Dense Fog/Light Rain, 0, 0
+              |2018-09-13, Fog/Overcast, 79, 0
+              |2018-09-14, Drizzle/Fog/Overcast, 1, 0
+              |2018-09-15, Overcast/ Mostly Cloudy, 1054, 0
+              |2018-09-16, Partly Cloudy, 3308, 5
+              |2018-09-17, Dense Fog/Light Rain, 0, 0
+              |2018-09-18, Clear/Partly cloudy, 260, 0
+              |2018-09-19, Overcast/Mostly cloudy/Partly cloudy/Clear, 821, 4
+              |2018-09-20, Overcast/Fog, 36, 1
+              |2018-09-21, Dense Fog/Overcast, 29, 0
+              |2018-09-22, Partly cloudy/Mostly cloudy/Overcast, 455, 3
+              |2018-09-23, Overcast, 470, 2
+              |2018-09-24, Overcast/Mostly cloudy, 292, 2
+              |""".stripMargin
   }
 
   case class WeatherHawks(weather: String, hawks: Hawks)
@@ -284,8 +293,6 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new BaseCsvGenerator[LocalDate]
     implicit val DRRCsvRenderer: CsvRenderer[NestedRaptorReport] = new CsvRenderers {}.renderer2(NestedRaptorReport.apply)
     implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = new CsvGenerators {}.generator2(NestedRaptorReport.apply)
-    val ws: Iterable[String] = rt.toCSV
-    ws.head shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt"
-    ws.tail.head shouldBe "2018-09-12, Dense Fog/Light Rain, 0, 0"
+    rt.take(1).toCSV shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n"
   }
 }

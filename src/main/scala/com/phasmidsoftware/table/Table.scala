@@ -10,7 +10,6 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{Reflection, TryUsing}
-
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -288,14 +287,14 @@ trait Table[Row] extends Iterable[Row] {
   override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
 
   /**
-    * Method to render this Table[T] as a CSV file with (maybe) header.
-    *
-    * @param renderer      implicit value of CsvRenderer[Row].
-    * @param generator     implicit value of CsvProductGenerator[Row].
-    * @param csvAttributes implicit value of CsvAttributes.
-    * @return an Iterable[String]
-    */
-  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Iterable[String] =
+   * Method to render this Table[T] as a CSV file with (maybe) header.
+   *
+   * @param renderer      implicit value of CsvRenderer[Row].
+   * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param csvAttributes implicit value of CsvAttributes.
+   * @return an Iterable[String]
+   */
+  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): String =
     CsvTableRenderer[Row]().render(this)
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
@@ -559,12 +558,12 @@ object Table {
   }
 
   /**
-    * Method to render this Table[Row] as a CSV file with header.
-    *
-    * @param csvAttributes implicit value of CsvAttributes.
-    * @return an Iterable[String]
-    */
-  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): Iterable[String] = {
+   * Method to render this Table[Row] as a CSV file with header.
+   *
+   * @param csvAttributes implicit value of CsvAttributes.
+   * @return an Iterable[String]
+   */
+  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): String = {
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)

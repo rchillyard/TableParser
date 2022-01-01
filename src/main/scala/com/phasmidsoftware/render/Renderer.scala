@@ -6,7 +6,6 @@ package com.phasmidsoftware.render
 
 import com.phasmidsoftware.table.{CsvAttributes, CsvGenerator, CsvProductGenerator, Table}
 import org.joda.time.LocalDate
-
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 
@@ -161,35 +160,28 @@ trait CsvRenderer[T] extends Renderer[T, String] {
   val csvAttributes: CsvAttributes
 }
 
-case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], Seq[String]] {
+case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], String] {
   /**
-    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
-    *
-    * @param t     the input parameter, i.e. the Table[T] instance to render.
-    * @param attrs a map of attributes for this value of O.
-    * @return an instance of type O.
-    */
-  def render(t: Table[T], attrs: Map[String, String]): Seq[String] = t match {
+   * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
+   *
+   * @param t     the input parameter, i.e. the Table[T] instance to render.
+   * @param attrs a map of attributes for this value of O.
+   * @return an instance of type O.
+   */
+  def render(t: Table[T], attrs: Map[String, String]): String = t match {
     case x: Table[_] =>
-      implicit object StringBuilderWritable extends Writable[StringBuilder] {
-        def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
-
-        def unit: StringBuilder = new StringBuilder
-
-        override def delimiter: CharSequence = csvAttributes.delimiter
-
-        override def quote: CharSequence = csvAttributes.quote
-      }
-
-      val sw = implicitly[Writable[StringBuilder]]
+      val sw = new Writable.StringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote) {}
       val tc = implicitly[CsvRenderer[T]]
       val tg = implicitly[CsvGenerator[T]]
-      val hdr = tg match {
+      val hdr: String = tg match {
         case _tg: CsvProductGenerator[_] => _tg.toColumnNames(None, None)
         case _tg: CsvGenerator[_] => _tg.toColumnName(None, "")
       }
-      val zs: Seq[String] = for (x <- x.rows.toSeq; o = sw.unit; sb = sw.writeRaw(o)(tc.render(x, Map()))) yield sb.toString()
-      hdr +: zs
+      val o = sw.unit
+      sw.writeRawLine(o)(hdr)
+      for (x <- x.rows.toSeq) sw.writeRawLine(o)(tc.render(x, Map()))
+      sw.close(o)
+      o.toString
   }
 }
 

@@ -7,7 +7,6 @@ import com.phasmidsoftware.table.{CsvGenerator, HeadedTable, Row, Table}
 import com.phasmidsoftware.util.TryUsing
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
 import scala.io.Source
 import scala.util._
 
@@ -65,10 +64,11 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       }
       import CsvRenderers._
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-      mt.take(1).toCSV.mkString("\n") shouldBe
-        """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
-          |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
-          |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation""".stripMargin
+      mt.take(1).toCSV shouldBe
+              """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
+                |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
+                |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
+                |""".stripMargin
     }
   }
 
@@ -85,10 +85,11 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
         case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
       }
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer(12))
-      mt.take(1).toCSV.mkString("\n") shouldBe
-        """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
-          |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
-          |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,,,,,,,,,,,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation""".stripMargin
+      mt.take(1).toCSV shouldBe
+              """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
+                |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
+                |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,,,,,,,,,,,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
+                |""".stripMargin
     }
   }
 
@@ -105,13 +106,14 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       }
       import CsvRenderers._
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-      mt.toCSV.mkString("\n") shouldBe
-        """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
-          |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-          |2,Ringo Starr,George Harrison,Paul McCartney,,83.5,8.5,10.0,5.0,9.0,5.0,4.0,6.0,3.0,22.0,7.0,4.0,Presentation quite confused. Part of project not achieved. ,https://github.com/PhoenixMay/MovieRecommendation
-          |3,Pablo Picasso,Joan Miro,,,92.0,11.0,10.0,5.0,10.0,5.0,4.0,7.0,4.0,23.0,9.0,4.0,Presentation OK. What did they do about these challenges.,https://github.com/jianghanw/CSYE7200_Team_Project_Team3
-          |4,Ludwig van Beethoven,Wolfgang Amadeus Mozart,,,88.5,11.0,10.0,6.0,10.5,5.0,3.5,6.0,4.0,21.5,7.0,4.0,A/C not clearly defined (planning pres?),https://github.com/Essexwwz/heart-health-indicator
-          |5,Winston Churchill,Clement Attlee,Harold McMillan,,88.5,11.0,9.5,5.0,11.0,5.0,4.0,7.0,2.0,22.0,7.0,5.0,Presentation long and detailed.  Project excellent overall. A/C not shown clearly.,https://github.com/CSYE7200-21FALL-TEAM6""".stripMargin
+      mt.toCSV shouldBe
+              """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
+                |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
+                |2,Ringo Starr,George Harrison,Paul McCartney,,83.5,8.5,10.0,5.0,9.0,5.0,4.0,6.0,3.0,22.0,7.0,4.0,Presentation quite confused. Part of project not achieved. ,https://github.com/PhoenixMay/MovieRecommendation
+                |3,Pablo Picasso,Joan Miro,,,92.0,11.0,10.0,5.0,10.0,5.0,4.0,7.0,4.0,23.0,9.0,4.0,Presentation OK. What did they do about these challenges.,https://github.com/jianghanw/CSYE7200_Team_Project_Team3
+                |4,Ludwig van Beethoven,Wolfgang Amadeus Mozart,,,88.5,11.0,10.0,6.0,10.5,5.0,3.5,6.0,4.0,21.5,7.0,4.0,A/C not clearly defined (planning pres?),https://github.com/Essexwwz/heart-health-indicator
+                |5,Winston Churchill,Clement Attlee,Harold McMillan,,88.5,11.0,9.5,5.0,11.0,5.0,4.0,7.0,2.0,22.0,7.0,5.0,Presentation long and detailed.  Project excellent overall. A/C not shown clearly.,https://github.com/CSYE7200-21FALL-TEAM6
+                |""".stripMargin
     }
   }
 
@@ -128,9 +130,10 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       }
       import CsvRenderers._
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-      mt.take(1).toCSV.mkString("\n") shouldBe
-        """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
-          |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation""".stripMargin
+      mt.take(1).toCSV shouldBe
+              """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
+                |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
+                |""".stripMargin
     }
   }
 
@@ -145,9 +148,10 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
         case _ => createCsvGeneratorFromTeamProject(_.skipGenerator)
       }
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer())
-      mt.take(1).toCSV.mkString("\n") shouldBe
-        """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
-          |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation""".stripMargin
+      mt.take(1).toCSV shouldBe
+              """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
+                |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
+                |""".stripMargin
     }
   }
 
