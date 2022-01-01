@@ -98,12 +98,11 @@ trait Writable[O] {
   }
 
   /**
-    * The default quote is one double-quote symbol
-    *
-    * @return "
-    */
-  def quote: CharSequence =
-    """""""
+   * The default quote is one double-quote symbol
+   *
+   * @return "
+   */
+  def quote: CharSequence = """""""
 
   /**
     * The default delimiter is a comma followed by a space.
@@ -121,10 +120,14 @@ trait Writable[O] {
 }
 
 object Writable {
-  abstract class StringBuilderWritable(override val delimiter: CharSequence, override val quote: CharSequence) extends Writable[StringBuilder] {
+  def stringBuilderWritable(delim: CharSequence = ",", quoteChar: CharSequence = """""""): Writable[StringBuilder] = new Writable[StringBuilder] {
     def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x)
 
     def unit: StringBuilder = new StringBuilder
+
+    override def delimiter: CharSequence = delim
+
+    override def quote: CharSequence = quoteChar
   }
 
   def fileWritable(file: File): Writable[FileWriter] = new Writable[FileWriter] {

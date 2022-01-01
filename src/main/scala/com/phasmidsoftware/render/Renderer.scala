@@ -170,7 +170,7 @@ case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttribu
    */
   def render(t: Table[T], attrs: Map[String, String]): String = t match {
     case x: Table[_] =>
-      val sw = new Writable.StringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote) {}
+      val sw = Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote)
       val tc = implicitly[CsvRenderer[T]]
       val tg = implicitly[CsvGenerator[T]]
       val hdr: String = tg match {
