@@ -1,7 +1,6 @@
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.FP.resource
-
 import scala.io.Source
 import scala.util.Success
 

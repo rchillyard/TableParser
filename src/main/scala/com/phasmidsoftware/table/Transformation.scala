@@ -23,10 +23,10 @@ case class RawTableTransformation(transformers: Map[String, Transformation[Strin
 }
 
 /**
-  * TEST this
-  *
-  * @param aggregators a Map of Transformations indexed by String.
-  */
+ * TEST this
+ *
+ * @param aggregators a Map of Transformations indexed by String.
+ */
 case class RawTableAggregation(aggregators: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable] {
   def apply(t: RawTable): RawTable = {
     val header = t.maybeHeader.get // there must be a header for a raw table.

@@ -8,7 +8,6 @@ import com.phasmidsoftware.parse.ParserException
 import com.phasmidsoftware.util.FPException
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.util.{Success, Try}
 
 class RowSpec extends flatspec.AnyFlatSpec with should.Matchers {

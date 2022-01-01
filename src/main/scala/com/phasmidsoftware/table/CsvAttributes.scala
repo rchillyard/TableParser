@@ -20,43 +20,43 @@ object CsvAttributes {
 }
 
 /**
-  * Trait (type class?) for generating headers for CSV output.
-  *
-  * NOTE: this is an unusual type class in that none of its methods reference type T.
-  *
-  * @tparam T the type of the objects to be rendered by CSV.
-  */
+ * Trait (type class?) for generating headers for CSV output.
+ *
+ * NOTE: this is an unusual type class in that none of its methods reference type T.
+ *
+ * @tparam T the type of the objects to be rendered by CSV.
+ */
 trait CsvGenerator[T] {
   // CONSIDER removing this abstract val.
   val csvAttributes: CsvAttributes
 
   /**
-    * Method to generate a list of appropriate column names for a value of t.
-    *
-    * @param po   the (optional) name of the parent.
-    * @param name the name of this column.
-    * @return a list of names of the form parent.column.
-    */
+   * Method to generate a list of appropriate column names for a value of t.
+   *
+   * @param po   the (optional) name of the parent.
+   * @param name the name of this column.
+   * @return a list of names of the form parent.column.
+   */
   def toColumnName(po: Option[String], name: String): String
 }
 
 /**
-  * Trait (type class?) for generating headers for CSV output.
-  *
-  * NOTE: this is an unusual type class in that none of its methods reference type T.
-  *
-  * @tparam T the type of the objects to be rendered by CSV.
-  */
+ * Trait (type class?) for generating headers for CSV output.
+ *
+ * NOTE: this is an unusual type class in that none of its methods reference type T.
+ *
+ * @tparam T the type of the objects to be rendered by CSV.
+ */
 trait CsvProductGenerator[T] extends CsvGenerator[T] {
   def fieldNames(implicit tc: ClassTag[T]): Array[String] = Reflection.extractFieldNames(tc)
 
   /**
-    * Method to generate a list of appropriate column names for a value of t.
-    *
-    * @param po the (optional) name of the parent.
-    * @param no the (optional) name of this column.
-    * @return a list of names of the form parent.column.
-    */
+   * Method to generate a list of appropriate column names for a value of t.
+   *
+   * @param po the (optional) name of the parent.
+   * @param no the (optional) name of this column.
+   * @return a list of names of the form parent.column.
+   */
   def toColumnNames(po: Option[String], no: Option[String]): String
 
   override def toColumnName(po: Option[String], name: String): String = toColumnNames(po, Some(name))

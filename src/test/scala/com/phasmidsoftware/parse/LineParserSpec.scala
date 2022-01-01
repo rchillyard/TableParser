@@ -6,7 +6,6 @@ package com.phasmidsoftware.parse
 
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.util.Success
 
 class LineParserSpec extends flatspec.AnyFlatSpec with should.Matchers {

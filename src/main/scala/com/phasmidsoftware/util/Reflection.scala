@@ -5,23 +5,22 @@
 package com.phasmidsoftware.util
 
 import java.lang.reflect.Modifier
-
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 object Reflection {
 
   /**
-    * This method is borrowed directly from Spray ProductFormats.
-    *
-    * NOTE: Read this if you are getting exceptions thrown by this method (be aware that sys.error throws an exception).
-    * You MUST be careful when defining case classes that represent input types or output types.
-    * DO NOT use val or lazy val instead of def for additional instance methods.
-    * That is because they mess up the matching of the fields.
-    *
-    * @param classTag rhw class tag.
-    * @return an Array of String.
-    */
+   * This method is borrowed directly from Spray ProductFormats.
+   *
+   * NOTE: Read this if you are getting exceptions thrown by this method (be aware that sys.error throws an exception).
+   * You MUST be careful when defining case classes that represent input types or output types.
+   * DO NOT use val or lazy val instead of def for additional instance methods.
+   * That is because they mess up the matching of the fields.
+   *
+   * @param classTag rhw class tag.
+   * @return an Array of String.
+   */
   def extractFieldNames(classTag: ClassTag[_]): Array[String] = {
     val clazz = classTag.runtimeClass
     try {
@@ -40,7 +39,7 @@ object Reflection {
       fields.map(f => f.getName)
     } catch {
       case NonFatal(ex) => throw new RuntimeException("Cannot automatically determine case class field names and order " +
-        "for '" + clazz.getName + "' (Did you use val instead of def for a method in this case class?), please use the 'cellParser'N signature with explicit field name specification", ex)
+              "for '" + clazz.getName + "' (Did you use val instead of def for a method in this case class?), please use the 'cellParser'N signature with explicit field name specification", ex)
     }
   }
 

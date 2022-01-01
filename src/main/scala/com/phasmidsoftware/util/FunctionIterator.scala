@@ -10,12 +10,12 @@ import scala.collection.AbstractIterator
 import scala.util.{Failure, Success, Try}
 
 /**
-  * This iterator gets its input from a call-by-name value, which is essentially a parameterless function.
-  *
-  * @param f the call-by-name value.
-  * @tparam X a Joinable input type.
-  * @tparam R the underlying type of f and also the result.
-  */
+ * This iterator gets its input from a call-by-name value, which is essentially a parameterless function.
+ *
+ * @param f the call-by-name value.
+ * @tparam X a Joinable input type.
+ * @tparam R the underlying type of f and also the result.
+ */
 class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends AbstractIterator[Try[R]] {
   private val xj = implicitly[Joinable[X]]
 

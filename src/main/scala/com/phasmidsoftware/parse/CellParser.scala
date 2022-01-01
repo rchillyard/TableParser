@@ -12,29 +12,29 @@ import scala.annotation.implicitNotFound
 import scala.util.{Failure, Success, Try}
 
 /**
-  * Type class trait CellParser[T].
-  * This trait has methods to parse and to convert from String to T.
-  *
-  * TODO Need to define this better so that we don't have any non-implemented methods.
-  *
-  * @tparam T the type of the resulting object.
-  */
+ * Type class trait CellParser[T].
+ * This trait has methods to parse and to convert from String to T.
+ *
+ * TODO Need to define this better so that we don't have any non-implemented methods.
+ *
+ * @tparam T the type of the resulting object.
+ */
 @implicitNotFound(msg = "Cannot find an implicit instance of CellParser[${T}]. Typically, you should invoke a suitable method from CellParsers.")
 trait CellParser[+T] {
   /**
-    * Convert a String into a T.
-    *
-    * @param w the String to be converted.
-    * @return a new instance of T wrapped in Try
-    */
+   * Convert a String into a T.
+   *
+   * @param w the String to be converted.
+   * @return a new instance of T wrapped in Try
+   */
   def convertString(w: String): Try[T]
 
   /**
-    * Parse a Convertible value into a T.
-    *
-    * @param value the Convertible value.
-    * @return a new instance of T wrapped in Try.
-    */
+   * Parse a Convertible value into a T.
+   *
+   * @param value the Convertible value.
+   * @return a new instance of T wrapped in Try.
+   */
   def parse(value: Convertible): Try[T] = value match {
     case CellValue(w) => convertString(w)
     case RowValues(row, columns) => parse(None, row, columns)
@@ -42,22 +42,22 @@ trait CellParser[+T] {
   }
 
   /**
-    * Method to parse an Option[String] to a T.
-    *
-    * @param wo      an optional String.
-    * @param row     a Row of values.
-    * @param columns the column names.
-    *                CONSIDER do we actually need the Header parameter here?
-    * @return a new instance of T.
-    */
+   * Method to parse an Option[String] to a T.
+   *
+   * @param wo      an optional String.
+   * @param row     a Row of values.
+   * @param columns the column names.
+   *                CONSIDER do we actually need the Header parameter here?
+   * @return a new instance of T.
+   */
   def parse(wo: Option[String], row: Row, columns: Header): Try[T]
 }
 
 /**
-  * Trait SingleCellParser, which extends CellParser[T].
-  *
-  * @tparam T the type of the resulting object.
-  */
+ * Trait SingleCellParser, which extends CellParser[T].
+ *
+ * @tparam T the type of the resulting object.
+ */
 trait SingleCellParser[T] extends CellParser[T] {
   def parse(w: Option[String], row: Row, columns: Header): Try[T] = Failure(new UnsupportedOperationException)
 
@@ -66,10 +66,10 @@ trait SingleCellParser[T] extends CellParser[T] {
 }
 
 /**
-  * CONSIDER renaming this to something like RowParser, or RawRowParser.
-  *
-  * @tparam T the type of the result.
-  */
+ * CONSIDER renaming this to something like RowParser, or RawRowParser.
+ *
+ * @tparam T the type of the result.
+ */
 trait MultiCellParser[T] extends CellParser[T] {
   // NOTE not used
   //noinspection NotImplementedCode
@@ -80,27 +80,27 @@ trait MultiCellParser[T] extends CellParser[T] {
 }
 
 /**
-  * Abstract class Convertible.
-  *
-  * CONSIDER making this a trait since it takes no value parameters.
-  */
+ * Abstract class Convertible.
+ *
+ * CONSIDER making this a trait since it takes no value parameters.
+ */
 sealed abstract class Convertible {
   def convertTo[T: CellParser]: Try[T] = cellReader.parse(this)
 }
 
 /**
-  * A concrete Convertible corresponding to a cell value.
-  *
-  * @param w the String contained by a cell.
-  */
+ * A concrete Convertible corresponding to a cell value.
+ *
+ * @param w the String contained by a cell.
+ */
 case class CellValue(w: String) extends Convertible
 
 /**
-  * A concrete Convertible corresponding to a row.
-  *
-  * @param row    the Row containing several values.
-  * @param header the Header.
-  */
+ * A concrete Convertible corresponding to a row.
+ *
+ * @param row    the Row containing several values.
+ * @param header the Header.
+ */
 case class RowValues(row: Row, header: Header) extends Convertible
 
 object RowValues {
@@ -170,8 +170,8 @@ object CellParser {
   }
 
   /**
-    * This parser succeeds on empty strings.
-    */
+   * This parser succeeds on empty strings.
+   */
   implicit object StringCellParser$ extends SingleCellParser[String] {
     def convertString(w: String): Try[String] = Success(w)
 

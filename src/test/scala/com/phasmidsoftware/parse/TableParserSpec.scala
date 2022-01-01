@@ -10,7 +10,6 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -406,8 +405,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   /**
-    * The following tests relate to the application CsvToJSON
-    */
+   * The following tests relate to the application CsvToJSON
+   */
   behavior of "TableParserHelper"
 
   case class Player(first: String, last: String) {
@@ -418,14 +417,14 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     def cellParser: CellParser[Player] = cellParser2(apply)
 
     /**
-      * Method to transform a Table[Player] into a Table[Partnership].
-      *
-      * The requirements of the application are that the rows of the Player table are grouped by twos
-      * and each resulting entity (an array of length 2) is taken to form a Partnership.
-      *
-      * @param pt a Table[Player]
-      * @return a Table[Partnership]
-      */
+     * Method to transform a Table[Player] into a Table[Partnership].
+     *
+     * The requirements of the application are that the rows of the Player table are grouped by twos
+     * and each resulting entity (an array of length 2) is taken to form a Partnership.
+     *
+     * @param pt a Table[Player]
+     * @return a Table[Partnership]
+     */
     def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Partnership(r))
   }
 

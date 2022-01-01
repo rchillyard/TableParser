@@ -7,7 +7,6 @@ package com.phasmidsoftware.table
 import com.phasmidsoftware.parse.{CellParser, RowParser, StringTableParser}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.util._
 
 //noinspection SpellCheckingInspection

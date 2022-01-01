@@ -20,17 +20,17 @@ import scala.language.implicitConversions
 case class HTML(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(implicit rules: TagRules) extends BaseTag(name, attributes, content, tags) {
 
   /**
-    * Method to add a child to this Tag
-    *
-    * @param tag the tag to be added
-    * @return a new version of this Tag with the additional tag added as a child
-    */
+   * Method to add a child to this Tag
+   *
+   * @param tag the tag to be added
+   * @return a new version of this Tag with the additional tag added as a child
+   */
   override def :+(tag: Tag): Tag = HTML(name, attributes, content, tags :+ tag)
 }
 
 /**
-  * Companion object to HTML
-  */
+ * Companion object to HTML
+ */
 object HTML {
 
   implicit object HtmlRules extends TagRules

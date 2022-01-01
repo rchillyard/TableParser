@@ -5,31 +5,31 @@
 package com.phasmidsoftware.util
 
 /**
-  * Type class to define behavior of a type which can be joined.
-  *
-  * @tparam T the joinable type.
-  */
+ * Type class to define behavior of a type which can be joined.
+ *
+ * @tparam T the joinable type.
+ */
 trait Joinable[T] {
   /**
-    * Method to join t1 to t2.
-    *
-    * @param t1 the first T value.
-    * @param t2 the second T value.
-    * @return the joined T value.
-    */
+   * Method to join t1 to t2.
+   *
+   * @param t1 the first T value.
+   * @param t2 the second T value.
+   * @return the joined T value.
+   */
   def join(t1: T, t2: T): T
 
   /**
-    * The zero value for T.
-    */
+   * The zero value for T.
+   */
   val zero: T
 
   /**
-    * Method to determine if t is valid.
-    *
-    * @param t a T value.
-    * @return true if t is valid.
-    */
+   * Method to determine if t is valid.
+   *
+   * @param t a T value.
+   * @return true if t is valid.
+   */
   def valid(t: T): Boolean
 }
 

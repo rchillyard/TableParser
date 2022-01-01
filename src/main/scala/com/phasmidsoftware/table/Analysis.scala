@@ -25,12 +25,12 @@ object Analysis {
 }
 
 /**
-  * A representation of the analysis of a column.
-  *
-  * @param clazz           a String denoting which class (maybe which variant of class) this column may be represented as.
-  * @param optional        if true then this column contains nulls (empty strings).
-  * @param maybeStatistics an optional set of statistics but only if the column represents numbers.
-  */
+ * A representation of the analysis of a column.
+ *
+ * @param clazz           a String denoting which class (maybe which variant of class) this column may be represented as.
+ * @param optional        if true then this column contains nulls (empty strings).
+ * @param maybeStatistics an optional set of statistics but only if the column represents numbers.
+ */
 case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[Statistics]) {
   override def toString: String = {
     val sb = new StringBuilder

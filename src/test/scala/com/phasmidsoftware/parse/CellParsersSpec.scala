@@ -9,7 +9,6 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.util.{Failure, Success}
 
 class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
@@ -67,8 +66,8 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   /**
-    * NOTE: only used in testing currently
-    */
+   * NOTE: only used in testing currently
+   */
   object IntSeqParser extends CellParsers {
 
     implicit val intSeqParser: CellParser[Seq[Int]] = cellParserSeq

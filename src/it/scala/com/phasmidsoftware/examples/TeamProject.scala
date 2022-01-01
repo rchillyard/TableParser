@@ -9,26 +9,26 @@ import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import java.net.URL
 
 /**
-  * This class represents a TeamProject from the IMDB data file on Kaggle.
-  * Although the limitation on 22 fields in a case class has partially gone away, it's still convenient to group the different attributes together into logical classes.
-  *
-  * Created by scalaprof on 9/12/16.
-  *
-  * Common questions in this assignment:
-  * 1. Where is main method?
-  * In most case, you don't need to run main method for assignments.
-  * Unit tests are provided to test your implementation.
-  * In this assignment, you will find the `object TeamProject extends App`,
-  * the `App` trait can be used to quickly turn objects into executable programs.
-  * You can read the official doc of Scala for more details.
-  *
-  * 2. How to understand the whole program in this assignment?
-  * I won't suggest you to understand the whole program in this assignment,
-  * there are some advanced features like `implicit` which hasn't been covered in class.
-  * You should be able to understand it before midterm.
-  * I will suggest you only focus on each TO BE IMPLEMENTED in the assignments.
-  *
-  */
+ * This class represents a TeamProject from the IMDB data file on Kaggle.
+ * Although the limitation on 22 fields in a case class has partially gone away, it's still convenient to group the different attributes together into logical classes.
+ *
+ * Created by scalaprof on 9/12/16.
+ *
+ * Common questions in this assignment:
+ * 1. Where is main method?
+ * In most case, you don't need to run main method for assignments.
+ * Unit tests are provided to test your implementation.
+ * In this assignment, you will find the `object TeamProject extends App`,
+ * the `App` trait can be used to quickly turn objects into executable programs.
+ * You can read the official doc of Scala for more details.
+ *
+ * 2. How to understand the whole program in this assignment?
+ * I won't suggest you to understand the whole program in this assignment,
+ * there are some advanced features like `implicit` which hasn't been covered in class.
+ * You should be able to understand it before midterm.
+ * I will suggest you only focus on each TO BE IMPLEMENTED in the assignments.
+ *
+ */
 case class TeamProject(team: Team, grade: Grade, remarks: String, repository: URL)
 
 case class Team(number: Int, member_1: String, member_2: Option[String], member_3: Option[String], member_4: Option[String])

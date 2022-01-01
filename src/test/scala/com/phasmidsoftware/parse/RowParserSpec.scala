@@ -7,7 +7,6 @@ package com.phasmidsoftware.parse
 import com.phasmidsoftware.table.Header
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.util.matching.Regex
 import scala.util.{Success, Try}
 

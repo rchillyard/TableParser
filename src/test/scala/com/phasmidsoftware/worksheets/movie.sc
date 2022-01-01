@@ -2,7 +2,6 @@ import com.phasmidsoftware.parse.StringTableParser
 import com.phasmidsoftware.table.MovieParser.MovieTableParser
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.FP.resource
-
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 

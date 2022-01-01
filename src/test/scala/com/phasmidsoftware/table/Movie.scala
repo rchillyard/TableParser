@@ -8,36 +8,36 @@ import com.phasmidsoftware.parse._
 import scala.util.Try
 
 /**
-  * This class represents a Movie from the IMDB data file on Kaggle.
-  * Although the limitation on 22 fields in a case class has partially gone away, it's still convenient to group the different attributes together into logical classes.
-  *
-  * Created by scalaprof on 9/12/16.
-  *
-  * Common questions in this assignment:
-  * 1. Where is main method?
-  * In most case, you don't need to run main method for assignments.
-  * Unit tests are provided to test your implementation.
-  * In this assignment, you will find the `object Movie extends App`,
-  * the `App` trait can be used to quickly turn objects into executable programs.
-  * You can read the official doc of Scala for more details.
-  *
-  * 2. How to understand the whole program in this assignment?
-  * I won't suggest you to understand the whole program in this assignment,
-  * there are some advanced features like `implicit` which hasn't been covered in class.
-  * You should be able to understand it before midterm.
-  * I will suggest you only focus on each TO BE IMPLEMENTED in the assignments.
-  *
-  */
+ * This class represents a Movie from the IMDB data file on Kaggle.
+ * Although the limitation on 22 fields in a case class has partially gone away, it's still convenient to group the different attributes together into logical classes.
+ *
+ * Created by scalaprof on 9/12/16.
+ *
+ * Common questions in this assignment:
+ * 1. Where is main method?
+ * In most case, you don't need to run main method for assignments.
+ * Unit tests are provided to test your implementation.
+ * In this assignment, you will find the `object Movie extends App`,
+ * the `App` trait can be used to quickly turn objects into executable programs.
+ * You can read the official doc of Scala for more details.
+ *
+ * 2. How to understand the whole program in this assignment?
+ * I won't suggest you to understand the whole program in this assignment,
+ * there are some advanced features like `implicit` which hasn't been covered in class.
+ * You should be able to understand it before midterm.
+ * I will suggest you only focus on each TO BE IMPLEMENTED in the assignments.
+ *
+ */
 case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
 /**
-  * The movie format (including language and duration).
-  *
-  * @param color       whether filmed in color
-  * @param language    the native language of the characters
-  * @param aspectRatio the aspect ratio of the film (optional)
-  * @param duration    its length in minutes (optional)
-  */
+ * The movie format (including language and duration).
+ *
+ * @param color       whether filmed in color
+ * @param language    the native language of the characters
+ * @param aspectRatio the aspect ratio of the film (optional)
+ * @param duration    its length in minutes (optional)
+ */
 case class Format(color: String, language: String, aspectRatio: Option[Double], duration: Option[Int]) {
   override def toString: String = {
     s"$color,$language,$aspectRatio,$duration"
@@ -45,13 +45,13 @@ case class Format(color: String, language: String, aspectRatio: Option[Double], 
 }
 
 /**
-  * The production: its country, year, and financials
-  *
-  * @param country   country of origin
-  * @param budget    (optional) production budget in US dollars
-  * @param gross     (optional) gross earnings (?)
-  * @param titleYear the year the title was registered (?)
-  */
+ * The production: its country, year, and financials
+ *
+ * @param country   country of origin
+ * @param budget    (optional) production budget in US dollars
+ * @param gross     (optional) gross earnings (?)
+ * @param titleYear the year the title was registered (?)
+ */
 case class Production(country: String, budget: Option[Int], gross: Option[Int], titleYear: Option[Int]) {
   def isKiwi: Boolean = this match {
     case Production("New Zealand", _, _, _) => true
@@ -60,28 +60,28 @@ case class Production(country: String, budget: Option[Int], gross: Option[Int], 
 }
 
 /**
-  * Information about various forms of review, including the content rating.
-  */
+ * Information about various forms of review, including the content rating.
+ */
 case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating, numUsersReview: Option[Int], numUsersVoted: Int, numCriticReviews: Option[Int], totalFacebookLikes: Int)
 
 /**
-  * A cast or crew principal
-  *
-  * @param name          name
-  * @param facebookLikes number of FaceBook likes
-  */
+ * A cast or crew principal
+ *
+ * @param name          name
+ * @param facebookLikes number of FaceBook likes
+ */
 case class Principal(name: Name, facebookLikes: Int) {
   override def toString = s"$name ($facebookLikes likes)"
 }
 
 /**
-  * A name of a contributor to the production
-  *
-  * @param first  first name
-  * @param middle middle name or initial
-  * @param last   last name
-  * @param suffix suffix
-  */
+ * A name of a contributor to the production
+ *
+ * @param first  first name
+ * @param middle middle name or initial
+ * @param last   last name
+ * @param suffix suffix
+ */
 case class Name(first: String, middle: Option[String], last: String, suffix: Option[String]) {
   override def toString: String = {
     case class Result(r: StringBuffer) {
@@ -102,10 +102,10 @@ case class Name(first: String, middle: Option[String], last: String, suffix: Opt
 }
 
 /**
-  * The US rating.
-  * NOTE: this definition does not cover all of the ratings in the IMDB movie dataset.
-  * That's OK--this is just an exemplar.
-  */
+ * The US rating.
+ * NOTE: this definition does not cover all of the ratings in the IMDB movie dataset.
+ * That's OK--this is just an exemplar.
+ */
 case class Rating(code: String, age: Option[Int]) {
   override def toString: String = code + (age match {
     case Some(x) => "-" + x
@@ -116,8 +116,8 @@ case class Rating(code: String, age: Option[Int]) {
 object MovieParser extends CellParsers {
 
   /**
-    * Precede each upper case letter (or digit) with _.
-    */
+   * Precede each upper case letter (or digit) with _.
+   */
   def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
 
   implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper _,
@@ -181,11 +181,11 @@ object Name {
 
 object Rating {
   /**
-    * Alternative apply method for the Rating class such that a single String is decoded
-    *
-    * @param s a String made up of a code, optionally followed by a dash and a number, e.g. "R" or "PG-13"
-    * @return a Rating
-    */
+   * Alternative apply method for the Rating class such that a single String is decoded
+   *
+   * @param s a String made up of a code, optionally followed by a dash and a number, e.g. "R" or "PG-13"
+   * @return a Rating
+   */
   def apply(s: String): Rating =
     s match {
       case rRating(code, _, null) => apply(code, None)

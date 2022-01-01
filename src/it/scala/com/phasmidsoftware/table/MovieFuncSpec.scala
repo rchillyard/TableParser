@@ -13,10 +13,10 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
   behavior of "Movie table"
 
   /**
-    * NOTE: it is perfectly proper for there to be a number of parsing problems.
-    * These are application-specific and are not indicative of any bugs in the
-    * TableParser library itself.
-    */
+   * NOTE: it is perfectly proper for there to be a number of parsing problems.
+   * These are application-specific and are not indicative of any bugs in the
+   * TableParser library itself.
+   */
   it should "be ingested properly" in {
     import MovieParser._
 

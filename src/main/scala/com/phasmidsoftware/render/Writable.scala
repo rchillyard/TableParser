@@ -7,24 +7,24 @@ package com.phasmidsoftware.render
 import java.io.{File, FileWriter}
 
 /**
-  * Trait to enable rendering of a table to a sequential (non-hierarchical) output format.
-  *
-  * @tparam O the underlying type, for example, a StringBuilder.
-  */
+ * Trait to enable rendering of a table to a sequential (non-hierarchical) output format.
+ *
+ * @tparam O the underlying type, for example, a StringBuilder.
+ */
 trait Writable[O] {
 
   // TODO create some off-the-shelf Writables
 
   /**
-    * Method to return an empty (i.e. new) instance of O
-    *
-    * @return
-    */
+   * Method to return an empty (i.e. new) instance of O
+   *
+   * @return
+   */
   def unit: O
 
   /**
-    * Method to close this Writable, if appropriate.
-    */
+   * Method to close this Writable, if appropriate.
+   */
   def close(o: O): Unit = ()
 
   /**
@@ -55,14 +55,14 @@ trait Writable[O] {
   def writeRow[Row <: Product](o: O)(x: Row): O = writeRaw(writeRowElements(o)(x.productIterator.toSeq))(newline)
 
   /**
-    * Method to write a value of type Any to the given instance o, possibly quoted.
-    * Elements will be separated by the delimiter, but no newline is appended.
-    * Element strings may be enclosed in quotes if appropriate.
-    *
-    * @param o  the instance of O whither the xs values should be written.
-    * @param xs the sequence of elements (values) to be written.
-    * @return an instance of O which represents the updated output structure.
-    */
+   * Method to write a value of type Any to the given instance o, possibly quoted.
+   * Elements will be separated by the delimiter, but no newline is appended.
+   * Element strings may be enclosed in quotes if appropriate.
+   *
+   * @param o  the instance of O whither the xs values should be written.
+   * @param xs the sequence of elements (values) to be written.
+   * @return an instance of O which represents the updated output structure.
+   */
   def writeRowElements(o: O)(xs: Seq[Any]): O = {
     // CONSIDER using foldLeft so that we can use the updated value of o at each step.
     for (x <- xs.headOption) writeValue(o)(x)
@@ -73,25 +73,25 @@ trait Writable[O] {
   private val sQuote: String = quote.toString
 
   /**
-    * Method to write a value of type Any to the given instance o, possibly quoted.
-    *
-    * @param o the instance of O whither the parameter x should be written.
-    * @param x the character sequence to be written.
-    * @return an instance of O which represents the updated output structure.
-    */
+   * Method to write a value of type Any to the given instance o, possibly quoted.
+   *
+   * @param o the instance of O whither the parameter x should be written.
+   * @param x the character sequence to be written.
+   * @return an instance of O which represents the updated output structure.
+   */
   def writeValue(o: O)(x: Any): O = if (x.toString.contains(delimiter.toString) || x.toString.contains(sQuote))
     writeQuoted(o)(x.toString)
   else
     writeRaw(o)(x.toString)
 
   /**
-    * Method to write a character sequence to the given instance o, but within quotes.
-    * Any quote characters in x will be doubled.
-    *
-    * @param o the instance of O whither the parameter x should be written.
-    * @param x the character sequence to be written.
-    * @return an instance of O which represents the updated output structure.
-    */
+   * Method to write a character sequence to the given instance o, but within quotes.
+   * Any quote characters in x will be doubled.
+   *
+   * @param o the instance of O whither the parameter x should be written.
+   * @param x the character sequence to be written.
+   * @return an instance of O which represents the updated output structure.
+   */
   def writeQuoted(o: O)(x: CharSequence): O = {
     val w = x.toString.replaceAll(quote.toString, s"$quote$quote")
     writeRaw(o)(s"$quote$w$quote")
@@ -105,17 +105,17 @@ trait Writable[O] {
   def quote: CharSequence = """""""
 
   /**
-    * The default delimiter is a comma followed by a space.
-    *
-    * @return ", "
-    */
+   * The default delimiter is a comma followed by a space.
+   *
+   * @return ", "
+   */
   def delimiter: CharSequence = ", "
 
   /**
-    * The default newline character is the newline.
-    *
-    * @return \n
-    */
+   * The default newline character is the newline.
+   *
+   * @return \n
+   */
   def newline: CharSequence = "\n"
 }
 
