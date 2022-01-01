@@ -9,7 +9,6 @@ package com.phasmidsoftware.util
  *
  * @param n the number of elements to detach.
  * @tparam X the underlying type.
- * @tparam R the underlying type of f and also the result.
  */
 class TeeIterator[X](n: Int)(xs: Iterator[X]) extends Iterator[X] {
   val tee: Seq[X] = for (_ <- 0 until n if xs.hasNext) yield xs.next()

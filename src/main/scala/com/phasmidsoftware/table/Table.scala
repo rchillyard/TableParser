@@ -134,7 +134,7 @@ trait Table[Row] extends Iterable[Row] {
    * @return a Seq[Row]
    */
   override def toSeq: Seq[Row] = {
-    lazy val rs = rows.toSeq;
+    lazy val rs = rows.toSeq
     rs
   }
 
