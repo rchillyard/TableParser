@@ -6,6 +6,13 @@ package com.phasmidsoftware.table
 
 import com.phasmidsoftware.RawRow
 
+/**
+ * Trait which transforms an X into a Y.
+ * Basically, this is just a sub-class of Function1.
+ *
+ * @tparam X the input type.
+ * @tparam Y the output type.
+ */
 trait Transformation[X, Y] extends (X => Y)
 
 case class RawTableTransformation(transformers: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable] {
@@ -13,8 +20,6 @@ case class RawTableTransformation(transformers: Map[String, Transformation[Strin
     val xm: Map[Int, Transformation[String, String]] = for ((k, x) <- transformers; h <- t.maybeHeader; index <- h.getIndex(k).toOption) yield (index, x)
     t.map[RawRow](RawRowTransformation(xm))
   }
-
-  //  def map[Z](f: RawTable => Z): Transformation[RawTable, Z] = f compose apply
 }
 
 /**

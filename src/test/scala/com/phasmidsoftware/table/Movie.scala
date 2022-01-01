@@ -5,9 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse._
-
 import scala.util.Try
-import scala.util.matching.Regex
 
 /**
   * This class represents a Movie from the IMDB data file on Kaggle.
@@ -145,8 +143,6 @@ object MovieParser extends CellParsers {
   implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
 
   implicit object MovieConfig extends DefaultRowConfig {
-    override val string: Regex = """[^,]*""".r
-    override val delimiter: Regex = """,""".r
     override val listEnclosure: String = ""
   }
 

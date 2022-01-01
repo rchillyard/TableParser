@@ -5,7 +5,6 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.table.{BaseCsvGenerator, CsvAttributes, CsvGenerator, CsvProductGenerator}
-
 import java.net.URL
 import scala.reflect.ClassTag
 
@@ -18,11 +17,13 @@ import scala.reflect.ClassTag
 trait CsvRenderers {
 
   /**
-    * Method to return a CsvRenderer[ Seq[T] ].
-    *
-    * @tparam T the underlying type of the first parameter of the input to the render method.
-    * @return a CsvRenderer[ Seq[T] ]
-    */
+   * Method to return a CsvRenderer[ Seq[T] ].
+   *
+   * TEST
+   *
+   * @tparam T the underlying type of the first parameter of the input to the render method.
+   * @return a CsvRenderer[ Seq[T] ]
+   */
   def sequenceRenderer[T: CsvRenderer](implicit ca: CsvAttributes): CsvRenderer[Seq[T]] = new CsvRenderer[Seq[T]] {
 
     def render(ts: Seq[T], attrs: Map[String, String]): String = (ts map { t: T => implicitly[CsvRenderer[T]].render(t) }).mkString(csvAttributes.delimiter)
@@ -435,11 +436,13 @@ object CsvRenderers {
 trait CsvGenerators {
 
   /**
-    * Method to return a CsvGenerator[ Seq[T] ].
-    *
-    * @tparam T the underlying type of the first parameter of the input to the render method.
-    * @return a CsvGenerator[ Seq[T] ]
-    */
+   * Method to return a CsvGenerator[ Seq[T] ].
+   *
+   * TEST
+   *
+   * @tparam T the underlying type of the first parameter of the input to the render method.
+   * @return a CsvGenerator[ Seq[T] ]
+   */
   def sequenceGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Seq[T]] = new BaseCsvGenerator[Seq[T]]
 
   /**
@@ -461,6 +464,7 @@ trait CsvGenerators {
 
     override def toColumnName(po: Option[String], name: String): String = ""
 
+    // TEST (not actually used).
     def toColumnNames(po: Option[String], no: Option[String]): String = ""
   }
 

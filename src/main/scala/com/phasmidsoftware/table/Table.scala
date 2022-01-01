@@ -127,10 +127,12 @@ trait Table[Row] extends Iterable[Row] {
   def select(n: Int): Table[Row] = processRows(_.slice(n - 1, n))
 
   /**
-    * Method to yield a Seq of the rows of this Table.
-    *
-    * @return a Seq[Row]
-    */
+   * Method to yield a Seq of the rows of this Table.
+   *
+   * TEST
+   *
+   * @return a Seq[Row]
+   */
   override def toSeq: Seq[Row] = {
     lazy val rs = rows.toSeq; rs
   }
@@ -161,15 +163,17 @@ trait Table[Row] extends Iterable[Row] {
   def processRows[S](f: Iterable[Row] => Iterable[S]): Table[S] = unit(f(rows))
 
   /**
-    * Method to process the rows of this Table and the other Table as a pair of Iterables resulting in an Iterable which will make up the resulting Table.
-    * NOTE: this is used by zip.
-    *
-    * @param f     a function which takes an Iterable[Row] and an Iterable[R] and returns an Iterable[S]
-    * @param other the other table of type Iterable[R].
-    * @tparam R the underlying type of the other table.
-    * @tparam S the underlying type of the result.
-    * @return a table[S]
-    */
+   * Method to process the rows of this Table and the other Table as a pair of Iterables resulting in an Iterable which will make up the resulting Table.
+   * NOTE: this is used by zip.
+   *
+   * TEST
+   *
+   * @param f     a function which takes an Iterable[Row] and an Iterable[R] and returns an Iterable[S]
+   * @param other the other table of type Iterable[R].
+   * @tparam R the underlying type of the other table.
+   * @tparam S the underlying type of the result.
+   * @return a table[S]
+   */
   def processRows[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(other: Table[R]): Table[S] = unit(f(rows, other.rows))
 
   /**
@@ -182,40 +186,42 @@ trait Table[Row] extends Iterable[Row] {
   def sort[S >: Row : Ordering]: Table[S] = processRows(rs => (rs map (_.asInstanceOf[S])).toSeq.sorted)
 
   /**
-    * Method to shuffle this Table[Row].
-    *
-    * @return a Table[Row].
-    */
+   * Method to shuffle this Table[Row].
+   *
+   * TEST
+   *
+   * @return a Table[Row].
+   */
   lazy val shuffle: Table[Row] = processRows(rs => Random.shuffle(rs))
 
   /**
-    * drop
-    *
-    * TEST
-    *
-    * @param n the number of rows to drop.
-    * @return a Table like this Table but without its first n rows.
-    */
+   * drop (as defined by Iterable).
+   *
+   * TEST
+   *
+   * @param n the number of rows to drop.
+   * @return a Table like this Table but without its first n rows.
+   */
   override def drop(n: Int): Table[Row] = processRows(_.drop(n))
 
   /**
-    * dropRight
-    *
-    * TEST
-    *
-    * @param n the number of rows to dropRight.
-    * @return a Table like this Table but with dropRight(n) rows.
-    */
+   * dropRight (as defined by Iterable).
+   *
+   * TEST
+   *
+   * @param n the number of rows to dropRight.
+   * @return a Table like this Table but with dropRight(n) rows.
+   */
   override def dropRight(n: Int): Table[Row] = processRows(_.dropRight(n))
 
   /**
-    * dropWhile
-    *
-    * TEST
-    *
-    * @param p the predicate.
-    * @return a Table like this Table but with dropWhile(p) rows.
-    */
+   * dropWhile (as defined by Iterable).
+   *
+   * TEST
+   *
+   * @param p the predicate.
+   * @return a Table like this Table but with dropWhile(p) rows.
+   */
   override def dropWhile(p: Row => Boolean): Table[Row] = processRows(_.dropWhile(p))
 
   /**
@@ -228,62 +234,62 @@ trait Table[Row] extends Iterable[Row] {
   override def empty: Table[Row] = unit(Seq.empty)
 
   /**
-    * Method to filter the rows of a table.
-    *
-    * TEST
-    *
-    * @param p a predicate to be applied to each row.
-    * @return a Table[Row] consisting only of rows which satisfy the predicate p.
-    */
+   * Method to filter the rows of a table (as defined by Iterable).
+   *
+   * TEST
+   *
+   * @param p a predicate to be applied to each row.
+   * @return a Table[Row] consisting only of rows which satisfy the predicate p.
+   */
   override def filter(p: Row => Boolean): Table[Row] = processRows(_.filter(p))
 
   /**
-    * Method to filter out the rows of a table.
-    *
-    * TEST
-    *
-    * @param p a predicate to be applied to each row.
-    * @return a Table[Row] consisting only of rows which do not satisfy the predicate p.
-    */
+   * Method to filter out the rows of a table (as defined by Iterable).
+   *
+   * TEST
+   *
+   * @param p a predicate to be applied to each row.
+   * @return a Table[Row] consisting only of rows which do not satisfy the predicate p.
+   */
   override def filterNot(p: Row => Boolean): Table[Row] = processRows(_.filterNot(p))
 
   /**
-    * slice
-    *
-    * TEST
-    *
-    * @param from  the index at which to begin the slice (1-based counting).
-    * @param until the index at which to end the slice (1-based counting).
-    * @return a Table like this Table but with slice(from, until) rows.
-    */
+   * slice (as defined by Iterable).
+   *
+   * TEST
+   *
+   * @param from  the index at which to begin the slice (1-based counting).
+   * @param until the index at which to end the slice (1-based counting).
+   * @return a Table like this Table but with slice(from, until) rows.
+   */
   override def slice(from: Int, until: Int): Table[Row] = processRows(_.slice(from, until))
 
   /**
-    * take
-    *
-    * @param n the number of rows to take.
-    * @return a Table like this Table but with only its first n rows.
-    */
+   * take (as defined by Iterable).
+   *
+   * @param n the number of rows to take.
+   * @return a Table like this Table but with only its first n rows.
+   */
   override def take(n: Int): Table[Row] = processRows(_.take(n))
 
   /**
-    * takeRight
-    *
-    * TEST
-    *
-    * @param n the number of rows to takeRight.
-    * @return a Table like this Table but with takeRight(n) rows.
-    */
+   * takeRight (as defined by Iterable).
+   *
+   * TEST
+   *
+   * @param n the number of rows to takeRight.
+   * @return a Table like this Table but with takeRight(n) rows.
+   */
   override def takeRight(n: Int): Table[Row] = processRows(_.takeRight(n))
 
   /**
-    * takeWhile
-    *
-    * TEST
-    *
-    * @param p the predicate.
-    * @return a Table like this Table but with takeWhile(p) rows.
-    */
+   * takeWhile (as defined by Iterable).
+   *
+   * TEST
+   *
+   * @param p the predicate.
+   * @return a Table like this Table but with takeWhile(p) rows.
+   */
   override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
 
   /**
@@ -502,43 +508,49 @@ object Table {
   }
 
   /**
-    * Method to parse a table from a File as a table of Seq[String].
-    *
-    * @param f                the file.
-    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
-    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
-    * @param codec            (implicit) the encoding.
-    * @return a Try of Table[RawRow] where RawRow is a Seq[String].
-    */
+   * Method to parse a table from a File as a table of Seq[String].
+   *
+   * TEST
+   *
+   * @param f                the file.
+   * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
+   * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
+   * @param codec            (implicit) the encoding.
+   * @return a Try of Table[RawRow] where RawRow is a Seq[String].
+   */
   def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](f)
   }
 
   /**
-    * Method to parse a table from a File as a table of Seq[String].
-    *
-    * @param pathname the path name.
-    * @param codec    (implicit) the encoding.
-    * @return a Try of Table[RawRow] where RawRow is a Seq[String].
-    */
+   * Method to parse a table from a File as a table of Seq[String].
+   *
+   * TEST
+   *
+   * @param pathname the path name.
+   * @param codec    (implicit) the encoding.
+   * @return a Try of Table[RawRow] where RawRow is a Seq[String].
+   */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
     parseFile[Table[RawRow]](pathname)
   }
 
   /**
-    * Method to parse a table from a resource as a table of Seq[String].
-    *
-    * NOTE no longer used.
-    *
-    * @param s                the resource name.
-    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
-    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
-    * @param clazz            the class for which the resource should be sought (defaults to the calling class).
-    * @param codec            (implicit) the encoding.
-    * @return a Try of Table[RawRow] where RawRow is a Seq[String].
-    */
+   * Method to parse a table from a resource as a table of Seq[String].
+   *
+   * NOTE no longer used.
+   *
+   * TEST
+   *
+   * @param s                the resource name.
+   * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
+   * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
+   * @param clazz            the class for which the resource should be sought (defaults to the calling class).
+   * @param codec            (implicit) the encoding.
+   * @return a Try of Table[RawRow] where RawRow is a Seq[String].
+   */
   def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
@@ -586,6 +598,8 @@ object Table {
 
   /**
    * Method to render the given Table[Row] as a CSV String with header.
+   *
+   * TEST
    *
    * @param t             the Table[Row] to be rendered.
    * @param file          the destination File for the rendering of t.
@@ -873,10 +887,12 @@ object Header {
 }
 
 /**
-  * Table Exception.
-  *
-  * @param w the message.
-  */
+ * Table Exception.
+ *
+ * TEST
+ *
+ * @param w the message.
+ */
 case class TableException(w: String) extends Exception(w)
 
 

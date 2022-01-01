@@ -6,7 +6,6 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.{FP, Reflection}
-
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -586,10 +585,10 @@ trait CellParsers {
 object StdCellParsers extends CellParsers
 
 /**
-  * CONSIDER: do we really need this exception?
-  *
-  * @param w the message.
-  */
+ * CONSIDER: do we really need this exception? It doesn't appear to be used.
+ *
+ * @param w the message.
+ */
 case class ParsersException(w: String) extends Exception(w)
 
 /**

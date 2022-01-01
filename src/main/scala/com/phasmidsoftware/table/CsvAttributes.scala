@@ -1,9 +1,16 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.util.Reflection
-
 import scala.reflect.ClassTag
 
+/**
+ * Case class for CSV attributes, especially for rendering as CSV.
+ *
+ * CONSIDER merging this with RowConfig.
+ *
+ * @param delimiter the delimiter.
+ * @param quote     the quote character.
+ */
 case class CsvAttributes(delimiter: String, quote: String)
 
 object CsvAttributes {

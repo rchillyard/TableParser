@@ -11,7 +11,6 @@ import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP.partition
 import com.phasmidsoftware.util._
 import org.slf4j.{Logger, LoggerFactory}
-
 import scala.annotation.implicitNotFound
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -186,14 +185,17 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
   // CONSIDER why do we have a concrete Table type mentioned here?
   protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
+  // TEST
   def setHeader(header: Header): RawTableParser = copy(maybeFixedHeader = Some(header))
 
+  // TEST
   def setForgiving(b: Boolean): RawTableParser = copy(forgiving = b)
 
   def setMultiline(b: Boolean): RawTableParser = copy(multiline = b)
 
   def setPredicate(p: Try[RawRow] => Boolean): RawTableParser = copy(predicate = p)
 
+  // TEST
   def setRowParser(rp: RowParser[RawRow, String]): RawTableParser = new RawTableParser(predicate, maybeFixedHeader, forgiving, multiline) {
     override val rowParser: RowParser[Row, String] = rp
   }
@@ -225,18 +227,23 @@ case class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: O
 
   protected val rowParser: RowParser[X, String] = StandardRowParser[X]
 
+  // TEST
   def setHeader(header: Header): HeadedStringTableParser[X] = copy(maybeFixedHeader = Some(header))
 
+  // TEST
   def setForgiving(b: Boolean): HeadedStringTableParser[X] = copy(forgiving = b)
 
+  // TEST
   def setMultiline(b: Boolean): HeadedStringTableParser[X] = new HeadedStringTableParser[X](maybeFixedHeader, forgiving) {
     override val multiline: Boolean = b
   }
 
+  // TEST
   def setPredicate(p: Try[X] => Boolean): HeadedStringTableParser[X] = new HeadedStringTableParser[X](maybeFixedHeader, forgiving) {
     override val predicate: Try[X] => Boolean = p
   }
 
+  // TEST
   def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] = new HeadedStringTableParser[X] {
     override protected val rowParser: RowParser[X, String] = rp
   }

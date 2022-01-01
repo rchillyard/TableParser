@@ -4,10 +4,9 @@
 
 package com.phasmidsoftware.parse
 
-import org.joda.time.LocalDate
-
 import java.io.File
 import java.net.URL
+import org.joda.time.LocalDate
 import scala.annotation.implicitNotFound
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -198,7 +197,6 @@ abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
   def parse(s: String): Try[Option[T]] = implicitly[Parseable[T]].parse(s).map(Option(_)).recoverWith {
     case _: BlankException => Success(None)
   }
-
 }
 
 object ParseableOption {

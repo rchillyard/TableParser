@@ -9,6 +9,9 @@ import scala.reflect.ClassTag
 import scala.util.Using.Releasable
 import scala.util.{Failure, Success, Try, Using}
 
+/**
+ * Various utilities for functional programming.
+ */
 object FP {
 
   /**
@@ -65,12 +68,14 @@ object FP {
   def partition[X](xys: Iterator[Try[X]]): (Iterator[Try[X]], Iterator[Try[X]]) = xys.partition(_.isSuccess)
 
   /**
-    * Method to partition an  method to combine elements of Try.
-    *
-    * @param xys a Seq of Try[X]
-    * @tparam X the underlying type
-    * @return a tuple of two Seqs of Try[X], the first one being successes, the second one being failures.
-    */
+   * Method to partition an  method to combine elements of Try.
+   *
+   * TEST
+   *
+   * @param xys a Seq of Try[X]
+   * @tparam X the underlying type
+   * @return a tuple of two Seqs of Try[X], the first one being successes, the second one being failures.
+   */
   def partition[X](xys: Seq[Try[X]]): (Seq[Try[X]], Seq[Try[X]]) = xys.partition(_.isSuccess)
 
   /**
@@ -120,15 +125,17 @@ object TryUsing {
   def apply[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f).flatten
 
   /**
-    * This method is similar to apply(r) but it takes a Try[R] as its parameter.
-    * The definition of f is the same as in the other apply, however.
-    *
-    * @param ry a Try[R] which is passed into f and will be managed via Using.apply
-    * @param f  a function of R => Try[A].
-    * @tparam R the resource type.
-    * @tparam A the underlying type of the result.
-    * @return a Try[A]
-    */
+   * This method is similar to apply(r) but it takes a Try[R] as its parameter.
+   * The definition of f is the same as in the other apply, however.
+   *
+   * TEST
+   *
+   * @param ry a Try[R] which is passed into f and will be managed via Using.apply
+   * @param f  a function of R => Try[A].
+   * @tparam R the resource type.
+   * @tparam A the underlying type of the result.
+   * @return a Try[A]
+   */
   def tryIt[R: Releasable, A](ry: => Try[R])(f: R => Try[A]): Try[A] = for (r <- ry; a <- apply(r)(f)) yield a
 }
 

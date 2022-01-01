@@ -142,8 +142,14 @@ See section on _CellParsers_ below.
 ## Table
 
 The _Table_ class, which implements _Iterable\[Row]_, also has several methods for manipulation:
+### query methods
 * def rows: Seq\[Row]
 * def maybeHeader: Option\[Header]
+* def toCSV(implicit renderer: CsvRenderer\[Row], generator: CsvProductGenerator\[Row], csvAttributes: CsvAttributes): Iterable\[String]
+* def maybeColumnNames: Option\[Seq\[String]]
+* def column(name: String): Iterator\[Option\[String]]
+
+### transformation methods
 * def flatMap\[U](f: Row => Iterable\[U]): Table\[U]
 * def unit\[S](rows: Iterable\[S], maybeHeader: Option\[Header]): Table\[S]
 * def ++\[U >: Row](table: Table\[U]): Table\[U]
@@ -153,12 +159,9 @@ The _Table_ class, which implements _Iterable\[Row]_, also has several methods f
 * def select(range: Range): Table\[Row]
 * def select(n: Int): Table\[Row]
 * lazy val shuffle: Table\[Row]
-* def toCSV(implicit renderer: CsvRenderer\[Row], generator: CsvProductGenerator\[Row], csvAttributes: CsvAttributes): Iterable\[String]
-* def maybeColumnNames: Option\[Seq\[String]]
-* def column(name: String): Iterator\[Option\[String]]
-* 
 
-It is to be expected that _join_ methods will be added later (based upone the second signature of processRows).
+
+It is to be expected that _join_ methods will be added later (based upon the second signature of processRows).
 
 The following **object** methods are available for parsing text:
 *  def parse\[T: TableParser](ws: Seq\[String]): Try\[T]
@@ -339,19 +342,19 @@ The other case classes look like this:
 The _MovieParser_ object looks like this:
 
     object MovieParser extends CellParsers {
-        def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
-        implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelCaseColumnNameMapper _,
+        def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+        implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper _,
             "title" -> "movie_title",
             "imdb" -> "movie_imdb_link")
-        implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelCaseColumnNameMapper _,
+        implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapper _,
             "facebookLikes" -> "movie_facebook_likes",
             "numUsersReview" -> "num_user_for_reviews",
             "numUsersVoted" -> "num_voted_users",
             "numCriticReviews" -> "num_critic_for_reviews",
             "totalFacebookLikes" -> "cast_total_facebook_likes")
-        implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelCaseColumnNameMapper _)
-        implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelCaseColumnNameMapper _)
-        implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelCaseColumnNameMapper _, Some("$x_$c"))
+        implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper _)
+        implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper _)
+        implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper _, Some("$x_$c"))
         implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
         implicit val formatParser: CellParser[Format] = cellParser4(Format)
         implicit val productionParser: CellParser[Production] = cellParser4(Production)
@@ -409,6 +412,8 @@ A parameter can be optional, for example, in the _Movie_ example, the _Productio
     
 In this example, some movies do not have a budget provided.
 All you have to do is declare it optional in the case class and _TableParser_ will specify it as _Some(x)_ if valid, else _None_.
+
+Note that there is a default, implicit _RowConfig_ object defined in the object _RowConfig_.
 
 ## Example: Submissions
 
@@ -540,32 +545,53 @@ If you need to set HTML attributes for a specific type, for example a row in the
 
 ## CSV Rendering
 
-If you simply need to write a table to CSV (comma-separated value) format, then use the _toCsv_ method.
-More control can be gained by using _CsvTableRenderer\[T] and CsvRenderer\[T]_ for a particular type _T_.
+If you simply need to write a table to CSV (comma-separated value) format as a _String_, then use the _toCsv_ method of _Table\[T]_.
+Note that there is also an object method of _Table_ called _toCsvRow_ which can be used for instances of _Table\[Row]_.
+More control can be gained by using _CsvTableStringRenderer\[T]_ or _CsvTableFileRenderer\[T]_ for a particular type _T_.
 
-These require customizable (implicit) evidence parameters and is defined as follows:
+These require customizable (implicit) evidence parameters and are defined as follows:
 
-    case class CsvTableRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], Seq[String]]
+    case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes)
+        extends CsvTableRenderer[T, StringBuilder]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote), csvAttributes)
+    case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes)
+        extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes)
+    abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], O] {...}
 
-CsvRenderer\[T] determines the layout of the rows, while CsvGenerator\[T] determines the header.
-CsvAttributes specify the delimiter and quote characters for the output.
-Instances of each can be created using methods in CsvRenderers and CsvGenerators respectively.
+_CsvRenderer\[T]_ determines the layout of the rows, while _CsvGenerator\[T]_ determines the header.
+_CsvAttributes_ specify the delimiter and quote characters for the output.
+Instances of each can be created using methods in _CsvRenderers_ and _CsvGenerators_ respectively.
 Appropriate methods are:
-* sequenceRenderer, optionRenderer, renderer1,  renderer2, renderer3, etc.
-* sequenceGenerator, optionGenerato, generator1,  generator2, generator3, etc.
+* sequenceRenderer, optionRenderer, renderer1,  renderer2, renderer3, etc. up to renderer12.
+* sequenceGenerator, optionGenerator, generator1,  generator2, generator3, etc. up to generator12.
 
-As usual, the standard types are pre-defined (for Int, Double, etc.).
+In some situations, you will want to omit values (and corresponding header columns) when outputting a CSV file.
+You may use the following methods (from the same types as above):
 
-## String Rendering
+    def skipRenderer[T](alignment: Int = 1)(implicit ca: CsvAttributes): CsvRenderer[T] 
+    def skipGenerator[T](implicit ca: CsvAttributes): CsvGenerator[T]
+    
+Note that, when rendering a CSV row, you may want to simply render some number of delimiters
+(this would be in the case where you have a fixed header).
+You can use the _alignment_ parameter of _skipRenderer_ to ensure alignment is correct.
 
-There is currently only one implementation of String rendering, and that is Json rendering.
+As usual, the standard types are pre-defined for both _CsvRenderer\[T]_ and _CsvGenerator\[T]_ (for Int, Double, etc.).
+
+The methods mentioned above render tables in the form of CSV Strings.
+However, there are also methods available to render tables as a _File_: _writeCSVFile_ and _writeCSVFileRow_.
+These utilize the type _CsvTableFileRenderer\[T]_ mentioned above.
+
+If you wish to output only a subset of rows, then you should use one of the methods defined in _Table_ such as _take_.
+
+## Other String Rendering
+
+Apart from CSV, there is currently only one implementation of _String_ rendering, and that is _Json_ rendering.
 Although Json is indeed a hierarchical serialization format, the manner of creating a Json string masks the hierarchical aspects.
 The implemented Json reader/writer is Spray Json but that could easily be changed in the future.
 
 Although this section is concerned with rendering, it is also true of course to say that tables can be read from Json strings.
 
 The following example from _JsonRendererSpec.scala_ shows how we can take the following steps
-(for the definitions of Player, Partnership, please see the spec file itself):
+(for the definitions of _Player_, _Partnership_, please see the spec file itself):
 * read a table of players from a list of Strings (there are, as shown above, other signatures of parse for files, URLs, etc.);
 * convert to a table of partnerships;
 * write the resulting table to a Json string;

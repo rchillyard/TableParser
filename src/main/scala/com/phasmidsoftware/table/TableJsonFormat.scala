@@ -3,6 +3,11 @@ package com.phasmidsoftware.table
 import spray.json.DefaultJsonProtocol._
 import spray.json.{JsArray, JsObject, JsValue, JsonFormat, RootJsonFormat, enrichAny}
 
+/**
+ * Abstract class TableJsonFormat[T] which extends RootJsonFormat of Table[T]
+ *
+ * @tparam T which must provide evidence of JsonFormat[T].
+ */
 abstract class TableJsonFormat[T: JsonFormat] extends RootJsonFormat[Table[T]] {
   def write(obj: Table[T]): JsValue = {
     val jso = obj.maybeHeader map (h => h.xs.map(_.toJson))

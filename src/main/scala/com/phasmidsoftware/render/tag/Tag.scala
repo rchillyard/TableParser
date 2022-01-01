@@ -59,10 +59,12 @@ trait Tag {
   def :+(tag: Tag): Tag
 
   /**
-    * Method to yield the tag names depth-first in a Seq
-    *
-    * @return a sequence of tag names
-    */
+   * Method to yield the tag names depth-first in a Seq
+   *
+   * TEST
+   *
+   * @return a sequence of tag names
+   */
   def \\ : Seq[String] = name +: (for (t <- tags; x <- t.\\) yield x)
 }
 
@@ -92,6 +94,12 @@ abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option
 
 object Attribute {
 
+  /**
+   * TEST
+   *
+   * @param m a Map of attributes.
+   * @return a Seq[Attribute].
+   */
   def mapToAttributes(m: Map[String, String]): Seq[Attribute] = m.toSeq.map(apply)
 
   def apply(kv: (String, String)): Attribute = convertFromTuple(kv)

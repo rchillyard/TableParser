@@ -43,30 +43,34 @@ trait Renderable[X] {
   def renderToWritable[O: Writable]: O
 
   /**
-    * Method to render a table in a hierarchical fashion.
-    *
-    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
-    * outputting each row as you go.
-    *
-    * @param style      the "style" to be used for the node which will represent this table.
-    * @param attributes the attributes to be applied to the top level node for this table.
-    * @param xr         an (implicit) HierarchicalRenderer[Row]
-    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
-    * @return a new instance of U which represents this Table as a tree of some sort.
-    */
+   * Method to render a table in a hierarchical fashion.
+   *
+   * TEST
+   *
+   * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
+   * outputting each row as you go.
+   *
+   * @param style      the "style" to be used for the node which will represent this table.
+   * @param attributes the attributes to be applied to the top level node for this table.
+   * @param xr         an (implicit) HierarchicalRenderer[Row]
+   * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
+   * @return a new instance of U which represents this Table as a tree of some sort.
+   */
   def renderHierarchical[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit xr: HierarchicalRenderer[X]): U
 
   /**
-    * Method to render a table in a hierarchical fashion.
-    *
-    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
-    * outputting each row as you go.
-    *
-    * @param style      the "style" to be used for the node which will represent this table.
-    * @param attributes the attributes to be applied to the top level node for this table.
-    * @param xr         an (implicit) HierarchicalRenderer[ Indexed [ Row ] ]
-    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
-    * @return a new instance of U which represents this Table as a tree of some sort.
-    */
+   * Method to render a table in a hierarchical fashion.
+   *
+   * TEST
+   *
+   * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
+   * outputting each row as you go.
+   *
+   * @param style      the "style" to be used for the node which will represent this table.
+   * @param attributes the attributes to be applied to the top level node for this table.
+   * @param xr         an (implicit) HierarchicalRenderer[ Indexed [ Row ] ]
+   * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
+   * @return a new instance of U which represents this Table as a tree of some sort.
+   */
   def renderHierarchicalSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit xr: HierarchicalRenderer[Indexed[X]]): U
 }

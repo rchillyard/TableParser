@@ -4,12 +4,10 @@
 
 package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.table.{Header, Row}
 import java.io.File
 import java.net.URL
-
-import com.phasmidsoftware.table.{Header, Row}
 import org.joda.time.LocalDate
-
 import scala.annotation.implicitNotFound
 import scala.util.{Failure, Success, Try}
 
@@ -63,6 +61,7 @@ trait CellParser[+T] {
 trait SingleCellParser[T] extends CellParser[T] {
   def parse(w: Option[String], row: Row, columns: Header): Try[T] = Failure(new UnsupportedOperationException)
 
+  // NOTE not used
   override def toString: String = "SingleCellParser"
 }
 
@@ -72,9 +71,11 @@ trait SingleCellParser[T] extends CellParser[T] {
   * @tparam T the type of the result.
   */
 trait MultiCellParser[T] extends CellParser[T] {
+  // NOTE not used
   //noinspection NotImplementedCode
   def convertString(w: String): Try[T] = Failure(new UnsupportedOperationException)
 
+  // NOTE not used
   override def toString: String = "MultiCellParser"
 }
 
