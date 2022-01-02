@@ -2,7 +2,7 @@ organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-version := "1.1.0"
+version := "1.1.1"
 
 scalaVersion := "2.13.7"
 
@@ -22,6 +22,7 @@ lazy val nScalaTimeVersion = "2.30.0"
 
 libraryDependencies ++= Seq(
   "com.phasmidsoftware" %% "flog" % "1.0.8",
+  "io.github.jmcardon" %% "tsec-bouncy" % "0.4.0",
   "io.spray" %%  "spray-json" % "1.3.6",
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
