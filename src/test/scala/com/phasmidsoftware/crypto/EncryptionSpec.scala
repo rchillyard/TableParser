@@ -4,22 +4,30 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
-import tsec.cipher.symmetric.jca.AES128CTR
 
 class EncryptionSpec extends AnyFlatSpec with should.Matchers {
 
-  behavior of "Encrypt"
+  behavior of "Encryption"
 
-  val encryptor: Encryption[AES128CTR] = EncryptAES128CTR
+  private val encryptor = EncryptAES128CTR
 
-  it should "onlyEncrypt" in {
+  it should "buildKey" in {
+    val key = for {
+      rawKey <- encryptor.genRawKey
+    } yield encryptor.buildKey(rawKey)
+    key.unsafeRunSync()
+  }
+  it should "encrypt and decrypt" in {
     val originalMessage = "Hello, World!"
     val result: IO[String] = for {
-      key <- encryptor.genKey("1234")
+      rawKey <- encryptor.genRawKey
+      _ = println(rawKey)
+      key <- encryptor.buildKey(rawKey)
       ciphertext <- encryptor.encrypt(key)(originalMessage)
       message <- encryptor.decrypt(key)(ciphertext)
     } yield message
-    result.unsafeRunSync() shouldBe originalMessage
+    val z = result.unsafeRunSync()
+    z shouldBe originalMessage
   }
 
 }
