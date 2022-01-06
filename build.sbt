@@ -20,9 +20,13 @@ lazy val scalaTestVersion = "3.2.9"
 lazy val scalaParserCombinatorsVersion = "1.1.2"
 lazy val nScalaTimeVersion = "2.30.0"
 
+val tsecV = "0.4.0"
+
 libraryDependencies ++= Seq(
+//  "io.github.jmcardon" %% "tsec-common" % tsecV,
+//  "io.github.jmcardon" %% "tsec-password" % tsecV,
+  "io.github.jmcardon" %% "tsec-cipher-jca" % tsecV,
   "com.phasmidsoftware" %% "flog" % "1.0.8",
-  "io.github.jmcardon" %% "tsec-bouncy" % "0.4.0",
   "io.spray" %%  "spray-json" % "1.3.6",
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
