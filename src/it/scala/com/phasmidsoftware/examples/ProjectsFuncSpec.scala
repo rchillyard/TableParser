@@ -1,13 +1,14 @@
 package com.phasmidsoftware.examples
 
-import com.phasmidsoftware.parse.TableParser
+import com.phasmidsoftware.parse.{EncryptedHeadedStringTableParser, TableParser}
 import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
-import com.phasmidsoftware.table.Table.parse
+import com.phasmidsoftware.table.Table.{parse, parseResource}
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.TryUsing
-import java.io.File
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.io.File
 import scala.io.Source
 import scala.util._
 
@@ -187,11 +188,31 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       }
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer())
       mt.take(1).toCSV shouldBe
-              """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
-                |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-                |""".stripMargin
+        """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
+          |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
+          |""".stripMargin
     }
   }
+
+
+  it should "parse and filter the team projects from the encrypted dataset" in {
+    import TeamProjectParser._
+
+    // Encryption keys for the input file:
+    //    1: k0JCcO$SY5OI50uj
+    //    2: QwSeQVJNuAg6D6H9
+    //    3: dTLsxr132eucgu10
+    //    4: mexd0Ta81di$fCGp
+    //    5: cb0jlsf4DXtZz_kf
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
+    implicit val parser: TableParser[Table[TeamProject]] = EncryptedHeadedStringTableParser[TeamProject](encryptionPredicate)
+    val pty: Try[Table[TeamProject]] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
+    pty should matchPattern { case Success(HeadedTable(_, _)) => }
+    val pt = pty.get
+    //    pt.size shouldBe 1
+  }
+
 
   private def createCsvGeneratorFromTeamProject(function: CsvGenerators => CsvGenerator[Grade]): CsvGenerator[TeamProject] = {
     val csvGenerators = new CsvGenerators {}

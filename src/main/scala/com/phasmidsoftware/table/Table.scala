@@ -497,16 +497,18 @@ object Table {
   def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] = Try(parseFile(new File(pathname))).flatten
 
   /**
-   * Method to parse a table from an File.
-   *
-   * @param s     the resource name.
-   * @param clazz the class for which the resource should be sought (defaults to the calling class).
-   * @param codec (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
+    * Method to parse a table from an File.
+    *
+    * @param s     the resource name.
+    * @param clazz the class for which the resource should be sought (should default to the calling class but doesn't).
+    * @param codec (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
-    TryUsing(Source.fromURL(clazz.getResource(s)))(parse(_))
+    TryUsing(Source.fromURL(clazz.getResource(s)))(parse(_)).recoverWith {
+      case _: java.lang.NullPointerException => Failure(TableParserException(s"cannot find resource '$s' relative to $clazz"))
+    }
 
   /**
    * Method to parse a table from a URL.
