@@ -10,6 +10,7 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{Reflection, TryUsing}
+
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -286,23 +287,43 @@ trait Table[Row] extends Iterable[Row] {
   override def takeRight(n: Int): Table[Row] = processRows(_.takeRight(n))
 
   /**
-   * takeWhile (as defined by Iterable).
-   *
-   * TEST
-   *
-   * @param p the predicate.
-   * @return a Table like this Table but with takeWhile(p) rows.
-   */
+    * takeWhile (as defined by Iterable).
+    *
+    * TEST
+    *
+    * @param p the predicate.
+    * @return a Table like this Table but with takeWhile(p) rows.
+    */
   override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
 
   /**
-   * Method to render this Table[T] as a CSV String with (maybe) header.
-   *
-   * @param renderer      implicit value of CsvRenderer[Row].
-   * @param generator     implicit value of CsvProductGenerator[Row].
-   * @param csvAttributes implicit value of CsvAttributes.
-   * @return a String.
-   */
+    * Filter method which operates on the (primary) key of each row.
+    *
+    * @param p a predicate which takes a String.
+    * @tparam T a super-class of Row, which provides evidence of HasKey[T].
+    * @return a filtered Table[Row].
+    */
+  def filterByKey[T >: Row : HasKey](p: String => Boolean): Table[Row] =
+    filter(t => p(implicitly[HasKey[T]].key(t)))
+
+  /**
+    * Filter method which operates on the (primary) key of each row.
+    *
+    * @param p a predicate which takes a String.
+    * @tparam T a super-class of Row, which provides evidence of HasKey[T].
+    * @return a filtered Table[Row].
+    */
+  def filterNotByKey[T >: Row : HasKey](p: String => Boolean): Table[Row] =
+    filterNot(t => p(implicitly[HasKey[T]].key(t)))
+
+  /**
+    * Method to render this Table[T] as a CSV String with (maybe) header.
+    *
+    * @param renderer      implicit value of CsvRenderer[Row].
+    * @param generator     implicit value of CsvProductGenerator[Row].
+    * @param csvAttributes implicit value of CsvAttributes.
+    * @return a String.
+    */
   def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): String =
     CsvTableStringRenderer[Row]().render(this).toString
 
