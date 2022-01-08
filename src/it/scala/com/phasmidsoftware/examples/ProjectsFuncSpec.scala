@@ -3,7 +3,7 @@ package com.phasmidsoftware.examples
 import com.phasmidsoftware.parse.TableParser
 import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.table.Table.parse
-import com.phasmidsoftware.table.{CsvGenerator, HeadedTable, Row, Table}
+import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.TryUsing
 import java.io.File
 import org.scalatest.flatspec.AnyFlatSpec
@@ -48,6 +48,25 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       import CsvRenderers._
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
       mt.writeCSVFile(new File("TeamProjectOutput.csv"))
+    }
+  }
+
+  it should "be ingested and written out to encrypted file using the given header" in {
+    import TeamProjectParser._
+
+    implicit val parser: TableParser[Table[TeamProject]] = implicitly[TableParser[Table[TeamProject]]]
+    val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    for (mt <- mty) {
+      import CsvGenerators._
+      implicit val csvGenerator: CsvGenerator[TeamProject] = mt.maybeHeader match {
+        case Some(h) => Row.csvGenerator(h)
+        case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+      }
+      import CsvRenderers._
+      implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+      implicit val hasKey: HasKey[TeamProject] = (t: TeamProject) => t.team.number.toString
+      mt.writeCSVFileEncrypted(new File("TeamProjectOutputEncrypted.csv"))
     }
   }
 

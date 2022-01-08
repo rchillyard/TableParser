@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.render
 
+import com.phasmidsoftware.crypto.Encryption
 import java.io.{File, FileWriter}
 
 /**
@@ -68,6 +69,36 @@ trait Writable[O] {
     for (x <- xs.headOption) writeValue(o)(x)
     for (x <- xs.tail) writeValue(writeRaw(o)(delimiter))(x)
     o
+  }
+
+  /**
+   * Method to write a character sequence to the given instance o followed by a newline.
+   *
+   * @param o          the instance of O whither the parameter x should be written.
+   * @param key        the lookup key for this row (not an encryption key).
+   * @param plaintext  the plain text character sequence to be written in encrypted form.
+   * @param encryption (implicit) instance of Encryption[A].
+   * @return an instance of O which represents the updated output structure.
+   */
+  def writeLineEncrypted[A](o: O)(key: String, plaintext: CharSequence)(implicit encryption: Encryption[A]): O = {
+    import cats.effect.unsafe.implicits.global
+
+    val wBi = for {
+      rawKey <- encryption.genRawKey
+      cipherKey <- encryption.buildKey(rawKey)
+      cipherText <- encryption.encrypt(cipherKey)(plaintext.toString)
+      bytes <- encryption.concat(cipherText)
+      hex <- Encryption.bytesToHexString(bytes)
+      ok = encryption.checkHex(hex, cipherKey, plaintext.toString)
+    } yield (rawKey, hex, ok)
+
+    // TODO use IO for O
+    wBi.unsafeRunSync() match {
+      case (k, w, true) =>
+        println(s"$key: $k") // CONSIDER writing these key/password pairs to the log file.
+        writeRaw(writeRaw(o)(s"$key|$w"))(newline)
+      case _ => throw new RuntimeException(s"Writable.writeLineEncrypted: logic error")
+    }
   }
 
   private val sQuote: String = quote.toString

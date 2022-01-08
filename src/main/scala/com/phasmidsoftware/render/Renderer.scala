@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.render
 
-import com.phasmidsoftware.table.{CsvAttributes, CsvGenerator, CsvProductGenerator, Table}
+import com.phasmidsoftware.table._
 import java.io.{File, FileWriter}
 import org.joda.time.LocalDate
 import scala.annotation.implicitNotFound
@@ -179,10 +179,12 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]()(im
       }
       val o = sw.unit
       sw.writeRawLine(o)(hdr)
-      for (x <- x.rows.toSeq) sw.writeRawLine(o)(tc.render(x, Map()))
+      for (x <- x.rows.toSeq) generateText(sw, tc, o, x)
       sw.close(o)
       o
   }
+
+  protected def generateText(sw: Writable[O], tc: CsvRenderer[T], o: O, x: T): O = sw.writeRawLine(o)(tc.render(x, Map()))
 }
 
 
@@ -202,5 +204,20 @@ case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvA
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
 case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes)
+
+/**
+ * Case class to help render a Table to a File in CSV format.
+ *
+ * @param file          the file to which the table will be written.
+ * @param csvAttributes implicit instance of CsvAttributes.
+ * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
+ */
+case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes) {
+  override protected def generateText(sw: Writable[FileWriter], tc: CsvRenderer[T], o: FileWriter, t: T): FileWriter = {
+    import com.phasmidsoftware.crypto.EncryptionAES128CTR
+    implicit val encryption: EncryptionAES128CTR.type = EncryptionAES128CTR
+    sw.writeLineEncrypted(o)(implicitly[HasKey[T]].key(t), tc.render(t, Map()))
+  }
+}
 
 

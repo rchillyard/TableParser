@@ -312,6 +312,20 @@ trait Table[Row] extends Iterable[Row] {
    * @param file          instance of File where the output should be stored.
    * @param renderer      implicit value of CsvRenderer[Row].
    * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param hasKey        implicit value of HasKey[Row].
+   *                      This relates to a column which is the "key" column in a CSV (used for identification).
+   *                      It is not directly related to cryptography.
+   * @param csvAttributes implicit value of CsvAttributes.
+   */
+  def writeCSVFileEncrypted(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
+    CsvTableEncryptedFileRenderer[Row](file).render(this)
+
+  /**
+   * Method to render this Table[T] as a CSV file with (maybe) header.
+   *
+   * @param file          instance of File where the output should be stored.
+   * @param renderer      implicit value of CsvRenderer[Row].
+   * @param generator     implicit value of CsvProductGenerator[Row].
    * @param csvAttributes implicit value of CsvAttributes.
    */
   def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
@@ -887,6 +901,16 @@ object Header {
    * @return a Header.
    */
   def create(ws: String*): Header = apply(ws, Nil)
+}
+
+/**
+ * This typeclass pertains to a table row type T that has one particular column which is considered
+ * the primary key (row-id, identifier, whatever).
+ *
+ * @tparam Row the underlying type.
+ */
+trait HasKey[Row] {
+  def key(t: Row): String
 }
 
 /**

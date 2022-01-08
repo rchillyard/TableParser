@@ -1,18 +1,18 @@
 package com.phasmidsoftware.crypto
 
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import scala.util.Random
 import tsec.cipher.symmetric
 import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
 
-import scala.util.Random
-
 /**
-  * Trait to deal with Encryption.
-  *
-  * It is general in nature, but has only been tested with JCA AES128CTR.
-  *
-  * @tparam A the underlying type of the encryption.
-  */
+ * Trait to deal with Encryption.
+ *
+ * It is general in nature, but has only been tested with JCA AES128CTR.
+ *
+ * @tparam A the underlying type of the encryption.
+ */
 trait Encryption[A] {
   /**
     * Generate a random String of the required length.
@@ -39,19 +39,79 @@ trait Encryption[A] {
   def encrypt(key: SecretKey[A])(plaintext: String): IO[symmetric.CipherText[A]]
 
   /**
-    * Decrypt the given cipher text.
-    *
-    * @param key    the key with which to decrypt the cipher text.
-    * @param cipher an instance of CipherText[A].
-    * @return an IO of String.
-    */
+   * Decrypt the given cipher text.
+   *
+   * @param key    the key with which to decrypt the cipher text.
+   * @param cipher an instance of CipherText[A].
+   * @return an IO of String.
+   */
   def decrypt(key: SecretKey[A])(cipher: symmetric.CipherText[A]): IO[String]
+
+
+  /**
+   * Show the given cipher text as a an array of bytes.
+   *
+   * @param cipher an instance of CipherText[A].
+   * @return an IO of Array[Byte].
+   */
+  def concat(cipher: symmetric.CipherText[A]): IO[Array[Byte]]
+
+  /**
+   * THe inverse of concat.
+   *
+   * CONSIDER making this (and concat?) part of Encryption object.
+   *
+   * @param bytes the byte array.
+   * @return an IO of CipherText[A].
+   */
+  def bytesToCipherText(bytes: Array[Byte]): IO[symmetric.CipherText[A]] = IO.fromEither(AES128CTR.ciphertextFromConcat(bytes)).asInstanceOf[IO[symmetric.CipherText[A]]]
+
+  /**
+   * Method to check that the given Hex String really does decrypt to the given plaintext.
+   *
+   * @param hex       a String of hexadecimals.
+   * @param key       the secret key.
+   * @param plaintext the original plain text.
+   * @return true if the Hex string is correct.
+   */
+  def checkHex(hex: String, key: SecretKey[A], plaintext: String): Boolean = (for {
+    bytes <- Encryption.hexStringToBytes(hex)
+    encrypted <- bytesToCipherText(bytes)
+    message <- decrypt(key)(encrypted)
+  } yield message).unsafeRunSync() match {
+    case x => x == plaintext
+  }
+
+}
+
+object Encryption {
+
+  /**
+   * Show the given bytes as hexadecimal text.
+   *
+   * @param bytes an Array[Byte].
+   * @return an IO of String.
+   */
+  def bytesToHexString(bytes: Array[Byte]): IO[String] = {
+    val sb = new StringBuilder
+    for (b <- bytes) yield sb.append(String.format("%02X", b))
+    IO(sb.toString())
+  }
+
+  def hexStringToBytes(hex: String): IO[Array[Byte]] = {
+    // CONSIDER getting the byte array a different way that doesn't require the drop.
+    val q = BigInt(hex, 16).toByteArray
+    val bytes = if (q.length > hex.length / 2) q.drop(1) else q
+//    println(s"hex: $hex\n    with ${q.length} bytes: ${Arrays.toString(bytes)}")
+    IO(bytes)
+  }
+
 }
 
 /**
-  * An object which provides encryption based on AES128CTR.
-  */
-object EncryptAES128CTR extends Encryption[AES128CTR] {
+ * An object which provides encryption based on AES128CTR.
+ */
+object EncryptionAES128CTR extends Encryption[AES128CTR] {
 
   import tsec.cipher.common.padding.NoPadding
   import tsec.cipher.symmetric
@@ -70,14 +130,19 @@ object EncryptAES128CTR extends Encryption[AES128CTR] {
     val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ$abcdefghijklmnopqrstuvwxyz_0123456789"
     val sb = new StringBuilder
     for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
-    IO {
-      sb.toString
-    }
+    IO(sb.toString)
   }
 
-  def buildKey(rawKey: String): IO[SecretKey[AES128CTR]] = for (key <- AES128CTR.buildKey[IO](rawKey.utf8Bytes)) yield key
+  def buildKey(rawKey: String): IO[SecretKey[AES128CTR]] =
+    if (rawKey.length == AES128CTR.keySizeBytes)
+      for (key <- AES128CTR.buildKey[IO](rawKey.utf8Bytes)) yield key
+    else throw new RuntimeException(s"buildKey: incorrect key size (should be ${AES128CTR.keySizeBytes})")
 
-  def encrypt(key: SecretKey[AES128CTR])(plaintext: String): IO[symmetric.CipherText[AES128CTR]] = AES128CTR.encrypt[IO](PlainText(plaintext.utf8Bytes), key)
+  def encrypt(key: SecretKey[AES128CTR])(plaintext: String): IO[symmetric.CipherText[AES128CTR]] =
+    AES128CTR.encrypt[IO](PlainText(plaintext.utf8Bytes), key)
 
-  def decrypt(key: SecretKey[AES128CTR])(cipher: symmetric.CipherText[AES128CTR]): IO[String] = for (z <- AES128CTR.decrypt[IO](cipher, key)) yield z.toUtf8String
+  def decrypt(key: SecretKey[AES128CTR])(cipher: symmetric.CipherText[AES128CTR]): IO[String] =
+    for (z <- AES128CTR.decrypt[IO](cipher, key)) yield z.toUtf8String
+
+  def concat(cipher: symmetric.CipherText[AES128CTR]): IO[Array[Byte]] = IO(cipher.toConcatenated)
 }
