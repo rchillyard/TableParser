@@ -7,6 +7,7 @@ package com.phasmidsoftware.util
 import java.net.URL
 import scala.reflect.ClassTag
 import scala.util.Using.Releasable
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try, Using}
 
 /**
@@ -100,15 +101,30 @@ object FP {
   }
 
   /**
-   * Method to determine if the String w was found at a valid index (i).
-   *
-   * @param w the String (ignored unless there's an exception).
-   * @param i the index found.
-   * @return Success(i) if all well, else Failure(exception).
-   */
+    * Method to determine if the String w was found at a valid index (i).
+    *
+    * @param w the String (ignored unless there's an exception).
+    * @param i the index found.
+    * @return Success(i) if all well, else Failure(exception).
+    */
   def indexFound(w: String, i: Int): Try[Int] = i match {
     case x if x >= 0 => Success(x)
     case _ => Failure(FPException(s"Header column '$w' not found"))
+  }
+
+  /**
+    * Method to transform a a Try[X] into an Option[X].
+    * But, unlike "toOption," a Failure can be logged.
+    *
+    * @param f  a function to process any Exception (typically a logging function).
+    * @param xy the input Try[X}.
+    * @tparam X the underlying type.
+    * @return an Option[X].
+    */
+  def tryToOption[X](f: Throwable => Unit)(xy: Try[X]): Option[X] = xy match {
+    case Success(x) => Some(x)
+    case Failure(NonFatal(x)) => f(x); None
+    case Failure(x) => throw x
   }
 }
 
