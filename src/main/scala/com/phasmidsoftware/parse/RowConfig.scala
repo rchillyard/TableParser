@@ -68,4 +68,11 @@ object RowConfig {
 
   // CONSIDER removing this default row configuration. It might be better to have the compiler issue a warning when it's missing.
   implicit object defaultRowConfig extends DefaultRowConfig
+
+  object defaultEncryptedRowConfig extends DefaultRowConfig {
+    override val delimiter: Regex = """\|""".r
+    override val listSep: Char = '&'
+    override val string: Regex = """[0123456789ABCDEF]+""".r
+    override val quote: Char = '\''
+  }
 }

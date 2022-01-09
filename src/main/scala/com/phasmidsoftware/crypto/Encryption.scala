@@ -102,8 +102,38 @@ object Encryption {
     // CONSIDER getting the byte array a different way that doesn't require the drop.
     val q = BigInt(hex, 16).toByteArray
     val bytes = if (q.length > hex.length / 2) q.drop(1) else q
-//    println(s"hex: $hex\n    with ${q.length} bytes: ${Arrays.toString(bytes)}")
     IO(bytes)
+  }
+
+  /**
+   * CONSIDER moving this.
+   *
+   * CONSIDER returning IO[String] so that all Strings can be figured at once.
+   *
+   * @param keyMap a map of row-id to cipher key.
+   * @param row    a two-element sequence of Strings.
+   * @return a String
+   */
+  def decrypt(keyMap: Map[String, String])(row: Seq[String]): String = {
+    val ko = row.headOption // row-id
+    val f = row.lift
+    val vo: Option[String] = f(1) // ciphertext
+    val co: Option[String] = ko flatMap keyMap.get
+    val xo = for (c <- co; v <- vo) yield (c, v)
+    xo match {
+      case Some((c, v)) =>
+
+        val wi = for {
+          x <- EncryptionAES128CTR.buildKey(c)
+          bytes <- Encryption.hexStringToBytes(v)
+          cipher <- EncryptionAES128CTR.bytesToCipherText(bytes)
+          y <- EncryptionAES128CTR.decrypt(x)(cipher)
+        } yield y
+        wi.unsafeRunSync()
+
+      case _ => throw new RuntimeException(s"Encryption.decrypt: logic error")
+    }
+
   }
 
 }

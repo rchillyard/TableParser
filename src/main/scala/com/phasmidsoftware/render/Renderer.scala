@@ -184,7 +184,17 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]()(im
       o
   }
 
-  protected def generateText(sw: Writable[O], tc: CsvRenderer[T], o: O, x: T): O = sw.writeRawLine(o)(tc.render(x, Map()))
+  /**
+   * CONSIDER replacing ow by implicitly of Writable[O].
+   * CONSIDER replacing tc by implicitly of CsvRenderer[T].
+   *
+   * @param ow Writable[O].
+   * @param tc CsvRenderer[T].
+   * @param o  O.
+   * @param t  T.
+   * @return O.
+   */
+  protected def generateText(ow: Writable[O], tc: CsvRenderer[T], o: O, t: T): O = ow.writeRawLine(o)(tc.render(t, Map()))
 }
 
 
@@ -213,10 +223,12 @@ case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(impli
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
 case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes) {
-  override protected def generateText(sw: Writable[FileWriter], tc: CsvRenderer[T], o: FileWriter, t: T): FileWriter = {
+  override protected def generateText(ow: Writable[FileWriter], tc: CsvRenderer[T], o: FileWriter, t: T): FileWriter = {
+    val key = implicitly[HasKey[T]].key(t)
+    val rendering = tc.render(t, Map())
     import com.phasmidsoftware.crypto.EncryptionAES128CTR
     implicit val encryption: EncryptionAES128CTR.type = EncryptionAES128CTR
-    sw.writeLineEncrypted(o)(implicitly[HasKey[T]].key(t), tc.render(t, Map()))
+    ow.writeLineEncrypted(o)(key, rendering)
   }
 }
 

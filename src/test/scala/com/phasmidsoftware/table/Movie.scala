@@ -146,7 +146,7 @@ object MovieParser extends CellParsers {
     override val listEnclosure: String = ""
   }
 
-  implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
+  implicit val parser: StandardRowParser[Movie] = StandardRowParser.create[Movie]
 
   trait MovieTableParser extends StringTableParser[Table[Movie]] {
     type Row = Movie

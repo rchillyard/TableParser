@@ -378,7 +378,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       override val delimiter: Regex = """\t""".r
     }
 
-    implicit val parser: StandardRowParser[Submission] = StandardRowParser[Submission]
+    implicit val parser: StandardRowParser[Submission] = StandardRowParser.create[Submission]
 
     implicit object SubmissionTableParser extends StringTableParser[Table[Submission]] {
       type Row = Submission

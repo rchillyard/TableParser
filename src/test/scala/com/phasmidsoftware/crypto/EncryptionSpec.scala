@@ -39,7 +39,6 @@ class EncryptionSpec extends AnyFlatSpec with should.Matchers {
         key <- encryptor.buildKey(rawKey)
         ciphertext <- encryptor.encrypt(key)(originalMessage)
         bytes <- encryptor.concat(ciphertext)
-//           _ = println(s"bytes length: ${bytes.length}, bytes: ${Arrays.toString(bytes)}")
         encrypted <- encryptor.bytesToCipherText(bytes)
         message <- encryptor.decrypt(key)(encrypted)
       } yield message
@@ -54,11 +53,8 @@ class EncryptionSpec extends AnyFlatSpec with should.Matchers {
         key <- encryptor.buildKey(rawKey)
         ciphertext <- encryptor.encrypt(key)(originalMessage)
         bytes1 <- encryptor.concat(ciphertext)
-//        _ = println(s"bytes1 length: ${bytes1.length}, bytes: ${Arrays.toString(bytes1)}")
         hex <- Encryption.bytesToHexString(bytes1)
-//        _ = println(s"hex length: ${hex.length}, hex: $hex")
         bytes2 <- Encryption.hexStringToBytes(hex)
-//        _ = println(s"bytes2 length: ${bytes2.length}, bytes: ${Arrays.toString(bytes2)}")
         encrypted <- encryptor.bytesToCipherText(bytes2)
         message <- encryptor.decrypt(key)(encrypted)
       } yield message
