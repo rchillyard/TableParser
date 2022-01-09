@@ -12,6 +12,7 @@ import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP.partition
 import com.phasmidsoftware.util._
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.annotation.implicitNotFound
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -279,9 +280,9 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
     (for (h <- hy; xt <- xty) yield (h, xt)) match {
       case Success((h, xt)) =>
         // Phase 2: decrypt the rows
-        val yt: Table[String] = xt.map(row => Encryption.decrypt(keyMap)(row))
+        val zt = decryptTable(xt)
         // Phase 2: parse the plain text rows.
-        phase2Parser.parseRows(yt.rows.iterator, h)
+        phase2Parser.parseRows(zt.rows.iterator, h)
     }
   }
 
@@ -356,6 +357,15 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
     import RawParsers.WithHeaderRow.rawRowCellParser
     val lineParser: LineParser = LineParser.apply(rowConfig)
     RawTableParser(rawPredicate, Some(encryptionHeader), forgiving = false, multiline = false, headerRowsToRead).setRowParser(StandardRowParser[RawRow](lineParser))
+  }
+
+  private def decryptTable(xt: Table[RawRow]): Table[String] = {
+    import cats.effect.IO
+    import cats.effect.unsafe.implicits.global
+    val yt = xt.map(row => Encryption.decrypt(keyMap)(row))
+    yt.processRows {
+      wis => IO.parSequenceN(2)(wis.toSeq).unsafeRunSync()
+    }
   }
 }
 

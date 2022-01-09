@@ -2,9 +2,10 @@ package com.phasmidsoftware.crypto
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import scala.util.Random
 import tsec.cipher.symmetric
 import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
+
+import scala.util.Random
 
 /**
  * Trait to deal with Encryption.
@@ -106,36 +107,26 @@ object Encryption {
   }
 
   /**
-   * CONSIDER moving this.
-   *
-   * CONSIDER returning IO[String] so that all Strings can be figured at once.
-   *
-   * @param keyMap a map of row-id to cipher key.
-   * @param row    a two-element sequence of Strings.
-   * @return a String
-   */
-  def decrypt(keyMap: Map[String, String])(row: Seq[String]): String = {
+    * CONSIDER moving this.
+    *
+    * @param keyMap a map of row-id to cipher key.
+    * @param row    a two-element sequence of Strings.
+    * @return a IO[String]
+    */
+  def decrypt(keyMap: Map[String, String])(row: Seq[String]): IO[String] = {
     val ko = row.headOption // row-id
     val f = row.lift
-    val vo: Option[String] = f(1) // ciphertext
-    val co: Option[String] = ko flatMap keyMap.get
-    val xo = for (c <- co; v <- vo) yield (c, v)
-    xo match {
+    (for (c <- ko flatMap keyMap.get; v <- f(1)) yield (c, v)) match {
       case Some((c, v)) =>
-
-        val wi = for {
+        for {
           x <- EncryptionAES128CTR.buildKey(c)
           bytes <- Encryption.hexStringToBytes(v)
           cipher <- EncryptionAES128CTR.bytesToCipherText(bytes)
           y <- EncryptionAES128CTR.decrypt(x)(cipher)
         } yield y
-        wi.unsafeRunSync()
-
       case _ => throw new RuntimeException(s"Encryption.decrypt: logic error")
     }
-
   }
-
 }
 
 /**
