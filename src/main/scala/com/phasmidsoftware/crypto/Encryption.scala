@@ -147,7 +147,7 @@ object EncryptionAES128CTR extends Encryption[AES128CTR] {
 
   def genRawKey: IO[String] = {
     // CONSIDER using Cats effect for Random.
-    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ$abcdefghijklmnopqrstuvwxyz_0123456789"
+    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
     val sb = new StringBuilder
     for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
     IO(sb.toString)
