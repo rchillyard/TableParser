@@ -1,7 +1,7 @@
 package com.phasmidsoftware.crypto
 
 import cats.effect.IO
-import cats.effect.unsafe.implicits.global
+import com.phasmidsoftware.crypto.Encryption.hexStringToBytes
 import tsec.cipher.symmetric
 import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
 
@@ -68,21 +68,19 @@ trait Encryption[A] {
   def bytesToCipherText(bytes: Array[Byte]): IO[symmetric.CipherText[A]] = IO.fromEither(AES128CTR.ciphertextFromConcat(bytes)).asInstanceOf[IO[symmetric.CipherText[A]]]
 
   /**
-   * Method to check that the given Hex String really does decrypt to the given plaintext.
-   *
-   * @param hex       a String of hexadecimals.
-   * @param key       the secret key.
-   * @param plaintext the original plain text.
-   * @return true if the Hex string is correct.
-   */
-  def checkHex(hex: String, key: SecretKey[A], plaintext: String): Boolean = (for {
-    bytes <- Encryption.hexStringToBytes(hex)
+    * Method to check that the given Hex String really does decrypt to the given plaintext.
+    *
+    * @param hex       a String of hexadecimals.
+    * @param key       the secret key.
+    * @param plaintext the original plain text.
+    * @return true if the Hex string is correct.
+    */
+  def checkHex(hex: String, key: SecretKey[A], plaintext: String): IO[Boolean] = for {
+    bytes <- hexStringToBytes(hex)
     encrypted <- bytesToCipherText(bytes)
     message <- decrypt(key)(encrypted)
-  } yield message).unsafeRunSync() match {
-    case x => x == plaintext
-  }
-
+    ok = message == plaintext
+  } yield ok
 }
 
 object Encryption {

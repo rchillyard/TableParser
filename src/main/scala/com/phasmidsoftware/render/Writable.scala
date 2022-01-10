@@ -5,6 +5,7 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.crypto.Encryption
+
 import java.io.{File, FileWriter}
 
 /**
@@ -89,7 +90,7 @@ trait Writable[O] {
       cipherText <- encryption.encrypt(cipherKey)(plaintext.toString)
       bytes <- encryption.concat(cipherText)
       hex <- Encryption.bytesToHexString(bytes)
-      ok = encryption.checkHex(hex, cipherKey, plaintext.toString)
+      ok <- encryption.checkHex(hex, cipherKey, plaintext.toString)
     } yield (rawKey, hex, ok)
 
     // TODO use IO for O
@@ -97,7 +98,7 @@ trait Writable[O] {
       case (k, w, true) =>
         println(s"$key: $k") // CONSIDER writing these key/password pairs to the log file.
         writeRaw(writeRaw(o)(s"$key|$w"))(newline)
-      case _ => throw new RuntimeException(s"Writable.writeLineEncrypted: logic error")
+      case _ => throw new RuntimeException(s"Writable.writeLineEncrypted: logic error: wBi=$wBi, plaintext=$plaintext")
     }
   }
 
