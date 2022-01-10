@@ -256,19 +256,21 @@ case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](maybeFixed
   * This class implements builder with a HeadedTable object.
   * This class uses StandardRowParser of its rowParser.
   *
-  * @param maybeFixedHeader None => requires that the data source has a header row.
- *                          Some(h) => specifies that the header is to be taken from h.
- *                          Defaults to None.
- *                          NOTE: that the simplest is to specify the header directly from the type X.
- * @param forgiving         if true, exceptions when parsing individual rows will be logged then ignored.
- *                          if false, any exception will terminate the parsing.
- *                          Defaults to false.
- * @param headerRowsToRead  the number of header rows expected in the input file
- *                          defaults to 1.
- * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
- */
-case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedRowPredicate: String => Boolean, keyMap: Map[String, String], maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
-        extends HeadedStringTableParser[X](None, false, headerRowsToRead) {
+  * @param encryptedRowPredicate a function which takes a String and returns a Boolean.
+  * @param keyFunction           a function which takes a String and returns a String (input might be ignored).
+  * @param maybeFixedHeader      None => requires that the data source has a header row.
+  *                              Some(h) => specifies that the header is to be taken from h.
+  *                              Defaults to None.
+  *                              NOTE: that the simplest is to specify the header directly from the type X.
+  * @param forgiving             if true, exceptions when parsing individual rows will be logged then ignored.
+  *                              if false, any exception will terminate the parsing.
+  *                              Defaults to false.
+  * @param headerRowsToRead      the number of header rows expected in the input file
+  *                              defaults to 1.
+  * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
+  */
+case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedRowPredicate: String => Boolean, keyFunction: String => String, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+  extends HeadedStringTableParser[X](None, false, headerRowsToRead) {
 
   private val phase2Parser = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
 
@@ -362,7 +364,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
   private def decryptTable(xt: Table[RawRow]): Table[String] = {
     import cats.effect.IO
     import cats.effect.unsafe.implicits.global
-    val yt = xt.map(row => Encryption.decrypt(keyMap)(row))
+    val yt = xt.map(row => Encryption.decrypt(keyFunction)(row))
     yt.processRows {
       wis => IO.parSequenceN(2)(wis.toSeq).unsafeRunSync()
     }

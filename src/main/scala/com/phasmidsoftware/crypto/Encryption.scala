@@ -109,14 +109,15 @@ object Encryption {
   /**
     * CONSIDER moving this.
     *
-    * @param keyMap a map of row-id to cipher key.
-    * @param row    a two-element sequence of Strings.
+    * @param keyFunction a function to yield the raw cipher key from the value of the ID column
+    *                    (said value might well be ignored).
+    * @param row         a two-element sequence of Strings.
     * @return a IO[String]
     */
-  def decrypt(keyMap: Map[String, String])(row: Seq[String]): IO[String] = {
+  def decrypt(keyFunction: String => String)(row: Seq[String]): IO[String] = {
     val ko = row.headOption // row-id
     val f = row.lift
-    (for (c <- ko flatMap keyMap.get; v <- f(1)) yield (c, v)) match {
+    (for (c <- ko map keyFunction; v <- f(1)) yield (c, v)) match {
       case Some((c, v)) =>
         for {
           x <- EncryptionAES128CTR.buildKey(c)
