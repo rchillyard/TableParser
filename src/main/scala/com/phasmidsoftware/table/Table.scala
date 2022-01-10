@@ -741,6 +741,8 @@ abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option
     val trimmed = tableNode.trim
     implicitly[TreeWriter[U]].evaluate(trimmed)
   }
+
+  override def toString(): String = s"RenderableTable: header=$maybeHeader, with $size rows"
 }
 
 /**
@@ -803,6 +805,8 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
       case _ => None
     }
   }
+
+  override def toString(): String = s"HeadedTable($header) with ${rows.size} rows"
 }
 
 /**

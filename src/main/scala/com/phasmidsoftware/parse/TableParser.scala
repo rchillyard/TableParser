@@ -397,10 +397,7 @@ sealed abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFix
 
   type Row = X
 
-  protected def builder(rows: Iterable[X], header: Header): Table[Row] = maybeFixedHeader match {
-    case Some(h) => HeadedTable(rows, h)
-    case None => HeadedTable(rows, Header[Row]()) // CHECK
-  }
+  protected def builder(rows: Iterable[X], header: Header): Table[Row] = HeadedTable(rows, header)
 
   protected val rowParser: RowParser[X, String] = StandardRowParser.create[X]
 }

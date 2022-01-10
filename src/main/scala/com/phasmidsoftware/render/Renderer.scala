@@ -5,8 +5,9 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.table._
-import java.io.{File, FileWriter}
 import org.joda.time.LocalDate
+
+import java.io.{File, FileWriter}
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 
@@ -179,7 +180,7 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]()(im
       }
       val o = sw.unit
       sw.writeRawLine(o)(hdr)
-      for (x <- x.rows.toSeq) generateText(sw, tc, o, x)
+      for (r <- x.rows.toSeq) generateText(sw, tc, o, r)
       sw.close(o)
       o
   }

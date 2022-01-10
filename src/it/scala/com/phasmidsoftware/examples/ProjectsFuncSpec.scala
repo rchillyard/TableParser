@@ -1,13 +1,15 @@
 package com.phasmidsoftware.examples
 
-import com.phasmidsoftware.parse.{EncryptedHeadedStringTableParser, TableParser}
+import com.phasmidsoftware.RawRow
+import com.phasmidsoftware.parse.{CellParser, EncryptedHeadedStringTableParser, RawParsers, TableParser}
 import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.table.Table.{parse, parseResource}
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.TryUsing
-import java.io.File
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.io.File
 import scala.io.Source
 import scala.util._
 
@@ -76,7 +78,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       }
       import CsvRenderers._
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-      mt.toCSV foreach println
+      val result = mt.toCSV
+      result.startsWith("Team Number,") shouldBe true
+      result.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\n") shouldBe true
     }
   }
 
@@ -191,6 +195,28 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
     teamProject should matchPattern { case TeamProject(_, _, _, _) => }
     teamProject.team shouldBe Team(1, "Leonhard Euler", Some("Daniel Bernoulli"), Some("Isaac Newton"), Some("Srinivas Ramanujan"))
     teamProject.grade should matchPattern { case Grade(92.0, _, _, _, _, _, _, _, _, _, _, _) => }
+  }
+
+
+  /**
+    * NOTE: it is perfectly proper for there to be a number of parsing problems.
+    * These are application-specific and are not indicative of any bugs in the
+    * TableParser library itself.
+    */
+  it should "parse and filter the team projects from the encrypted dataset using RawRow" in {
+
+    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
+    implicit val cellParser: CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
+    implicit val parser: TableParser[Table[RawRow]] = EncryptedHeadedStringTableParser[RawRow](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    val pty: Try[Table[RawRow]] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
+    pty should matchPattern { case Success(HeadedTable(_, _)) => }
+    val pt = pty.get
+    pt.size shouldBe 1
+    pt foreach println
+    println(Analysis(pt).showColumnMap)
   }
 
   private def createCsvGeneratorFromTeamProject(function: CsvGenerators => CsvGenerator[Grade]): CsvGenerator[TeamProject] = {
