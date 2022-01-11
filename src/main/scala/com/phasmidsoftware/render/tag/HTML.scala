@@ -20,11 +20,13 @@ import scala.language.implicitConversions
 case class HTML(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(implicit rules: TagRules) extends BaseTag(name, attributes, content, tags) {
 
   /**
-   * Method to add a child to this Tag
-   *
-   * @param tag the tag to be added
-   * @return a new version of this Tag with the additional tag added as a child
-   */
+    * Method to add a child to this Tag
+    *
+    * TEST
+    *
+    * @param tag the tag to be added
+    * @return a new version of this Tag with the additional tag added as a child
+    */
   override def :+(tag: Tag): Tag = HTML(name, attributes, content, tags :+ tag)
 }
 
@@ -35,14 +37,19 @@ object HTML {
 
   implicit object HtmlRules extends TagRules
 
+  // TEST
   def apply(name: String, attributes: Map[String, String], content: Option[String]): HTML = apply(defaultName(name), for (attr <- attributes.toSeq) yield Attribute(attr), content, Nil)
 
+  // TEST
   def apply(name: String, attributes: Map[String, String]): HTML = apply(name, attributes, None)
 
+  // TEST
   def apply(name: String): HTML = apply(name, Map.empty, None)
 
+  // TEST
   def apply(name: String, content: Option[String]): HTML = apply(name, Map.empty, content)
 
+  // TEST
   private def defaultName(name: String): String = if (name == "") "span" else name
 }
 

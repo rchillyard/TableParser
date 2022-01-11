@@ -197,7 +197,6 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
 
   def setPredicate(p: Try[RawRow] => Boolean): RawTableParser = copy(predicate = p)
 
-  // TEST
   def setRowParser(rp: RowParser[RawRow, String]): RawTableParser = new RawTableParser(predicate, maybeFixedHeader, forgiving, multiline) {
     override val rowParser: RowParser[Row, String] = rp
   }

@@ -5,6 +5,7 @@
 package com.phasmidsoftware.parse
 
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.annotation.tailrec
 import scala.util.Try
 import scala.util.matching.Regex
@@ -71,6 +72,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   private def formException(indexedString: (String, Int), x: String) = ParserException(s"Cannot parse row ${indexedString._2}: '${indexedString._1}' due to: $x")
 
+  // XXX used only for debugging
   override def toString: String = s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 
   private lazy val getDelimiterChar: Char = {

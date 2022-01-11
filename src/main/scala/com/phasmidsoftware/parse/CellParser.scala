@@ -5,9 +5,10 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{Header, Row}
+import org.joda.time.LocalDate
+
 import java.io.File
 import java.net.URL
-import org.joda.time.LocalDate
 import scala.annotation.implicitNotFound
 import scala.util.{Failure, Success, Try}
 
@@ -112,60 +113,70 @@ object CellParser {
   implicit object BooleanCellParser$ extends SingleCellParser[Boolean] {
     def convertString(w: String): Try[Boolean] = implicitly[Parseable[Boolean]].parse(w)
 
+    // XXX not used
     override def toString: String = "BooleanCellParser$"
   }
 
   implicit object CharCellParser$ extends SingleCellParser[Char] {
     def convertString(w: String): Try[Char] = implicitly[Parseable[Char]].parse(w)
 
+    // XXX not used
     override def toString: String = "CharCellParser$"
   }
 
   implicit object ByteCellParser$ extends SingleCellParser[Byte] {
     def convertString(w: String): Try[Byte] = implicitly[Parseable[Byte]].parse(w)
 
+    // XXX not used
     override def toString: String = "ByteCellParser$"
   }
 
   implicit object ShortCellParser$ extends SingleCellParser[Short] {
     def convertString(w: String): Try[Short] = implicitly[Parseable[Short]].parse(w)
 
+    // XXX not used
     override def toString: String = "ShortCellParser$"
   }
 
   implicit object IntCellParser$ extends SingleCellParser[Int] {
     def convertString(w: String): Try[Int] = implicitly[Parseable[Int]].parse(w)
 
+    // XXX not used
     override def toString: String = "IntCellParser$"
   }
 
   implicit object LongCellParser$ extends SingleCellParser[Long] {
     def convertString(w: String): Try[Long] = implicitly[Parseable[Long]].parse(w)
 
+    // XXX not used
     override def toString: String = "LongCellParser$"
   }
 
   implicit object BigIntCellParser$ extends SingleCellParser[BigInt] {
     def convertString(w: String): Try[BigInt] = implicitly[Parseable[BigInt]].parse(w)
 
+    // XXX not used
     override def toString: String = "BigIntCellParser$"
   }
 
   implicit object FloatCellParser$ extends SingleCellParser[Float] {
     def convertString(w: String): Try[Float] = implicitly[Parseable[Float]].parse(w)
 
+    // XXX not used
     override def toString: String = "FloatCellParser$"
   }
 
   implicit object DoubleCellParser$ extends SingleCellParser[Double] {
     def convertString(w: String): Try[Double] = implicitly[Parseable[Double]].parse(w)
 
+    // XXX not used
     override def toString: String = "DoubleCellParser$"
   }
 
   implicit object BigDecimalCellParser$ extends SingleCellParser[BigDecimal] {
     def convertString(w: String): Try[BigDecimal] = implicitly[Parseable[BigDecimal]].parse(w)
 
+    // XXX not used
     override def toString: String = "BigDecimalCellParser$"
   }
 
@@ -175,19 +186,21 @@ object CellParser {
   implicit object StringCellParser$ extends SingleCellParser[String] {
     def convertString(w: String): Try[String] = Success(w)
 
+    // XXX not used
     override def toString: String = "StringCellParser$"
   }
 
   implicit object DateTimeParser$ extends SingleCellParser[LocalDate] {
     def convertString(w: String): Try[LocalDate] = implicitly[Parseable[LocalDate]].parse(w)
 
+    // XXX not used
     override def toString: String = "DateTimeParser$"
   }
 
-  // TEST
   implicit object URLParser$ extends SingleCellParser[URL] {
     override def convertString(w: String): Try[URL] = implicitly[Parseable[URL]].parse(w)
 
+    // XXX not used
     override def toString: String = "URLParser$"
   }
 
@@ -195,6 +208,7 @@ object CellParser {
   implicit object FileParser$ extends SingleCellParser[File] {
     def convertString(w: String): Try[File] = implicitly[Parseable[File]].parse(w)
 
+    // XXX not used
     override def toString: String = "FileParser$"
   }
 
