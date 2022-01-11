@@ -98,7 +98,7 @@ trait Writable[O] {
       case (k, w, true) =>
         println(s"$key: $k") // CONSIDER writing these key/password pairs to the log file.
         writeRaw(writeRaw(o)(s"$key|$w"))(newline)
-      case _ => throw new RuntimeException(s"Writable.writeLineEncrypted: logic error: wBi=$wBi, plaintext=$plaintext")
+      case x => throw new RuntimeException(s"Writable.writeLineEncrypted: logic error: wBi=$x, plaintext=$plaintext")
     }
   }
 
