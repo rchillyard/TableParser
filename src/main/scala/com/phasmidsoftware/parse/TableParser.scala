@@ -7,7 +7,7 @@ package com.phasmidsoftware.parse
 import com.phasmidsoftware.crypto.Encryption
 import com.phasmidsoftware.parse.AbstractTableParser.logException
 import com.phasmidsoftware.parse.TableParser.includeAll
-import com.phasmidsoftware.table.{HeadedTable, Header, Table}
+import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.FP.partition
 import com.phasmidsoftware.util._
 import org.slf4j.{Logger, LoggerFactory}
@@ -174,12 +174,14 @@ trait CopyableTableParser[Row, Input, Table] {
   * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
   * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
   */
-case class RawTableParser(override protected val predicate: Try[Strings] => Boolean = TableParser.includeAll, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
-  extends StringTableParser[Table[Strings]] with CopyableTableParser[Strings, String, Table[Strings]] {
+case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
+  extends StringTableParser[RawTable] with CopyableTableParser[RawRow, String, RawTable] {
 
-  type Row = Strings
+  type Row = RawRow
 
-  implicit val stringSeqParser: CellParser[Row] = StdCellParsers.cellParserSeq
+  implicit val stringSeqParser: CellParser[Strings] = StdCellParsers.cellParserSeq
+  implicit val rowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
+
 
   val rowParser: RowParser[Row, String] = StandardRowParser.create[Row]
 
@@ -276,13 +278,14 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
     val ys = new TeeIterator(n)(xs)
     val hy: Try[Header] = rowParser.parseHeader(ys.tee)
     // Phase 1: read the encrypted rows
-    val xty: Try[Table[Strings]] = createPhase1Parser.parse(ys)
+    val xty: Try[RawTable] = createPhase1Parser.parse(ys)
     (for (h <- hy; xt <- xty) yield (h, xt)) match {
       case Success((h, xt)) =>
         // Phase 2: decrypt the rows
         val zt = decryptTable(xt)
         // Phase 2: parse the plain text rows.
         phase2Parser.parseRows(zt.rows.iterator, h)
+      case Failure(x) => Failure(x)
     }
   }
 
@@ -350,19 +353,19 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
   def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] = phase2Parser.setRowParser(rp)
 
   private def createPhase1Parser = {
-    def rawPredicate(r: Try[Strings]): Boolean = r.map(ws => encryptedRowPredicate(ws.head)).toOption.getOrElse(false)
+    def rawPredicate(ry: Try[RawRow]): Boolean = ry.map(r => encryptedRowPredicate(r.ws.head)).toOption.getOrElse(false)
 
     val encryptionHeader: Header = Header(Seq("key", "value"), Nil)
     val rowConfig = RowConfig.defaultEncryptedRowConfig
-    import RawParsers.WithHeaderRow.rawRowCellParser
+    implicit val rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
     val lineParser: LineParser = LineParser.apply(rowConfig)
-    RawTableParser(rawPredicate, Some(encryptionHeader), forgiving = false, multiline = false, headerRowsToRead).setRowParser(StandardRowParser[Strings](lineParser))
+    RawTableParser(rawPredicate, Some(encryptionHeader), forgiving = false, multiline = false, headerRowsToRead).setRowParser(StandardRowParser[RawRow](lineParser))
   }
 
-  private def decryptTable(xt: Table[Strings]): Table[String] = {
+  private def decryptTable(xt: RawTable): Table[String] = {
     import cats.effect.IO
     import cats.effect.unsafe.implicits.global
-    val yt = xt.map(row => Encryption.decrypt(keyFunction)(row))
+    val yt = xt.map(row => Encryption.decrypt(keyFunction)(row.ws))
     yt.processRows {
       wis => IO.parSequenceN(2)(wis.toSeq).unsafeRunSync()
     }
@@ -448,6 +451,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     case None if n > 0 =>
       val ys = new TeeIterator(n)(xs)
       for (h <- rowParser.parseHeader(ys.tee); t <- parseRows(ys, h)) yield t
+    case _ => throw TableParserException("parse: logic error")
   }
 
   /**

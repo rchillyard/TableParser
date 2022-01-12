@@ -8,10 +8,11 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP.resource
 import com.phasmidsoftware.util.TryUsing
-import java.io.{File, FileWriter, InputStream}
-import java.net.URL
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+
+import java.io.{File, FileWriter, InputStream}
+import java.net.URL
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -383,10 +384,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     val rawTable: RawTable = mty.get
     rawTable.size shouldBe 1
-    rawTable.head(1) shouldBe "Doug Walker"
+    rawTable.head(1).get shouldBe "Doug Walker"
 
     val f = RawTableTransformation(Map("MOVIE_TITLE" -> CellTransformation(_.toLowerCase)))
-    f.apply(rawTable).head(11) shouldBe "star wars: episode vii - the force awakens             "
+    f.apply(rawTable).head(11).get shouldBe "star wars: episode vii - the force awakens             "
   }
 
   behavior of "projection"
@@ -403,10 +404,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     val rawTable: RawTable = mty.get
     rawTable.size shouldBe 1
-    rawTable.head(1) shouldBe "Doug Walker"
+    rawTable.head(1).get shouldBe "Doug Walker"
 
     val f = RawTableProjection(Seq("MOVIE_TITLE"))
-    f.apply(rawTable).head.head shouldBe "Star Wars: Episode VII - The Force Awakens             "
+    f.apply(rawTable).head.ws.head shouldBe "Star Wars: Episode VII - The Force Awakens             "
   }
 
   behavior of "sort"

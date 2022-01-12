@@ -208,9 +208,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
 
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
 
-    implicit val cellParser: CellParser[Seq[String]] = RawParsers.WithHeaderRow.rawRowCellParser
-    implicit val parser: TableParser[Table[Seq[String]]] = EncryptedHeadedStringTableParser[Seq[String]](encryptionPredicate, keyMap, headerRowsToRead = 2)
-    val pty: Try[Table[Seq[String]]] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
+    implicit val cellParser: CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
+    implicit val parser: TableParser[RawTable] = EncryptedHeadedStringTableParser[RawRow](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    val pty: Try[RawTable] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
     pty should matchPattern { case Success(HeadedTable(_, _)) => }
     val pt = pty.get
     pt.size shouldBe 1

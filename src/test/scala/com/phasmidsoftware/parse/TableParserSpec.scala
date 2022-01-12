@@ -173,7 +173,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val raw = Seq(headerRaptors,
       "")
-    val xty: Try[Table[Seq[String]]] = for (r <- Table.parseRaw(raw, TableParser.includeAll)) yield r
+    val xty: Try[RawTable] = for (r <- Table.parseRaw(raw, TableParser.includeAll)) yield r
     xty.isSuccess shouldBe true
     xty.get.size shouldBe 0
   }

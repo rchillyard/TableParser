@@ -1,8 +1,9 @@
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.FP.resource
+
 import scala.io.Source
-import scala.util.Success
+import scala.util.{Success, Try}
 
 // NOTE: We show how to parse the AirBNB dataset where the resulting Table rows.
 // are plain sequences of String (no parsing to specific types).
@@ -24,8 +25,8 @@ val parser: RawTableParser = RawTableParser().setMultiline(true).setPredicate(Ta
 
 // NOTE: parse the source to create the table.
 // This triggers usage of an implicit class (in the TableParser companion object) which defines several parse methods.
-// The result is a Try[Table[Seq[String]]].
-val wsty = parser parse sy
+// The result is a Try[RawTable].
+val wsty: Try[RawTable] = parser parse sy
 
 // NOTE: if successful, analyze the resulting rows and print the analysis.
 // There should be 87 columns and approximately 128 rows in this resulting table (the exact number is random).

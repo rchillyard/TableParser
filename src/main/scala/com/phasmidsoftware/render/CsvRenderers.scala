@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.render
 
+import com.phasmidsoftware.parse.Strings
 import com.phasmidsoftware.table.{BaseCsvGenerator, CsvAttributes, CsvGenerator, CsvProductGenerator}
 
 import java.net.URL
@@ -72,7 +73,7 @@ trait CsvRenderers {
    */
   def renderer1[P1: CsvRenderer, T <: Product : ClassTag](construct: P1 => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = Seq(
+    protected def elements(t: T): Strings = Seq(
       implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
     )
   }
@@ -89,7 +90,7 @@ trait CsvRenderers {
    */
   def renderer2[P1: CsvRenderer, P2: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = Seq(
+    protected def elements(t: T): Strings = Seq(
       implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
       , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
     )
@@ -108,7 +109,7 @@ trait CsvRenderers {
    */
   def renderer3[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -131,7 +132,7 @@ trait CsvRenderers {
    */
   def renderer4[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -156,7 +157,7 @@ trait CsvRenderers {
    */
   def renderer5[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -185,7 +186,7 @@ trait CsvRenderers {
    */
   def renderer6[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -216,7 +217,7 @@ trait CsvRenderers {
    */
   def renderer7[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -249,7 +250,7 @@ trait CsvRenderers {
    */
   def renderer8[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -284,7 +285,7 @@ trait CsvRenderers {
    */
   def renderer9[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -321,7 +322,7 @@ trait CsvRenderers {
    */
   def renderer10[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -360,7 +361,7 @@ trait CsvRenderers {
    */
   def renderer11[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -399,7 +400,7 @@ trait CsvRenderers {
    */
   def renderer12[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, P12: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
-    protected def elements(t: T): Seq[String] = {
+    protected def elements(t: T): Strings = {
       Seq(
         implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
         , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
@@ -419,7 +420,7 @@ trait CsvRenderers {
 }
 
 abstract class ProductCsvRenderer[T <: Product : ClassTag](implicit c: CsvAttributes) extends CsvRenderer[T] {
-  protected def elements(t: T): Seq[String]
+  protected def elements(t: T): Strings
 
   val csvAttributes: CsvAttributes = c
 

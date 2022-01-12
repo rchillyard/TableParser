@@ -6,6 +6,4 @@ package com
 
 package object phasmidsoftware {
 
-//  type Seq[String] = Seq[String]
-
 }

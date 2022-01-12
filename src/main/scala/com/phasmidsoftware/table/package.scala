@@ -6,6 +6,6 @@ package com.phasmidsoftware
 
 package object table {
 
-  type RawTable = Table[Seq[String]]
+  type RawTable = Table[RawRow]
 
 }

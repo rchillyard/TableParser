@@ -59,7 +59,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   lazy val quotedStringWithQuotes: Parser[String] = quotedStringWithQuotesAsList ^^ (ws => ws.mkString(s"$quote"))
 
-  lazy val quotedStringWithQuotesAsList: Parser[Seq[String]] = quote ~> repsep(stringInQuotes, s"$quote$quote") <~ quote
+  lazy val quotedStringWithQuotesAsList: Parser[Strings] = quote ~> repsep(stringInQuotes, s"$quote$quote") <~ quote
 
   lazy val list: Parser[String] = getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
 

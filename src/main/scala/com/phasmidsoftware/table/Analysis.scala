@@ -14,13 +14,14 @@ case class Analysis(rows: Int, columns: Int, columnMap: Map[String, Column]) {
 }
 
 object Analysis {
-  def apply(table: Table[Seq[String]]): Analysis = {
+  def apply(table: RawTable): Analysis = {
     val wso: Option[Seq[String]] = table.maybeColumnNames
 
-    def method1(ws: Seq[String]): Seq[(String, Column)] = for (w <- ws; z <- FP.sequence(table.column(w)).toSeq; q <- Column.make(z).toSeq) yield w -> q
+    def method1(ws: Seq[String]): Seq[(String, Column)] =
+      for (w <- ws; z <- FP.sequence(table.column(w)).toSeq; q <- Column.make(z).toSeq) yield w -> q
 
     val columnMap: Iterable[(String, Column)] = for (ws <- wso.toSeq; z <- method1(ws)) yield z
-    new Analysis(table.size, table.head.size, columnMap.toMap)
+    new Analysis(table.size, table.head.ws.size, columnMap.toMap)
   }
 }
 
