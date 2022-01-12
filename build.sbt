@@ -2,7 +2,7 @@ organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-version := "1.1.1"
+version := "1.1.2"
 
 scalaVersion := "2.13.7"
 
@@ -27,7 +27,7 @@ libraryDependencies ++= Seq(
   "io.spray" %%  "spray-json" % "1.3.6",
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
-  "ch.qos.logback" % "logback-classic" % "1.2.8" % "runtime",
+  "ch.qos.logback" % "logback-classic" % "1.2.10" % "runtime",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )

@@ -1,6 +1,5 @@
 package com.phasmidsoftware.examples
 
-import com.phasmidsoftware.RawRow
 import com.phasmidsoftware.parse.{CellParser, EncryptedHeadedStringTableParser, RawParsers, TableParser}
 import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.table.Table.{parse, parseResource}
@@ -203,15 +202,15 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
     * These are application-specific and are not indicative of any bugs in the
     * TableParser library itself.
     */
-  it should "parse and filter the team projects from the encrypted dataset using RawRow" in {
+  it should "parse and filter the team projects from the encrypted dataset using Seq[String]" in {
 
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
 
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
 
-    implicit val cellParser: CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
-    implicit val parser: TableParser[Table[RawRow]] = EncryptedHeadedStringTableParser[RawRow](encryptionPredicate, keyMap, headerRowsToRead = 2)
-    val pty: Try[Table[RawRow]] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
+    implicit val cellParser: CellParser[Seq[String]] = RawParsers.WithHeaderRow.rawRowCellParser
+    implicit val parser: TableParser[Table[Seq[String]]] = EncryptedHeadedStringTableParser[Seq[String]](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    val pty: Try[Table[Seq[String]]] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
     pty should matchPattern { case Success(HeadedTable(_, _)) => }
     val pt = pty.get
     pt.size shouldBe 1

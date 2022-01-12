@@ -40,7 +40,7 @@ These give detailed descriptions of each stage of the process.
 
 Another way to see how it works is to look at this application Pairings which takes a CSV file, parses it, transforms the data,
 and outputs a JSON file.
-This way of parsing is a little different than what is shown in the worksheets.
+This way of parsing is a little different from what is shown in the worksheets.
 But both are effective.
 The minimum code necessary to read parse the CSV file as a table of "Player"s, using as many defaults as possible is:
 
@@ -72,7 +72,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-Current version: 1.0.14.
+Current version: 1.1.2.
 
 See release notes below for history.
 
@@ -97,7 +97,7 @@ For the first option, you will do something like the following (see the _Analysi
     }
 
 This analysis will give you a list of columns, each showing its name,
-whether or not it is optional (i.e. contains nulls), and (if it's a numerical column),
+whether it is optional (i.e. contains nulls), and (if it's a numerical column),
 its range, mean, and standard deviation.
 
 Incidentally, this raw parser has three signatures, one for resources, one for files, and one for a sequence of Strings.
@@ -326,7 +326,8 @@ The _Movie_ class looks like this:
     case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
 Note that we make _actor3_ optional because some movies don't specify an "actor3".
-Unlike with ordinary values such as _Int_, _Double_, we do have to add an additional implicit definition to accomplish this (see in example code below):
+Unlike with ordinary values such as _Int_, _Double_, we do have to add an additional,
+_implicit_ definition to accomplish this (see in example code below):
  
     implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
  
@@ -608,6 +609,9 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 Release Notes
 =============
 
+V1.1.1 -> V1.1.2
+* Make RawRow a type (not just a type alias)
+
 V1.1.0 -> V1.1.1
 * Enable cryptographic capabilities
 * Uses TSEC-JCA and Cats IO.
@@ -683,7 +687,7 @@ V1.0.1 -> V1.0.2
 * Able to parse two quote-chars together in a quotation as one quote char;
 * Added enc and codec params as appropriate to _Table.parse_ methods.
 * Added _stringCellParser_;
-* Now, properly closes source in Table.parse methods.
+* Now, properly closes source in _Table.parse_ methods.
 
 V1.0.0 -> V.1.0.1
 * Fixed Issue #1;

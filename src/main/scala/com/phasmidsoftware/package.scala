@@ -6,6 +6,6 @@ package com
 
 package object phasmidsoftware {
 
-  type RawRow = Seq[String]
+//  type Seq[String] = Seq[String]
 
 }

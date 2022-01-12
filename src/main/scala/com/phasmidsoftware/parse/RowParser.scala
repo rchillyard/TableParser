@@ -69,7 +69,7 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
    * @param xs the header row(s) as a String.
    * @return a Try[Header].
    */
-  def parseHeader(xs: Seq[String]): Try[Header] = {
+  def parseHeader(xs: Strings): Try[Header] = {
     val wsys: Seq[Try[Strings]] = for (x <- xs.tail) yield parser.parseRow(x, -1)
     for (w <- Try(xs.head); ws <- parser.parseRow((w, -1)); wss <- FP.sequence(wsys)) yield Header(ws, wss)
   }

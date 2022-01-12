@@ -4,6 +4,7 @@ import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.util.FP.resource
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
 import scala.io.Source
 import scala.util._
 
@@ -35,6 +36,8 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
         println(s"AirBNB: $analysis")
         analysis.rows shouldBe 127 +- 32
         r take 100 foreach println
+      case Failure(exception) => fail(exception)
+      case _ => fail("logic error")
     }
   }
 }

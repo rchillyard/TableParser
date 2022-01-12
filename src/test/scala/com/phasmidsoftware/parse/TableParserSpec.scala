@@ -4,12 +4,12 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.RawRow
 import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+
 import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -173,7 +173,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val raw = Seq(headerRaptors,
       "")
-    val xty: Try[Table[RawRow]] = for (r <- Table.parseRaw(raw, TableParser.includeAll)) yield r
+    val xty: Try[Table[Seq[String]]] = for (r <- Table.parseRaw(raw, TableParser.includeAll)) yield r
     xty.isSuccess shouldBe true
     xty.get.size shouldBe 0
   }
