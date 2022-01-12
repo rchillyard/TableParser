@@ -5,12 +5,14 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.RawRow
+import com.phasmidsoftware.crypto.Encryption
 import com.phasmidsoftware.parse.AbstractTableParser.logException
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP.partition
 import com.phasmidsoftware.util._
 import org.slf4j.{Logger, LoggerFactory}
+
 import scala.annotation.implicitNotFound
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -174,13 +176,13 @@ trait CopyableTableParser[Row, Input, Table] {
  * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
  */
 case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
-        extends StringTableParser[Table[Seq[String]]] with CopyableTableParser[RawRow, String, Table[Seq[String]]] {
+        extends StringTableParser[Table[RawRow]] with CopyableTableParser[RawRow, String, Table[RawRow]] {
 
   type Row = RawRow
 
   implicit val stringSeqParser: CellParser[RawRow] = StdCellParsers.cellParserSeq
 
-  val rowParser: RowParser[Row, String] = StandardRowParser[RawRow]
+  val rowParser: RowParser[Row, String] = StandardRowParser.create[RawRow]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
   protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
@@ -195,70 +197,220 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
 
   def setPredicate(p: Try[RawRow] => Boolean): RawTableParser = copy(predicate = p)
 
-  // TEST
   def setRowParser(rp: RowParser[RawRow, String]): RawTableParser = new RawTableParser(predicate, maybeFixedHeader, forgiving, multiline) {
     override val rowParser: RowParser[Row, String] = rp
   }
 }
 
 /**
- * Case class to define a StringTableParser that assumes a header to be found in the input file.
- * This class attempts to provide as much built-in functionality as possible.
- *
- * This class assumes that the names of the columns are in the first line.
- * This class implements builder with a HeadedTable object.
- * This class uses StandardRowParser of its rowParser.
- *
- * @param maybeFixedHeader None => requires that the data source has a header row.
- *                         Some(h) => specifies that the header is to be taken from h.
- *                         NOTE: that the simplest is to specify the header directly from the type X:
- * @see HeadedStringTableParser#create
- * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
- */
-case class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
-        extends StringTableParser[Table[X]] with CopyableTableParser[X, String, Table[X]] {
-
-  type Row = X
-
-  protected def builder(rows: Iterable[X], header: Header): Table[Row] = maybeFixedHeader match {
-    case Some(h) => HeadedTable(rows, h)
-    case None => HeadedTable(rows, Header[Row]()) // CHECK
-  }
-
-  protected val rowParser: RowParser[X, String] = StandardRowParser[X]
+  * Case class to define a StringTableParser that assumes a header to be found in the input file.
+  * This class attempts to provide as much built-in functionality as possible.
+  *
+  * This class assumes that the names of the columns are in the first line.
+  * This class implements builder with a HeadedTable object.
+  * This class uses StandardRowParser of its rowParser.
+  *
+  * @param maybeFixedHeader None => requires that the data source has a header row.
+  *                         Some(h) => specifies that the header is to be taken from h.
+  *                         Defaults to None.
+  *                         NOTE: that the simplest is to specify the header directly from the type X.
+  * @param forgiving        if true, exceptions when parsing individual rows will be logged then ignored.
+  *                         if false, any exception will terminate the parsing.
+  *                         Defaults to false.
+  * @param headerRowsToRead the number of header rows expected in the input file
+  *                         defaults to 1.
+  * @see HeadedStringTableParser#create
+  * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
+  */
+case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+  extends HeadedStringTableParser[X](maybeFixedHeader, forgiving, headerRowsToRead) {
 
   // TEST
-  def setHeader(header: Header): HeadedStringTableParser[X] = copy(maybeFixedHeader = Some(header))
+  def setHeader(header: Header): PlainTextHeadedStringTableParser[X] = copy(maybeFixedHeader = Some(header))
 
   // TEST
-  def setForgiving(b: Boolean): HeadedStringTableParser[X] = copy(forgiving = b)
+  def setForgiving(b: Boolean): PlainTextHeadedStringTableParser[X] = copy(forgiving = b)
 
   // TEST
-  def setMultiline(b: Boolean): HeadedStringTableParser[X] = new HeadedStringTableParser[X](maybeFixedHeader, forgiving) {
+  def setMultiline(b: Boolean): PlainTextHeadedStringTableParser[X] = new PlainTextHeadedStringTableParser[X](maybeFixedHeader, forgiving) {
     override val multiline: Boolean = b
   }
 
   // TEST
-  def setPredicate(p: Try[X] => Boolean): HeadedStringTableParser[X] = new HeadedStringTableParser[X](maybeFixedHeader, forgiving) {
+  def setPredicate(p: Try[X] => Boolean): PlainTextHeadedStringTableParser[X] = new PlainTextHeadedStringTableParser[X](maybeFixedHeader, forgiving) {
     override val predicate: Try[X] => Boolean = p
   }
 
   // TEST
-  def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] = new HeadedStringTableParser[X] {
+  def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] = new PlainTextHeadedStringTableParser[X] {
     override protected val rowParser: RowParser[X, String] = rp
   }
 }
 
+/**
+  * Case class to define a StringTableParser that assumes a header to be found in the input file.
+  * This class attempts to provide as much built-in functionality as possible.
+  *
+  * This class assumes that the names of the columns are in the first line.
+  * This class implements builder with a HeadedTable object.
+  * This class uses StandardRowParser of its rowParser.
+  *
+  * @param encryptedRowPredicate a function which takes a String and returns a Boolean.
+  * @param keyFunction           a function which takes a String and returns a String (input might be ignored).
+  * @param maybeFixedHeader      None => requires that the data source has a header row.
+  *                              Some(h) => specifies that the header is to be taken from h.
+  *                              Defaults to None.
+  *                              NOTE: that the simplest is to specify the header directly from the type X.
+  * @param forgiving             if true, exceptions when parsing individual rows will be logged then ignored.
+  *                              if false, any exception will terminate the parsing.
+  *                              Defaults to false.
+  * @param headerRowsToRead      the number of header rows expected in the input file
+  *                              defaults to 1.
+  * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
+  */
+case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedRowPredicate: String => Boolean, keyFunction: String => String, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+  extends HeadedStringTableParser[X](None, false, headerRowsToRead) {
+
+  private val phase2Parser = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
+
+  override def parse(xs: Iterator[String], n: Int): Try[Table[X]] = {
+    val ys = new TeeIterator(n)(xs)
+    val hy: Try[Header] = rowParser.parseHeader(ys.tee)
+    // Phase 1: read the encrypted rows
+    val xty: Try[Table[RawRow]] = createPhase1Parser.parse(ys)
+    (for (h <- hy; xt <- xty) yield (h, xt)) match {
+      case Success((h, xt)) =>
+        // Phase 2: decrypt the rows
+        val zt = decryptTable(xt)
+        // Phase 2: parse the plain text rows.
+        phase2Parser.parseRows(zt.rows.iterator, h)
+    }
+  }
+
+  /**
+    * Set the Header for the plaintext TableParser.
+    *
+    * TEST
+    *
+    * CONSIDER does this make sense to allow?
+    *
+    * @param header the required Header.
+    * @return a TableParser of Table[X]
+    */
+  def setHeader(header: Header): TableParser[Table[X]] =
+    throw TableParserException("it makes no sense to allow setting the header of the plaintext parser independently of the encrypted parser")
+
+  /**
+    * Set the predicate for the plaintext TableParser.
+    *
+    * TEST
+    *
+    * @param predicate a predicate which will be applied to each X (i.e. AFTER decryption).
+    * @return a TableParser of Table[X]
+    */
+  def setPredicate(predicate: Try[X] => Boolean): TableParser[Table[X]] = phase2Parser.setPredicate(predicate)
+
+  /**
+    * Set the value of forgiving for the plaintext TableParser.
+    *
+    * TEST
+    *
+    * @param b true or false. See TableParser.
+    * @return a TableParser of Table[X]
+    */
+  def setForgiving(b: Boolean): TableParser[Table[X]] = phase2Parser.setForgiving(b)
+
+  /**
+    * Set the value of multiline for the plaintext TableParser.
+    *
+    * TEST
+    *
+    * @param b value of multiline for the plaintext TableParser. See TableParser.
+    * @return a TableParser of Table[X]
+    */
+  def setMultiline(b: Boolean): TableParser[Table[X]] = phase2Parser.setMultiline(b)
+
+  /**
+    * Set the value of predicate for the plaintext TableParser.
+    *
+    * TEST
+    *
+    * @param p predicate for the plaintext TableParser.
+    * @return a TableParser of Table[X]
+    */
+  def setPlaintextPredicate(p: Try[X] => Boolean): TableParser[Table[X]] = phase2Parser.setPredicate(p)
+
+  /**
+    * Set the value of the row parser for the plaintext TableParser.
+    *
+    * TEST
+    *
+    * @param rp the row parser for the plaintext TableParser.
+    * @return a TableParser of Table[X]
+    */
+  def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] = phase2Parser.setRowParser(rp)
+
+  private def createPhase1Parser = {
+    def rawPredicate(r: Try[RawRow]): Boolean = r.map(ws => encryptedRowPredicate(ws.head)).toOption.getOrElse(false)
+
+    val encryptionHeader: Header = Header(Seq("key", "value"), Nil)
+    val rowConfig = RowConfig.defaultEncryptedRowConfig
+    import RawParsers.WithHeaderRow.rawRowCellParser
+    val lineParser: LineParser = LineParser.apply(rowConfig)
+    RawTableParser(rawPredicate, Some(encryptionHeader), forgiving = false, multiline = false, headerRowsToRead).setRowParser(StandardRowParser[RawRow](lineParser))
+  }
+
+  private def decryptTable(xt: Table[RawRow]): Table[String] = {
+    import cats.effect.IO
+    import cats.effect.unsafe.implicits.global
+    val yt = xt.map(row => Encryption.decrypt(keyFunction)(row))
+    yt.processRows {
+      wis => IO.parSequenceN(2)(wis.toSeq).unsafeRunSync()
+    }
+  }
+}
+
+/**
+  * Abstract class to define a StringTableParser that assumes a header to be found in the input file.
+  * There are two sub-classes: PlainTextHeadedStringTableParser and EncryptedHeadedStringTableParser
+  * This class attempts to provide as much built-in functionality as possible.
+  *
+  * This class assumes that the names of the columns are in the first line.
+  * This class implements builder with a HeadedTable object.
+  * This class uses StandardRowParser of its rowParser.
+  *
+  * @param maybeFixedHeader None => requires that the data source has a header row.
+  *                         Some(h) => specifies that the header is to be taken from h.
+  *                         Defaults to None.
+  *                         NOTE: that the simplest is to specify the header directly from the type X.
+  * @param forgiving        if true, exceptions when parsing individual rows will be logged then ignored.
+  *                         if false, any exception will terminate the parsing.
+  *                         Defaults to false.
+  * @param headerRowsToRead the number of header rows expected in the input file
+  *                         defaults to 1.
+  * @see HeadedStringTableParser#create
+  * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
+  */
+sealed abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+  extends StringTableParser[Table[X]] with CopyableTableParser[X, String, Table[X]] {
+
+  type Row = X
+
+  protected def builder(rows: Iterable[X], header: Header): Table[Row] = HeadedTable(rows, header)
+
+  protected val rowParser: RowParser[X, String] = StandardRowParser.create[X]
+}
+
 object HeadedStringTableParser {
   /**
-   * This create method constructs a HeadedStringTableParser with header based simply on the type X.
-   * In this case, the source data must have the same number of columns as X has parameters, and they must be in the
-   * same order. Additionally, there should not be a header row in the source data.
-   *
-   * @tparam X the underlying type. There must be evidence of CellParser[X] and ClassTag[X].
-   * @return a HeadedStringTableParser[X].
-   */
-  def create[X: CellParser : ClassTag](forgiving: Boolean): HeadedStringTableParser[X] = HeadedStringTableParser[X](Some(Header.apply[X]()), forgiving, 0)
+    * This create method constructs a HeadedStringTableParser with header based simply on the type X.
+    * In this case, the source data must have the same number of columns as X has parameters, and they must be in the
+    * same order. Additionally, there should not be a header row in the source data.
+    *
+    * @tparam X the underlying type. There must be evidence of CellParser[X] and ClassTag[X].
+    * @return a HeadedStringTableParser[X].
+    */
+  def create[X: CellParser : ClassTag](forgiving: Boolean): HeadedStringTableParser[X] = PlainTextHeadedStringTableParser[X](Some(Header.apply[X]()), forgiving, 0)
 }
 
 /**
@@ -281,19 +433,22 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   def parseRows(xs: Iterator[Input], header: Header): Try[Table]
 
   /**
-   * Method to parse a table based on a sequence of Inputs.
-   *
-   * @param xs the sequence of Inputs, one for each row
-   * @param n  the number of lines that should be used as a Header.
-   *           If n == 0 == maybeFixedHeader.empty then there is a logic error.
-   * @return a Try[Table]
-   */
+    * Method to parse a table based on a sequence of Inputs.
+    *
+    * NOTE: this is invoked implicitly by:
+    * def parse[T: TableParser](ws: Iterator[String]): Try[T]
+    * in Table object.
+    *
+    * @param xs the sequence of Inputs, one for each row
+    * @param n  the number of lines that should be used as a Header.
+    *           If n == 0 == maybeFixedHeader.empty then there is a logic error.
+    * @return a Try[Table]
+    */
   def parse(xs: Iterator[Input], n: Int = 0): Try[Table] = maybeFixedHeader match {
-    case Some(h) if n == 0 => parseRows(xs, h)
+    case Some(h) => parseRows(xs drop n, h) // CONSIDER reverting to check that n = 0
     case None if n > 0 =>
       val ys = new TeeIterator(n)(xs)
       for (h <- rowParser.parseHeader(ys.tee); t <- parseRows(ys, h)) yield t
-    case _ => Failure(ParserException(s"AbstractTableParser.parse: logic error: n=$n, maybeFixedHeader=$maybeFixedHeader"))
   }
 
   /**
@@ -325,7 +480,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     else
       for (z <- ts.zipWithIndex) yield f(z)(header)
 
-    def handleFailures(rys: Iterator[Try[Row]]) = if (forgiving) {
+    def processTriedRows(rys: Iterator[Try[Row]]) = if (forgiving) {
       val (good, bad) = partition(rys)
       bad foreach failureHandler //AbstractTableParser.logException[Row]
       FP.sequence(good filter predicate)
@@ -333,7 +488,8 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     else
       FP.sequence(rys filter predicate)
 
-    for (rs <- handleFailures(mapTsToRows)) yield builder(rs.toList, header)
+    val q: Seq[Try[Row]] = mapTsToRows.toSeq
+    for (rs <- processTriedRows(q.iterator)) yield builder(rs.toList, header)
   }
 }
 
@@ -406,7 +562,7 @@ abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true
 
   implicit val xp: CellParser[X] = cellParser
 
-  implicit val ptp: TableParser[Table[X]] = if (sourceHasHeaderRow) HeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)
+  implicit val ptp: TableParser[Table[X]] = if (sourceHasHeaderRow) PlainTextHeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)
 }
 
 // NOTE: not currently instantiated

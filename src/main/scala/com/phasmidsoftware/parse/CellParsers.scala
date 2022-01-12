@@ -6,6 +6,7 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.{FP, Reflection}
+
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -26,6 +27,7 @@ trait CellParsers {
    * @return a MultiCellParser[Seq[P]
    */
   def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
+    // XXX used only for debugging
     override def toString: String = "MultiCellParser: cellParserRepetition"
 
     def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = {
@@ -44,6 +46,7 @@ trait CellParsers {
    * @return a MultiCellParser[Seq[P]
    */
   def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
+    // XXX used only for debugging
     override def toString: String = "MultiCellParser: cellParserSeq"
 
     def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = FP.sequence(for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w)))
@@ -58,6 +61,7 @@ trait CellParsers {
    * @return a SingleCellParser[Option[P]
    */
   def cellParserOption[P: CellParser]: CellParser[Option[P]] = new SingleCellParser[Option[P]] {
+    // XXX used only for debugging
     override def toString: String = s"cellParserOption with $cp"
 
     private val cp: CellParser[P] = implicitly[CellParser[P]]
@@ -81,6 +85,7 @@ trait CellParsers {
    * @return a SingleCellParser[Option[String]
    */
   lazy val cellParserOptionNonEmptyString: CellParser[Option[String]] = new SingleCellParser[Option[String]] {
+    // XXX used only for debugging
     override def toString: String = s"cellParserOptionNonEmptyString"
 
     private val cp: CellParser[String] = new CellParser[String]() {
@@ -103,6 +108,7 @@ trait CellParsers {
    * @return a SingleCellParser which converts a String into the intermediate type P and thence into a T
    */
   def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = new SingleCellParser[T] {
+    // XXX used only for debugging
     override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
 
     def convertString(w: String): Try[T] = implicitly[CellParser[P]].parse(CellValue(w)).map(construct)
@@ -177,6 +183,7 @@ trait CellParsers {
    */
   def cellParser2Conditional[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map[K, CellParser[P]], fields: Seq[String] = Nil): CellParser[T] = {
     new MultiCellParser[T] {
+      // XXX used only for debugging
       override def toString: String = s"MultiCellParser: cellParser2 for ${implicitly[ClassTag[T]]}"
 
       override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =

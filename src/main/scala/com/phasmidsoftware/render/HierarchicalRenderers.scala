@@ -6,6 +6,7 @@ package com.phasmidsoftware.render
 
 import com.phasmidsoftware.table.{Header, Indexed}
 import com.phasmidsoftware.util.Reflection
+
 import scala.reflect.ClassTag
 
 /**
@@ -121,18 +122,20 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
-   *
-   * NOTE: be careful using this particular method it only applies where T is a 1-tuple (e.g. a case class with one field -- not common).
-   * It probably shouldn't ever be used in practice. It can cause strange initialization errors!
-   * This note may be irrelevant now that we have overridden convertString to fix issue #1.
-   *
-   * @param construct a function P => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the (single) field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a HierarchicalRenderer[T].
-   */
+    * Method to return a HierarchicalRenderer[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
+    *
+    * NOTE: be careful using this particular method it only applies where T is a 1-tuple (e.g. a case class with one field -- not common).
+    * It probably shouldn't ever be used in practice. It can cause strange initialization errors!
+    * This note may be irrelevant now that we have overridden convertString to fix issue #1.
+    *
+    * TEST
+    *
+    * @param construct a function P => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the (single) field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a HierarchicalRenderer[T].
+    */
   def renderer1[P1: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: P1 => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
 
     protected def nodes(t: T): Seq[Node] = {
@@ -165,16 +168,18 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
-   *
-   * @param construct a function (P1,P2,P3) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a HierarchicalRenderer[T].
-   */
+    * Method to return a HierarchicalRenderer[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
+    *
+    * TEST
+    *
+    * @param construct a function (P1,P2,P3) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a HierarchicalRenderer[T].
+    */
   def renderer3[P1: HierarchicalRenderer, P2: HierarchicalRenderer, P3: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2, P3) => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
 
     protected def nodes(t: T): Seq[Node] = {
@@ -188,17 +193,19 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 4-ary Product and which is based on a function to convert a (P1,P2,P3,P4) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the second field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a HierarchicalRenderer[T].
-   */
+    * Method to return a HierarchicalRenderer[T] where T is a 4-ary Product and which is based on a function to convert a (P1,P2,P3,P4) into a T.
+    *
+    * TEST
+    *
+    * @param construct a function (P1,P2,P3,P4) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a HierarchicalRenderer[T].
+    */
   def renderer4[P1: HierarchicalRenderer, P2: HierarchicalRenderer, P3: HierarchicalRenderer, P4: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2, P3, P4) => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
 
     protected def nodes(t: T): Seq[Node] = {
@@ -240,19 +247,21 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 6-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the second field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a HierarchicalRenderer[T].
-   */
+    * Method to return a HierarchicalRenderer[T] where T is a 6-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6) into a T.
+    *
+    * TEST
+    *
+    * @param construct a function (P1,P2,P3,P4,P5,P6) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam P6 the type of the sixth field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a HierarchicalRenderer[T].
+    */
   def renderer6[P1: HierarchicalRenderer, P2: HierarchicalRenderer, P3: HierarchicalRenderer, P4: HierarchicalRenderer, P5: HierarchicalRenderer, P6: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2, P3, P4, P5, P6) => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
     protected def nodes(t: T): Seq[Node] = {
       val Array(p1, p2, p3, p4, p5, p6) = Reflection.extractFieldNames(implicitly[ClassTag[T]])
@@ -268,19 +277,21 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 7-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the second field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam P7 the type of the seventh field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a HierarchicalRenderer[T].
+    * Method to return a HierarchicalRenderer[T] where T is a 7-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7) into a T.
+    *
+    * TEST
+    *
+    * @param construct a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam P6 the type of the sixth field of the Product type T.
+    * @tparam P7 the type of the seventh field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a HierarchicalRenderer[T].
    */
   def renderer7[P1: HierarchicalRenderer, P2: HierarchicalRenderer, P3: HierarchicalRenderer, P4: HierarchicalRenderer, P5: HierarchicalRenderer, P6: HierarchicalRenderer, P7: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2, P3, P4, P5, P6, P7) => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
 
@@ -299,19 +310,21 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the second field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam P7 the type of the seventh field of the Product type T.
-   * @tparam P8 the type of the eighth field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * Method to return a HierarchicalRenderer[T] where T is a 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
+    *
+    * TEST
+    *
+    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam P6 the type of the sixth field of the Product type T.
+    * @tparam P7 the type of the seventh field of the Product type T.
+    * @tparam P8 the type of the eighth field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a HierarchicalRenderer[T].
    */
   def renderer8[P1: HierarchicalRenderer, P2: HierarchicalRenderer, P3: HierarchicalRenderer, P4: HierarchicalRenderer, P5: HierarchicalRenderer, P6: HierarchicalRenderer, P7: HierarchicalRenderer, P8: HierarchicalRenderer, T <: Product : ClassTag](style: String, attrs: Map[String, String] = Map())(construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T): HierarchicalRenderer[T] = new ProductHierarchicalRenderer[T](style, attrs) {
@@ -332,19 +345,21 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 9-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the second field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam P7 the type of the seventh field of the Product type T.
-   * @tparam P8 the type of the eighth field of the Product type T.
-   * @tparam P9 the type of the ninth field of the Product type T.
+    * Method to return a HierarchicalRenderer[T] where T is a 9-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9) into a T.
+    *
+    * TEST
+    *
+    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam P6 the type of the sixth field of the Product type T.
+    * @tparam P7 the type of the seventh field of the Product type T.
+    * @tparam P8 the type of the eighth field of the Product type T.
+    * @tparam P9 the type of the ninth field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a HierarchicalRenderer[T].
    */
@@ -367,19 +382,21 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 10-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1  the type of the first field of the Product type T.
-   * @tparam P2  the type of the second field of the Product type T.
-   * @tparam P3  the type of the second field of the Product type T.
-   * @tparam P4  the type of the fourth field of the Product type T.
-   * @tparam P5  the type of the fifth field of the Product type T.
-   * @tparam P6  the type of the sixth field of the Product type T.
-   * @tparam P7  the type of the seventh field of the Product type T.
-   * @tparam P8  the type of the eighth field of the Product type T.
-   * @tparam P9  the type of the ninth field of the Product type T.
+    * Method to return a HierarchicalRenderer[T] where T is a 10-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) into a T.
+    *
+    * TEST
+    *
+    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam P6 the type of the sixth field of the Product type T.
+    * @tparam P7 the type of the seventh field of the Product type T.
+    * @tparam P8 the type of the eighth field of the Product type T.
+    * @tparam P9 the type of the ninth field of the Product type T.
    * @tparam P10 the type of the tenth field of the Product type T.
    * @tparam T   the underlying type of the first parameter of the input to the render method.
    * @return a HierarchicalRenderer[T].
@@ -404,19 +421,21 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 11-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1  the type of the first field of the Product type T.
-   * @tparam P2  the type of the second field of the Product type T.
-   * @tparam P3  the type of the second field of the Product type T.
-   * @tparam P4  the type of the fourth field of the Product type T.
-   * @tparam P5  the type of the fifth field of the Product type T.
-   * @tparam P6  the type of the sixth field of the Product type T.
-   * @tparam P7  the type of the seventh field of the Product type T.
-   * @tparam P8  the type of the eighth field of the Product type T.
-   * @tparam P9  the type of the ninth field of the Product type T.
+    * Method to return a HierarchicalRenderer[T] where T is a 11-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) into a T.
+    *
+    * TEST
+    *
+    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam P6 the type of the sixth field of the Product type T.
+    * @tparam P7 the type of the seventh field of the Product type T.
+    * @tparam P8 the type of the eighth field of the Product type T.
+    * @tparam P9 the type of the ninth field of the Product type T.
    * @tparam P10 the type of the tenth field of the Product type T.
    * @tparam P11 the type of the eleventh field of the Product type T.
    * @tparam T   the underlying type of the first parameter of the input to the render method.
@@ -443,19 +462,21 @@ trait HierarchicalRenderers {
   }
 
   /**
-   * Method to return a HierarchicalRenderer[T] where T is a 12-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1  the type of the first field of the Product type T.
-   * @tparam P2  the type of the second field of the Product type T.
-   * @tparam P3  the type of the second field of the Product type T.
-   * @tparam P4  the type of the fourth field of the Product type T.
-   * @tparam P5  the type of the fifth field of the Product type T.
-   * @tparam P6  the type of the sixth field of the Product type T.
-   * @tparam P7  the type of the seventh field of the Product type T.
-   * @tparam P8  the type of the eighth field of the Product type T.
-   * @tparam P9  the type of the ninth field of the Product type T.
+    * Method to return a HierarchicalRenderer[T] where T is a 12-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) into a T.
+    *
+    * TEST
+    *
+    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) => T, usually the apply method of a case class.
+    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the second field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam P6 the type of the sixth field of the Product type T.
+    * @tparam P7 the type of the seventh field of the Product type T.
+    * @tparam P8 the type of the eighth field of the Product type T.
+    * @tparam P9 the type of the ninth field of the Product type T.
    * @tparam P10 the type of the tenth field of the Product type T.
    * @tparam P11 the type of the eleventh field of the Product type T.
    * @tparam P12 the type of the twelfth field of the Product type T.

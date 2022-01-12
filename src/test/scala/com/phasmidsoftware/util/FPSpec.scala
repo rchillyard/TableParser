@@ -6,9 +6,10 @@ package com.phasmidsoftware.util
 
 import com.phasmidsoftware.table.TableSpec
 import com.phasmidsoftware.util.FP._
-import java.io.InputStream
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+
+import java.io.InputStream
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -43,6 +44,19 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val (good, bad) = partition(Seq(try1, try3).iterator)
     good.toSeq shouldBe List(try1)
     bad.toSeq shouldBe List(try3)
+  }
+  it should "tryToOption" in {
+    val sb = new StringBuilder
+
+    def logFunction(x: Throwable): Unit = {
+      sb.append(x.getLocalizedMessage)
+    }
+
+    val f: Try[Int] => Option[Int] = tryToOption(logFunction)(_)
+    f(Success(1)) shouldBe Some(1)
+    sb.toString() shouldBe ""
+    f(Failure(new Exception("failure"))) shouldBe None
+    sb.toString() shouldBe "failure"
   }
 
   behavior of "TryUsing"

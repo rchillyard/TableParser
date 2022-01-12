@@ -1,13 +1,15 @@
 package com.phasmidsoftware.examples
 
-import com.phasmidsoftware.parse.TableParser
+import com.phasmidsoftware.RawRow
+import com.phasmidsoftware.parse.{CellParser, EncryptedHeadedStringTableParser, RawParsers, TableParser}
 import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
-import com.phasmidsoftware.table.Table.parse
-import com.phasmidsoftware.table.{CsvGenerator, HeadedTable, Row, Table}
+import com.phasmidsoftware.table.Table.{parse, parseResource}
+import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.TryUsing
-import java.io.File
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.io.File
 import scala.io.Source
 import scala.util._
 
@@ -21,22 +23,18 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
     * TableParser library itself.
     */
   it should "be ingested properly" in {
-    import TeamProjectParser._
-
+    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val filename = "TeamProject.csv"
     val mty: Try[Table[TeamProject]] = Table.parseResource(filename, classOf[ProjectsFuncSpec])
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
-      println(s"TeamProject: successfully read ${mt.size} rows")
       mt.size shouldBe 5
       mt foreach println
     }
   }
 
   it should "be ingested and written out to file using the given header" in {
-    import TeamProjectParser._
-
-    implicit val parser: TableParser[Table[TeamProject]] = implicitly[TableParser[Table[TeamProject]]]
+    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
@@ -51,10 +49,8 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
     }
   }
 
-  it should "be ingested and written out properly using the given header" in {
-    import TeamProjectParser._
-
-    implicit val parser: TableParser[Table[TeamProject]] = implicitly[TableParser[Table[TeamProject]]]
+  it should "be ingested and written out to encrypted file using the given header" in {
+    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
@@ -65,14 +61,31 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       }
       import CsvRenderers._
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-      mt.toCSV foreach println
+      implicit val hasKey: HasKey[TeamProject] = (t: TeamProject) => t.team.number.toString
+      mt.writeCSVFileEncrypted(new File("TeamProjectOutputEncrypted.csv"))
+    }
+  }
+
+  it should "be ingested and written out properly using the given header" in {
+    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
+    val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    for (mt <- mty) {
+      import CsvGenerators._
+      implicit val csvGenerator: CsvGenerator[TeamProject] = mt.maybeHeader match {
+        case Some(h) => Row.csvGenerator(h)
+        case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+      }
+      import CsvRenderers._
+      implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+      val result = mt.toCSV
+      result.startsWith("Team Number,") shouldBe true
+      result.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\n") shouldBe true
     }
   }
 
   it should "be ingested and written out properly for team 1 using the given header" in {
-    import TeamProjectParser._
-
-    implicit val parser: TableParser[Table[TeamProject]] = implicitly[TableParser[Table[TeamProject]]]
+    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
@@ -92,9 +105,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be ingested and written out properly for team 1 using the given header but skipping grades" in {
-    import TeamProjectParser._
-
-    implicit val parser: TableParser[Table[TeamProject]] = implicitly[TableParser[Table[TeamProject]]]
+    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
@@ -113,9 +124,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be ingested and written out properly using fabricated header" in {
-    import TeamProjectParser._
-
-    implicit val parser: TableParser[Table[TeamProject]] = implicitly[TableParser[Table[TeamProject]]]
+    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
@@ -137,9 +146,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be ingested and written out properly for team 1 using fabricated header" in {
-    import TeamProjectParser._
-
-    implicit val parser: TableParser[Table[TeamProject]] = implicitly[TableParser[Table[TeamProject]]]
+    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
@@ -157,9 +164,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be ingested and written out properly for team 1 using fabricated header but skipping grades" in {
-    import TeamProjectParser._
-
-    implicit val parser: TableParser[Table[TeamProject]] = implicitly[TableParser[Table[TeamProject]]]
+    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val mty: Try[Table[TeamProject]] = TryUsing(Source.fromURL(classOf[TeamProject].getResource("TeamProject.csv")))(parse(_))
     mty should matchPattern { case Success(HeadedTable(_, _)) => }
     for (mt <- mty) {
@@ -168,10 +173,50 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       }
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer())
       mt.take(1).toCSV shouldBe
-              """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
-                |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-                |""".stripMargin
+        """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
+          |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
+          |""".stripMargin
     }
+  }
+
+  it should "parse and filter the team projects from the encrypted dataset" in {
+    import TeamProjectParser._
+
+    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
+    implicit val parser: TableParser[Table[TeamProject]] = EncryptedHeadedStringTableParser[TeamProject](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    val pty: Try[Table[TeamProject]] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
+    pty should matchPattern { case Success(HeadedTable(_, _)) => }
+    val pt = pty.get
+    pt.size shouldBe 1
+    val teamProject = pt.head
+    teamProject should matchPattern { case TeamProject(_, _, _, _) => }
+    teamProject.team shouldBe Team(1, "Leonhard Euler", Some("Daniel Bernoulli"), Some("Isaac Newton"), Some("Srinivas Ramanujan"))
+    teamProject.grade should matchPattern { case Grade(92.0, _, _, _, _, _, _, _, _, _, _, _) => }
+  }
+
+
+  /**
+    * NOTE: it is perfectly proper for there to be a number of parsing problems.
+    * These are application-specific and are not indicative of any bugs in the
+    * TableParser library itself.
+    */
+  it should "parse and filter the team projects from the encrypted dataset using RawRow" in {
+
+    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
+    implicit val cellParser: CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
+    implicit val parser: TableParser[Table[RawRow]] = EncryptedHeadedStringTableParser[RawRow](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    val pty: Try[Table[RawRow]] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
+    pty should matchPattern { case Success(HeadedTable(_, _)) => }
+    val pt = pty.get
+    pt.size shouldBe 1
+    pt foreach println
+    println(Analysis(pt).showColumnMap)
   }
 
   private def createCsvGeneratorFromTeamProject(function: CsvGenerators => CsvGenerator[Grade]): CsvGenerator[TeamProject] = {
@@ -191,5 +236,4 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
     implicit val gradeGenerator: CsvRenderer[Grade] = function(csvRenderers)
     csvRenderers.renderer4(TeamProject)
   }
-
 }

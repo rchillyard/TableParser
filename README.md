@@ -610,6 +610,8 @@ Release Notes
 
 V1.1.0 -> V1.1.1
 * Enable cryptographic capabilities
+* Uses TSEC-JCA and Cats IO.
+* Many relatively minor fixes/improvements.
 
 V1.0.15 -> V1.1.0
 * Enable CSV-rendering and selection of table rows.
@@ -632,14 +634,14 @@ V1.0.11 -> V1.0.12
 
 V1.0.10 -> V1.0.11
 * introduction of logging;
-* introduction of JSON (spray) for read/write of Table;
-* Table now supports Iterable=>Iterable methods.
-* renaming of Renderer to HierarchicalRenderer and introduction of StringRenderer
-* introduction of TableParserHelper;
-* renamed TableWithoutHeader as UnheadedTable and TableWithHeader as HeadedTable;
-* added various methods, inc. replaceHeader, to Table.
-* Table parsing is now based on Iterator rather than Iterable.
-* Table rows are now based on Vector (at least for the standard TableWithHeader)
+* introduction of JSON (spray) for read/write of _Table_;
+* _Table_ now supports _Iterable=>Iterable_ methods.
+* renaming of Renderer to _HierarchicalRenderer_ and introduction of StringRenderer
+* introduction of _TableParserHelper_;
+* renamed _TableWithoutHeader_ as _UnheadedTable_ and _TableWithHeader_ as _HeadedTable_;
+* added various methods, inc. _replaceHeader_, to _Table_.
+* Table parsing is now based on _Iterator_ rather than _Iterable_.
+* Table rows are now based on _Vector_ (at least for the standard _TableWithHeader_)
 
 V1.0.9 -> V1.0.10
 * build.sbt: changed scalaVersion to 2.13.3
@@ -664,7 +666,7 @@ V1.0.6 -> V1.0.7
     added new features above.
     
 V1.0.5 -> V1.0.6
-* Added a standard implicit value of ColumnHelper for situations that don't need extra help.
+* Added a standard implicit value of _ColumnHelper_ for situations that don't need extra help.
 
 V1.0.4 -> V1.0.5
 * Added a convenient way of rendering a table as a non-hierarchical structure. In other words, serialization to a CSV file.
@@ -677,16 +679,16 @@ V1.0.2 -> V1.0.3
 * Created mechanism for rendering the result of parsing in a hierarchical structure.
 
 V1.0.1 -> V1.0.2
-* Added self-checking of LineParser;
+* Added self-checking of _LineParser_;
 * Able to parse two quote-chars together in a quotation as one quote char;
-* Added enc and codec params as appropriate to Table.parse methods.
-* Added stringCellParser;
+* Added enc and codec params as appropriate to _Table.parse_ methods.
+* Added _stringCellParser_;
 * Now, properly closes source in Table.parse methods.
 
 V1.0.0 -> V.1.0.1
 * Fixed Issue #1;
-* Added parsing of Seq\[Seq\[String]];
-* Added cellParserRepetition;
+* Added parsing of _Seq\[Seq\[String]]_;
+* Added _cellParserRepetition_;
 * Implemented closing of Source in _Table.parse_ methods;
 * Added encoding parameters to _Table.parse_ methods.
 

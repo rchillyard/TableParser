@@ -4,9 +4,10 @@
 
 package com.phasmidsoftware.render
 
-import java.io.{File, FileWriter}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+
+import java.io.{File, FileWriter}
 
 class WritableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
@@ -54,6 +55,14 @@ class WritableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val o = fw.unit
     fw.writeRow(o)(Complex(1, -1))
     fw.close(o)
+  }
+
+  it should "writeRawLine" in {
+    val sw = Writable.stringBuilderWritable()
+    val o = sw.unit
+    sw.writeRawLine(o)("Hello World!")
+    sw.close(o)
+    o.toString shouldBe "Hello World!\n"
   }
 
 }

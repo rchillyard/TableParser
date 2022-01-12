@@ -14,3 +14,5 @@ target/
 src/it/resources/2020VAERSData/
 
 TeamProjectOutput.csv
+
+TeamProjectOutputEncrypted.csv

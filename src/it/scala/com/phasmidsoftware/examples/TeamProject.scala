@@ -54,21 +54,21 @@ object TeamProjectParser extends CellParsers {
     override val listEnclosure: String = ""
   }
 
-  implicit val parser: StandardRowParser[TeamProject] = StandardRowParser[TeamProject]
-
-  trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
-    type Row = TeamProject
-
-    val maybeFixedHeader: Option[Header] = None
-
-    val headerRowsToRead: Int = 2
-
-    override val forgiving: Boolean = true
-
-    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-    protected def builder(rows: Iterable[TeamProject], header: Header): Table[Row] = HeadedTable(rows, header)
-  }
-
-  implicit object TeamProjectTableParser extends TeamProjectTableParser
+  val parser: StandardRowParser[TeamProject] = StandardRowParser.create[TeamProject]
 }
+
+trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
+  type Row = TeamProject
+
+  val maybeFixedHeader: Option[Header] = None
+
+  val headerRowsToRead: Int = 2
+
+  override val forgiving: Boolean = true
+
+  val rowParser: RowParser[Row, String] = TeamProjectParser.parser
+
+  protected def builder(rows: Iterable[TeamProject], header: Header): Table[Row] = HeadedTable(rows, header)
+}
+
+object TeamProjectTableParser extends TeamProjectTableParser

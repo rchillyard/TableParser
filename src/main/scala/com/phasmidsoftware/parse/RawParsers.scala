@@ -16,9 +16,9 @@ import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = false, headerRows: Int = 1) extends CellParsers {
   self =>
 
-  implicit val stringSeqParser: CellParser[RawRow] = cellParserSeq
+  implicit val rawRowCellParser: CellParser[RawRow] = cellParserSeq
 
-  implicit val parser: StandardRowParser[RawRow] = StandardRowParser[RawRow]
+  implicit val parser: StandardRowParser[RawRow] = StandardRowParser.create[RawRow]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
   implicit object RawTableParser extends StringTableParser[Table[RawRow]] {

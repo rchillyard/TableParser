@@ -4,9 +4,10 @@
 
 package com.phasmidsoftware.render
 
-import com.phasmidsoftware.table.{CsvAttributes, CsvGenerator, CsvProductGenerator, Table}
-import java.io.{File, FileWriter}
+import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
+
+import java.io.{File, FileWriter}
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 
@@ -139,6 +140,7 @@ object HierarchicalRenderer {
 
   trait BigIntHierarchicalRenderer extends UntaggedHierarchicalRenderer[BigInt]
 
+  // TEST
   implicit object BigIntHierarchicalRenderer extends BigIntHierarchicalRenderer
 
   trait DoubleHierarchicalRenderer extends UntaggedHierarchicalRenderer[Double]
@@ -147,6 +149,7 @@ object HierarchicalRenderer {
 
   trait LocalDateHierarchicalRenderer extends UntaggedHierarchicalRenderer[LocalDate]
 
+  // TEST
   implicit object LocalDateHierarchicalRenderer extends LocalDateHierarchicalRenderer
 }
 
@@ -179,10 +182,22 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]()(im
       }
       val o = sw.unit
       sw.writeRawLine(o)(hdr)
-      for (x <- x.rows.toSeq) sw.writeRawLine(o)(tc.render(x, Map()))
+      for (r <- x.rows.toSeq) generateText(sw, tc, o, r)
       sw.close(o)
       o
   }
+
+  /**
+   * CONSIDER replacing ow by implicitly of Writable[O].
+   * CONSIDER replacing tc by implicitly of CsvRenderer[T].
+   *
+   * @param ow Writable[O].
+   * @param tc CsvRenderer[T].
+   * @param o  O.
+   * @param t  T.
+   * @return O.
+   */
+  protected def generateText(ow: Writable[O], tc: CsvRenderer[T], o: O, t: T): O = ow.writeRawLine(o)(tc.render(t, Map()))
 }
 
 
@@ -202,5 +217,22 @@ case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvA
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
 case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes)
+
+/**
+ * Case class to help render a Table to a File in CSV format.
+ *
+ * @param file          the file to which the table will be written.
+ * @param csvAttributes implicit instance of CsvAttributes.
+ * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
+ */
+case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes) {
+  override protected def generateText(ow: Writable[FileWriter], tc: CsvRenderer[T], o: FileWriter, t: T): FileWriter = {
+    val key = implicitly[HasKey[T]].key(t)
+    val rendering = tc.render(t, Map())
+    import com.phasmidsoftware.crypto.EncryptionAES128CTR
+    implicit val encryption: EncryptionAES128CTR.type = EncryptionAES128CTR
+    ow.writeLineEncrypted(o)(key, rendering)
+  }
+}
 
 

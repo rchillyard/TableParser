@@ -10,6 +10,7 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{Reflection, TryUsing}
+
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -286,25 +287,61 @@ trait Table[Row] extends Iterable[Row] {
   override def takeRight(n: Int): Table[Row] = processRows(_.takeRight(n))
 
   /**
-   * takeWhile (as defined by Iterable).
-   *
-   * TEST
-   *
-   * @param p the predicate.
-   * @return a Table like this Table but with takeWhile(p) rows.
-   */
+    * takeWhile (as defined by Iterable).
+    *
+    * TEST
+    *
+    * @param p the predicate.
+    * @return a Table like this Table but with takeWhile(p) rows.
+    */
   override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
 
   /**
-   * Method to render this Table[T] as a CSV String with (maybe) header.
-   *
-   * @param renderer      implicit value of CsvRenderer[Row].
-   * @param generator     implicit value of CsvProductGenerator[Row].
-   * @param csvAttributes implicit value of CsvAttributes.
-   * @return a String.
-   */
+    * Filter method which operates on the (primary) key of each row.
+    *
+    * @param p a predicate which takes a String.
+    * @tparam T a super-class of Row, which provides evidence of HasKey[T].
+    * @return a filtered Table[Row].
+    */
+  def filterByKey[T >: Row : HasKey](p: String => Boolean): Table[Row] =
+    filter(t => p(implicitly[HasKey[T]].key(t)))
+
+  /**
+    * Filter method which operates on the (primary) key of each row.
+    *
+    * TEST
+    *
+    * @param p a predicate which takes a String.
+    * @tparam T a super-class of Row, which provides evidence of HasKey[T].
+    * @return a filtered Table[Row].
+    */
+  def filterNotByKey[T >: Row : HasKey](p: String => Boolean): Table[Row] =
+    filterNot(t => p(implicitly[HasKey[T]].key(t)))
+
+  /**
+    * Method to render this Table[T] as a CSV String with (maybe) header.
+    *
+    * @param renderer      implicit value of CsvRenderer[Row].
+    * @param generator     implicit value of CsvProductGenerator[Row].
+    * @param csvAttributes implicit value of CsvAttributes.
+    * @return a String.
+    */
   def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): String =
     CsvTableStringRenderer[Row]().render(this).toString
+
+  /**
+   * Method to render this Table[T] as a CSV file with (maybe) header.
+   *
+   * @param file          instance of File where the output should be stored.
+   * @param renderer      implicit value of CsvRenderer[Row].
+   * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param hasKey        implicit value of HasKey[Row].
+   *                      This relates to a column which is the "key" column in a CSV (used for identification).
+   *                      It is not directly related to cryptography.
+   * @param csvAttributes implicit value of CsvAttributes.
+   */
+  def writeCSVFileEncrypted(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
+    CsvTableEncryptedFileRenderer[Row](file).render(this)
 
   /**
    * Method to render this Table[T] as a CSV file with (maybe) header.
@@ -324,6 +361,7 @@ trait Table[Row] extends Iterable[Row] {
   private lazy val asOneBasedIndexedSequence = new IndexedSeq[Row]() {
     def apply(i: Int): Row = rows.toIndexedSeq(i - 1)
 
+    // TEST
     def length: Int = rows.size
   }
 }
@@ -373,15 +411,15 @@ object Table {
   def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = TryUsing(Source.fromURI(u))(parse(_))
 
   /**
-   * Method to parse a table from a URI with an explicit encoding.
-   *
-   * TEST this
-   *
-   * @param u   the URI.
-   * @param enc the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
+    * Method to parse a table from a URI with an explicit encoding.
+    *
+    * TEST
+    *
+    * @param u   the URI.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     parse(u)
@@ -398,30 +436,30 @@ object Table {
   def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = TryUsing(Source.fromInputStream(i))(parse(_))
 
   /**
-   * Method to parse a table from an InputStream with an explicit encoding.
-   *
-   * TEST this
-   *
-   * @param i   the InputStream.
-   * @param enc the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
+    * Method to parse a table from an InputStream with an explicit encoding.
+    *
+    * TEST
+    *
+    * @param i   the InputStream.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parseInputStream[T: TableParser](i: => InputStream, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     parseInputStream(i)
   }
 
   /**
-   * Method to parse a table from a File.
-   *
-   * TEST this.
-   *
-   * @param f   the File (call by name in case there is an exception thrown while constructing the file).
-   * @param enc the explicit encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
+    * Method to parse a table from a File.
+    *
+    * TEST
+    *
+    * @param f   the File (call by name in case there is an exception thrown while constructing the file).
+    * @param enc the explicit encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parseFile[T: TableParser](f: => File, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     parseFile(f)
@@ -438,40 +476,42 @@ object Table {
   def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = TryUsing(Source.fromFile(f))(parse(_))
 
   /**
-   * Method to parse a table from a File.
-   *
-   * TEST this.
-   *
-   * @param pathname the file pathname.
-   * @param enc      the explicit encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
+    * Method to parse a table from a File.
+    *
+    * TEST
+    *
+    * @param pathname the file pathname.
+    * @param enc      the explicit encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parseFile[T: TableParser](pathname: String, enc: String): Try[T] = Try(parseFile(new File(pathname), enc)).flatten
 
   /**
-   * Method to parse a table from an File.
-   *
-   * TEST this.
-   *
-   * @param pathname the file pathname.
-   * @param codec    (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
+    * Method to parse a table from an File.
+    *
+    * TEST
+    *
+    * @param pathname the file pathname.
+    * @param codec    (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] = Try(parseFile(new File(pathname))).flatten
 
   /**
-   * Method to parse a table from an File.
-   *
-   * @param s     the resource name.
-   * @param clazz the class for which the resource should be sought (defaults to the calling class).
-   * @param codec (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
+    * Method to parse a table from an File.
+    *
+    * @param s     the resource name.
+    * @param clazz the class for which the resource should be sought (should default to the calling class but doesn't).
+    * @param codec (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
-    TryUsing(Source.fromURL(clazz.getResource(s)))(parse(_))
+    TryUsing(Source.fromURL(clazz.getResource(s)))(parse(_)).recoverWith {
+      case _: java.lang.NullPointerException => Failure(TableParserException(s"cannot find resource '$s' relative to $clazz"))
+    }
 
   /**
    * Method to parse a table from a URL.
@@ -650,8 +690,8 @@ abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
     (if (rows.knownSize > -1) rows else rows.toList) map {
       case p: Product => ww.writeRow(o2)(p)
-      case xs: Seq[Row] => ww.writeRowElements(o2)(xs)
-      case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq)
+      case xs: Seq[Row] => ww.writeRowElements(o2)(xs) // TEST
+      case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq) // TEST
       case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     }
     o1
@@ -704,6 +744,8 @@ abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option
     val trimmed = tableNode.trim
     implicitly[TreeWriter[U]].evaluate(trimmed)
   }
+
+  override def toString(): String = s"RenderableTable: header=$maybeHeader, with $size rows"
 }
 
 /**
@@ -719,13 +761,15 @@ abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option
  */
 case class UnheadedTable[Row](rows: Iterable[Row]) extends RenderableTable[Row](rows, None) {
   /**
-   * Method to generate a Table[S] for a set of rows.
-   * Although declared as an instance method, this method produces its result independent of this.
-   *
-   * @param rows a sequence of S.
-   * @tparam S the underlying type of the rows and the result.
-   * @return a new instance of Table[S].
-   */
+    * Method to generate a Table[S] for a set of rows.
+    * Although declared as an instance method, this method produces its result independent of this.
+    *
+    * TEST
+    *
+    * @param rows a sequence of S.
+    * @tparam S the underlying type of the rows and the result.
+    * @return a new instance of Table[S].
+    */
   override def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
     case Some(h) => HeadedTable(rows, h)
     case None => UnheadedTable(rows)
@@ -766,13 +810,17 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
       case _ => None
     }
   }
+
+  override def toString(): String = s"HeadedTable($header) with ${rows.size} rows"
 }
 
 /**
- * Companion object for HeadedTable.
- * The apply methods provided arbitrarily use Vector as the collection for the rows of the table.
- * CONSIDER using something else such as Array.
- */
+  * Companion object for HeadedTable.
+  * The apply methods provided arbitrarily use Vector as the collection for the rows of the table.
+  * CONSIDER using something else such as Array.
+  *
+  * TEST ?
+  */
 object HeadedTable {
   def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.to(List), header)
 
@@ -887,6 +935,16 @@ object Header {
    * @return a Header.
    */
   def create(ws: String*): Header = apply(ws, Nil)
+}
+
+/**
+ * This typeclass pertains to a table row type T that has one particular column which is considered
+ * the primary key (row-id, identifier, whatever).
+ *
+ * @tparam Row the underlying type.
+ */
+trait HasKey[Row] {
+  def key(t: Row): String
 }
 
 /**

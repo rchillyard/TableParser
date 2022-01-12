@@ -79,7 +79,7 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
 }
 
 object StandardRowParser {
-  def apply[Row: CellParser](implicit rowConfig: RowConfig): StandardRowParser[Row] = StandardRowParser(LineParser.apply)
+  def create[Row: CellParser](implicit rowConfig: RowConfig): StandardRowParser[Row] = StandardRowParser(LineParser.apply)
 }
 
 /**
