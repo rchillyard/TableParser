@@ -2,11 +2,12 @@ package com.phasmidsoftware.render
 
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.table._
-import java.io.File
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
+
+import java.io.File
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -68,6 +69,13 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   }
 
   behavior of "CsvRenderers"
+
+  it should "render a RawRow" in {
+    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+    implicit val renderer: CsvRenderer[RawRow] = new CsvRenderers {}.rawRowRenderer
+    val rawRow: RawRow = RawRow(Seq("42", "HGTTG"), Header.create("answer", "title"))
+    renderer.render(rawRow) shouldBe "42, HGTTG"
+  }
 
   it should "render an Option[Int]" in {
     import CsvRenderers._

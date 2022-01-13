@@ -5,7 +5,7 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.parse.Strings
-import com.phasmidsoftware.table.{BaseCsvGenerator, CsvAttributes, CsvGenerator, CsvProductGenerator}
+import com.phasmidsoftware.table._
 
 import java.net.URL
 import scala.reflect.ClassTag
@@ -19,13 +19,26 @@ import scala.reflect.ClassTag
 trait CsvRenderers {
 
   /**
-   * Method to return a CsvRenderer[ Seq[T] ].
-   *
-   * TEST
-   *
-   * @tparam T the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[ Seq[T] ]
-   */
+    * Method to return a CsvRenderer[RawRow].
+    *
+    * @param ca the (implicit) CsvAttributes.
+    * @return a CsvRenderer[RawRow].
+    */
+  def rawRowRenderer(implicit ca: CsvAttributes): CsvRenderer[RawRow] = new CsvRenderer[RawRow] {
+    implicit val z: CsvRenderer[String] = CsvRenderers.CsvRendererString
+
+    def render(t: RawRow, attrs: Map[String, String]): String = sequenceRenderer[String].render(t.ws)
+
+    val csvAttributes: CsvAttributes = ca
+  }
+
+  /**
+    * Method to return a CsvRenderer[ Seq[T] ].
+    *
+    * @param ca the (implicit) CsvAttributes.
+    * @tparam T the underlying type of the first parameter of the input to the render method.
+    * @return a CsvRenderer[ Seq[T] ]
+    */
   def sequenceRenderer[T: CsvRenderer](implicit ca: CsvAttributes): CsvRenderer[Seq[T]] = new CsvRenderer[Seq[T]] {
 
     def render(ts: Seq[T], attrs: Map[String, String]): String = (ts map { t: T => implicitly[CsvRenderer[T]].render(t) }).mkString(csvAttributes.delimiter)
@@ -34,11 +47,12 @@ trait CsvRenderers {
   }
 
   /**
-   * Method to return a CsvRenderer[ Option[T] ].
-   *
-   * @tparam T the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[ Option[T] ].
-   */
+    * Method to return a CsvRenderer[ Option[T] ].
+    *
+    * @param ca the (implicit) CsvAttributes.
+    * @tparam T the underlying type of the first parameter of the input to the render method.
+    * @return a CsvRenderer[ Option[T] ].
+    */
   def optionRenderer[T: CsvRenderer](implicit ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
     val csvAttributes: CsvAttributes = ca
 
@@ -46,14 +60,15 @@ trait CsvRenderers {
   }
 
   /**
-   * Method to return a CsvRenderer[T] which does not output a T at all, only a number of delimiters according to the value of alignment.
-   *
-   * @param alignment (defaults to 1): one more than the number of delimiters to output.
-   *                  If you are skipping a Product (such as a case class instance), then you should carefully count up how many (nested) elements to skip.
-   *                  So, for example, if you are skipping a Product with three members, you would set alignment = 3, even though you only want to output 2 delimiters.
-   * @tparam T the type of the parameter to the render method.
-   * @return a CsvRenderer[T].
-   */
+    * Method to return a CsvRenderer[T] which does not output a T at all, only a number of delimiters according to the value of alignment.
+    *
+    * @param alignment (defaults to 1): one more than the number of delimiters to output.
+    *                  If you are skipping a Product (such as a case class instance), then you should carefully count up how many (nested) elements to skip.
+    *                  So, for example, if you are skipping a Product with three members, you would set alignment = 3, even though you only want to output 2 delimiters.
+    * @param ca        the (implicit) CsvAttributes.
+    * @tparam T the type of the parameter to the render method.
+    * @return a CsvRenderer[T].
+    */
   def skipRenderer[T](alignment: Int = 1)(implicit ca: CsvAttributes): CsvRenderer[T] = new CsvRenderer[T] {
     val csvAttributes: CsvAttributes = ca
 
@@ -61,16 +76,17 @@ trait CsvRenderers {
   }
 
   /**
-   * Method to return a CsvRenderer[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
-   *
-   * NOTE: be careful using this particular method it only applies where T is a 1-tuple (e.g. a case class with one field -- not common).
-   *
-   * @param construct a function P => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the (single) field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a HierarchicalRenderer[T].
-   */
+    * Method to return a CsvRenderer[T] where T is a 1-ary Product and which is based on a function to convert a P into a T.
+    *
+    * NOTE: be careful using this particular method it only applies where T is a 1-tuple (e.g. a case class with one field -- not common).
+    *
+    * @param construct     a function P => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
+    * @tparam P1 the type of the (single) field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a HierarchicalRenderer[T].
+    */
   def renderer1[P1: CsvRenderer, T <: Product : ClassTag](construct: P1 => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     protected def elements(t: T): Strings = Seq(
@@ -79,15 +95,16 @@ trait CsvRenderers {
   }
 
   /**
-   * Method to return a CsvRenderer[T] where T is a 2-ary Product and which is based on a function to convert a (P1,P2) into a T.
-   *
-   * @param construct a function (P1,P2) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
-   */
+    * Method to return a CsvRenderer[T] where T is a 2-ary Product and which is based on a function to convert a (P1,P2) into a T.
+    *
+    * @param construct     a function (P1,P2) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a CsvRenderer[T].
+    */
   def renderer2[P1: CsvRenderer, P2: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     protected def elements(t: T): Strings = Seq(
@@ -97,16 +114,17 @@ trait CsvRenderers {
   }
 
   /**
-   * Method to return a CsvRenderer[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
-   *
-   * @param construct a function (P1,P2,P3) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
-   */
+    * Method to return a CsvRenderer[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
+    *
+    * @param construct     a function (P1,P2,P3) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a CsvRenderer[T].
+    */
   def renderer3[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     protected def elements(t: T): Strings = {
@@ -119,17 +137,18 @@ trait CsvRenderers {
   }
 
   /**
-   * Method to return a CsvRenderer[T] where T is a 4-ary Product and which is based on the given "construct" function.
-   *
-   * @param construct a function (P1,P2,P3,P4) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
-   */
+    * Method to return a CsvRenderer[T] where T is a 4-ary Product and which is based on the given "construct" function.
+    *
+    * @param construct     a function (P1,P2,P3,P4) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a CsvRenderer[T].
+    */
   def renderer4[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     protected def elements(t: T): Strings = {
@@ -143,18 +162,19 @@ trait CsvRenderers {
   }
 
   /**
-   * Method to return a CsvRenderer[T] where T is a 5-ary Product and which is based on the given "construct" function.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
-   */
+    * Method to return a CsvRenderer[T] where T is a 5-ary Product and which is based on the given "construct" function.
+    *
+    * @param construct     a function (P1,P2,P3,P4,P5) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
+    * @tparam P1 the type of the first field of the Product type T.
+    * @tparam P2 the type of the second field of the Product type T.
+    * @tparam P3 the type of the third field of the Product type T.
+    * @tparam P4 the type of the fourth field of the Product type T.
+    * @tparam P5 the type of the fifth field of the Product type T.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @return a CsvRenderer[T].
+    */
   def renderer5[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     protected def elements(t: T): Strings = {
@@ -173,8 +193,9 @@ trait CsvRenderers {
     *
     * TEST
     *
-    * @param construct a function (P1,P2,P3,P4,P5,P6) => T, usually the apply method of a case class.
-    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param construct     a function (P1,P2,P3,P4,P5,P6) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
     * @tparam P3 the type of the third field of the Product type T.
@@ -183,7 +204,7 @@ trait CsvRenderers {
     * @tparam P6 the type of the sixth field of the Product type T.
     * @tparam T  the underlying type of the first parameter of the input to the render method.
     * @return a CsvRenderer[T].
-   */
+    */
   def renderer6[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     protected def elements(t: T): Strings = {
@@ -203,8 +224,9 @@ trait CsvRenderers {
     *
     * TEST
     *
-    * @param construct a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
-    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
     * @tparam P3 the type of the third field of the Product type T.
@@ -214,7 +236,7 @@ trait CsvRenderers {
     * @tparam P7 the type of the seventh field of the Product type T.
     * @tparam T  the underlying type of the first parameter of the input to the render method.
     * @return a CsvRenderer[T].
-   */
+    */
   def renderer7[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     protected def elements(t: T): Strings = {
@@ -235,8 +257,9 @@ trait CsvRenderers {
     *
     * TEST
     *
-    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
-    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
     * @tparam P3 the type of the third field of the Product type T.
@@ -246,7 +269,7 @@ trait CsvRenderers {
     * @tparam P7 the type of the seventh field of the Product type T.
     * @tparam P8 the type of the eighth field of the Product type T.
     * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+    * @return a CsvRenderer[T].
    */
   def renderer8[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
@@ -269,8 +292,9 @@ trait CsvRenderers {
     *
     * TEST
     *
-    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9) => T, usually the apply method of a case class.
-    *                  The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
     * @tparam P1 the type of the first field of the Product type T.
     * @tparam P2 the type of the second field of the Product type T.
     * @tparam P3 the type of the third field of the Product type T.
@@ -280,7 +304,7 @@ trait CsvRenderers {
     * @tparam P7 the type of the seventh field of the Product type T.
     * @tparam P8 the type of the eighth field of the Product type T.
     * @tparam P9 the type of the ninth field of the Product type T.
-   * @tparam T  the underlying type of the first parameter of the input to the render method.
+    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[T].
    */
   def renderer9[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
@@ -305,18 +329,19 @@ trait CsvRenderers {
     *
     * TEST
     *
-    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
-    *                  The sole purpose of this function is for type inference--it is never actually invoked.
-    * @tparam P1 the type of the first field of the Product type T.
-    * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the third field of the Product type T.
-    * @tparam P4 the type of the fourth field of the Product type T.
-    * @tparam P5 the type of the fifth field of the Product type T.
-    * @tparam P6 the type of the sixth field of the Product type T.
-    * @tparam P7 the type of the seventh field of the Product type T.
-    * @tparam P8 the type of the eighth field of the Product type T.
-    * @tparam P9 the type of the ninth field of the Product type T.
-   * @tparam P10 the type of the tenth field of the Product type T.
+    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
+    * @tparam P1  the type of the first field of the Product type T.
+    * @tparam P2  the type of the second field of the Product type T.
+    * @tparam P3  the type of the third field of the Product type T.
+    * @tparam P4  the type of the fourth field of the Product type T.
+    * @tparam P5  the type of the fifth field of the Product type T.
+    * @tparam P6  the type of the sixth field of the Product type T.
+    * @tparam P7  the type of the seventh field of the Product type T.
+    * @tparam P8  the type of the eighth field of the Product type T.
+    * @tparam P9  the type of the ninth field of the Product type T.
+    * @tparam P10 the type of the tenth field of the Product type T.
    * @tparam T   the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[T].
    */
@@ -343,18 +368,19 @@ trait CsvRenderers {
     *
     * TEST
     *
-    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
-    *                  The sole purpose of this function is for type inference--it is never actually invoked.
-    * @tparam P1 the type of the first field of the Product type T.
-    * @tparam P2 the type of the second field of the Product type T.
-    * @tparam P3 the type of the third field of the Product type T.
-    * @tparam P4 the type of the fourth field of the Product type T.
-    * @tparam P5 the type of the fifth field of the Product type T.
-    * @tparam P6 the type of the sixth field of the Product type T.
-    * @tparam P7 the type of the seventh field of the Product type T.
-    * @tparam P8 the type of the eighth field of the Product type T.
-    * @tparam P9 the type of the ninth field of the Product type T.
-   * @tparam P10 the type of the tenth field of the Product type T.
+    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
+    * @tparam P1  the type of the first field of the Product type T.
+    * @tparam P2  the type of the second field of the Product type T.
+    * @tparam P3  the type of the third field of the Product type T.
+    * @tparam P4  the type of the fourth field of the Product type T.
+    * @tparam P5  the type of the fifth field of the Product type T.
+    * @tparam P6  the type of the sixth field of the Product type T.
+    * @tparam P7  the type of the seventh field of the Product type T.
+    * @tparam P8  the type of the eighth field of the Product type T.
+    * @tparam P9  the type of the ninth field of the Product type T.
+    * @tparam P10 the type of the tenth field of the Product type T.
    * @tparam P11 the type of the eleventh field of the Product type T.
    * @tparam T   the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[T].
@@ -379,20 +405,21 @@ trait CsvRenderers {
   }
 
   /**
-   * Method to return a CsvRenderer[T] where T is a 12-ary Product and which is based on the given "construct" function.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) => T, usually the apply method of a case class.
-   *                  The sole purpose of this function is for type inference--it is never actually invoked.
-   * @tparam P1  the type of the first field of the Product type T.
-   * @tparam P2  the type of the second field of the Product type T.
-   * @tparam P3  the type of the third field of the Product type T.
-   * @tparam P4  the type of the fourth field of the Product type T.
-   * @tparam P5  the type of the fifth field of the Product type T.
-   * @tparam P6  the type of the sixth field of the Product type T.
-   * @tparam P7  the type of the seventh field of the Product type T.
-   * @tparam P8  the type of the eighth field of the Product type T.
-   * @tparam P9  the type of the ninth field of the Product type T.
-   * @tparam P10 the type of the tenth field of the Product type T.
+    * Method to return a CsvRenderer[T] where T is a 12-ary Product and which is based on the given "construct" function.
+    *
+    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) => T, usually the apply method of a case class.
+    *                      The sole purpose of this function is for type inference--it is never actually invoked.
+    * @param csvAttributes the (implicit) CsvAttributes.
+    * @tparam P1  the type of the first field of the Product type T.
+    * @tparam P2  the type of the second field of the Product type T.
+    * @tparam P3  the type of the third field of the Product type T.
+    * @tparam P4  the type of the fourth field of the Product type T.
+    * @tparam P5  the type of the fifth field of the Product type T.
+    * @tparam P6  the type of the sixth field of the Product type T.
+    * @tparam P7  the type of the seventh field of the Product type T.
+    * @tparam P8  the type of the eighth field of the Product type T.
+    * @tparam P9  the type of the ninth field of the Product type T.
+    * @tparam P10 the type of the tenth field of the Product type T.
    * @tparam P11 the type of the eleventh field of the Product type T.
    * @tparam P12 the type of the twelfth field of the Product type T.
    * @tparam T   the underlying type of the first parameter of the input to the render method.
