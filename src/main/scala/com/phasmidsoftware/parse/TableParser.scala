@@ -365,7 +365,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
   private def decryptTable(xt: RawTable): Table[String] = {
     import cats.effect.IO
     import cats.effect.unsafe.implicits.global
-    val yt = xt.map(row => Encryption.decrypt(keyFunction)(row.ws))
+    val yt = xt.map(row => Encryption.decryptRowKey(keyFunction)(row.ws))
     yt.processRows {
       wis => IO.parSequenceN(2)(wis.toSeq).unsafeRunSync()
     }

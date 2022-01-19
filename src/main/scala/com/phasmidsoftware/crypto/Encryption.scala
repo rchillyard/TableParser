@@ -112,20 +112,22 @@ object Encryption {
     * @param row         a two-element sequence of Strings.
     * @return a IO[String]
     */
-  def decrypt(keyFunction: String => String)(row: Seq[String]): IO[String] = {
+  def decryptRowKey(keyFunction: String => String)(row: Seq[String]): IO[String] = {
     val ko = row.headOption // row-id
     val f = row.lift
-    (for (c <- ko map keyFunction; v <- f(1)) yield (c, v)) match {
-      case Some((c, v)) =>
-        for {
-          x <- EncryptionAES128CTR.buildKey(c)
-          bytes <- Encryption.hexStringToBytes(v)
-          cipher <- EncryptionAES128CTR.bytesToCipherText(bytes)
-          y <- EncryptionAES128CTR.decrypt(x)(cipher)
-        } yield y
-      case _ => throw new RuntimeException(s"Encryption.decrypt: logic error")
+    // CONSIDER why do we have this constant 1 here?
+    (for (key <- ko map keyFunction; hex <- f(1)) yield (key, hex)) match {
+      case Some(key -> hex) => doDecryptHex(key, hex)
+      case _ => throw new RuntimeException(s"Encryption.decryptRowKey: logic error")
     }
   }
+
+  private def doDecryptHex(rawKey: String, hex: String) = for {
+    x <- EncryptionAES128CTR.buildKey(rawKey)
+    bytes <- Encryption.hexStringToBytes(hex)
+    cipher <- EncryptionAES128CTR.bytesToCipherText(bytes)
+    y <- EncryptionAES128CTR.decrypt(x)(cipher)
+  } yield y
 }
 
 /**
