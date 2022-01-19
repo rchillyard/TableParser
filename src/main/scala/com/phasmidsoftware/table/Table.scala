@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.crypto.Encryption
+import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
@@ -338,10 +338,10 @@ trait Table[Row] extends Iterable[Row] {
     * @param hasKey    implicit value of HasKey[Row].
     *                  This relates to a column which is the "key" column in a CSV (used for identification).
     *                  It is not directly related to cryptography.
-    * @tparam A the cipher algorithm (for which there must be evidence of Encryption[A]).
+    * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
     * @param csvAttributes implicit value of CsvAttributes.
     */
-  def writeCSVFileEncrypted[A: Encryption](file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
+  def writeCSVFileEncrypted[A: HexEncryption](file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableEncryptedFileRenderer[Row, A](file).render(this)
 
   /**

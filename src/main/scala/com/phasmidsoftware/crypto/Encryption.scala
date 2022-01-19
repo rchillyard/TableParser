@@ -1,14 +1,14 @@
 package com.phasmidsoftware.crypto
 
 import cats.effect.IO
-import com.phasmidsoftware.crypto.Encryption.hexStringToBytes
 import tsec.cipher.symmetric
 import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
 
 import scala.util.Random
 
 /**
-  * Trait to deal with Encryption.
+  * Trait to deal with Encryption for Strings.
+  * The encoding of the Strings is dependent on the concrete implementation of this trait.
   *
   * It is general in nature, but has only been tested with JCA AES128CTR.
   *
@@ -57,6 +57,22 @@ trait Encryption[A] {
     * @return an IO of CipherText[A].
     */
   def bytesToCipherText(bytes: Array[Byte]): IO[symmetric.CipherText[A]]
+}
+
+/**
+  * Trait to deal with Encryption to/from Hex strings.
+  *
+  * @tparam A the cipher algorithm.
+  */
+trait HexEncryption[A] extends Encryption[A] {
+  /**
+    * Encrypt a plain text String but using a randomly generated key.
+    * The key, together with the encrypted text as hex and a check boolean, is returned.
+    *
+    * @param plaintext the plain text to be encrypted.
+    * @return a tuple of the raw key, the encrypted cipher (as hex), and a boolean, all wrapped in IO.
+    */
+  def encryptWithRandomKey(plaintext: CharSequence): IO[(String, String, Boolean)]
 
   /**
     * Given a raw key and a Hex string, do the decryption.
@@ -65,13 +81,48 @@ trait Encryption[A] {
     * @param hex    a string of Hexadecimal digits representing a cipher.
     * @return the decrypted String, wrapped in IO.
     */
-  def decryptHex(rawKey: String, hex: String): IO[String] =
-    for {
-      x <- buildKey(rawKey)
-      bytes <- Encryption.hexStringToBytes(hex)
-      cipher <- bytesToCipherText(bytes)
-      y <- decrypt(x)(cipher)
-    } yield y
+  def decryptHex(rawKey: String, hex: String): IO[String]
+
+  /**
+    * Method to check that the given Hex String really does decrypt to the given plaintext.
+    *
+    * @param hex       a String of hexadecimals.
+    * @param key       the secret key.
+    * @param plaintext the original plain text.
+    * @return true if the Hex string is correct.
+    */
+  def checkHex(hex: String, key: SecretKey[A], plaintext: String): IO[Boolean]
+}
+
+/**
+  * Abstract base class which extends Encryption and provides methods for encrypt/decrypt hex strings.
+  *
+  * @tparam A the cipher algorithm.
+  */
+abstract class BaseHexEncryption[A] extends HexEncryption[A] {
+
+  def encryptWithRandomKey(plaintext: CharSequence): IO[(String, String, Boolean)] = for {
+    rawKey <- Encryption.genRawKey
+    cipherKey <- buildKey(rawKey)
+    cipherText <- encrypt(cipherKey)(plaintext.toString)
+    bytes <- concat(cipherText)
+    hex <- HexEncryption.bytesToHexString(bytes)
+    ok <- checkHex(hex, cipherKey, plaintext.toString)
+  } yield (rawKey, hex, ok)
+
+  /**
+    * Given a raw key and a Hex string, do the decryption.
+    *
+    * @param rawKey a raw key, i.e. a sequence of 16 characters.
+    * @param hex    a string of Hexadecimal digits representing a cipher.
+    * @return the decrypted String, wrapped in IO.
+    */
+  def decryptHex(rawKey: String, hex: String): IO[String] = for {
+    x <- buildKey(rawKey)
+    bytes <- HexEncryption.hexStringToBytes(hex)
+    cipher <- bytesToCipherText(bytes)
+    y <- decrypt(x)(cipher)
+  } yield y
 
   /**
     * Method to check that the given Hex String really does decrypt to the given plaintext.
@@ -82,7 +133,7 @@ trait Encryption[A] {
     * @return true if the Hex string is correct.
     */
   def checkHex(hex: String, key: SecretKey[A], plaintext: String): IO[Boolean] = for {
-    bytes <- hexStringToBytes(hex)
+    bytes <- HexEncryption.hexStringToBytes(hex)
     encrypted <- bytesToCipherText(bytes)
     message <- decrypt(key)(encrypted)
     ok = message == plaintext
@@ -90,13 +141,25 @@ trait Encryption[A] {
 }
 
 object Encryption {
+  val random: Random = new Random()
+
+  def genRawKey: IO[String] = {
+    // CONSIDER using Cats effect for Random.
+    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
+    val sb = new StringBuilder
+    for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
+    IO(sb.toString)
+  }
+}
+
+object HexEncryption {
 
   /**
-   * Show the given bytes as hexadecimal text.
-   *
-   * @param bytes an Array[Byte].
-   * @return an IO of String.
-   */
+    * Show the given bytes as hexadecimal text.
+    *
+    * @param bytes an Array[Byte].
+    * @return an IO of String.
+    */
   def bytesToHexString(bytes: Array[Byte]): IO[String] = {
     val sb = new StringBuilder
     for (b <- bytes) yield sb.append(String.format("%02X", b))
@@ -117,34 +180,24 @@ object Encryption {
     *                    (said value might well be ignored).
     * @param row         a two-element sequence of Strings: the id and the hex string.
     *                    * @tparam A the cipher algorithm.
-    * @tparam A the cipher algorithm (for which there must be evidence of Encryption[A]).
+    * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
     * @return a IO[String].
     */
-  def decryptRow[A: Encryption](keyFunction: String => String)(row: Seq[String]): IO[String] = {
+  def decryptRow[A: HexEncryption](keyFunction: String => String)(row: Seq[String]): IO[String] = {
     val ko = row.headOption // the first element of the row is the identifier (row-id).
     val hexIndex = 1 // the second (and last) element in the row is the Hex string.
     val f = row.lift
     (for (key <- ko map keyFunction; hex <- f(hexIndex)) yield (key, hex)) match {
-      case Some(key -> hex) => implicitly[Encryption[A]].decryptHex(key, hex)
+      case Some(key -> hex) => implicitly[HexEncryption[A]].decryptHex(key, hex)
       case _ => throw new RuntimeException(s"Encryption.decryptRow: logic error")
     }
-  }
-
-  val random: Random = new Random()
-
-  def genRawKey: IO[String] = {
-    // CONSIDER using Cats effect for Random.
-    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
-    val sb = new StringBuilder
-    for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
-    IO(sb.toString)
   }
 }
 
 /**
- * An object which provides encryption based on AES128CTR.
- */
-object EncryptionAES128CTR extends Encryption[AES128CTR] {
+  * An object which provides hex-encryption based on AES128CTR for UTF-8 Strings.
+  */
+object EncryptionUTF8AES128CTR extends BaseHexEncryption[AES128CTR] {
 
   import tsec.cipher.common.padding.NoPadding
   import tsec.cipher.symmetric

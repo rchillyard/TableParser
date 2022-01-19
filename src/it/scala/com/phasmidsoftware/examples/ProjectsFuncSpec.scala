@@ -1,6 +1,6 @@
 package com.phasmidsoftware.examples
 
-import com.phasmidsoftware.crypto.{Encryption, EncryptionAES128CTR}
+import com.phasmidsoftware.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
 import com.phasmidsoftware.parse.{CellParser, EncryptedHeadedStringTableParser, RawParsers, TableParser}
 import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.table.Table.{parse, parseResource}
@@ -18,7 +18,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
 
   behavior of "TeamProject table"
 
-  implicit val encryption: Encryption[AES128CTR] = EncryptionAES128CTR
+  implicit val encryption: HexEncryption[AES128CTR] = EncryptionUTF8AES128CTR
 
   /**
     * NOTE: it is perfectly proper for there to be a number of parsing problems.

@@ -4,15 +4,16 @@
 
 package com.phasmidsoftware.render
 
-import com.phasmidsoftware.crypto.Encryption
+import cats.effect.IO
+import com.phasmidsoftware.crypto.HexEncryption
 
 import java.io.{File, FileWriter}
 
 /**
- * Trait to enable rendering of a table to a sequential (non-hierarchical) output format.
- *
- * @tparam O the underlying type, for example, a StringBuilder.
- */
+  * Trait to enable rendering of a table to a sequential (non-hierarchical) output format.
+  *
+  * @tparam O the underlying type, for example, a StringBuilder.
+  */
 trait Writable[O] {
 
   // TODO create some off-the-shelf Writables
@@ -81,17 +82,10 @@ trait Writable[O] {
     * @tparam A the cipher algorithm (for which there must be evidence of Encryption[A]).
     * @return an instance of O which represents the updated output structure.
     */
-  def writeLineEncrypted[A: Encryption](o: O)(key: String, plaintext: CharSequence): O = {
+  def writeLineEncrypted[A: HexEncryption](o: O)(key: String, plaintext: CharSequence): O = {
     import cats.effect.unsafe.implicits.global
-    val encryption = implicitly[Encryption[A]]
-    val wBi = for {
-      rawKey <- Encryption.genRawKey
-      cipherKey <- encryption.buildKey(rawKey)
-      cipherText <- encryption.encrypt(cipherKey)(plaintext.toString)
-      bytes <- encryption.concat(cipherText)
-      hex <- Encryption.bytesToHexString(bytes)
-      ok <- encryption.checkHex(hex, cipherKey, plaintext.toString)
-    } yield (rawKey, hex, ok)
+    val encryption = implicitly[HexEncryption[A]]
+    val wBi: IO[(String, String, Boolean)] = encryption.encryptWithRandomKey(plaintext)
 
     // TODO use IO for O
     wBi.unsafeRunSync() match {
@@ -101,6 +95,7 @@ trait Writable[O] {
       case x => throw new RuntimeException(s"Writable.writeLineEncrypted: logic error: wBi=$x, plaintext=$plaintext")
     }
   }
+
 
   private val sQuote: String = quote.toString
 
