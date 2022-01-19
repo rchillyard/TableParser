@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.render
 
+import com.phasmidsoftware.crypto.Encryption
 import com.phasmidsoftware.table._
 import org.joda.time.LocalDate
 
@@ -219,18 +220,19 @@ case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvA
 case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes)
 
 /**
- * Case class to help render a Table to a File in CSV format.
- *
- * @param file          the file to which the table will be written.
- * @param csvAttributes implicit instance of CsvAttributes.
- * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
- */
-case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes) {
+  * Case class to help render a Table to a File in CSV format.
+  *
+  * TODO remove duplicate code
+  *
+  * @param file          the file to which the table will be written.
+  * @param csvAttributes implicit instance of CsvAttributes.
+  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
+  * @tparam A the cipher algorithm (for which there must be evidence of Encryption[A]).
+  */
+case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey, A: Encryption](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes) {
   override protected def generateText(ow: Writable[FileWriter], tc: CsvRenderer[T], o: FileWriter, t: T): FileWriter = {
     val key = implicitly[HasKey[T]].key(t)
     val rendering = tc.render(t, Map())
-    import com.phasmidsoftware.crypto.EncryptionAES128CTR
-    implicit val encryption: EncryptionAES128CTR.type = EncryptionAES128CTR
     ow.writeLineEncrypted(o)(key, rendering)
   }
 }

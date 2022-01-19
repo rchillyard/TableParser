@@ -73,19 +73,19 @@ trait Writable[O] {
   }
 
   /**
-   * Method to write a character sequence to the given instance o followed by a newline.
-   *
-   * @param o          the instance of O whither the parameter x should be written.
-   * @param key        the lookup key for this row (not an encryption key).
-   * @param plaintext  the plain text character sequence to be written in encrypted form.
-   * @param encryption (implicit) instance of Encryption[A].
-   * @return an instance of O which represents the updated output structure.
-   */
-  def writeLineEncrypted[A](o: O)(key: String, plaintext: CharSequence)(implicit encryption: Encryption[A]): O = {
+    * Method to write a character sequence to the given instance o followed by a newline.
+    *
+    * @param o         the instance of O whither the parameter x should be written.
+    * @param key       the lookup key for this row (not an encryption key).
+    * @param plaintext the plain text character sequence to be written in encrypted form.
+    * @tparam A the cipher algorithm (for which there must be evidence of Encryption[A]).
+    * @return an instance of O which represents the updated output structure.
+    */
+  def writeLineEncrypted[A: Encryption](o: O)(key: String, plaintext: CharSequence): O = {
     import cats.effect.unsafe.implicits.global
-
+    val encryption = implicitly[Encryption[A]]
     val wBi = for {
-      rawKey <- encryption.genRawKey
+      rawKey <- Encryption.genRawKey
       cipherKey <- encryption.buildKey(rawKey)
       cipherText <- encryption.encrypt(cipherKey)(plaintext.toString)
       bytes <- encryption.concat(cipherText)

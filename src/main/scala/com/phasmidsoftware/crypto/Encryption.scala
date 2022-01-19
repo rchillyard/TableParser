@@ -8,19 +8,13 @@ import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
 import scala.util.Random
 
 /**
- * Trait to deal with Encryption.
- *
- * It is general in nature, but has only been tested with JCA AES128CTR.
- *
- * @tparam A the underlying type of the encryption.
- */
+  * Trait to deal with Encryption.
+  *
+  * It is general in nature, but has only been tested with JCA AES128CTR.
+  *
+  * @tparam A the cipher algorithm.
+  */
 trait Encryption[A] {
-  /**
-    * Generate a random String of the required length.
-    *
-    * @return an IO of String.
-    */
-  def genRawKey: IO[String]
 
   /**
     * Build a key from the given String.
@@ -48,24 +42,36 @@ trait Encryption[A] {
    */
   def decrypt(key: SecretKey[A])(cipher: symmetric.CipherText[A]): IO[String]
 
-
   /**
-   * Show the given cipher text as a an array of bytes.
-   *
-   * @param cipher an instance of CipherText[A].
-   * @return an IO of Array[Byte].
-   */
+    * Show the given cipher text as a an array of bytes.
+    *
+    * @param cipher an instance of CipherText[A].
+    * @return an IO of Array[Byte].
+    */
   def concat(cipher: symmetric.CipherText[A]): IO[Array[Byte]]
 
   /**
-   * THe inverse of concat.
-   *
-   * CONSIDER making this (and concat?) part of Encryption object.
-   *
-   * @param bytes the byte array.
-   * @return an IO of CipherText[A].
-   */
-  def bytesToCipherText(bytes: Array[Byte]): IO[symmetric.CipherText[A]] = IO.fromEither(AES128CTR.ciphertextFromConcat(bytes)).asInstanceOf[IO[symmetric.CipherText[A]]]
+    * THe inverse of concat.
+    *
+    * @param bytes the byte array.
+    * @return an IO of CipherText[A].
+    */
+  def bytesToCipherText(bytes: Array[Byte]): IO[symmetric.CipherText[A]]
+
+  /**
+    * Given a raw key and a Hex string, do the decryption.
+    *
+    * @param rawKey a raw key, i.e. a sequence of 16 characters.
+    * @param hex    a string of Hexadecimal digits representing a cipher.
+    * @return the decrypted String, wrapped in IO.
+    */
+  def decryptHex(rawKey: String, hex: String): IO[String] =
+    for {
+      x <- buildKey(rawKey)
+      bytes <- Encryption.hexStringToBytes(hex)
+      cipher <- bytesToCipherText(bytes)
+      y <- decrypt(x)(cipher)
+    } yield y
 
   /**
     * Method to check that the given Hex String really does decrypt to the given plaintext.
@@ -105,29 +111,34 @@ object Encryption {
   }
 
   /**
-    * CONSIDER moving this.
+    * Method to decrypt a row consisting of an identifier and a Hex string.
     *
     * @param keyFunction a function to yield the raw cipher key from the value of the ID column
     *                    (said value might well be ignored).
-    * @param row         a two-element sequence of Strings.
-    * @return a IO[String]
+    * @param row         a two-element sequence of Strings: the id and the hex string.
+    *                    * @tparam A the cipher algorithm.
+    * @tparam A the cipher algorithm (for which there must be evidence of Encryption[A]).
+    * @return a IO[String].
     */
-  def decryptRowKey(keyFunction: String => String)(row: Seq[String]): IO[String] = {
-    val ko = row.headOption // row-id
+  def decryptRow[A: Encryption](keyFunction: String => String)(row: Seq[String]): IO[String] = {
+    val ko = row.headOption // the first element of the row is the identifier (row-id).
+    val hexIndex = 1 // the second (and last) element in the row is the Hex string.
     val f = row.lift
-    // CONSIDER why do we have this constant 1 here?
-    (for (key <- ko map keyFunction; hex <- f(1)) yield (key, hex)) match {
-      case Some(key -> hex) => doDecryptHex(key, hex)
-      case _ => throw new RuntimeException(s"Encryption.decryptRowKey: logic error")
+    (for (key <- ko map keyFunction; hex <- f(hexIndex)) yield (key, hex)) match {
+      case Some(key -> hex) => implicitly[Encryption[A]].decryptHex(key, hex)
+      case _ => throw new RuntimeException(s"Encryption.decryptRow: logic error")
     }
   }
 
-  private def doDecryptHex(rawKey: String, hex: String) = for {
-    x <- EncryptionAES128CTR.buildKey(rawKey)
-    bytes <- Encryption.hexStringToBytes(hex)
-    cipher <- EncryptionAES128CTR.bytesToCipherText(bytes)
-    y <- EncryptionAES128CTR.decrypt(x)(cipher)
-  } yield y
+  val random: Random = new Random()
+
+  def genRawKey: IO[String] = {
+    // CONSIDER using Cats effect for Random.
+    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
+    val sb = new StringBuilder
+    for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
+    IO(sb.toString)
+  }
 }
 
 /**
@@ -145,16 +156,6 @@ object EncryptionAES128CTR extends Encryption[AES128CTR] {
   implicit val ctrStrategy: IvGen[IO, AES128CTR] = AES128CTR.defaultIvStrategy[IO]
   implicit val cachedInstance: JCAPrimitiveCipher[IO, AES128CTR, CTR, NoPadding] = AES128CTR.genEncryptor[IO] //Cache the implicit
 
-  val random: Random = new Random()
-
-  def genRawKey: IO[String] = {
-    // CONSIDER using Cats effect for Random.
-    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
-    val sb = new StringBuilder
-    for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
-    IO(sb.toString)
-  }
-
   def buildKey(rawKey: String): IO[SecretKey[AES128CTR]] =
     if (rawKey.length == AES128CTR.keySizeBytes)
       for (key <- AES128CTR.buildKey[IO](rawKey.utf8Bytes)) yield key
@@ -167,4 +168,6 @@ object EncryptionAES128CTR extends Encryption[AES128CTR] {
     for (z <- AES128CTR.decrypt[IO](cipher, key)) yield z.toUtf8String
 
   def concat(cipher: symmetric.CipherText[AES128CTR]): IO[Array[Byte]] = IO(cipher.toConcatenated)
+
+  def bytesToCipherText(bytes: Array[Byte]): IO[symmetric.CipherText[AES128CTR]] = IO.fromEither(AES128CTR.ciphertextFromConcat(bytes))
 }
