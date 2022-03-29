@@ -191,6 +191,73 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty.get.flatMap(f).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
   }
 
+  it should "to Seq" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+  }
+
+  it should "to Shuffle" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.shuffle.rows.size shouldBe 2
+  }
+
+  it should "drop" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.drop(1).rows shouldBe Seq(IntPair(42, 99))
+  }
+
+  it should "dropRight" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.dropRight(1).rows shouldBe Seq(IntPair(1, 2))
+  }
+
+  it should "empty" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.empty.rows shouldBe Seq.empty
+  }
+
+  it should "dropWhile" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2" , "42 99"))
+    iIty.get.dropWhile(_.equals(IntPair(3,4))).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+  }
+
+  it should "filter" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2" , "42 99"))
+    iIty.get.filter(_.equals(IntPair(3,4))).rows shouldBe Seq(IntPair(3,4))
+  }
+
+  it should "filterNot" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2" , "42 99"))
+    iIty.get.filterNot(_.equals(IntPair(3,4))).rows shouldBe  Seq(IntPair(1, 2), IntPair(42, 99))
+  }
+
+  it should "slice" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2" , "42 99"))
+    iIty.get.slice(0,2).rows shouldBe  Seq( IntPair(3, 4), IntPair(1, 2))
+  }
+
+  it should "takeRight" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2" , "42 99"))
+    iIty.get.takeRight(2).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+  }
+
+  it should "takeWhile" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2" , "42 99"))
+    iIty.get.takeWhile(_.equals(IntPair(3,4))).rows shouldBe Seq(IntPair(3, 4))
+  }
+
+
   case class HTML(x: String, ao: Option[String], attr: Map[String, String], hs: Seq[HTML])
 
   object HTML {
