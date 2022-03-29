@@ -5,8 +5,12 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{Header, Row}
+import org.joda.time.LocalDate
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+
+import java.io.File
+import java.net.URL
 import scala.util.{Failure, Success, Try}
 
 //noinspection NotImplementedCode
@@ -76,4 +80,58 @@ class CellParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     p.convertString("") should matchPattern { case Failure(_) => }
   }
 
+  it should "parse File" in {
+    val p = implicitly[CellParser[File]]
+    p.convertString("/CellParsersSpec.scala") shouldBe Success(new File("/CellParsersSpec.scala"))
+    p.convertString("") shouldBe Success(new File(""))
+  }
+
+  it should "parse option Double" in {
+    val p = implicitly[CellParser[Option[Double]]]
+    p.convertString("3.1415927") shouldBe Success(Some(3.1415927))
+    p.convertString("") shouldBe Success(None)
+    p.convertString("test") should matchPattern { case Failure(_) => }
+  }
+
+  it should "parse option Integer" in {
+    val p = implicitly[CellParser[Option[Int]]]
+    p.convertString("99") shouldBe Success(Some(99))
+    p.convertString("") shouldBe Success(None)
+    p.convertString("test") should matchPattern { case Failure(_) => }
+  }
+
+  it should "parse option Boolean" in {
+    val p = implicitly[CellParser[Option[Boolean]]]
+    p.convertString("true") shouldBe Success(Some(true))
+    p.convertString("") shouldBe Success(None)
+    p.convertString("test") should matchPattern { case Failure(_) => }
+  }
+
+  it should "parse option Long" in {
+    val p = implicitly[CellParser[Option[Long]]]
+    p.convertString("9223372036854775807") shouldBe Success(Some(9223372036854775807L))
+    p.convertString("") shouldBe Success(None)
+    p.convertString("test") should matchPattern { case Failure(_) => }
+  }
+
+  it should "parse option LocalDate" in {
+    val p = implicitly[CellParser[Option[LocalDate]]]
+
+    p.convertString("2021-05-13") shouldBe Success(Some(LocalDate.parse("2021-05-13")))
+    p.convertString("") shouldBe Success(None)
+    p.convertString("test") should matchPattern { case Failure(_) => }
+  }
+
+  it should "parse option URL" in {
+    val p = implicitly[CellParser[Option[URL]]]
+
+    p.convertString("http://google.com") shouldBe Success(Some(new URL("http://google.com")))
+    p.convertString("") should matchPattern { case Failure(_) => }
+  }
+
+  it should "parse option File" in {
+    val p = implicitly[CellParser[Option[File]]]
+    p.convertString("/CellParsersSpec.scala") shouldBe Success(Some(new File("/CellParsersSpec.scala")))
+    p.convertString("") shouldBe Success(Some(new File("")))
+  }
 }
