@@ -451,4 +451,57 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     partnerships.partners.head shouldBe Array("Adam S", "Amy A")
     partnerships.partners.last shouldBe Array("Ann P", "Barbara G")
   }
+
+  behavior of "RawTableParser"
+  it should "header should be set" in {
+    val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
+    val hdr = Header(Seq(Seq("a")))
+    parser.setHeader(hdr) shouldBe RawTableParser(maybeFixedHeader = Some(hdr)).setMultiline(true)
+  }
+
+  it should "it should set forgiving" in {
+    val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
+    parser.setForgiving(true) shouldBe  RawTableParser(TableParser.includeAll, None, true, true)
+  }
+
+  behavior of "PlainTextHeadedStringTableParser"
+  it should "it should set header of plaintext" in {
+    val hdr = Header(Seq(Seq("a")))
+    val parser = PlainTextHeadedStringTableParser[Int](None, false, 1)
+    parser.setHeader(hdr) shouldBe PlainTextHeadedStringTableParser[Int](Some(hdr), false, 1)
+  }
+
+  it should "it should set forgiving of plaintext" in {
+    val parser = PlainTextHeadedStringTableParser[Int](None, false, 1).setMultiline(true)
+    parser.setForgiving(true) shouldBe PlainTextHeadedStringTableParser[Int](None, true, 1)
+  }
+
+  behavior of "EncryptedHeadedStringTableParser"
+  it should "it should set header of encrypted parser" in {
+    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
+    val parser = EncryptedHeadedStringTableParser[Int](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    the [TableParserException] thrownBy parser.setHeader(Header(Seq(Seq("a"))))
+  }
+
+  it should "it should set forgiving of encrypted parser" in {
+    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
+    val parser = EncryptedHeadedStringTableParser[Int](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    parser.setForgiving(true) shouldBe PlainTextHeadedStringTableParser[Int](None, true, 2)
+  }
+
+  it should "it should set multiline of encrypted parser" in {
+    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
+    val parser = EncryptedHeadedStringTableParser[Int](encryptionPredicate, keyMap, headerRowsToRead = 1)
+    parser.setMultiline(true) shouldBe PlainTextHeadedStringTableParser[Int](None, false, 1)
+  }
+
 }
