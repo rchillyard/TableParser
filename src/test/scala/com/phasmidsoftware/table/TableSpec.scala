@@ -129,7 +129,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "unheaded column table" in {
     val ut = UnheadedTable(Seq(1))
-    ut.column("x") shouldBe Some("x")
+    ut.column("x") shouldBe Iterator.empty
   }
 
   behavior of "parse with safeResource"
