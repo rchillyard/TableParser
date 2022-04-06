@@ -105,6 +105,33 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty.get.size shouldBe 2
   }
 
+  it should "zip tables" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99").iterator)
+    iIty.get.zip(iIty.get).rows.toSeq shouldBe Seq((IntPair(1,2), IntPair(1,2)), (IntPair(42,99), IntPair(42, 99)))
+  }
+
+  it should "Throw table exception" in {
+     TableException.apply("exception thrown").w shouldBe "exception thrown"
+  }
+
+  it should "headed table object" in {
+    HeadedTable.apply(Seq(0,1), Header.create("r", "i")).rows shouldBe Seq(0,1)
+  }
+
+  behavior of "Unheaded Table"
+
+  it should "unheaded table" in {
+    val ut = UnheadedTable(Seq(1))
+    ut.unit(Seq(2), Some(Header.create("x"))) shouldBe HeadedTable(Seq(2), Header.create("x"))
+    ut.unit(Seq(2), None) shouldBe UnheadedTable(Seq(2))
+  }
+
+  it should "unheaded column table" in {
+    val ut = UnheadedTable(Seq(1))
+    ut.column("x") shouldBe Some("x")
+  }
+
   behavior of "parse with safeResource"
 
   it should "return success for intPairs.csv" in {
@@ -432,6 +459,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     xs.take(26) shouldBe Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
     xs.slice(26, 36) shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ")
     xs.slice(52, 62) shouldBe Seq("BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ")
+  }
+
+  it should "create ++" in {
+    val header = Header(letters = true, 1)
+    header.++(header).xs shouldBe Seq("A","A")
   }
 
   behavior of "transform"
