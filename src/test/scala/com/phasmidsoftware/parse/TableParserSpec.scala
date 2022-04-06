@@ -10,6 +10,7 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+
 import scala.io.Codec
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -464,6 +465,15 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     parser.setForgiving(true) shouldBe  RawTableParser(TableParser.includeAll, None, true, true)
   }
 
+  it should "it should set row parser of RawTableParser" in {
+    val encryptionHeader: Header = Header(Seq("key", "value"), Nil)
+    val parser = RawTableParser(TableParser.includeAll, None).setPredicate(TableParser.sampler(2))
+    val rowConfig = RowConfig.defaultEncryptedRowConfig
+    import RawParsers.WithHeaderRow.rawRowCellParser
+    val lineParser: LineParser = LineParser.apply(rowConfig)
+    parser.setRowParser(StandardRowParser[RawRow](lineParser)) shouldBe parser
+  }
+
   behavior of "PlainTextHeadedStringTableParser"
   it should "it should set header of plaintext" in {
     val hdr = Header(Seq(Seq("a")))
@@ -476,6 +486,18 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     parser.setForgiving(true) shouldBe PlainTextHeadedStringTableParser[Int](None, true, 1)
   }
 
+  it should "it should set predicate of plaintext" in {
+    val parser = PlainTextHeadedStringTableParser[Int](None, false, 1).setMultiline(true)
+    parser.setPredicate(TableParser.sampler(2)) shouldBe PlainTextHeadedStringTableParser[Int](None, false, 1)
+  }
+
+  it should "it should set row parser of PlainTextHeadedStringTableParser" in {
+    val parser = PlainTextHeadedStringTableParser[Int](None, false, 1).setMultiline(true)
+    val rowConfig = RowConfig.defaultEncryptedRowConfig
+    val lineParser: LineParser = LineParser.apply(rowConfig)
+    parser.setRowParser(StandardRowParser[Int](lineParser)) shouldBe parser
+  }
+
   behavior of "EncryptedHeadedStringTableParser"
   it should "it should set header of encrypted parser" in {
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
@@ -484,6 +506,14 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val parser = EncryptedHeadedStringTableParser[Int](encryptionPredicate, keyMap, headerRowsToRead = 2)
     the [TableParserException] thrownBy parser.setHeader(Header(Seq(Seq("a"))))
+  }
+
+  it should "it should set predicate of plaintext" in {
+    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+    val parser = EncryptedHeadedStringTableParser[Int](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    parser.setPredicate(TableParser.sampler(2)) shouldBe PlainTextHeadedStringTableParser[Int](None, false, 1)
   }
 
   it should "it should set forgiving of encrypted parser" in {
@@ -502,6 +532,26 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val parser = EncryptedHeadedStringTableParser[Int](encryptionPredicate, keyMap, headerRowsToRead = 1)
     parser.setMultiline(true) shouldBe PlainTextHeadedStringTableParser[Int](None, false, 1)
+  }
+
+  it should "it should set plaintext predicate of encrypted parser" in {
+    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
+    val parser = EncryptedHeadedStringTableParser[Int](encryptionPredicate, keyMap, headerRowsToRead = 1)
+    parser.setPlaintextPredicate(TableParser.sampler(2)) shouldBe PlainTextHeadedStringTableParser[Int](None, false, 1)
+  }
+
+  it should "it should set row parser of EncryptedHeadedStringTableParser" in {
+    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+
+    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
+    val parser = EncryptedHeadedStringTableParser[Int](encryptionPredicate, keyMap, headerRowsToRead = 1)
+    val rowConfig = RowConfig.defaultEncryptedRowConfig
+    val lineParser: LineParser = LineParser.apply(rowConfig)
+    parser.setRowParser(StandardRowParser[Int](lineParser)) shouldBe PlainTextHeadedStringTableParser[Int](None, false, 1)
   }
 
 }
