@@ -70,6 +70,18 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     Table.parseInputStream(classOf[TableSpec].getResourceAsStream("intPairs.csv"), "UTF-8") should matchPattern { case Success(_) => }
   }
 
+  it should "parse and not filter the movies from the IMDB dataset" in {
+    import MovieParser._
+    import com.phasmidsoftware.table.Table.parse
+    implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
+    implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
+    val mty: Try[Table[Movie]] = TryUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(parse(_))
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    val mt = mty.get
+    val kiwiMovies = mt.filterNotByKey(_ == "New Zealand")
+    kiwiMovies.size shouldBe 1563
+  }
+
   it should "parse table using URI and encryption" in {
     import IntPair._
     val url = classOf[TableSpec].getResource("intPairs.csv")
@@ -121,6 +133,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
     iIty should matchPattern { case Success(_) => }
     iIty.get.size shouldBe 2
+  }
+
+  it should "parse raw resource " in {
+    val iIty = Table.parseResourceRaw("intPairs.csv", TableParser.includeAll)
+    iIty should matchPattern { case Success(_) => }
   }
 
   it should "parse from null File" in {
