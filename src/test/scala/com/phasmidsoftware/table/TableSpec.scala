@@ -65,6 +65,40 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty.get.size shouldBe 2
   }
 
+  it should "parse input stream" in {
+    import IntPair._
+    Table.parseInputStream(classOf[TableSpec].getResourceAsStream("intPairs.csv"), "UTF-8") should matchPattern { case Success(_) => }
+  }
+
+  it should "parse table using URI and encryption" in {
+    import IntPair._
+    val url = classOf[TableSpec].getResource("intPairs.csv")
+    val iIty = Table.parse(url.toURI,"ISO-8859-1")
+    iIty should matchPattern { case Success(_) => }
+  }
+
+  it should "parse table from file" in {
+    import IntPair._
+    Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"), "UTF-8") should matchPattern { case Success(_) => }
+    Table.parseFile("output.csv", "UTF-8") should matchPattern { case Success(_) => }
+    Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv") should matchPattern { case Success(_) => }
+  }
+
+  it should "parse table from raw file" in {
+    Table.parseFileRaw(new File("output.csv"),TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))) should matchPattern { case Success(_) => }
+    Table.parseFileRaw("src/test/resources/com/phasmidsoftware/table/intPairs.csv",TableParser.includeAll) should matchPattern { case Success(_) => }
+  }
+
+  it should "write table to the file" in {
+    val hdr = Header(Seq(Seq("a", "b")))
+    val row1 = Row(Seq("1", "2"), hdr, 1)
+    val table = Table(Seq(row1), Some(hdr))
+    Table.writeCSVFileRow(table, new File("output.csv"))
+    Table.parseFileRaw("output.csv",TableParser.includeAll).get.rows shouldBe Seq(Seq("1","2"))
+    val tableWithoutHead = Table(Seq(row1), None)
+    the [TableException] thrownBy Table.writeCSVFileRow(tableWithoutHead, new File("output.csv"))
+  }
+
   it should "parse from Iterator[String]" in {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99").iterator)
