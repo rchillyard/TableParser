@@ -80,7 +80,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse table from file" in {
     import IntPair._
     Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"), "UTF-8") should matchPattern { case Success(_) => }
-    Table.parseFile("output.csv", "UTF-8") should matchPattern { case Success(_) => }
+    Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv", "UTF-8") should matchPattern { case Success(_) => }
     Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv") should matchPattern { case Success(_) => }
   }
 
