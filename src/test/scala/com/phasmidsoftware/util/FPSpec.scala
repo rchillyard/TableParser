@@ -6,10 +6,9 @@ package com.phasmidsoftware.util
 
 import com.phasmidsoftware.table.TableSpec
 import com.phasmidsoftware.util.FP._
+import java.io.InputStream
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
-import java.io.InputStream
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 

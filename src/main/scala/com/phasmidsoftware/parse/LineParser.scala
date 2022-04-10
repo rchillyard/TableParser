@@ -5,7 +5,6 @@
 package com.phasmidsoftware.parse
 
 import org.slf4j.{Logger, LoggerFactory}
-
 import scala.annotation.tailrec
 import scala.util.Try
 import scala.util.matching.Regex

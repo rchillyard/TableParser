@@ -5,12 +5,11 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{Header, Row}
+import java.io.File
+import java.net.URL
 import org.joda.time.LocalDate
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
-import java.io.File
-import java.net.URL
 import scala.util.{Failure, Success, Try}
 
 //noinspection NotImplementedCode
@@ -125,7 +124,7 @@ class CellParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse option URL" in {
     val p = implicitly[CellParser[Option[URL]]]
 
-    p.convertString("http://google.com") shouldBe Success(Some(new URL("http://google.com")))
+    p.convertString("https://google.com") shouldBe Success(Some(new URL("https://google.com")))
     p.convertString("") should matchPattern { case Failure(_) => }
   }
 

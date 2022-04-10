@@ -5,9 +5,8 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.table._
-import org.joda.time.LocalDate
-
 import java.io.{File, FileWriter}
+import org.joda.time.LocalDate
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 
@@ -211,6 +210,8 @@ case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvA
 
 /**
  * Case class to help render a Table to a File in CSV format.
+ *
+ * TODO merge this with CsvTableEncryptedFileRenderer to avoid duplicate code.
  *
  * @param file          the file to which the table will be written.
  * @param csvAttributes implicit instance of CsvAttributes.

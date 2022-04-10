@@ -4,12 +4,11 @@
 
 package com.phasmidsoftware.parse
 
+import java.io.File
+import java.net.URL
 import org.joda.time.LocalDate
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
-import java.io.File
-import java.net.URL
 import scala.util.{Failure, Success}
 
 class ParseableSpec extends flatspec.AnyFlatSpec with should.Matchers {
@@ -125,7 +124,7 @@ class ParseableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse an optional URL value" in {
     import ParseableOption._
-    implicitly[Parseable[Option[URL]]].parse("http://google.com") shouldBe Success(Some(new URL("http://google.com")))
+    implicitly[Parseable[Option[URL]]].parse("https://google.com") shouldBe Success(Some(new URL("https://google.com")))
     implicitly[Parseable[Option[URL]]].parse("") should matchPattern { case Failure(_) => }
   }
 
