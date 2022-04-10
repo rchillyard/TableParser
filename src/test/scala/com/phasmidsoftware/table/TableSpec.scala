@@ -135,7 +135,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty.get.size shouldBe 2
   }
 
-  it should "parse raw resource " in {
+  it should "parse raw resource using table parser " in {
     val iIty = Table.parseResourceRaw("intPairs.csv", TableParser.includeAll)
     iIty should matchPattern { case Success(_) => }
   }
