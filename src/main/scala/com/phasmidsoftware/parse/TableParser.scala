@@ -12,7 +12,6 @@ import com.phasmidsoftware.table.{HeadedTable, Header, Table}
 import com.phasmidsoftware.util.FP.partition
 import com.phasmidsoftware.util._
 import org.slf4j.{Logger, LoggerFactory}
-
 import scala.annotation.implicitNotFound
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -187,10 +186,8 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
   // CONSIDER why do we have a concrete Table type mentioned here?
   protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
-  // TEST
   def setHeader(header: Header): RawTableParser = copy(maybeFixedHeader = Some(header))
 
-  // TEST
   def setForgiving(b: Boolean): RawTableParser = copy(forgiving = b)
 
   def setMultiline(b: Boolean): RawTableParser = copy(multiline = b)
@@ -225,23 +222,18 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
 case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
   extends HeadedStringTableParser[X](maybeFixedHeader, forgiving, headerRowsToRead) {
 
-  // TEST
   def setHeader(header: Header): PlainTextHeadedStringTableParser[X] = copy(maybeFixedHeader = Some(header))
 
-  // TEST
   def setForgiving(b: Boolean): PlainTextHeadedStringTableParser[X] = copy(forgiving = b)
 
-  // TEST
   def setMultiline(b: Boolean): PlainTextHeadedStringTableParser[X] = new PlainTextHeadedStringTableParser[X](maybeFixedHeader, forgiving) {
     override val multiline: Boolean = b
   }
 
-  // TEST
   def setPredicate(p: Try[X] => Boolean): PlainTextHeadedStringTableParser[X] = new PlainTextHeadedStringTableParser[X](maybeFixedHeader, forgiving) {
     override val predicate: Try[X] => Boolean = p
   }
 
-  // TEST
   def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] = new PlainTextHeadedStringTableParser[X] {
     override protected val rowParser: RowParser[X, String] = rp
   }
@@ -290,8 +282,6 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
   /**
     * Set the Header for the plaintext TableParser.
     *
-    * TEST
-    *
     * CONSIDER does this make sense to allow?
     *
     * @param header the required Header.
@@ -303,8 +293,6 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
   /**
     * Set the predicate for the plaintext TableParser.
     *
-    * TEST
-    *
     * @param predicate a predicate which will be applied to each X (i.e. AFTER decryption).
     * @return a TableParser of Table[X]
     */
@@ -312,8 +300,6 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
 
   /**
     * Set the value of forgiving for the plaintext TableParser.
-    *
-    * TEST
     *
     * @param b true or false. See TableParser.
     * @return a TableParser of Table[X]
@@ -323,8 +309,6 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
   /**
     * Set the value of multiline for the plaintext TableParser.
     *
-    * TEST
-    *
     * @param b value of multiline for the plaintext TableParser. See TableParser.
     * @return a TableParser of Table[X]
     */
@@ -333,8 +317,6 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
   /**
     * Set the value of predicate for the plaintext TableParser.
     *
-    * TEST
-    *
     * @param p predicate for the plaintext TableParser.
     * @return a TableParser of Table[X]
     */
@@ -342,8 +324,6 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
 
   /**
     * Set the value of the row parser for the plaintext TableParser.
-    *
-    * TEST
     *
     * @param rp the row parser for the plaintext TableParser.
     * @return a TableParser of Table[X]

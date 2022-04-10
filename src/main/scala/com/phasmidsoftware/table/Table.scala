@@ -10,7 +10,6 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{Reflection, TryUsing}
-
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -60,8 +59,6 @@ trait Table[Row] extends Iterable[Row] {
 
   /**
    * Method to zip two Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
-   *
-   * TEST
    *
    * @param table the other Table.
    * @tparam R the underlying type of the other Table.
@@ -130,8 +127,6 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * Method to yield a Seq of the rows of this Table.
    *
-   * TEST
-   *
    * @return a Seq[Row]
    */
   override def toSeq: Seq[Row] = {
@@ -170,8 +165,6 @@ trait Table[Row] extends Iterable[Row] {
    * Method to process the rows of this Table and the other Table as a pair of Iterables resulting in an Iterable which will make up the resulting Table.
    * NOTE: this is used by zip.
    *
-   * TEST
-   *
    * @param f     a function which takes an Iterable[Row] and an Iterable[R] and returns an Iterable[S]
    * @param other the other table of type Iterable[R].
    * @tparam R the underlying type of the other table.
@@ -192,16 +185,12 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * Method to shuffle this Table[Row].
    *
-   * TEST
-   *
    * @return a Table[Row].
    */
   lazy val shuffle: Table[Row] = processRows(rs => Random.shuffle(rs))
 
   /**
    * drop (as defined by Iterable).
-   *
-   * TEST
    *
    * @param n the number of rows to drop.
    * @return a Table like this Table but without its first n rows.
@@ -211,8 +200,6 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * dropRight (as defined by Iterable).
    *
-   * TEST
-   *
    * @param n the number of rows to dropRight.
    * @return a Table like this Table but with dropRight(n) rows.
    */
@@ -220,8 +207,6 @@ trait Table[Row] extends Iterable[Row] {
 
   /**
    * dropWhile (as defined by Iterable).
-   *
-   * TEST
    *
    * @param p the predicate.
    * @return a Table like this Table but with dropWhile(p) rows.
@@ -231,16 +216,12 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * Method to return an empty Table of type Row.
    *
-   * TEST
-   *
    * @return a Table[Row] without any rows.
    */
   override def empty: Table[Row] = unit(Seq.empty)
 
   /**
    * Method to filter the rows of a table (as defined by Iterable).
-   *
-   * TEST
    *
    * @param p a predicate to be applied to each row.
    * @return a Table[Row] consisting only of rows which satisfy the predicate p.
@@ -250,8 +231,6 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * Method to filter out the rows of a table (as defined by Iterable).
    *
-   * TEST
-   *
    * @param p a predicate to be applied to each row.
    * @return a Table[Row] consisting only of rows which do not satisfy the predicate p.
    */
@@ -259,8 +238,6 @@ trait Table[Row] extends Iterable[Row] {
 
   /**
    * slice (as defined by Iterable).
-   *
-   * TEST
    *
    * @param from  the index at which to begin the slice (1-based counting).
    * @param until the index at which to end the slice (1-based counting).
@@ -279,8 +256,6 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * takeRight (as defined by Iterable).
    *
-   * TEST
-   *
    * @param n the number of rows to takeRight.
    * @return a Table like this Table but with takeRight(n) rows.
    */
@@ -288,8 +263,6 @@ trait Table[Row] extends Iterable[Row] {
 
   /**
     * takeWhile (as defined by Iterable).
-    *
-    * TEST
     *
     * @param p the predicate.
     * @return a Table like this Table but with takeWhile(p) rows.
@@ -308,8 +281,6 @@ trait Table[Row] extends Iterable[Row] {
 
   /**
     * Filter method which operates on the (primary) key of each row.
-    *
-    * TEST
     *
     * @param p a predicate which takes a String.
     * @tparam T a super-class of Row, which provides evidence of HasKey[T].
@@ -413,8 +384,6 @@ object Table {
   /**
     * Method to parse a table from a URI with an explicit encoding.
     *
-    * TEST
-    *
     * @param u   the URI.
     * @param enc the encoding.
     * @tparam T the type of the resulting table.
@@ -438,8 +407,6 @@ object Table {
   /**
     * Method to parse a table from an InputStream with an explicit encoding.
     *
-    * TEST
-    *
     * @param i   the InputStream.
     * @param enc the encoding.
     * @tparam T the type of the resulting table.
@@ -452,8 +419,6 @@ object Table {
 
   /**
     * Method to parse a table from a File.
-    *
-    * TEST
     *
     * @param f   the File (call by name in case there is an exception thrown while constructing the file).
     * @param enc the explicit encoding.
@@ -478,8 +443,6 @@ object Table {
   /**
     * Method to parse a table from a File.
     *
-    * TEST
-    *
     * @param pathname the file pathname.
     * @param enc      the explicit encoding.
     * @tparam T the type of the resulting table.
@@ -489,8 +452,6 @@ object Table {
 
   /**
     * Method to parse a table from an File.
-    *
-    * TEST
     *
     * @param pathname the file pathname.
     * @param codec    (implicit) the encoding.
@@ -553,8 +514,6 @@ object Table {
   /**
    * Method to parse a table from a File as a table of Seq[String].
    *
-   * TEST
-   *
    * @param f                the file.
    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
@@ -569,8 +528,6 @@ object Table {
   /**
    * Method to parse a table from a File as a table of Seq[String].
    *
-   * TEST
-   *
    * @param pathname the path name.
    * @param codec    (implicit) the encoding.
    * @return a Try of Table[RawRow] where RawRow is a Seq[String].
@@ -582,10 +539,6 @@ object Table {
 
   /**
    * Method to parse a table from a resource as a table of Seq[String].
-   *
-   * NOTE no longer used.
-   *
-   * TEST
    *
    * @param s                the resource name.
    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
@@ -641,8 +594,6 @@ object Table {
 
   /**
    * Method to render the given Table[Row] as a CSV String with header.
-   *
-   * TEST
    *
    * @param t             the Table[Row] to be rendered.
    * @param file          the destination File for the rendering of t.
@@ -764,8 +715,6 @@ case class UnheadedTable[Row](rows: Iterable[Row]) extends RenderableTable[Row](
     * Method to generate a Table[S] for a set of rows.
     * Although declared as an instance method, this method produces its result independent of this.
     *
-    * TEST
-    *
     * @param rows a sequence of S.
     * @tparam S the underlying type of the rows and the result.
     * @return a new instance of Table[S].
@@ -851,8 +800,6 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
 
   /**
    * Concatenate this Header with other.
-   *
-   * TEST this.
    *
    * @param other the other Header.
    * @return a Header made up of these columns and those of other, in that order.
@@ -949,8 +896,6 @@ trait HasKey[Row] {
 
 /**
  * Table Exception.
- *
- * TEST
  *
  * @param w the message.
  */
