@@ -203,7 +203,6 @@ object ParseableOption {
 
   implicit object ParseableOptionString extends ParseableOption[String]
 
-  // TEST most of these
   implicit object ParseableOptionBoolean extends ParseableOption[Boolean]
 
   implicit object ParseableOptionByte extends ParseableOption[Byte]

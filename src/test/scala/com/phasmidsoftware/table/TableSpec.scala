@@ -65,6 +65,52 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty.get.size shouldBe 2
   }
 
+  it should "parse input stream" in {
+    import IntPair._
+    Table.parseInputStream(classOf[TableSpec].getResourceAsStream("intPairs.csv"), "UTF-8") should matchPattern { case Success(_) => }
+  }
+
+  it should "parse and not filter the movies from the IMDB dataset" in {
+    import MovieParser._
+    import com.phasmidsoftware.table.Table.parse
+    implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
+    implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
+    val mty: Try[Table[Movie]] = TryUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(parse(_))
+    mty should matchPattern { case Success(HeadedTable(_, _)) => }
+    val mt = mty.get
+    val kiwiMovies = mt.filterNotByKey(_ == "New Zealand")
+    kiwiMovies.size shouldBe 1563
+  }
+
+  it should "parse table using URI and encryption" in {
+    import IntPair._
+    val url = classOf[TableSpec].getResource("intPairs.csv")
+    val iIty = Table.parse(url.toURI, "ISO-8859-1")
+    iIty should matchPattern { case Success(_) => }
+  }
+
+  it should "parse table from file" in {
+    import IntPair._
+    Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"), "UTF-8") should matchPattern { case Success(_) => }
+    Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv", "UTF-8") should matchPattern { case Success(_) => }
+    Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv") should matchPattern { case Success(_) => }
+  }
+
+  it should "parse table from raw file" in {
+    Table.parseFileRaw(new File("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))) should matchPattern { case Success(_) => }
+    Table.parseFileRaw("src/test/resources/com/phasmidsoftware/table/intPairs.csv", TableParser.includeAll) should matchPattern { case Success(_) => }
+  }
+
+  it should "write table to the file" in {
+    val hdr = Header(Seq(Seq("a", "b")))
+    val row1 = Row(Seq("1", "2"), hdr, 1)
+    val table = Table(Seq(row1), Some(hdr))
+    Table.writeCSVFileRow(table, new File("output.csv"))
+    Table.parseFileRaw("output.csv", TableParser.includeAll).get.rows shouldBe Seq(Seq("1", "2"))
+    val tableWithoutHead = Table(Seq(row1), None)
+    the[TableException] thrownBy Table.writeCSVFileRow(tableWithoutHead, new File("output.csv"))
+  }
+
   it should "parse from Iterator[String]" in {
     import IntPair._
     val iIty = Table.parse(Seq("1 2", "42 99").iterator)
@@ -89,6 +135,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty.get.size shouldBe 2
   }
 
+  it should "parse raw resource using table parser " in {
+    val iIty = Table.parseResourceRaw("intPairs.csv", TableParser.includeAll)
+    iIty should matchPattern { case Success(_) => }
+  }
+
   it should "parse from null File" in {
     import IntPair._
 
@@ -103,6 +154,33 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val iIty = Table.parseResource("intPairs.csv", classOf[TableSpec])
     iIty should matchPattern { case Success(_) => }
     iIty.get.size shouldBe 2
+  }
+
+  it should "zip tables" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99").iterator)
+    iIty.get.zip(iIty.get).rows.toSeq shouldBe Seq((IntPair(1, 2), IntPair(1, 2)), (IntPair(42, 99), IntPair(42, 99)))
+  }
+
+  it should "Throw table exception" in {
+    TableException.apply("exception thrown").w shouldBe "exception thrown"
+  }
+
+  it should "headed table object" in {
+    HeadedTable.apply(Seq(0, 1), Header.create("r", "i")).rows shouldBe Seq(0, 1)
+  }
+
+  behavior of "Unheaded Table"
+
+  it should "unheaded table" in {
+    val ut = UnheadedTable(Seq(1))
+    ut.unit(Seq(2), Some(Header.create("x"))) shouldBe HeadedTable(Seq(2), Header.create("x"))
+    ut.unit(Seq(2), None) shouldBe UnheadedTable(Seq(2))
+  }
+
+  it should "unheaded column table" in {
+    val ut = UnheadedTable(Seq(1))
+    ut.column("x") shouldBe Iterator.empty
   }
 
   behavior of "parse with safeResource"
@@ -190,6 +268,73 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     iIty should matchPattern { case Success(_) => }
     iIty.get.flatMap(f).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
   }
+
+  it should "to Seq" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+  }
+
+  it should "to Shuffle" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.shuffle.rows.size shouldBe 2
+  }
+
+  it should "drop" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.drop(1).rows shouldBe Seq(IntPair(42, 99))
+  }
+
+  it should "dropRight" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.dropRight(1).rows shouldBe Seq(IntPair(1, 2))
+  }
+
+  it should "empty" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    iIty.get.empty.rows shouldBe Seq.empty
+  }
+
+  it should "dropWhile" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
+    iIty.get.dropWhile(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+  }
+
+  it should "filter" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
+    iIty.get.filter(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(3, 4))
+  }
+
+  it should "filterNot" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
+    iIty.get.filterNot(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+  }
+
+  it should "slice" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
+    iIty.get.slice(0, 2).rows shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
+  }
+
+  it should "takeRight" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
+    iIty.get.takeRight(2).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+  }
+
+  it should "takeWhile" in {
+    import IntPair._
+    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
+    iIty.get.takeWhile(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(3, 4))
+  }
+
 
   case class HTML(x: String, ao: Option[String], attr: Map[String, String], hs: Seq[HTML])
 
@@ -365,6 +510,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     xs.take(26) shouldBe Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
     xs.slice(26, 36) shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ")
     xs.slice(52, 62) shouldBe Seq("BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ")
+  }
+
+  it should "create ++" in {
+    val header = Header(letters = true, 1)
+    header.++(header).xs shouldBe Seq("A", "A")
   }
 
   behavior of "transform"

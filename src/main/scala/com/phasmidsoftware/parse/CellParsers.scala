@@ -6,7 +6,6 @@ package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.{FP, Reflection}
-
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -217,6 +216,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
+              // NOTE it is not clear why we get "No implicit arguments..." warnings from the compiler (here and in subsequent methods).
               t <- cellParser2(construct(p1, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))

@@ -2,10 +2,9 @@ package com.phasmidsoftware.crypto
 
 import cats.effect.IO
 import com.phasmidsoftware.crypto.Encryption.hexStringToBytes
+import scala.util.Random
 import tsec.cipher.symmetric
 import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
-
-import scala.util.Random
 
 /**
  * Trait to deal with Encryption.
@@ -16,27 +15,27 @@ import scala.util.Random
  */
 trait Encryption[A] {
   /**
-    * Generate a random String of the required length.
-    *
-    * @return an IO of String.
-    */
+   * Generate a random String of the required length.
+   *
+   * @return an IO of String.
+   */
   def genRawKey: IO[String]
 
   /**
-    * Build a key from the given String.
-    *
-    * @param raw a String of the required length (typically the result of calling genRawKey).
-    * @return an IO of SecretKey[A]
-    */
+   * Build a key from the given String.
+   *
+   * @param raw a String of the required length (typically the result of calling genRawKey).
+   * @return an IO of SecretKey[A]
+   */
   def buildKey(raw: String): IO[SecretKey[A]]
 
   /**
-    * Encrypt a plain text String.
-    *
-    * @param key       the key with which to encrypt the plain text.
-    * @param plaintext the plain text to encrypt.
-    * @return an IO of CipherText[A].
-    */
+   * Encrypt a plain text String.
+   *
+   * @param key       the key with which to encrypt the plain text.
+   * @param plaintext the plain text to encrypt.
+   * @return an IO of CipherText[A].
+   */
   def encrypt(key: SecretKey[A])(plaintext: String): IO[symmetric.CipherText[A]]
 
   /**
@@ -68,13 +67,13 @@ trait Encryption[A] {
   def bytesToCipherText(bytes: Array[Byte]): IO[symmetric.CipherText[A]] = IO.fromEither(AES128CTR.ciphertextFromConcat(bytes)).asInstanceOf[IO[symmetric.CipherText[A]]]
 
   /**
-    * Method to check that the given Hex String really does decrypt to the given plaintext.
-    *
-    * @param hex       a String of hexadecimals.
-    * @param key       the secret key.
-    * @param plaintext the original plain text.
-    * @return true if the Hex string is correct.
-    */
+   * Method to check that the given Hex String really does decrypt to the given plaintext.
+   *
+   * @param hex       a String of hexadecimals.
+   * @param key       the secret key.
+   * @param plaintext the original plain text.
+   * @return true if the Hex string is correct.
+   */
   def checkHex(hex: String, key: SecretKey[A], plaintext: String): IO[Boolean] = for {
     bytes <- hexStringToBytes(hex)
     encrypted <- bytesToCipherText(bytes)
@@ -105,13 +104,13 @@ object Encryption {
   }
 
   /**
-    * CONSIDER moving this.
-    *
-    * @param keyFunction a function to yield the raw cipher key from the value of the ID column
-    *                    (said value might well be ignored).
-    * @param row         a two-element sequence of Strings.
-    * @return a IO[String]
-    */
+   * CONSIDER moving this.
+   *
+   * @param keyFunction a function to yield the raw cipher key from the value of the ID column
+   *                    (said value might well be ignored).
+   * @param row         a two-element sequence of Strings.
+   * @return a IO[String]
+   */
   def decrypt(keyFunction: String => String)(row: Seq[String]): IO[String] = {
     val ko = row.headOption // row-id
     val f = row.lift
