@@ -4,9 +4,12 @@
 
 package com.phasmidsoftware.parse
 
+import java.io.File
+import java.net.URL
+import org.joda.time.LocalDate
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 class ParseableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
@@ -75,6 +78,72 @@ class ParseableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import ParseableOption._
     implicitly[Parseable[Option[Int]]].parse("1") shouldBe Success(Some(1))
     implicitly[Parseable[Option[Int]]].parse("") shouldBe Success(None)
+  }
+
+  it should "parse an optional Boolean value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[Boolean]]].parse("true") shouldBe Success(Some(true))
+    implicitly[Parseable[Option[Boolean]]].parse("") shouldBe Success(None)
+  }
+
+  it should "parse an optional Byte value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[Byte]]].parse("1") shouldBe Success(Some(1))
+    implicitly[Parseable[Option[Byte]]].parse("") shouldBe Success(None)
+  }
+
+  it should "parse an optional Short value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[Short]]].parse("1") shouldBe Success(Some(1))
+    implicitly[Parseable[Option[Short]]].parse("") shouldBe Success(None)
+  }
+
+  it should "parse an optional Float value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[Float]]].parse("12.12345") shouldBe Success(Some(12.12345F))
+    implicitly[Parseable[Option[Float]]].parse("") shouldBe Success(None)
+  }
+
+  it should "parse an optional Double value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[Double]]].parse("12.123456789") shouldBe Success(Some(12.123456789))
+    implicitly[Parseable[Option[Double]]].parse("") shouldBe Success(None)
+  }
+
+  it should "parse an optional Long value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[Long]]].parse("9223372036854775807") shouldBe Success(Some(9223372036854775807L))
+    implicitly[Parseable[Option[Long]]].parse("") shouldBe Success(None)
+  }
+
+  it should "parse an optional LocalDate value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[LocalDate]]].parse("2021-05-13") shouldBe Success(Some(LocalDate.parse("2021-05-13")))
+    implicitly[Parseable[Option[LocalDate]]].parse("") shouldBe Success(None)
+  }
+
+  it should "parse an optional URL value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[URL]]].parse("https://google.com") shouldBe Success(Some(new URL("https://google.com")))
+    implicitly[Parseable[Option[URL]]].parse("") should matchPattern { case Failure(_) => }
+  }
+
+  it should "parse an optional File value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[File]]].parse("/CellParsersSpec.scala") shouldBe Success(Some(new File("/CellParsersSpec.scala")))
+    implicitly[Parseable[Option[File]]].parse("") shouldBe Success(Some(new File("")))
+  }
+
+  it should "parse an optional BigInt value" in {
+    import ParseableOption._
+    implicitly[Parseable[Option[BigInt]]].parse("2") shouldBe Success(Some(BigInt.apply(2)))
+    implicitly[Parseable[Option[BigInt]]].parse("") shouldBe Success(None)
+  }
+
+  it should "parse an optional BigDecimal value" in {
+    import ParseableOption._
+    implicitly[Parseable[BigDecimal]].parse("9.9999999999999999") shouldBe Success(BigDecimal("9.9999999999999999"))
+    implicitly[Parseable[Option[BigDecimal]]].parse("") shouldBe Success(None)
   }
 
   // NOTE: please leave this comment here in order to enable testing of the implicitNotFound message

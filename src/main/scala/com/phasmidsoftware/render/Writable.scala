@@ -5,7 +5,6 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.crypto.Encryption
-
 import java.io.{File, FileWriter}
 
 /**

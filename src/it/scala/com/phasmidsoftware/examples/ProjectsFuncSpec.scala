@@ -5,10 +5,9 @@ import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.table.Table.{parse, parseResource}
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.TryUsing
+import java.io.File
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
-import java.io.File
 import scala.io.Source
 import scala.util._
 
@@ -17,10 +16,10 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
   behavior of "TeamProject table"
 
   /**
-    * NOTE: it is perfectly proper for there to be a number of parsing problems.
-    * These are application-specific and are not indicative of any bugs in the
-    * TableParser library itself.
-    */
+   * NOTE: it is perfectly proper for there to be a number of parsing problems.
+   * These are application-specific and are not indicative of any bugs in the
+   * TableParser library itself.
+   */
   it should "be ingested properly" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val filename = "TeamProject.csv"
@@ -172,9 +171,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       }
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer())
       mt.take(1).toCSV shouldBe
-        """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
-          |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-          |""".stripMargin
+              """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
+                |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
+                |""".stripMargin
     }
   }
 
@@ -198,11 +197,11 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
 
 
   /**
-    * NOTE: it is perfectly proper for there to be a number of parsing problems.
-    * These are application-specific and are not indicative of any bugs in the
-    * TableParser library itself.
-    */
-  it should "parse and filter the team projects from the encrypted dataset using Seq[String]" in {
+   * NOTE: it is perfectly proper for there to be a number of parsing problems.
+   * These are application-specific and are not indicative of any bugs in the
+   * TableParser library itself.
+   */
+  it should "parse and filter the team projects from the encrypted dataset using RawRow" in {
 
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
 

@@ -117,7 +117,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
     val h = table.renderHierarchicalSequenced("table", Map("border" -> "1"))
     println(h.toString)
     h.toString shouldBe
-      """
+            """
 <table border="1">
 <thead>
 <tr>
@@ -140,7 +140,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
     val table = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header(Seq(Seq("real", "imaginary"))))
     val h = table.renderHierarchicalSequenced("table", Map("border" -> "1"))
     h.toString shouldBe
-      """
+            """
 <table border="1">
 <thead>
 <tr>
