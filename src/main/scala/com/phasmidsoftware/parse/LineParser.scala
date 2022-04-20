@@ -139,4 +139,4 @@ object LineParser {
 
 case class ParserException(msg: String, e: Throwable = null) extends Exception(msg, e)
 
-case class MultiLineException[X](x: X) extends Exception("multi-line exception")
+case class MultiLineException[X](x: X) extends Exception(s"multi-line exception: $x")
