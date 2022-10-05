@@ -37,9 +37,9 @@ case class Grade(totalScore: Double, onTime: Double, scopeScale: Double, plannin
 
 object TeamProjectParser extends CellParsers {
 
-  def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+  def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z\\d])", "_$1")
 
-  def identifierToCapitalizedWordColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", " $1").replaceAll("_", "")
+  def identifierToCapitalizedWordColumnNameMapper(w: String): String = w.replaceAll("([A-Z\\d])", " $1").replaceAll("_", "")
 
   implicit val teamProjectColumnHelper: ColumnHelper[TeamProject] = columnHelper(camelToSnakeCaseColumnNameMapper _)
   implicit val gradeColumnHelper: ColumnHelper[Grade] = columnHelper(identifierToCapitalizedWordColumnNameMapper _)

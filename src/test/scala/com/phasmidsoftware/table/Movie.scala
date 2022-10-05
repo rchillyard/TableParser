@@ -118,7 +118,7 @@ object MovieParser extends CellParsers {
   /**
    * Precede each upper case letter (or digit) with _.
    */
-  def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+  def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z\\d])", "_$1")
 
   implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper _,
     "title" -> "movie_title",
