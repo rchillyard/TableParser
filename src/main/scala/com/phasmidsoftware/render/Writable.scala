@@ -4,7 +4,8 @@
 
 package com.phasmidsoftware.render
 
-import com.phasmidsoftware.crypto.Encryption
+import cats.effect.IO
+import com.phasmidsoftware.crypto.HexEncryption
 import java.io.{File, FileWriter}
 
 /**
@@ -74,23 +75,16 @@ trait Writable[O] {
   /**
    * Method to write a character sequence to the given instance o followed by a newline.
    *
-   * @param o          the instance of O whither the parameter x should be written.
-   * @param key        the lookup key for this row (not an encryption key).
-   * @param plaintext  the plain text character sequence to be written in encrypted form.
-   * @param encryption (implicit) instance of Encryption[A].
+   * @param o         the instance of O whither the parameter x should be written.
+   * @param key       the lookup key for this row (not an encryption key).
+   * @param plaintext the plain text character sequence to be written in encrypted form.
+   * @tparam A the cipher algorithm (for which there must be evidence of Encryption[A]).
    * @return an instance of O which represents the updated output structure.
    */
-  def writeLineEncrypted[A](o: O)(key: String, plaintext: CharSequence)(implicit encryption: Encryption[A]): O = {
+  def writeLineEncrypted[A: HexEncryption](o: O)(key: String, plaintext: CharSequence): O = {
     import cats.effect.unsafe.implicits.global
-
-    val wBi = for {
-      rawKey <- encryption.genRawKey
-      cipherKey <- encryption.buildKey(rawKey)
-      cipherText <- encryption.encrypt(cipherKey)(plaintext.toString)
-      bytes <- encryption.concat(cipherText)
-      hex <- Encryption.bytesToHexString(bytes)
-      ok <- encryption.checkHex(hex, cipherKey, plaintext.toString)
-    } yield (rawKey, hex, ok)
+    val encryption = implicitly[HexEncryption[A]]
+    val wBi: IO[(String, String, Boolean)] = encryption.encryptWithRandomKey(plaintext)
 
     // TODO use IO for O
     wBi.unsafeRunSync() match {
@@ -100,6 +94,7 @@ trait Writable[O] {
       case x => throw new RuntimeException(s"Writable.writeLineEncrypted: logic error: wBi=$x, plaintext=$plaintext")
     }
   }
+
 
   private val sQuote: String = quote.toString
 

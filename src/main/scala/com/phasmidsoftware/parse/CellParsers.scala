@@ -224,8 +224,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              // NOTE it is not clear why we get "No implicit arguments..." warnings from the compiler (here and in subsequent methods).
-              t <- cellParser2(construct(p1, _, _), fs).parse(wo, row, columns)
+              t <- cellParser2[P2, P3, T](construct(p1, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }
@@ -251,7 +250,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser3(construct(p1, _, _, _), fs).parse(wo, row, columns)
+              t <- cellParser3[P2, P3, P4, T](construct(p1, _, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }
@@ -278,7 +277,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser4(construct(p1, _, _, _, _), fs).parse(wo, row, columns)
+              t <- cellParser4[P2, P3, P4, P5, T](construct(p1, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }
@@ -306,7 +305,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser5(construct(p1, _, _, _, _, _), fs).parse(wo, row, columns)
+              t <- cellParser5[P2, P3, P4, P5, P6, T](construct(p1, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }
@@ -336,7 +335,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser6(construct(p1, _, _, _, _, _, _), fs).parse(wo, row, columns)
+              t <- cellParser6[P2, P3, P4, P5, P6, P7, T](construct(p1, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }
@@ -367,7 +366,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser7(construct(p1, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
+              t <- cellParser7[P2, P3, P4, P5, P6, P7, P8, T](construct(p1, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }
@@ -398,7 +397,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser8(construct(p1, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
+              t <- cellParser8[P2, P3, P4, P5, P6, P7, P8, P9, T](construct(p1, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }
@@ -430,7 +429,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser9(construct(p1, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
+              t <- cellParser9[P2, P3, P4, P5, P6, P7, P8, P9, P10, T](construct(p1, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }
@@ -463,7 +462,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser10(construct(p1, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
+              t <- cellParser10[P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, T](construct(p1, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }
@@ -497,7 +496,7 @@ trait CellParsers {
           case f1 :: fs =>
             for {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser11(construct(p1, _, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
+              t <- cellParser11[P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, T](construct(p1, _, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
           case _ => Failure(ParseLogicException("no field names"))
         }

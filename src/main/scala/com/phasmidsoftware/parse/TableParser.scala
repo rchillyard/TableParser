@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.crypto.Encryption
+import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.parse.AbstractTableParser.logException
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.table._
@@ -218,7 +218,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
  * @param headerRowsToRead the number of header rows expected in the input file
  *                         defaults to 1.
  * @see HeadedStringTableParser#create
- * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
+ * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
  */
 case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
         extends HeadedStringTableParser[X](maybeFixedHeader, forgiving, headerRowsToRead) {
@@ -259,9 +259,10 @@ case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](maybeFixed
  *                              Defaults to false.
  * @param headerRowsToRead      the number of header rows expected in the input file
  *                              defaults to 1.
- * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
+ * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
+ * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
  */
-case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedRowPredicate: String => Boolean, keyFunction: String => String, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncryption](encryptedRowPredicate: String => Boolean, keyFunction: String => String, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
         extends HeadedStringTableParser[X](None, false, headerRowsToRead) {
 
   private val phase2Parser = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
@@ -345,7 +346,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
   private def decryptTable(xt: RawTable): Table[String] = {
     import cats.effect.IO
     import cats.effect.unsafe.implicits.global
-    val yt = xt.map(row => Encryption.decrypt(keyFunction)(row.ws))
+    val yt = xt.map(row => HexEncryption.decryptRow(keyFunction)(row.ws))
     yt.processRows {
       wis => IO.parSequenceN(2)(wis.toSeq).unsafeRunSync()
     }
@@ -371,7 +372,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag](encryptedR
  * @param headerRowsToRead the number of header rows expected in the input file
  *                         defaults to 1.
  * @see HeadedStringTableParser#create
- * @tparam X the underlying row type which must provide evidence of a CellParser and ClassTag.
+ * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
  */
 sealed abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
         extends StringTableParser[Table[X]] with CopyableTableParser[X, String, Table[X]] {

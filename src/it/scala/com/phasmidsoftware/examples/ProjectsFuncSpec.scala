@@ -1,5 +1,6 @@
 package com.phasmidsoftware.examples
 
+import com.phasmidsoftware.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
 import com.phasmidsoftware.parse.{CellParser, EncryptedHeadedStringTableParser, RawParsers, TableParser}
 import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.table.Table.{parse, parseResource}
@@ -10,10 +11,13 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.io.Source
 import scala.util._
+import tsec.cipher.symmetric.jca.AES128CTR
 
 class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
 
   behavior of "TeamProject table"
+
+  implicit val encryption: HexEncryption[AES128CTR] = EncryptionUTF8AES128CTR
 
   /**
    * NOTE: it is perfectly proper for there to be a number of parsing problems.
@@ -184,7 +188,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
 
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
 
-    implicit val parser: TableParser[Table[TeamProject]] = EncryptedHeadedStringTableParser[TeamProject](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    implicit val parser: TableParser[Table[TeamProject]] = EncryptedHeadedStringTableParser[TeamProject, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
     val pty: Try[Table[TeamProject]] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
     pty should matchPattern { case Success(HeadedTable(_, _)) => }
     val pt = pty.get
@@ -208,7 +212,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
 
     implicit val cellParser: CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
-    implicit val parser: TableParser[RawTable] = EncryptedHeadedStringTableParser[RawRow](encryptionPredicate, keyMap, headerRowsToRead = 2)
+    implicit val parser: TableParser[RawTable] = EncryptedHeadedStringTableParser[RawRow, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
     val pty: Try[RawTable] = parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])
     pty should matchPattern { case Success(HeadedTable(_, _)) => }
     val pt = pty.get

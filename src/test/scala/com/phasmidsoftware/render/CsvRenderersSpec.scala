@@ -151,6 +151,13 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   behavior of "CsvRenderers"
 
+  it should "render a RawRow" in {
+    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+    implicit val renderer: CsvRenderer[RawRow] = new CsvRenderers {}.rawRowRenderer
+    val rawRow: RawRow = RawRow(Seq("42", "HGTTG"), Header.create("answer", "title"))
+    renderer.render(rawRow) shouldBe "42, HGTTG"
+  }
+
   it should "render an Option[Int]" in {
     import CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
