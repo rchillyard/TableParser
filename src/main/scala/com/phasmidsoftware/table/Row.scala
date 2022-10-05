@@ -4,9 +4,8 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.ParserException
+import com.phasmidsoftware.parse.{ParserException, RowValues}
 import com.phasmidsoftware.render.CsvRenderer
-
 import scala.util.{Failure, Try}
 
 /**
@@ -81,7 +80,8 @@ object Row {
 }
 
 case class RawRow(ws: Seq[String], header: Header) extends BaseRow(ws, header) {
-  override def toString(): String = s"""RawRow: ${ws.mkString("[", ",", "]")} with header=$header"""
+  override def toString(): String = RowValues(Row(ws, header, 0), header).toString
+//    s"""RawRow: ${ws.mkString("[", ",", "]")} with header=$header"""
 }
 
 /**

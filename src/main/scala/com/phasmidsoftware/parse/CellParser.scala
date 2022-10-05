@@ -101,7 +101,9 @@ case class CellValue(w: String) extends Convertible
  * @param row    the Row containing several values.
  * @param header the Header.
  */
-case class RowValues(row: Row, header: Header) extends Convertible
+case class RowValues(row: Row, header: Header) extends Convertible {
+  override def toString: String = (for ((h, x) <- header.xs zip row.ws) yield s"""${h.toUpperCase}="$x"""").mkString(", ")
+}
 
 object RowValues {
   def apply(row: Row): RowValues = RowValues(row, row.hdr)

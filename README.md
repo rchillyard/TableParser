@@ -184,7 +184,7 @@ Please note that, in the case of a parameter being an Auto-closeable object such
 it is the caller's responsibility to close it after parsing.
 However, if the parameter is a File, or filename, or URL/URI, then any Source object that is instantiated within
 the parse method will be closed.
-This applies also to the parseInputStream methods: the internally defined Source will be closed (but not the stream).
+This applies also to the _parseInputStream_ methods: the internally defined _Source_ will be closed (but not the stream).
 
 Additionally, there is an implicit class called _ImplicitParser_ (defined in the _TableParser_ companion object)
 which allows for expressions such as:
