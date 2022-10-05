@@ -107,7 +107,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val table = Table(Seq(row1), Some(hdr))
     Table.writeCSVFileRow(table, new File("output.csv"))
     val rows: Iterable[RawRow] = Table.parseFileRaw("output.csv", TableParser.includeAll).get.rows
-    rows map (_.toString()) shouldBe List("RawRow: [1,2] with header=Header(List(a, b),List())")
+    rows map (_.toString()) shouldBe List("""A="1", B="2"""")
     val tableWithoutHead = Table(Seq(row1), None)
     the[TableException] thrownBy Table.writeCSVFileRow(tableWithoutHead, new File("output.csv"))
   }

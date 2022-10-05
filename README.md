@@ -115,7 +115,7 @@ The result of parsing a table file (CSV, etc.) will be a _Table\[Row]_, wrapped 
 There are object methods to parse most forms of text: _File, Resource, InputStream, URL, Seq\[String]_, etc. (see _Table_ below).
 
 The parser responsible for parsing the contents of a cell is called _CellParser\[T]_ where T is the type of the value in the cell in question.
-T is covariant so that if you have alternative parsers which generate different sub-classes of trait, for instance, this can be done.
+T is covariant so that if you have alternative parsers which generate different subclasses of trait, for instance, this can be done.
 
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
 an implicit instance of _CellParser\[T]_ must be in scope.
@@ -184,7 +184,7 @@ Please note that, in the case of a parameter being an Auto-closeable object such
 it is the caller's responsibility to close it after parsing.
 However, if the parameter is a File, or filename, or URL/URI, then any Source object that is instantiated within
 the parse method will be closed.
-This applies also to the parseInputStream methods: the internally defined Source will be closed (but not the stream).
+This applies also to the _parseInputStream_ methods: the internally defined _Source_ will be closed (but not the stream).
 
 Additionally, there is an implicit class called _ImplicitParser_ (defined in the _TableParser_ companion object)
 which allows for expressions such as:
