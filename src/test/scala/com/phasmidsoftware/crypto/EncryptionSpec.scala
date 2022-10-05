@@ -14,7 +14,7 @@ class EncryptionSpec extends AnyFlatSpec with should.Matchers {
 
   it should "buildKey" in {
     val key = for {
-      rawKey <- Encryption.genRawKey
+      rawKey <- encryptor.genRawKey
     } yield encryptor.buildKey(rawKey)
     key.unsafeRunSync()
   }
@@ -22,7 +22,7 @@ class EncryptionSpec extends AnyFlatSpec with should.Matchers {
   it should "encrypt and decrypt" in {
     val originalMessage = "Hello, World!"
     val result: IO[String] = for {
-      rawKey <- Encryption.genRawKey
+      rawKey <- encryptor.genRawKey
       _ = println(rawKey)
       key <- encryptor.buildKey(rawKey)
       ciphertext <- encryptor.encrypt(key)(originalMessage)
@@ -36,7 +36,7 @@ class EncryptionSpec extends AnyFlatSpec with should.Matchers {
     val originalMessage = "Hello, World!"
     val result: IO[String] =
       for {
-        rawKey <- Encryption.genRawKey
+        rawKey <- encryptor.genRawKey
         key <- encryptor.buildKey(rawKey)
         ciphertext <- encryptor.encrypt(key)(originalMessage)
         bytes <- encryptor.concat(ciphertext)
@@ -50,7 +50,7 @@ class EncryptionSpec extends AnyFlatSpec with should.Matchers {
     val originalMessage = "Hello, World!"
     val result: IO[String] =
       for {
-        rawKey <- Encryption.genRawKey
+        rawKey <- encryptor.genRawKey
         key <- encryptor.buildKey(rawKey)
         ciphertext <- encryptor.encrypt(key)(originalMessage)
         bytes1 <- encryptor.concat(ciphertext)

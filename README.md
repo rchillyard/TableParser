@@ -115,7 +115,7 @@ The result of parsing a table file (CSV, etc.) will be a _Table\[Row]_, wrapped 
 There are object methods to parse most forms of text: _File, Resource, InputStream, URL, Seq\[String]_, etc. (see _Table_ below).
 
 The parser responsible for parsing the contents of a cell is called _CellParser\[T]_ where T is the type of the value in the cell in question.
-T is covariant so that if you have alternative parsers which generate different sub-classes of trait, for instance, this can be done.
+T is covariant so that if you have alternative parsers which generate different subclasses of trait, for instance, this can be done.
 
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
 an implicit instance of _CellParser\[T]_ must be in scope.
@@ -326,7 +326,7 @@ The _Movie_ class looks like this:
     case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
 Note that we make _actor3_ optional because some movies don't specify an "actor3".
-Unlike with ordinary values such as _Int_, _Double_, we do have to add an additional,
+Unlike with ordinary values such as _Int_, _Double_, we do have to add an additional
 _implicit_ definition to accomplish this (see in example code below):
  
     implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption

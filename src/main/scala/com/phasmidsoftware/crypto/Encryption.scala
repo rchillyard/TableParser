@@ -1,6 +1,7 @@
 package com.phasmidsoftware.crypto
 
 import cats.effect.IO
+import com.phasmidsoftware.crypto.Encryption.random
 import scala.util.Random
 import tsec.cipher.symmetric
 import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
@@ -106,8 +107,17 @@ trait HexEncryption[A] extends Encryption[A] {
  */
 abstract class BaseHexEncryption[A] extends HexEncryption[A] {
 
+
+  def genRawKey: IO[String] = {
+    // CONSIDER using Cats effect for Random.
+    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
+    val sb = new StringBuilder
+    for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
+    IO(sb.toString)
+  }
+
   def encryptWithRandomKey(plaintext: CharSequence): IO[(String, String, Boolean)] = for {
-    rawKey <- Encryption.genRawKey
+    rawKey <- genRawKey
     cipherKey <- buildKey(rawKey)
     cipherText <- encrypt(cipherKey)(plaintext.toString)
     bytes <- concat(cipherText)
@@ -148,13 +158,6 @@ abstract class BaseHexEncryption[A] extends HexEncryption[A] {
 object Encryption {
   val random: Random = new Random()
 
-  def genRawKey: IO[String] = {
-    // CONSIDER using Cats effect for Random.
-    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
-    val sb = new StringBuilder
-    for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
-    IO(sb.toString)
-  }
 }
 
 object HexEncryption {
@@ -215,14 +218,6 @@ object EncryptionUTF8AES128CTR extends BaseHexEncryption[AES128CTR] {
   implicit val cachedInstance: JCAPrimitiveCipher[IO, AES128CTR, CTR, NoPadding] = AES128CTR.genEncryptor[IO] //Cache the implicit
 
   val random: Random = new Random()
-
-  def genRawKey: IO[String] = {
-    // CONSIDER using Cats effect for Random.
-    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
-    val sb = new StringBuilder
-    for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
-    IO(sb.toString)
-  }
 
   def buildKey(rawKey: String): IO[SecretKey[AES128CTR]] =
     if (rawKey.length == AES128CTR.keySizeBytes)
