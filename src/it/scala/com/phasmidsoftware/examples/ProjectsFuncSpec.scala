@@ -64,6 +64,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers {
       import CsvRenderers._
       implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
       implicit val hasKey: HasKey[TeamProject] = (t: TeamProject) => t.team.number.toString
+      // FIXME this unit test occasionally fails
       mt.writeCSVFileEncrypted(new File("TeamProjectOutputEncrypted.csv"))
     }
   }

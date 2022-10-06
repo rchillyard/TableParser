@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.parse
 
+import cats.effect.IO
 import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.parse.AbstractTableParser.logException
 import com.phasmidsoftware.parse.TableParser.includeAll
@@ -268,18 +269,16 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
   private val phase2Parser = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
 
   override def parse(xs: Iterator[String], n: Int): Try[Table[X]] = {
+    def decryptAndParse(h: Header, xt: RawTable): Try[Table[X]] = {
+      val wti: IO[Table[String]] = decryptTable(xt)
+      import cats.effect.unsafe.implicits.global
+      for (wt <- Try(wti.unsafeRunSync()); xt <- phase2Parser.parseRows(wt.rows.iterator, h)) yield xt
+    }
+
     val ys = new TeeIterator(n)(xs)
     val hy: Try[Header] = rowParser.parseHeader(ys.tee)
-    // Phase 1: read the encrypted rows
     val xty: Try[RawTable] = createPhase1Parser.parse(ys)
-    (for (h <- hy; xt <- xty) yield (h, xt)) match {
-      case Success((h, xt)) =>
-        // Phase 2: decrypt the rows
-        val zt = decryptTable(xt)
-        // Phase 2: parse the plain text rows.
-        phase2Parser.parseRows(zt.rows.iterator, h)
-      case Failure(x) => Failure(x)
-    }
+    for (h <- hy; xt1 <- xty; xt2 <- decryptAndParse(h, xt1)) yield xt2
   }
 
   /**
@@ -343,13 +342,11 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
     RawTableParser(rawPredicate, Some(encryptionHeader), forgiving = false, multiline = false, headerRowsToRead).setRowParser(StandardRowParser[RawRow](lineParser))
   }
 
-  private def decryptTable(xt: RawTable): Table[String] = {
-    import cats.effect.IO
-    import cats.effect.unsafe.implicits.global
-    val yt = xt.map(row => HexEncryption.decryptRow(keyFunction)(row.ws))
-    yt.processRows {
-      wis => IO.parSequenceN(2)(wis.toSeq).unsafeRunSync()
-    }
+  import cats.effect.IO
+
+  private def decryptTable(xt: RawTable): IO[Table[String]] = {
+    val wit: Table[IO[String]] = xt.map(row => HexEncryption.decryptRow(keyFunction)(row.ws))
+    for (ws <- IO.parSequenceN(2)(wit.rows.toSeq)) yield wit.unit(ws)
   }
 }
 

@@ -2,6 +2,7 @@ package com.phasmidsoftware.crypto
 
 import cats.effect.IO
 import com.phasmidsoftware.crypto.Encryption.random
+import com.phasmidsoftware.parse.TableParserException
 import scala.util.Random
 import tsec.cipher.symmetric
 import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
@@ -194,10 +195,10 @@ object HexEncryption {
   def decryptRow[A: HexEncryption](keyFunction: String => String)(row: Seq[String]): IO[String] = {
     val ko = row.headOption // the first element of the row is the identifier (row-id).
     val hexIndex = 1 // the second (and last) element in the row is the Hex string.
-    val f = row.lift
+    val f: Int => Option[String] = row.lift
     (for (key <- ko map keyFunction; hex <- f(hexIndex)) yield (key, hex)) match {
       case Some(key -> hex) => implicitly[HexEncryption[A]].decryptHex(key, hex)
-      case _ => throw new RuntimeException(s"Encryption.decryptRow: logic error")
+      case _ => IO.raiseError(TableParserException(s"Encryption.decryptRow: logic error: row=$row does not include element for hexIndex ($hexIndex)"))
     }
   }
 }
