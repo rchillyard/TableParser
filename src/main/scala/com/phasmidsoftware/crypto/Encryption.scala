@@ -1,7 +1,7 @@
 package com.phasmidsoftware.crypto
 
 import cats.effect.IO
-import com.phasmidsoftware.crypto.Encryption.random
+import com.phasmidsoftware.crypto.Encryption.syncRandomLetter
 import com.phasmidsoftware.parse.TableParserException
 import scala.util.Random
 import tsec.cipher.symmetric
@@ -108,13 +108,21 @@ trait HexEncryption[A] extends Encryption[A] {
  */
 abstract class BaseHexEncryption[A] extends HexEncryption[A] {
 
-
+  /**
+   * Method to get a raw key, wrapped in IO.
+   *
+   * NOTE: this way of doing things is slow.
+   *
+   * @return an IO of String.
+   */
   def genRawKey: IO[String] = {
-    // CONSIDER using Cats effect for Random.
-    val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
-    val sb = new StringBuilder
-    for (_ <- 0 to 15) sb.append(alphabet.charAt(random.nextInt(alphabet.length)))
-    IO(sb.toString)
+    val xis: Seq[IO[Character]] = for (_ <- 0 to 15) yield for (x <- syncRandomLetter) yield x
+    IO.parSequenceN(2)(xis) map {
+      xs =>
+        val sb = new StringBuilder
+        xs.foreach(sb.append(_))
+        sb.toString
+    }
   }
 
   def encryptWithRandomKey(plaintext: CharSequence): IO[(String, String, Boolean)] = for {
@@ -157,8 +165,23 @@ abstract class BaseHexEncryption[A] extends HexEncryption[A] {
 }
 
 object Encryption {
-  val random: Random = new Random()
+  /**
+   * Random number generator wrapped inside IO.
+   *
+   * CONSIDER using Cats effect for Random.
+   */
+  val asyncRandom: IO[Random] = IO(new Random)
 
+  val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
+
+  /**
+   * Method to get a random character wrapped in IO.
+   *
+   * NOTE: this way of doing things seems considerably slower than not wrapping random letters in IO.
+   *
+   * @return IO[Character]
+   */
+  def syncRandomLetter: IO[Character] = for (random <- asyncRandom; x = alphabet(random.nextInt(alphabet.length))) yield x
 }
 
 object HexEncryption {
@@ -218,12 +241,12 @@ object EncryptionUTF8AES128CTR extends BaseHexEncryption[AES128CTR] {
   implicit val ctrStrategy: IvGen[IO, AES128CTR] = AES128CTR.defaultIvStrategy[IO]
   implicit val cachedInstance: JCAPrimitiveCipher[IO, AES128CTR, CTR, NoPadding] = AES128CTR.genEncryptor[IO] //Cache the implicit
 
-  val random: Random = new Random()
+//  val random: Random = new Random()
 
   def buildKey(rawKey: String): IO[SecretKey[AES128CTR]] =
     if (rawKey.length == AES128CTR.keySizeBytes)
       for (key <- AES128CTR.buildKey[IO](rawKey.utf8Bytes)) yield key
-    else throw new RuntimeException(s"buildKey: incorrect key size (should be ${AES128CTR.keySizeBytes})")
+    else throw new RuntimeException(s"buildKey: incorrect key size ${rawKey.length} (should be ${AES128CTR.keySizeBytes})")
 
   def encrypt(key: SecretKey[AES128CTR])(plaintext: String): IO[symmetric.CipherText[AES128CTR]] =
     AES128CTR.encrypt[IO](PlainText(plaintext.utf8Bytes), key)
