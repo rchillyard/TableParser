@@ -3,6 +3,7 @@ package com.phasmidsoftware.crypto
 import cats.effect.IO
 import com.phasmidsoftware.crypto.Encryption.syncRandomLetter
 import com.phasmidsoftware.parse.TableParserException
+import java.util.Base64
 import scala.util.Random
 import tsec.cipher.symmetric
 import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
@@ -198,9 +199,15 @@ object HexEncryption {
     IO(sb.toString())
   }
 
+  /**
+   * Decode the given String in hexadecimal as an array of Byte.
+   *
+   * @param hex the hex String.
+   * @return Array[Byte].
+   */
   def hexStringToBytes(hex: String): IO[Array[Byte]] = {
     // CONSIDER getting the byte array a different way that doesn't require the drop.
-    val q = BigInt(hex, 16).toByteArray
+    val q: Array[Byte] = BigInt(hex, 16).toByteArray
     val bytes = if (q.length > hex.length / 2) q.drop(1) else q
     IO(bytes)
   }
@@ -224,6 +231,24 @@ object HexEncryption {
       case _ => IO.raiseError(TableParserException(s"Encryption.decryptRow: logic error: row=$row does not include element for hexIndex ($hexIndex)"))
     }
   }
+}
+
+object Base64Encryption {
+  /**
+   * Show the given bytes as base64 text.
+   *
+   * @param bytes an Array[Byte].
+   * @return an IO of String.
+   */
+  def bytesToBase64(bytes: Array[Byte]): IO[String] = IO(Base64.getEncoder.encodeToString(bytes))
+
+  /**
+   * Decode the given String in base64 as an array of Byte.
+   *
+   * @param base64 the base64 String.
+   * @return Array[Byte].
+   */
+  def base64ToBytes(base64: String): IO[Array[Byte]] = IO(Base64.getDecoder.decode(base64))
 }
 
 /**
