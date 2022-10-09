@@ -9,6 +9,7 @@ import com.phasmidsoftware.util.FP._
 import java.io.InputStream
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+import scala.collection.mutable
 import scala.io.Source
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
