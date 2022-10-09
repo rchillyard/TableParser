@@ -35,25 +35,45 @@ object FP {
 
   /**
    * Sequence method to combine elements of Try.
-   *
-   * @param xys an Iterable of Try[X]
-   * @tparam X the underlying type
-   * @return a Try of Seq[X]
-   *         NOTE: that the output collection type will be Seq, regardless of the input type
-   */
+    *
+    * @param xys an Iterable of Try[X]
+    * @tparam X the underlying type
+    * @return a Try of Seq[X]
+    *         NOTE: that the output collection type will be Seq, regardless of the input type
+    */
   def sequence[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
     xys.foldLeft(Try(Seq[X]())) {
       (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
     }
 
   /**
-   * Sequence method to combine elements of Try.
-   *
-   * @param xos an Iterable of Option[X]
-   * @tparam X the underlying type
-   * @return an Option of Seq[X]
-   *         NOTE: that the output collection type will be Seq, regardless of the input type
-   */
+    * Sequence method to combine elements of Try.
+    *
+    * @param xys an Iterable of Try[X]
+    * @tparam X the underlying type
+    * @return a Try of Seq[X]
+    *         NOTE: that the output collection type will be Seq, regardless of the input type
+    */
+  def sequenceForgiving[X](xys: Iterable[Try[X]]): Try[Seq[X]] = {
+    def toOption(x: X): Try[Option[X]] = Success(Some(x))
+
+    def handleException(x: Throwable): Try[Option[X]] = x match {
+      case NonFatal(_) => System.err.println(s"forgiving: ${x}"); Success(None)
+      case _ => Failure(x)
+    }
+
+    val xosy: Try[Seq[Option[X]]] = sequence(for (xy <- xys) yield xy.transform[Option[X]](toOption, handleException))
+    for (xos <- xosy) yield xos.filter(_.isDefined).map(_.get)
+  }
+
+  /**
+    * Sequence method to combine elements of Try.
+    *
+    * @param xos an Iterable of Option[X]
+    * @tparam X the underlying type
+    * @return an Option of Seq[X]
+    *         NOTE: that the output collection type will be Seq, regardless of the input type
+    */
   def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
     xos.foldLeft(Option(Seq[X]())) {
       (xso, xo) => for (xs <- xso; x <- xo) yield xs :+ x

@@ -27,7 +27,23 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val try2 = Success(2)
     val try3 = Failure(FPException(""))
     sequence(Seq(try1, try2)) shouldBe Success(Seq(1, 2))
-    val result: Try[Seq[Int]] = sequence(Seq(try1, try3))
+    val result: Try[Iterable[Int]] = sequence(Seq(try1, try3))
+    result should matchPattern { case Failure(_) => }
+  }
+
+  it should "sequenceForgiving 1" in {
+    val try1 = Success(1)
+    val try2 = Success(2)
+    val try3 = Failure(FPException(""))
+    val result: Try[Iterable[Int]] = sequenceForgiving(Seq(try1, try2, try3))
+    result should matchPattern { case Success(List(1, 2)) => }
+  }
+
+  it should "sequenceForgiving 2" in {
+    val try1 = Success(1)
+    val try2 = Success(2)
+    val try3 = Failure(new OutOfMemoryError(""))
+    val result: Try[Iterable[Int]] = sequenceForgiving(Seq(try1, try2, try3))
     result should matchPattern { case Failure(_) => }
   }
 
