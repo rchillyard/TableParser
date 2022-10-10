@@ -23,3 +23,11 @@ class TeeIterator[X](n: Int)(xs: Iterator[X]) extends Iterator[X] {
 
   def next(): X = xs.next()
 }
+
+class DebugIterator[X](xs: Iterator[X]) extends Iterator[X] {
+  def hasNext: Boolean = xs.hasNext
+
+  def next(): X = {
+    val x = xs.next(); println(x); x
+  }
+}
