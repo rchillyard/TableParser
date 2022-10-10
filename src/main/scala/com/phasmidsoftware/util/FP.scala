@@ -184,15 +184,13 @@ object TryUsing {
    * This method is similar to apply(r) but it takes a Try[R] as its parameter.
    * The definition of f is the same as in the other apply, however.
    *
-   * TEST
-    *
-    * @param ry a Try[R] which is passed into f and will be managed via Using.apply
-    * @param f  a function of R => Try[A].
-    * @tparam R the resource type.
-    * @tparam A the underlying type of the result.
-    * @return a Try[A]
-    */
-  def tryIt[R: Releasable, A](ry: => Try[R])(f: R => Try[A]): Try[A] = for (r <- ry; a <- apply(r)(f)) yield a
+   * @param ry a Try[R] which is passed into f and will be managed via Using.apply
+   * @param f  a function of R => Try[A].
+   * @tparam R the resource type.
+   * @tparam A the underlying type of the result.
+   * @return a Try[A]
+   */
+  def apply[R: Releasable, A](ry: Try[R])(f: R => Try[A]): Try[A] = for (r <- ry; a <- apply(r)(f)) yield a
 }
 
 /**
@@ -200,15 +198,26 @@ object TryUsing {
  */
 object IOUsing {
   /**
+   * This method is to allow proper handling of Releasable resources, using IO.
+   *
+   * @param resource a resource which is used by f and will be managed by Resource.
+   * @param f        a function of R => IO[A].
+   * @tparam R the resource type.
+   * @tparam A the underlying type of the result.
+   * @return a IO[A], the result of invoking apply(IO(resource))(f).
+   */
+  def apply[R: Releasable, A](resource: => R)(f: R => IO[A]): IO[A] = apply(IO(resource))(f)
+
+  /**
    * This method is to Using.apply as flatMap is to Map.
    *
-   * @param resource a resource which is used by f and will be managed via Using.apply
-   * @param f        a function of R => IO[A].
+   * @param ri an IO of a resource which is to be used by f and will be managed by Resource.
+   * @param f  a function of R => IO[A].
    * @tparam R the resource type.
    * @tparam A the underlying type of the result.
    * @return a IO[A]
    */
-  def apply[R: Releasable, A](resource: => R)(f: R => IO[A]): IO[A] = Resource.make(IO(resource))(src => IO(implicitly[Releasable[R]].release(src))).use(src => f(src))
+  def apply[R: Releasable, A](ri: IO[R])(f: R => IO[A]): IO[A] = Resource.make(ri)(src => IO(implicitly[Releasable[R]].release(src))).use(src => f(src))
 }
 
 case class FPException(msg: String, eo: Option[Throwable] = None) extends Exception(msg, eo.orNull)

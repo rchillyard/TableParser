@@ -16,7 +16,7 @@ import java.net.{URI, URL}
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
-import scala.util.{Random, Try}
+import scala.util.{Failure, Random, Try}
 
 /**
   * A Table of Rows.
@@ -61,11 +61,11 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * Method to zip two Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
    *
-   * @param table the other Table.
+   * @param rt a Table[R].
    * @tparam R the underlying type of the other Table.
    * @return a Table of (Row, R).
    */
-  def zip[R](table: Table[R]): Table[(Row, R)] = processRows[R, (Row, R)]((rs1, rs2) => rs1 zip rs2)(table)
+  def zip[R](rt: Table[R]): Table[(Row, R)] = processRows[R, (Row, R)]((rs1, rs2) => rs1 zip rs2)(rt)
 
   /**
    * Method to concatenate two Rows
@@ -80,22 +80,22 @@ trait Table[Row] extends Iterable[Row] {
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param rows        a sequence of S.
+   * @param ss          a sequence of S.
    * @param maybeHeader an optional Header to be used in the resulting Table.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S]
+  def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S]
 
   /**
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param rows a sequence of S.
+   * @param ss a sequence of S.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  def unit[S](rows: Iterable[S]): Table[S] = unit(rows, maybeHeader)
+  def unit[S](ss: Iterable[S]): Table[S] = unit(ss, maybeHeader)
 
   /**
    * Method to access the individual rows of this table.
@@ -372,7 +372,16 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](x: => Source): IO[T] = for (y <- parse(x.getLines())) yield y
+  def parseSource[T: TableParser](x: => Source): IO[T] = for (y <- parse(x.getLines())) yield y
+
+  /**
+   * Method to parse a table from a Source (with proper resource management of the source).
+   *
+   * @param si the Source.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
+  def parse[T: TableParser](si: IO[Source]): IO[T] = IOUsing(si)(parseSource(_))
 
   /**
    * Method to parse a table from a URI with an implicit encoding.
@@ -382,7 +391,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): IO[T] = IOUsing(Source.fromURI(u))(parse(_))
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): IO[T] = parse(sourceFromURI(u))
 
   /**
    * Method to parse a table from a URI with an explicit encoding.
@@ -405,23 +414,25 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): IO[T] = IOUsing(Source.fromInputStream(i))(parse(_))
+  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): IO[T] = parse(sourceFromInputStream(i))
 
   /**
    * Method to parse a table from an InputStream with an explicit encoding.
    *
-   * @param i   the InputStream.
+   * @param si  the InputStream, wrapped in IO.
    * @param enc the encoding.
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseInputStream[T: TableParser](i: => InputStream, enc: String): IO[T] = {
+  def parseInputStream[T: TableParser](si: IO[InputStream], enc: String): IO[T] = {
     implicit val codec: Codec = Codec(enc)
-    parseInputStream(i)
+    for (s <- si; t <- parseInputStream(s)) yield t
   }
 
   /**
    * Method to parse a table from a File.
+   *
+   * NOTE: you should use parseFile(String) if you have a pathname in String form.
    *
    * @param f   the File (call by name in case there is an exception thrown while constructing the file).
    * @param enc the explicit encoding.
@@ -436,12 +447,14 @@ object Table {
   /**
    * Method to parse a table from an File.
    *
+   * NOTE: you should use parseFile(String) if you have a pathname in String form.
+   *
    * @param f     the File (call by name in case there is an exception thrown while constructing the file).
    * @param codec (implicit) the encoding.
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): IO[T] = IOUsing(Source.fromFile(f))(parse(_))
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): IO[T] = parse(sourceFromFile(f))
 
   /**
    * Method to parse a table from a File.
@@ -451,54 +464,55 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseFile[T: TableParser](pathname: String, enc: String): IO[T] = parseFile(new File(pathname), enc)
+  def parseFile[T: TableParser](pathname: String, enc: String): IO[T] = {
+    implicit val codec: Codec = Codec(enc)
+    parseFile(pathname)
+  }
 
   /**
-    * Method to parse a table from an File.
-    *
-    * @param pathname the file pathname.
-    * @param codec    (implicit) the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a IO[T]
-    */
-  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): IO[T] = parseFile(new File(pathname))
+   * Method to parse a table from an File.
+   *
+   * @param pathname the file pathname.
+   * @param codec    (implicit) the encoding.
+   * @tparam T the type of the resulting table.
+   * @return a IO[T]
+   */
+  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): IO[T] = parse(sourceFromFilename(pathname))
 
   /**
-    * Method to parse a table from an File.
-    *
-    * @param s     the resource name.
-    * @param clazz the class for which the resource should be sought (should default to the calling class but doesn't).
-    * @param codec (implicit) the encoding.
-    * @tparam T the type of the resulting table.
-    * @return an IO[T]
-    */
-  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): IO[T] =
-    IOUsing(Source.fromURL(clazz.getResource(s)))(parse(_)).handleErrorWith {
-      case _: java.lang.NullPointerException => IO.raiseError(TableParserException(s"cannot find resource '$s' relative to $clazz"))
-      case x => IO.raiseError(x)
-    }
+   * Method to parse a table from an File.
+   *
+   * @param w     the resource name.
+   * @param clazz the class for which the resource should be sought (should default to the calling class but doesn't).
+   * @param codec (implicit) the encoding.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
+  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): IO[T] = parse(sourceFromClassResource(w, clazz))
 
   /**
-    * Method to parse a table from a URL.
-    *
-    * @param u the URI.
-    * @tparam T the type of the resulting table.
-    * @return an IO[T]
-    */
-  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): IO[T] =
-    for (uri <- IO(u.toURI); t <- parse(uri)) yield t
+   * Method to parse a table from a URL.
+   *
+   * @param u the URI.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
+  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): IO[T] = parse(u.toURI)
 
   /**
-    * Method to parse a table from a URL with an explicit encoding.
-    *
-    * NOTE: the logic here is different from that of parseResource(u:=>URL)(implicit codec: Codec) above.
-    *
-    * @param u   the URL.
-    * @param enc the encoding.
-    * @tparam T the type of the resulting table.
-    * @return an IO[T]
-    */
-  def parseResource[T: TableParser](u: => URL, enc: String): IO[T] = IOUsing(Source.fromURL(u, enc))(parse(_))
+   * Method to parse a table from a URL with an explicit encoding.
+   *
+   * NOTE: the logic here is different from that of parseResource(u:=>URL)(implicit codec: Codec) above.
+   *
+   * @param u   the URL.
+   * @param enc the encoding.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
+  def parseResource[T: TableParser](u: => URL, enc: String): IO[T] = {
+    implicit val codec: Codec = Codec(enc)
+    parseResource(u)
+  }
 
   /**
     * Method to parse a table from a Seq of Seq of String.
@@ -511,7 +525,7 @@ object Table {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
       case parser: StringsTableParser[T] => parser.parse(wss, 1)
-      case _ => IO.raiseError(ParserException(s"parse method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
+      case _ => IO.raiseError(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
   }
 
@@ -612,6 +626,49 @@ object Table {
       case _ => throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
     }
   }
+
+  /**
+   * Method to open source defined by an InputStream.
+   *
+   * @param s an InputStream.
+   * @return an IO[Source].
+   */
+  private def sourceFromInputStream(s: => InputStream): IO[Source] = IO(Source.fromInputStream(s))
+
+  /**
+   * Method to open source defined by a URI.
+   *
+   * @param u a URI.
+   * @return an IO[Source].
+   */
+  private def sourceFromURI(u: => URI): IO[Source] = IO(Source.fromURI(u))
+
+  /**
+   * Method to open source defined by a File.
+   *
+   * @param f a File.
+   * @return an IO[Source].
+   */
+  private def sourceFromFile(f: => File)(implicit codec: Codec): IO[Source] = IO(Source.fromFile(f))
+
+  /**
+   * Method to open source defined by a File.
+   *
+   * @param filename a File.
+   * @return an IO[Source].
+   */
+  private def sourceFromFilename(filename: => String)(implicit codec: Codec): IO[Source] = IO(Source.fromFile(filename))
+
+  /**
+   * Method to open a source defined by a Class and a resource name.
+   *
+   * @param w     the resource name.
+   * @param clazz the class.
+   * @return an IO[Source].
+   */
+  private def sourceFromClassResource(w: String, clazz: Class[_]): IO[Source] = IO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
+    case _: java.lang.NullPointerException => Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
+  })
 }
 
 /**
@@ -719,13 +776,13 @@ case class UnheadedTable[Row](rows: Iterable[Row]) extends RenderableTable[Row](
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param rows a sequence of S.
+   * @param ss a sequence of S.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  override def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(rows, h)
-    case None => UnheadedTable(rows)
+  override def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+    case Some(h) => HeadedTable(ss, h)
+    case None => UnheadedTable(ss)
   }
 
   def column(name: String): Iterator[Option[String]] = Iterator.empty
@@ -747,13 +804,13 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param rows a sequence of S.
+   * @param ss a sequence of S.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  override def unit[S](rows: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(rows, h)
-    case None => UnheadedTable(rows)
+  override def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+    case Some(h) => HeadedTable(ss, h)
+    case None => UnheadedTable(ss)
   }
 
   def column(name: String): Iterator[Option[String]] = {
