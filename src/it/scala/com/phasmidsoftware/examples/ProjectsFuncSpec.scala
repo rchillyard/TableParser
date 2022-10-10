@@ -30,7 +30,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
       case pt@HeadedTable(_, _) =>
         pt.size shouldBe 5
         pt foreach println
-      case x => fail(s"not a HeadedTable: $x")
+      case x => fail(s"not a HeadedTable: $x") // NOTE: This is not necessary
     }
   }
 
