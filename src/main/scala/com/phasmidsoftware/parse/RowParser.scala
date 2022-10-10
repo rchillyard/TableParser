@@ -4,8 +4,10 @@
 
 package com.phasmidsoftware.parse
 
+import cats.effect.IO
 import com.phasmidsoftware.table.{Header, Row}
 import com.phasmidsoftware.util.FP
+
 import scala.annotation.implicitNotFound
 import scala.util.Try
 
@@ -28,14 +30,14 @@ trait RowParser[Row, Input] {
   def parse(indexedRow: (Input, Int))(header: Header): Try[Row]
 
   /**
-   * Parse the Input, resulting in a Try[Header]
-   *
-   * CONSIDER making this share the same signature as parse but for different Row type.
-   *
-   * @param xs a sequence of Inputs to be parsed.
-   * @return a Try[Header]
-   */
-  def parseHeader(xs: Seq[Input]): Try[Header]
+    * Parse the Input, resulting in a IO[Header]
+    *
+    * CONSIDER making this share the same signature as parse but for different Row type.
+    *
+    * @param xs a sequence of Inputs to be parsed.
+    * @return a IO[Header]
+    */
+  def parseHeader(xs: Seq[Input]): IO[Header]
 }
 
 /**
@@ -64,14 +66,14 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
     for (ws <- parser.parseRow(indexedString); r <- doConversion(indexedString, header, ws)) yield r
 
   /**
-   * Method to parse a String as a Try[Header].
-   *
-   * @param xs the header row(s) as a String.
-   * @return a Try[Header].
-   */
-  def parseHeader(xs: Strings): Try[Header] = {
+    * Method to parse a String as a IO[Header].
+    *
+    * @param xs the header row(s) as a String.
+    * @return a IO[Header].
+    */
+  def parseHeader(xs: Strings): IO[Header] = {
     val wsys: Seq[Try[Strings]] = for (x <- xs.tail) yield parser.parseRow(x, -1)
-    for (w <- Try(xs.head); ws <- parser.parseRow((w, -1)); wss <- FP.sequence(wsys)) yield Header(ws, wss)
+    IO.fromTry(for (w <- Try(xs.head); ws <- parser.parseRow((w, -1)); wss <- FP.sequence(wsys)) yield Header(ws, wss))
   }
 
   private def doConversion(indexedString: (String, Int), header: Header, ws: Strings) =
@@ -108,10 +110,10 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
     RowValues(Row(indexedString._1, header, indexedString._2)).convertTo[Row]
 
   /**
-   * Method to parse a sequence of Strings as a Try[Header].
-   *
-   * @param ws the header row as a sequence of Strings.
-   * @return a Try[Header].
-   */
-  def parseHeader(ws: Seq[Strings]): Try[Header] = Try(Header(ws))
+    * Method to parse a sequence of Strings as a IO[Header].
+    *
+    * @param ws the header row as a sequence of Strings.
+    * @return a IO[Header].
+    */
+  def parseHeader(ws: Seq[Strings]): IO[Header] = IO(Header(ws))
 }

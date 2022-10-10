@@ -4,21 +4,23 @@
 
 package com.phasmidsoftware.table
 
+import cats.effect.IO
 import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
-import com.phasmidsoftware.util.{Reflection, TryUsing}
+import com.phasmidsoftware.util.{IOUsing, Reflection}
+
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
-import scala.util.{Failure, Random, Try}
+import scala.util.{Random, Try}
 
 /**
- * A Table of Rows.
+  * A Table of Rows.
  *
  * @tparam Row the type of each row.
  */
@@ -341,215 +343,215 @@ trait Table[Row] extends Iterable[Row] {
 
 object Table {
   /**
-   * Primary method to parse a table from an Iterator of String.
-   * This method is, in turn, invoked by all other parse methods defined below (other than parseSequence).
-   *
-   * @param ws the Strings.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parse[T: TableParser](ws: Iterator[String]): Try[T] = implicitly[TableParser[T]] match {
+    * Primary method to parse a table from an Iterator of String.
+    * This method is, in turn, invoked by all other parse methods defined below (other than parseSequence).
+    *
+    * @param ws the Strings.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](ws: Iterator[String]): IO[T] = implicitly[TableParser[T]] match {
     case parser: StringTableParser[T] => parser.parse(ws, parser.headerRowsToRead)
-    case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
+    case x => IO.raiseError(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
 
   /**
-   * Method to parse a table from an Iterable of String.
-   *
-   * @param ws the Strings.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parse[T: TableParser](ws: Iterable[String]): Try[T] = parse(ws.iterator)
+    * Method to parse a table from an Iterable of String.
+    *
+    * @param ws the Strings.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](ws: Iterable[String]): IO[T] = parse(ws.iterator)
 
   /**
-   * Method to parse a table from a Source.
-   *
-   * NOTE: the caller is responsible for closing the given Source.
-   *
-   * @param x the Source.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parse[T: TableParser](x: => Source): Try[T] = for (z <- Try(x.getLines()); y <- parse(z)) yield y
+    * Method to parse a table from a Source.
+    *
+    * NOTE: the caller is responsible for closing the given Source.
+    *
+    * @param x the Source.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](x: => Source): IO[T] = for (z <- IO(x.getLines()); y <- parse(z)) yield y
 
   /**
-   * Method to parse a table from a URI with an implicit encoding.
-   *
-   * @param u     the URI.
-   * @param codec (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = TryUsing(Source.fromURI(u))(parse(_))
+    * Method to parse a table from a URI with an implicit encoding.
+    *
+    * @param u     the URI.
+    * @param codec (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): IO[T] = IOUsing(Source.fromURI(u))(parse(_))
 
   /**
-   * Method to parse a table from a URI with an explicit encoding.
-   *
-   * @param u   the URI.
-   * @param enc the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
+    * Method to parse a table from a URI with an explicit encoding.
+    *
+    * @param u   the URI.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parse[T: TableParser](u: => URI, enc: String): IO[T] = {
     implicit val codec: Codec = Codec(enc)
     parse(u)
   }
 
   /**
-   * Method to parse a table from an InputStream with an implicit encoding.
-   *
-   * @param i     the InputStream (call-by-name).
-   * @param codec (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = TryUsing(Source.fromInputStream(i))(parse(_))
+    * Method to parse a table from an InputStream with an implicit encoding.
+    *
+    * @param i     the InputStream (call-by-name).
+    * @param codec (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): IO[T] = IOUsing(Source.fromInputStream(i))(parse(_))
 
   /**
-   * Method to parse a table from an InputStream with an explicit encoding.
-   *
-   * @param i   the InputStream.
-   * @param enc the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseInputStream[T: TableParser](i: => InputStream, enc: String): Try[T] = {
+    * Method to parse a table from an InputStream with an explicit encoding.
+    *
+    * @param i   the InputStream.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseInputStream[T: TableParser](i: => InputStream, enc: String): IO[T] = {
     implicit val codec: Codec = Codec(enc)
     parseInputStream(i)
   }
 
   /**
-   * Method to parse a table from a File.
-   *
-   * @param f   the File (call by name in case there is an exception thrown while constructing the file).
-   * @param enc the explicit encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseFile[T: TableParser](f: => File, enc: String): Try[T] = {
+    * Method to parse a table from a File.
+    *
+    * @param f   the File (call by name in case there is an exception thrown while constructing the file).
+    * @param enc the explicit encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseFile[T: TableParser](f: => File, enc: String): IO[T] = {
     implicit val codec: Codec = Codec(enc)
     parseFile(f)
   }
 
   /**
-   * Method to parse a table from an File.
-   *
-   * @param f     the File (call by name in case there is an exception thrown while constructing the file).
-   * @param codec (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = TryUsing(Source.fromFile(f))(parse(_))
+    * Method to parse a table from an File.
+    *
+    * @param f     the File (call by name in case there is an exception thrown while constructing the file).
+    * @param codec (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): IO[T] = IOUsing(Source.fromFile(f))(parse(_))
 
   /**
-   * Method to parse a table from a File.
-   *
-   * @param pathname the file pathname.
-   * @param enc      the explicit encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseFile[T: TableParser](pathname: String, enc: String): Try[T] = Try(parseFile(new File(pathname), enc)).flatten
+    * Method to parse a table from a File.
+    *
+    * @param pathname the file pathname.
+    * @param enc      the explicit encoding.
+    * @tparam T the type of the resulting table.
+    * @return a Try[T]
+    */
+  def parseFile[T: TableParser](pathname: String, enc: String): IO[T] = parseFile(new File(pathname), enc)
 
   /**
-   * Method to parse a table from an File.
-   *
-   * @param pathname the file pathname.
-   * @param codec    (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] = Try(parseFile(new File(pathname))).flatten
+    * Method to parse a table from an File.
+    *
+    * @param pathname the file pathname.
+    * @param codec    (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return a IO[T]
+    */
+  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): IO[T] = parseFile(new File(pathname))
 
   /**
-   * Method to parse a table from an File.
-   *
-   * @param s     the resource name.
-   * @param clazz the class for which the resource should be sought (should default to the calling class but doesn't).
-   * @param codec (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
-    TryUsing(Source.fromURL(clazz.getResource(s)))(parse(_)).recoverWith {
-      case _: java.lang.NullPointerException => Failure(TableParserException(s"cannot find resource '$s' relative to $clazz"))
+    * Method to parse a table from an File.
+    *
+    * @param s     the resource name.
+    * @param clazz the class for which the resource should be sought (should default to the calling class but doesn't).
+    * @param codec (implicit) the encoding.
+    * @tparam T the type of the resulting table.
+    * @return an IO[T]
+    */
+  def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): IO[T] =
+    IOUsing(Source.fromURL(clazz.getResource(s)))(parse(_)).handleErrorWith {
+      case _: java.lang.NullPointerException => IO.raiseError(TableParserException(s"cannot find resource '$s' relative to $clazz"))
     }
 
   /**
-   * Method to parse a table from a URL.
-   *
-   * @param u the URI.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] =
-    for (uri <- Try(u.toURI); t <- parse(uri)) yield t
+    * Method to parse a table from a URL.
+    *
+    * @param u the URI.
+    * @tparam T the type of the resulting table.
+    * @return an IO[T]
+    */
+  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): IO[T] =
+    for (uri <- IO(u.toURI); t <- parse(uri)) yield t
 
   /**
-   * Method to parse a table from a URL with an explicit encoding.
-   *
-   * NOTE: the logic here is different from that of parseResource(u:=>URL)(implicit codec: Codec) above.
-   *
-   * @param u   the URL.
-   * @param enc the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = TryUsing(Source.fromURL(u, enc))(parse(_))
+    * Method to parse a table from a URL with an explicit encoding.
+    *
+    * NOTE: the logic here is different from that of parseResource(u:=>URL)(implicit codec: Codec) above.
+    *
+    * @param u   the URL.
+    * @param enc the encoding.
+    * @tparam T the type of the resulting table.
+    * @return an IO[T]
+    */
+  def parseResource[T: TableParser](u: => URL, enc: String): IO[T] = IOUsing(Source.fromURL(u, enc))(parse(_))
 
   /**
-   * Method to parse a table from a Seq of Seq of String.
-   *
-   * @param wss the Sequence of Strings.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] = {
+    * Method to parse a table from a Seq of Seq of String.
+    *
+    * @param wss the Sequence of Strings.
+    * @tparam T the type of the resulting table.
+    * @return an IO[T]
+    */
+  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): IO[T] = {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
       case parser: StringsTableParser[T] => parser.parse(wss, 1)
-      case _ => Failure(ParserException(s"parse method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
+      case _ => IO.raiseError(ParserException(s"parse method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
   }
 
   /**
-   * Method to parse a table from a File as a table of Seq[String].
-   *
-   * @param f                the file.
-   * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
-   * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
-   * @param codec            (implicit) the encoding.
-   * @return a Try of Table[RawRow] where RawRow is a Seq[String].
-   */
-  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
+    * Method to parse a table from a File as a table of Seq[String].
+    *
+    * @param f                the file.
+    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
+    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
+    * @param codec            (implicit) the encoding.
+    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
+    */
+  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): IO[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](f)
   }
 
   /**
-   * Method to parse a table from a File as a table of Seq[String].
-   *
-   * @param pathname the path name.
-   * @param codec    (implicit) the encoding.
-   * @return a Try of Table[RawRow] where RawRow is a Seq[String].
-   */
-  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): Try[Table[RawRow]] = {
+    * Method to parse a table from a File as a table of Seq[String].
+    *
+    * @param pathname the path name.
+    * @param codec    (implicit) the encoding.
+    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
+    */
+  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): IO[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
     parseFile[Table[RawRow]](pathname)
   }
 
   /**
-   * Method to parse a table from a resource as a table of Seq[String].
-   *
-   * @param s                the resource name.
-   * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
-   * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
-   * @param clazz            the class for which the resource should be sought (defaults to the calling class).
-   * @param codec            (implicit) the encoding.
-   * @return a Try of Table[RawRow] where RawRow is a Seq[String].
-   */
-  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
+    * Method to parse a table from a resource as a table of Seq[String].
+    *
+    * @param s                the resource name.
+    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
+    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
+    * @param clazz            the class for which the resource should be sought (defaults to the calling class).
+    * @param codec            (implicit) the encoding.
+    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
+    */
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): IO[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
@@ -558,9 +560,9 @@ object Table {
     * Method to parse a table of raw rows from an Iterable of String.
     *
     * @param ws the Strings.
-    * @return a Try of Table of RawRow
+    * @return an IO of Table of RawRow
     */
-  def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[RawTable] = {
+  def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): IO[RawTable] = {
     implicit val z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
   }

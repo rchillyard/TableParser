@@ -4,6 +4,8 @@
 
 package com.phasmidsoftware.util
 
+import cats.effect.IO
+
 import java.net.URL
 import scala.reflect.ClassTag
 import scala.util.Using.Releasable
@@ -11,8 +13,8 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try, Using}
 
 /**
- * Various utilities for functional programming.
- */
+  * Various utilities for functional programming.
+  */
 object FP {
 
   /**
@@ -184,14 +186,30 @@ object TryUsing {
    * The definition of f is the same as in the other apply, however.
    *
    * TEST
-   *
-   * @param ry a Try[R] which is passed into f and will be managed via Using.apply
-   * @param f  a function of R => Try[A].
-   * @tparam R the resource type.
-   * @tparam A the underlying type of the result.
-   * @return a Try[A]
-   */
+    *
+    * @param ry a Try[R] which is passed into f and will be managed via Using.apply
+    * @param f  a function of R => Try[A].
+    * @tparam R the resource type.
+    * @tparam A the underlying type of the result.
+    * @return a Try[A]
+    */
   def tryIt[R: Releasable, A](ry: => Try[R])(f: R => Try[A]): Try[A] = for (r <- ry; a <- apply(r)(f)) yield a
+}
+
+/**
+  * TODO see if there's already an equivalent for this in cats.effect
+  */
+object IOUsing {
+  /**
+    * This method is to Using.apply as flatMap is to Map.
+    *
+    * @param resource a resource which is used by f and will be managed via Using.apply
+    * @param f        a function of R => IO[A].
+    * @tparam R the resource type.
+    * @tparam A the underlying type of the result.
+    * @return a IO[A]
+    */
+  def apply[R: Releasable, A](resource: => R)(f: R => IO[A]): IO[A] = IO.fromTry(Using(resource)(f)).flatten
 }
 
 case class FPException(msg: String, eo: Option[Throwable] = None) extends Exception(msg, eo.orNull)
