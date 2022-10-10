@@ -23,13 +23,14 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     * These are application-specific and are not indicative of any bugs in the
     * TableParser library itself.
     */
-  ignore should "be ingested properly" in {
+  it should "be ingested properly" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val filename = "TeamProject.csv"
     checkResultIO(Table.parseResource(filename, classOf[ProjectsFuncSpec])) {
       case pt@HeadedTable(_, _) =>
         pt.size shouldBe 5
         pt foreach println
+      case x => fail(s"not a HeadedTable: $x")
     }
   }
 

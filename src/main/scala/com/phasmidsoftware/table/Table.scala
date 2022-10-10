@@ -11,7 +11,6 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{IOUsing, Reflection}
-
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -343,115 +342,115 @@ trait Table[Row] extends Iterable[Row] {
 
 object Table {
   /**
-    * Primary method to parse a table from an Iterator of String.
-    * This method is, in turn, invoked by all other parse methods defined below (other than parseSequence).
-    *
-    * @param ws the Strings.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
+   * Primary method to parse a table from an Iterator of String.
+   * This method is, in turn, invoked by all other parse methods defined below (other than parseSequence).
+   *
+   * @param ws the Strings.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parse[T: TableParser](ws: Iterator[String]): IO[T] = implicitly[TableParser[T]] match {
     case parser: StringTableParser[T] => parser.parse(ws, parser.headerRowsToRead)
     case x => IO.raiseError(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
 
   /**
-    * Method to parse a table from an Iterable of String.
-    *
-    * @param ws the Strings.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
+   * Method to parse a table from an Iterable of String.
+   *
+   * @param ws the Strings.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parse[T: TableParser](ws: Iterable[String]): IO[T] = parse(ws.iterator)
 
   /**
-    * Method to parse a table from a Source.
-    *
-    * NOTE: the caller is responsible for closing the given Source.
-    *
-    * @param x the Source.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
-  def parse[T: TableParser](x: => Source): IO[T] = for (z <- IO(x.getLines()); y <- parse(z)) yield y
+   * Method to parse a table from a Source.
+   *
+   * NOTE: the caller is responsible for closing the given Source.
+   *
+   * @param x the Source.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
+  def parse[T: TableParser](x: => Source): IO[T] = for (y <- parse(x.getLines())) yield y
 
   /**
-    * Method to parse a table from a URI with an implicit encoding.
-    *
-    * @param u     the URI.
-    * @param codec (implicit) the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
+   * Method to parse a table from a URI with an implicit encoding.
+   *
+   * @param u     the URI.
+   * @param codec (implicit) the encoding.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parse[T: TableParser](u: => URI)(implicit codec: Codec): IO[T] = IOUsing(Source.fromURI(u))(parse(_))
 
   /**
-    * Method to parse a table from a URI with an explicit encoding.
-    *
-    * @param u   the URI.
-    * @param enc the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
+   * Method to parse a table from a URI with an explicit encoding.
+   *
+   * @param u   the URI.
+   * @param enc the encoding.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parse[T: TableParser](u: => URI, enc: String): IO[T] = {
     implicit val codec: Codec = Codec(enc)
     parse(u)
   }
 
   /**
-    * Method to parse a table from an InputStream with an implicit encoding.
-    *
-    * @param i     the InputStream (call-by-name).
-    * @param codec (implicit) the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
+   * Method to parse a table from an InputStream with an implicit encoding.
+   *
+   * @param i     the InputStream (call-by-name).
+   * @param codec (implicit) the encoding.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): IO[T] = IOUsing(Source.fromInputStream(i))(parse(_))
 
   /**
-    * Method to parse a table from an InputStream with an explicit encoding.
-    *
-    * @param i   the InputStream.
-    * @param enc the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
+   * Method to parse a table from an InputStream with an explicit encoding.
+   *
+   * @param i   the InputStream.
+   * @param enc the encoding.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parseInputStream[T: TableParser](i: => InputStream, enc: String): IO[T] = {
     implicit val codec: Codec = Codec(enc)
     parseInputStream(i)
   }
 
   /**
-    * Method to parse a table from a File.
-    *
-    * @param f   the File (call by name in case there is an exception thrown while constructing the file).
-    * @param enc the explicit encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
+   * Method to parse a table from a File.
+   *
+   * @param f   the File (call by name in case there is an exception thrown while constructing the file).
+   * @param enc the explicit encoding.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parseFile[T: TableParser](f: => File, enc: String): IO[T] = {
     implicit val codec: Codec = Codec(enc)
     parseFile(f)
   }
 
   /**
-    * Method to parse a table from an File.
-    *
-    * @param f     the File (call by name in case there is an exception thrown while constructing the file).
-    * @param codec (implicit) the encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
+   * Method to parse a table from an File.
+   *
+   * @param f     the File (call by name in case there is an exception thrown while constructing the file).
+   * @param codec (implicit) the encoding.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parseFile[T: TableParser](f: => File)(implicit codec: Codec): IO[T] = IOUsing(Source.fromFile(f))(parse(_))
 
   /**
-    * Method to parse a table from a File.
-    *
-    * @param pathname the file pathname.
-    * @param enc      the explicit encoding.
-    * @tparam T the type of the resulting table.
-    * @return a Try[T]
-    */
+   * Method to parse a table from a File.
+   *
+   * @param pathname the file pathname.
+   * @param enc      the explicit encoding.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parseFile[T: TableParser](pathname: String, enc: String): IO[T] = parseFile(new File(pathname), enc)
 
   /**
@@ -476,6 +475,7 @@ object Table {
   def parseResource[T: TableParser](s: String, clazz: Class[_] = getClass)(implicit codec: Codec): IO[T] =
     IOUsing(Source.fromURL(clazz.getResource(s)))(parse(_)).handleErrorWith {
       case _: java.lang.NullPointerException => IO.raiseError(TableParserException(s"cannot find resource '$s' relative to $clazz"))
+      case x => IO.raiseError(x)
     }
 
   /**
