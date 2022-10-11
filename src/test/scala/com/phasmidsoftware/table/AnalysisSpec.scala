@@ -4,8 +4,10 @@ import cats.effect.IO
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.util.CheckIO
 import com.phasmidsoftware.util.FP.resource
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{Seconds, Span}
 
 import scala.io.Source
 
@@ -22,8 +24,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
     val airBNBFile = "/airbnb2.csv"
     val parser = RawTableParser(TableParser.includeAll, None, forgiving = true).setMultiline(true)
     val sy: IO[Source] = IO.fromTry(resource[AnalysisSpec](airBNBFile) map Source.fromURL)
-    val wsty = parser parse sy
-    CheckIO.checkResultIO(wsty) {
+    CheckIO.checkResultIO(parser parse sy, Timeout(Span(2, Seconds))) {
       case t@HeadedTable(_, _) =>
         val analysis = Analysis(t)
         analysis.rows shouldBe 254

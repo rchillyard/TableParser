@@ -27,7 +27,7 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
     // Create the table
     val wsty: IO[RawTable] = parser.parse(sy)
 
-    CheckIO.checkResultIO(wsty, Timeout(Span(3, Seconds))) {
+    CheckIO.checkResultIO(wsty, Timeout(Span(4, Seconds))) {
       case t@HeadedTable(r, _) =>
         val analysis = Analysis(t)
         println(s"AirBNB: $analysis")

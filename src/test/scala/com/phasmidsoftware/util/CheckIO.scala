@@ -1,43 +1,52 @@
 package com.phasmidsoftware.util
 
 import cats.effect.IO
-import org.scalatest.Assertions.fail
+import org.scalatest.Assertion
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.{Futures, ScalaFutures}
-import org.scalatest.time.Span.convertSpanToDuration
+import org.scalatest.matchers.should
 import org.scalatest.time.{Second, Span}
-import scala.concurrent.{Await, Future}
+
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 /**
- * Interim utilities for checking IO.
- *
- * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
- */
-object CheckIO extends Futures with ScalaFutures {
+  * Interim utilities for checking IO.
+  *
+  * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
+  */
+object CheckIO extends Futures with ScalaFutures with should.Matchers {
 
   /**
-   * Check the result by converting it to a Future, and waiting for it to complete.
-   *
-   * @param result  an IO[X].
-   * @param timeout a Timeout value (defaults to 1 second).
-   * @param check   a partial function of type X => Unit to invoke on the result.
-   * @tparam X the underlying type of the result.
-   */
+    * Check the result by converting it to a Future, and waiting for it to complete.
+    *
+    * @param result  an IO[X].
+    * @param timeout a Timeout value (defaults to 1 second).
+    * @param check   a partial function of type X => Unit to invoke on the result.
+    * @tparam X the underlying type of the result.
+    */
   def checkResultIO[X](result: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(check: PartialFunction[X, Unit]): Unit = {
     import cats.effect.unsafe.implicits.global
     whenReady(result.unsafeToFuture(), timeout)(check(_))
   }
 
-  def checkFailureIO[X](result: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(expected: Class[_]): Unit = {
+  /**
+    * Method to check that the result is a fail (throws an exception).
+    *
+    * @param result   an IO[X]
+    * @param expected the expected exception class.
+    * @tparam X the underlying type of the result.
+    * @return an IO[Assertion].
+    */
+  def checkFailureIO[X](result: => IO[X])(expected: Class[_]): IO[Assertion] = {
     import cats.effect.unsafe.implicits.global
-    val eventualX: Future[X] = result.unsafeToFuture()
     implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-    eventualX.onComplete[Unit] {
-      case Success(_) => fail("should fail")
-      case Failure(x) => expected.isAssignableFrom(x.getClass)
-    }
-    Await.ready(eventualX, convertSpanToDuration(timeout.value))
+    val z: Future[Assertion] = result.unsafeToFuture().transform(xy => xy match {
+      case Success(_) => Success(fail("should fail"))
+      case Failure(x) =>
+        if (expected.isAssignableFrom(x.getClass)) Success(succeed) else Success(fail(s"$x is not a $expected"))
+    })
+    IO.fromFuture(IO(z))
   }
 
 }

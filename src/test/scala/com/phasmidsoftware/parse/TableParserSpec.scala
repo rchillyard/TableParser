@@ -12,11 +12,12 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+import tsec.cipher.symmetric.jca.AES128CTR
+
 import scala.io.{Codec, Source}
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
-import tsec.cipher.symmetric.jca.AES128CTR
 
 class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
@@ -171,7 +172,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val raw = Seq(headerRaptors,
       "")
-    checkFailureIO(for (r <- Table.parse(raw)) yield r)(classOf[ParserException])
+    import cats.effect.unsafe.implicits.global
+    checkFailureIO(for (r <- Table.parse(raw)) yield r)(classOf[ParserException]).unsafeRunSync()
   }
 
   it should "parse empty sequence" in {
@@ -351,13 +353,15 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "fail on incompatible parser" in {
     import Submissions._
     val strings: Seq[String] = Nil
-    checkFailureIO(Table.parse(strings))(classOf[ParserException])
+    import cats.effect.unsafe.implicits.global
+    checkFailureIO(Table.parse(strings))(classOf[ParserException]).unsafeRunSync()
   }
 
   it should "fail on empty rows" in {
     import Submissions._
     val rows: Seq[Seq[String]] = Nil
-    checkFailureIO(Table.parseSequence(rows.iterator))(classOf[NoSuchElementException])
+    import cats.effect.unsafe.implicits.global
+    checkFailureIO(Table.parseSequence(rows.iterator))(classOf[NoSuchElementException]).unsafeRunSync()
   }
 
 
