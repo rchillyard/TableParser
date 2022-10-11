@@ -1,7 +1,9 @@
 package com.phasmidsoftware.render
 
+import cats.effect.IO
 import com.phasmidsoftware.parse.{CellParser, TableParserHelper}
-import com.phasmidsoftware.table.{Header, Table}
+import com.phasmidsoftware.table.{HeadedTable, Header, Table, TableJsonFormat}
+import com.phasmidsoftware.util.CheckIO
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import spray.json._
@@ -12,13 +14,16 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
 
   behavior of "JsonTableRenderer"
 
-  //  it should "render Partnership table" in {
-  //    val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
-  //    val wy: IO[String] = for (pt <- Table.parse[Table[Player]](strings); q = Player.convertTable(pt); w = q.asInstanceOf[Renderable[Partnership]].render) yield w
-  //    wy should matchPattern { case Success("{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}") => }
-  //    implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}
-  //    wy.map(p => p.parseJson.convertTo[Table[Partnership]]) should matchPattern { case Success(HeadedTable(_, _)) => }
-  //  }
+  it should "render Partnership table" in {
+    val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
+    val wy: IO[String] = for (pt <- Table.parse[Table[Player]](strings); q = Player.convertTable(pt); w = q.asInstanceOf[Renderable[Partnership]].render) yield w
+    CheckIO.checkResultIO(wy) {
+      case p =>
+        p shouldBe "{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}"
+        implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}
+        p.parseJson.convertTo[Table[Partnership]] should matchPattern { case HeadedTable(_, _) => }
+    }
+  }
 
   case class Player(first: String, last: String) {
     def nickname: String = s"$first ${last.head}"
