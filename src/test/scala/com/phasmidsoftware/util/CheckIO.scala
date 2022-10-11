@@ -20,6 +20,8 @@ object CheckIO extends Futures with ScalaFutures with should.Matchers {
   /**
     * Check the result by converting it to a Future, and waiting for it to complete.
     *
+    * CONSIDER returning IO[Assertion] like checkFailureIO.
+    *
     * @param result  an IO[X].
     * @param timeout a Timeout value (defaults to 1 second).
     * @param check   a partial function of type X => Unit to invoke on the result.
@@ -41,12 +43,12 @@ object CheckIO extends Futures with ScalaFutures with should.Matchers {
   def checkFailureIO[X](result: => IO[X])(expected: Class[_]): IO[Assertion] = {
     import cats.effect.unsafe.implicits.global
     implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
-    val z: Future[Assertion] = result.unsafeToFuture().transform(xy => xy match {
+    val af: Future[Assertion] = result.unsafeToFuture().transform(xy => xy match {
       case Success(_) => Success(fail("should fail"))
       case Failure(x) =>
         if (expected.isAssignableFrom(x.getClass)) Success(succeed) else Success(fail(s"$x is not a $expected"))
     })
-    IO.fromFuture(IO(z))
+    IO.fromFuture(IO(af))
   }
 
 }
