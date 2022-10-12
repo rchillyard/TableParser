@@ -9,8 +9,9 @@ import cats.implicits.catsSyntaxParallelAp
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.table.Table.parseResource
-import com.phasmidsoftware.util.CheckIO
+import com.phasmidsoftware.util.{CheckIO, TryUsing}
 import java.io.{File, InputStream}
+import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -63,21 +64,19 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse from Seq[String]" in {
     import IntPair._
-    val xti: IO[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
-    CheckIO.checkResultIO(xti) {
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
 
   it should "parse input stream" in {
     import IntPair._
-    val xti: IO[Table[IntPair]] = Table.parseInputStream(IO(classOf[TableSpec].getResourceAsStream("intPairs.csv")), "UTF-8")
-    CheckIO.checkResultIO(xti) {
-      case xt@HeadedTable(_, _) =>
+    CheckIO.checkResultIO(Table.parseInputStream(IO(classOf[TableSpec].getResourceAsStream("intPairs.csv")), "UTF-8")) {
+      case HeadedTable(_, _) =>
     }
   }
 
-  ignore should "parse and not filter the movies from the IMDB dataset" in {
+  it should "parse and not filter the movies from the IMDB dataset" in {
     import MovieParser._
     implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
     implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
@@ -91,9 +90,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse table using URI and encryption" in {
     import IntPair._
     val url = classOf[TableSpec].getResource("intPairs.csv")
-    val xti: IO[Table[IntPair]] = Table.parse(url.toURI, "ISO-8859-1")
-    CheckIO.checkResultIO(xti) {
-      case xt@HeadedTable(_, _) =>
+    CheckIO.checkResultIO(Table.parse(url.toURI, "ISO-8859-1")) {
+      case HeadedTable(_, _) =>
     }
   }
 
@@ -120,8 +118,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
     Table.writeCSVFileRow(table, new File("output.csv"))
-    val rows: IO[Table[RawRow]] = Table.parseFileRaw("output.csv", TableParser.includeAll)
-    CheckIO.checkResultIO(rows) {
+    CheckIO.checkResultIO(Table.parseFileRaw("output.csv", TableParser.includeAll)) {
       case xt@HeadedTable(_, _) => xt.rows.head.toString() shouldBe """A="1", B="2""""
     }
     val tableWithoutHead = Table(Seq(row1), None)
@@ -130,8 +127,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse from Iterator[String]" in {
     import IntPair._
-    val iIty = Table.parse(Seq("1 2", "42 99").iterator)
-    CheckIO.checkResultIO(iIty) {
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99").iterator)) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
@@ -140,8 +136,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
 
     val source = Source.fromChars(Array('1', ' ', '2', '\n', '4', '2', ' ', '9', '9', '\n'))
-    val iIty = Table.parseSource(source)
-    CheckIO.checkResultIO(iIty) {
+    CheckIO.checkResultIO(Table.parseSource(source)) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
@@ -149,16 +144,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse from File" in {
     import IntPair._
 
-    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
-    CheckIO.checkResultIO(iIty) {
+    CheckIO.checkResultIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
 
   it should "parse raw resource using table parser " in {
-    val iIty = Table.parseResourceRaw("intPairs.csv", TableParser.includeAll)
-    CheckIO.checkResultIO(iIty) {
-      case xt@HeadedTable(_, _) =>
+    CheckIO.checkResultIO(Table.parseResourceRaw("intPairs.csv", TableParser.includeAll)) {
+      case HeadedTable(_, _) =>
     }
   }
 
@@ -166,24 +159,21 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
 
     val f: String = null
-    val iIty = Table.parseFile(new File(f))
     import cats.effect.unsafe.implicits.global
-    CheckIO.checkFailureIO(iIty)(classOf[NullPointerException]).unsafeRunSync()
+    CheckIO.checkFailureIO(Table.parseFile(new File(f)))(classOf[NullPointerException]).unsafeRunSync()
   }
 
   it should "parse from Resource" in {
     import IntPair._
 
-    val iIty = Table.parseResource("intPairs.csv", classOf[TableSpec])
-    CheckIO.checkResultIO(iIty) {
+    CheckIO.checkResultIO(Table.parseResource("intPairs.csv", classOf[TableSpec])) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
 
   it should "zip tables" in {
     import IntPair._
-    val iIty = Table.parse(Seq("1 2", "42 99").iterator)
-    CheckIO.checkResultIO(iIty) {
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99").iterator)) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
         xt.zip(xt).rows.toSeq shouldBe Seq((IntPair(1, 2), IntPair(1, 2)), (IntPair(42, 99), IntPair(42, 99)))
     }
@@ -216,8 +206,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
 
     lazy val i: InputStream = classOf[TableSpec].getResourceAsStream("intPairs.csv")
-    val iIty = Table.parseInputStream(i)
-    CheckIO.checkResultIO(iIty) {
+    CheckIO.checkResultIO(Table.parseInputStream(i)) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
@@ -239,48 +228,51 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     CheckIO.checkFailureIO(iIty)(classOf[NullPointerException]).unsafeRunSync()
   }
 
-  //  it should "return failure(2)" in {
-  //    lazy val i: InputStream = getClass.getResourceAsStream("emptyResource.txt")
-  //    val wy = TryUsing(Source.fromInputStream(i))(s => Try(s.getLines().toList.head))
-  //    wy should matchPattern { case Failure(_) => }
-  //    wy.recover {
-  //      case _: NoSuchElementException => Success(())
-  //      case e => fail(s"wrong exception: $e")
-  //    }
-  //  }
+  it should "return failure(2)" in {
+    // NOTE this uses Try (as it always did) and not IO.
+    lazy val si: InputStream = getClass.getResourceAsStream("emptyResource.txt")
+    val wy: Try[String] = TryUsing(Source.fromInputStream(si))(s => Try(s.getLines().toList.head))
+    wy should matchPattern { case Failure(_) => }
+    wy.recover {
+      case _: NoSuchElementException => Success(())
+      case e => fail(s"wrong exception: $e")
+    }
+  }
 
-  //  it should "return success for intPairs.csv URL with encoding" in {
-  //    import IntPair._
-  //
-  //    lazy val u: URL = classOf[TableSpec].getResource("intPairs.csv")
-  //    val iIty = Table.parseResource(u, "UTF-8")
-  //    iIty should matchPattern { case Success(_) => }
-  //    iIty.get.size shouldBe 2
-  //  }
+  it should "return success for intPairs.csv URL with encoding" in {
+    import IntPair._
 
+    lazy val u: URL = classOf[TableSpec].getResource("intPairs.csv")
+    CheckIO.checkResultIO(Table.parseResource(u, "UTF-8")) {
+      case xt@HeadedTable(_, _) => xt.size shouldBe 2
+    }
+  }
 
   behavior of "other"
 
-  //  it should "do iterator" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99"))
-  //    iIty should matchPattern { case Success(_) => }
-  //    val x = iIty.get.iterator
-  //    x.hasNext shouldBe true
-  //    x.next() shouldBe IntPair(1, 2)
-  //    x.hasNext shouldBe true
-  //    x.next() shouldBe IntPair(42, 99)
-  //    x.hasNext shouldBe false
-  //  }
+  it should "do iterator" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) => xt.size shouldBe 2
+        val x = xt.iterator
+        x.hasNext shouldBe true
+        x.next() shouldBe IntPair(1, 2)
+        x.hasNext shouldBe true
+        x.next() shouldBe IntPair(42, 99)
+        x.hasNext shouldBe false
+    }
+  }
 
-  //  it should "map" in {
-  //    val f: IntPair => IntPair = _ map (_ * 2)
-  //
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99"))
-  //    iIty should matchPattern { case Success(_) => }
-  //    iIty.get.map(f).rows shouldBe Seq(IntPair(2, 4), IntPair(84, 198))
-  //  }
+  it should "map" in {
+    val f: IntPair => IntPair = _ map (_ * 2)
+
+    import IntPair._
+    val iIty = Table.parse(Seq("1 2", "42 99"))
+    CheckIO.checkResultIO(iIty) {
+      case xt@HeadedTable(_, _) =>
+        xt.map(f).rows shouldBe Seq(IntPair(2, 4), IntPair(84, 198))
+    }
+  }
 
   //  it should "flatMap" in {
   //    val f: IntPair => Table[IntPair] = p => HeadedTable(Seq(p), Header())
