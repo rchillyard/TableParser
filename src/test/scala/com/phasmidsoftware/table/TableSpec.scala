@@ -267,87 +267,109 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val f: IntPair => IntPair = _ map (_ * 2)
 
     import IntPair._
-    val iIty = Table.parse(Seq("1 2", "42 99"))
-    CheckIO.checkResultIO(iIty) {
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.map(f).rows shouldBe Seq(IntPair(2, 4), IntPair(84, 198))
     }
   }
 
-  //  it should "flatMap" in {
-  //    val f: IntPair => Table[IntPair] = p => HeadedTable(Seq(p), Header())
-  //
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99"))
-  //    iIty should matchPattern { case Success(_) => }
-  //    iIty.get.flatMap(f).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
-  //  }
+  it should "flatMap" in {
+    val f: IntPair => Table[IntPair] = p => HeadedTable(Seq(p), Header())
 
-  //  it should "to Seq" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99"))
-  //    iIty.get.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
-  //  }
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.flatMap(f).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+    }
+  }
 
-  //  it should "to Shuffle" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99"))
-  //    iIty.get.shuffle.rows.size shouldBe 2
-  //  }
+  it should "to Seq" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+    }
+  }
 
-  //  it should "drop" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99"))
-  //    iIty.get.drop(1).rows shouldBe Seq(IntPair(42, 99))
-  //  }
+  it should "to Shuffle" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.shuffle.rows.size shouldBe 2
+    }
+  }
 
-  //  it should "dropRight" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99"))
-  //    iIty.get.dropRight(1).rows shouldBe Seq(IntPair(1, 2))
-  //  }
+  it should "drop" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.drop(1).rows shouldBe Seq(IntPair(42, 99))
+    }
+  }
 
-  //  it should "empty" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99"))
-  //    iIty.get.empty.rows shouldBe Seq.empty
-  //  }
+  it should "dropRight" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.dropRight(1).rows shouldBe Seq(IntPair(1, 2))
+    }
+  }
 
-  //  it should "dropWhile" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
-  //    iIty.get.dropWhile(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
-  //  }
+  it should "empty" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.empty.rows shouldBe Seq.empty
+    }
+  }
 
-  //  it should "filter" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
-  //    iIty.get.filter(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(3, 4))
-  //  }
+  it should "dropWhile" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.dropWhile(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+    }
+  }
 
-  //  it should "filterNot" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
-  //    iIty.get.filterNot(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
-  //  }
+  it should "filter" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.filter(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(3, 4))
+    }
+  }
 
-  //  it should "slice" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
-  //    iIty.get.slice(0, 2).rows shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
-  //  }
+  it should "filterNot" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.filterNot(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+    }
+  }
 
-  //  it should "takeRight" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
-  //    iIty.get.takeRight(2).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
-  //  }
+  it should "slice" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.slice(0, 2).rows shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
+    }
+  }
 
-  //  it should "takeWhile" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("3 4", "1 2", "42 99"))
-  //    iIty.get.takeWhile(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(3, 4))
-  //  }
+  it should "takeRight" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.takeRight(2).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+    }
+  }
+
+  it should "takeWhile" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.takeWhile(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(3, 4))
+    }
+  }
 
   case class HTML(x: String, ao: Option[String], attr: Map[String, String], hs: Seq[HTML])
 
@@ -532,23 +554,25 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   private val movieHeader = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
 
-  //  it should "parse and transform the following rows with pushdown function" in {
-  //    import RawParsers.WithHeaderRow._
-  //
-  //    val rows = Seq(
-  //      movieHeader,
-  //      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
-  //    )
-  //
-  //    val mty: IO[RawTable] = Table.parse(rows)
-  //    mty should matchPattern { case Success(HeadedTable(_, _)) => }
-  //    val rawTable: RawTable = mty.get
-  //    rawTable.size shouldBe 1
-  //    rawTable.head(1).get shouldBe "Doug Walker"
-  //
-  //    val f = RawTableTransformation(Map("MOVIE_TITLE" -> CellTransformation(_.toLowerCase)))
-  //    f.apply(rawTable).head(11).get shouldBe "star wars: episode vii - the force awakens             "
-  //  }
+  it should "parse and transform the following rows with pushdown function" in {
+    import RawParsers.WithHeaderRow._
+
+    val rows = Seq(
+      movieHeader,
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+    )
+
+    val mty: IO[RawTable] = Table.parse(rows)
+    CheckIO.checkResultIO(mty) {
+      case mt@HeadedTable(_, _) =>
+        mt.size shouldBe 1
+        mt.head(1).get shouldBe "Doug Walker"
+
+        val f = RawTableTransformation(Map("MOVIE_TITLE" -> CellTransformation(_.toLowerCase)))
+        f.apply(mt).head(11).get shouldBe "star wars: episode vii - the force awakens             "
+    }
+
+  }
 
   behavior of "projection"
 
