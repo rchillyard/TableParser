@@ -10,7 +10,7 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.table.Table.parseResource
 import com.phasmidsoftware.util.{CheckIO, TryUsing}
-import java.io.{File, InputStream}
+import java.io.{File, FileWriter, InputStream}
 import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec
@@ -393,123 +393,131 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
   }
 
-  //  it should "render the table to CSV" in {
-  //    import IntPair._
-  //    val iIty: IO[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
-  //    iIty should matchPattern { case Success(_) => }
-  //
-  //    implicit object StringBuilderWritable extends Writable[StringBuilder] {
-  //      def unit: StringBuilder = new StringBuilder
-  //
-  //      override def delimiter: CharSequence = "|"
-  //
-  //      def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
-  //    }
-  //
-  //    implicit object DummyRenderer$$ extends Renderer[Table[IntPair], String] {
-  //      def render(t: Table[IntPair], attrs: Map[String, String]): String = t match {
-  //        case t: RenderableTable[IntPair] => t.renderToWritable(StringBuilderWritable).toString
-  //        case _ => throw TableException("render problem")
-  //      }
-  //    }
-  //
-  //    val sy: Try[String] = iIty map {
-  //      case r: Table[IntPair] => implicitly[Renderer[Table[IntPair], String]].render(r)
-  //      case _ => fail("cannot render table")
-  //    }
-  //    sy should matchPattern { case Success(_) => }
-  //    sy.get shouldBe "a|b\n1|2\n42|99\n"
-  //  }
+  it should "render the table to CSV" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+      case HeadedTable(_, _) =>
+    }
 
-  //  it should "render the table to CSV using a Writable" in {
-  //    import IntPair._
-  //    val iIty: IO[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
-  //    iIty should matchPattern { case Success(_) => }
-  //    val file = new File("output.csv")
-  //    implicit val fw: Writable[FileWriter] = Writable.fileWritable(file)
-  //
-  //    implicit object FileRenderer extends Renderer[Table[IntPair], FileWriter] {
-  //      def render(t: Table[IntPair], attrs: Map[String, String]): FileWriter = t match {
-  //        case pr: RenderableTable[IntPair] => pr.renderToWritable
-  //        case _ => throw TableException("render problem")
-  //      }
-  //    }
-  //
-  //    //    implicit object FileCsvRenderer extends CsvRenderer[Table[IntPair]] {
-  //    //      def render(t: Table[IntPair], attrs: Map[String, String]): FileWriter = t match {
-  //    //        case pr: RenderableTable[IntPair] => pr.renderToWritable
-  //    //        case _ => throw TableException("render problem")
-  //    //      }
-  //    //    }
-  //
-  //    val sy: Try[FileWriter] = iIty map {
-  //      case r: Table[IntPair] =>
-  //        val z: Renderer[Table[IntPair], FileWriter] = implicitly[Renderer[Table[IntPair], FileWriter]]
-  //        z.render(r)
-  //      case _ => fail("cannot render table")
-  //    }
-  //    sy should matchPattern { case Success(_) => }
-  //  }
+    implicit object StringBuilderWritable extends Writable[StringBuilder] {
+      def unit: StringBuilder = new StringBuilder
 
-  //  it should "render another parsed table to CSV" in {
-  //    import IntPair._
-  //
-  //    implicit object IntPairCsvRenderer extends CsvRenderer[IntPair] {
-  //      val csvAttributes: CsvAttributes = CsvAttributes(", ")
-  //
-  //      def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
-  //    }
-  //
-  //    implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
-  //      val csvAttributes: CsvAttributes = CsvAttributes(", ")
-  //
-  //      def toColumnNames(po: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
-  //    }
-  //
-  //    implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
-  //    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
-  //    iIty should matchPattern { case Success(_) => }
-  //    val iIt = iIty.get
-  //    val ws = iIt.toCSV
-  //    ws shouldBe "a, b\n1, 2\n42, 99\n"
-  //  }
+      override def delimiter: CharSequence = "|"
 
-  //  it should "render another parsed table to CSV with delim, quote" in {
-  //    import IntPair._
-  //    implicit val myCsvAttributes: CsvAttributes = CsvAttributes("|")
-  //
-  //    implicit object IntPairCsvRenderer extends CsvRenderer[IntPair] {
-  //      val csvAttributes: CsvAttributes = myCsvAttributes
-  //
-  //      def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
-  //    }
-  //
-  //    implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
-  //      val csvAttributes: CsvAttributes = myCsvAttributes
-  //
-  //      def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
-  //    }
-  //
-  //    val iIty = Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))
-  //    iIty should matchPattern { case Success(_) => }
-  //    iIty.get.toCSV shouldBe "a|b\n1|2\n42|99\n"
-  //  }
+      def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
+    }
 
-  //  it should "render the parsed table with TreeWriter" in {
-  //    import IntPair._
-  //    val iIty: Try[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
-  //    import IntPairHTML._
-  //
-  //    val hy = iIty map (_.render("table", Map()))
-  //    hy should matchPattern { case Success(_) => }
-  //    // CONSIDER why do we use ArrayBuffer here instead of List?
-  //    hy.get shouldBe HTML("table", None, Map(), List(HTML("thead", None, Map(), List(HTML("tr", None, Map(), Seq(HTML("th", Some("a"), Map(), List()), HTML("th", Some("b"), Map(), List()))))), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
-  //  }
-  //
-  //  def mapTo[T, U](ty: Try[T]): Try[U] = ty match {
-  //    case Success(t) => Success(t.asInstanceOf[U])
-  //    case Failure(x) => Failure(x)
-  //  }
+    implicit object DummyRenderer$$ extends Renderer[Table[IntPair], String] {
+      def render(t: Table[IntPair], attrs: Map[String, String]): String = t match {
+        case t: RenderableTable[IntPair] => t.renderToWritable(StringBuilderWritable).toString
+        case _ => throw TableException("render problem")
+      }
+    }
+
+    val wi: IO[String] = Table.parse(Seq("1 2", "42 99")) map {
+      case r: Table[IntPair] => implicitly[Renderer[Table[IntPair], String]].render(r)
+      case _ => fail("cannot render table")
+    }
+    CheckIO.checkResultIO(wi) {
+      case "a|b\n1|2\n42|99\n" =>
+    }
+  }
+
+  it should "render the table to CSV using a Writable" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+      case HeadedTable(_, _) =>
+    }
+
+    val file = new File("output.csv")
+    implicit val fw: Writable[FileWriter] = Writable.fileWritable(file)
+
+    implicit object FileRenderer extends Renderer[Table[IntPair], FileWriter] {
+      def render(t: Table[IntPair], attrs: Map[String, String]): FileWriter = t match {
+        case pr: RenderableTable[IntPair] => pr.renderToWritable
+        case _ => throw TableException("render problem")
+      }
+    }
+
+    //    implicit object FileCsvRenderer extends CsvRenderer[Table[IntPair]] {
+    //      def render(t: Table[IntPair], attrs: Map[String, String]): FileWriter = t match {
+    //        case pr: RenderableTable[IntPair] => pr.renderToWritable
+    //        case _ => throw TableException("render problem")
+    //      }
+    //    }
+
+    val fi: IO[FileWriter] = Table.parse(Seq("1 2", "42 99")) map {
+      case r: Table[IntPair] =>
+        val z: Renderer[Table[IntPair], FileWriter] = implicitly[Renderer[Table[IntPair], FileWriter]]
+        z.render(r)
+      case _ => fail("cannot render table")
+    }
+    CheckIO.checkResultIO(fi) {
+      case _ =>
+    }
+  }
+
+  it should "render another parsed table to CSV" in {
+    import IntPair._
+
+    implicit object IntPairCsvRenderer extends CsvRenderer[IntPair] {
+      val csvAttributes: CsvAttributes = CsvAttributes(", ")
+
+      def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
+    }
+
+    implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
+      val csvAttributes: CsvAttributes = CsvAttributes(", ")
+
+      def toColumnNames(po: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
+    }
+
+    implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
+    CheckIO.checkResultIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
+      case iIt@HeadedTable(_, _) =>
+        val ws = iIt.toCSV
+        ws shouldBe "a, b\n1, 2\n42, 99\n"
+    }
+  }
+
+  it should "render another parsed table to CSV with delim, quote" in {
+    import IntPair._
+    implicit val myCsvAttributes: CsvAttributes = CsvAttributes("|")
+
+    implicit object IntPairCsvRenderer extends CsvRenderer[IntPair] {
+      val csvAttributes: CsvAttributes = myCsvAttributes
+
+      def render(t: IntPair, attrs: Map[String, String]): String = s"${t.a}${csvAttributes.delimiter}${t.b}"
+    }
+
+    implicit object IntPairCsvGenerator extends CsvProductGenerator[IntPair] {
+      val csvAttributes: CsvAttributes = myCsvAttributes
+
+      def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
+    }
+
+    CheckIO.checkResultIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
+      case iIt@HeadedTable(_, _) =>
+        val ws = iIt.toCSV
+        ws shouldBe "a|b\n1|2\n42|99\n"
+    }
+  }
+
+//    it should "render the parsed table with TreeWriter" in {
+//      import IntPair._
+//      val iIty: IO[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
+//      import IntPairHTML._
+//
+//      val hy = iIty map (r => r.render("table", Map()))
+//      hy should matchPattern { case Success(_) => }
+//      // CONSIDER why do we use ArrayBuffer here instead of List?
+//      hy.get shouldBe HTML("table", None, Map(), List(HTML("thead", None, Map(), List(HTML("tr", None, Map(), Seq(HTML("th", Some("a"), Map(), List()), HTML("th", Some("b"), Map(), List()))))), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
+//    }
+
+  def mapTo[T, U](ty: Try[T]): Try[U] = ty match {
+    case Success(t) => Success(t.asInstanceOf[U])
+    case Failure(x) => Failure(x)
+  }
 
   behavior of "Header"
 
@@ -562,8 +570,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    val mty: IO[RawTable] = Table.parse(rows)
-    CheckIO.checkResultIO(mty) {
+    CheckIO.checkResultIO(Table.parse(rows)) {
       case mt@HeadedTable(_, _) =>
         mt.size shouldBe 1
         mt.head(1).get shouldBe "Doug Walker"
@@ -576,81 +583,80 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "projection"
 
-  //  it should "parse and project the following rows" in {
-  //    import RawParsers.WithHeaderRow._
-  //
-  //    val rows = Seq(
-  //      movieHeader,
-  //      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
-  //    )
-  //
-  //    val mty: IO[RawTable] = Table.parse(rows)
-  //    mty should matchPattern { case Success(HeadedTable(_, _)) => }
-  //    val rawTable: RawTable = mty.get
-  //    rawTable.size shouldBe 1
-  //    rawTable.head(1).get shouldBe "Doug Walker"
-  //
-  //    val f = RawTableProjection(Seq("MOVIE_TITLE"))
-  //    f.apply(rawTable).head.ws.head shouldBe "Star Wars: Episode VII - The Force Awakens             "
-  //  }
+  it should "parse and project the following rows" in {
+    import RawParsers.WithHeaderRow._
+
+    val rows = Seq(
+      movieHeader,
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+    )
+
+    CheckIO.checkResultIO(Table.parse(rows)) {
+      case rawTable@HeadedTable(_, _) =>
+        rawTable.size shouldBe 1
+        rawTable.head(1).get shouldBe "Doug Walker"
+
+        val f = RawTableProjection(Seq("MOVIE_TITLE"))
+        f.apply(rawTable).head.ws.head shouldBe "Star Wars: Episode VII - The Force Awakens             "
+    }
+  }
 
   behavior of "sort"
 
-  //  it should "sort a Table and then select" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99", "1 3"))
-  //    iIty should matchPattern { case Success(_) => }
-  //
-  //    implicit object IntPairOrdering extends Ordering[IntPair] {
-  //      def compare(x: IntPair, y: IntPair): Int = x.a.compareTo(y.a) match {
-  //        case 0 => x.b.compareTo(y.b)
-  //        case cf => cf
-  //      }
-  //    }
-  //    val triedSorted = iIty map (_.sort)
-  //    triedSorted should matchPattern { case Success(_) => }
-  //    val sorted = triedSorted.get
-  //    val row1 = sorted.select(Range(2, 3))
-  //    row1.size shouldBe 1
-  //    row1.head shouldBe IntPair(1, 3)
-  //  }
+  it should "sort a Table and then select" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99", "1 3"))) {
+      case mt: Table[IntPair] =>
+
+        implicit object IntPairOrdering extends Ordering[IntPair] {
+          def compare(x: IntPair, y: IntPair): Int = x.a.compareTo(y.a) match {
+            case 0 => x.b.compareTo(y.b)
+            case cf => cf
+          }
+        }
+        val x: Table[IntPair] = mt.sort
+        val row1 = x.select(Range(2, 3))
+        row1.size shouldBe 1
+        row1.head shouldBe IntPair(1, 3)
+    }
+  }
 
   behavior of "select"
 
-  //  it should "select from a Table" in {
-  //    import IntPair._
-  //    val iIty = Table.parse(Seq("1 2", "42 99", "1 3"))
-  //    iIty should matchPattern { case Success(_) => }
-  //    val table = iIty.get
-  //    table.select(1).size shouldBe 1
-  //    table.select(1).head shouldBe IntPair(1, 2)
-  //    table.select(2).head shouldBe IntPair(42, 99)
-  //    table.select(3).head shouldBe IntPair(1, 3)
-  //    val row1 = table.select(Range(3, 4))
-  //    row1.size shouldBe 1
-  //    row1.head shouldBe IntPair(1, 3)
-  //    val row2 = table.select(Range(2, 3))
-  //    row2.size shouldBe 1
-  //    row2.head shouldBe IntPair(42, 99)
-  //    val rows02 = table.select(Range(1, 4, 2))
-  //    rows02.size shouldBe 2
-  //  }
+  it should "select from a Table" in {
+    import IntPair._
+    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99", "1 3"))) {
+      case table: Table[IntPair] =>
+        table.select(1).size shouldBe 1
+        table.select(1).head shouldBe IntPair(1, 2)
+        table.select(2).head shouldBe IntPair(42, 99)
+        table.select(3).head shouldBe IntPair(1, 3)
+        val row1 = table.select(Range(3, 4))
+        row1.size shouldBe 1
+        row1.head shouldBe IntPair(1, 3)
+        val row2 = table.select(Range(2, 3))
+        row2.size shouldBe 1
+        row2.head shouldBe IntPair(42, 99)
+        val rows02 = table.select(Range(1, 4, 2))
+        rows02.size shouldBe 2
+    }
+  }
 
   behavior of "parseResourceRaw"
-  //  it should "parse quotes spanning newlines" in {
-  //    val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
-  //    val sy = resource[TableSpec]("multiline.csv") map Source.fromURL
-  //    val wsty = parser parse sy
-  //    wsty should matchPattern { case Success(HeadedTable(_, _)) => }
-  //    wsty match {
-  //      case Success(HeadedTable(r, h)) =>
-  //        println(s"parseResourceRaw: successfully read ${r.size} rows")
-  //        println(s"parseResourceRaw: successfully read ${h.size} columns")
-  //        r.size shouldBe 4
-  //        r take 4 foreach println
-  //      case _ => fail("should succeed")
-  //    }
-  //  }
+  it should "parse quotes spanning newlines" in {
+    val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
+    import com.phasmidsoftware.util.FP.resource
+
+    val sy: IO[Source] = IO.fromTry(resource[TableSpec]("multiline.csv") map Source.fromURL)
+    CheckIO.checkResultIO(sy flatMap (s => parser.parse(s))) {
+      case HeadedTable(r, h) =>
+        println(s"parseResourceRaw: successfully read ${r.size} rows")
+        println(s"parseResourceRaw: successfully read ${h.size} columns")
+        r.size shouldBe 4
+        r take 4 foreach println
+      case _ => fail("should succeed")
+    }
+  }
 
   behavior of "Header"
   it should "do lookup" in {
