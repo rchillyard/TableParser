@@ -503,16 +503,17 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-//    it should "render the parsed table with TreeWriter" in {
-//      import IntPair._
-//      val iIty: IO[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
-//      import IntPairHTML._
-//
-//      val hy = iIty map (r => r.render("table", Map()))
+  // FIXME ...
+  it should "render the parsed table with TreeWriter" in {
+    import IntPair._
+    val iIty: IO[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
+//      val hy = iIty map {
+//        case r: HeadedTable[IntPair] => r.render
+//      }
 //      hy should matchPattern { case Success(_) => }
 //      // CONSIDER why do we use ArrayBuffer here instead of List?
 //      hy.get shouldBe HTML("table", None, Map(), List(HTML("thead", None, Map(), List(HTML("tr", None, Map(), Seq(HTML("th", Some("a"), Map(), List()), HTML("th", Some("b"), Map(), List()))))), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
-//    }
+  }
 
   def mapTo[T, U](ty: Try[T]): Try[U] = ty match {
     case Success(t) => Success(t.asInstanceOf[U])
