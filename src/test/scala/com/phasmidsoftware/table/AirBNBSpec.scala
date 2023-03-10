@@ -8,7 +8,6 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
-
 import scala.io.Source
 
 class AirBNBSpec extends AnyFlatSpec with Matchers {

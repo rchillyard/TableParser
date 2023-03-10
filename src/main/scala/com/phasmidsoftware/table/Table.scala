@@ -19,7 +19,7 @@ import scala.reflect.ClassTag
 import scala.util.{Failure, Random, Try}
 
 /**
-  * A Table of Rows.
+ * A Table of Rows.
  *
  * @tparam Row the type of each row.
  */
@@ -515,12 +515,12 @@ object Table {
   }
 
   /**
-    * Method to parse a table from a Seq of Seq of String.
-    *
-    * @param wss the Sequence of Strings.
-    * @tparam T the type of the resulting table.
-    * @return an IO[T]
-    */
+   * Method to parse a table from a Seq of Seq of String.
+   *
+   * @param wss the Sequence of Strings.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
   def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): IO[T] = {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
@@ -530,52 +530,52 @@ object Table {
   }
 
   /**
-    * Method to parse a table from a File as a table of Seq[String].
-    *
-    * @param f                the file.
-    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
-    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
-    * @param codec            (implicit) the encoding.
-    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
-    */
+   * Method to parse a table from a File as a table of Seq[String].
+   *
+   * @param f                the file.
+   * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
+   * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
+   * @param codec            (implicit) the encoding.
+   * @return an IO of Table[RawRow] where RawRow is a Seq[String].
+   */
   def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): IO[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](f)
   }
 
   /**
-    * Method to parse a table from a File as a table of Seq[String].
-    *
-    * @param pathname the path name.
-    * @param codec    (implicit) the encoding.
-    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
-    */
+   * Method to parse a table from a File as a table of Seq[String].
+   *
+   * @param pathname the path name.
+   * @param codec    (implicit) the encoding.
+   * @return an IO of Table[RawRow] where RawRow is a Seq[String].
+   */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): IO[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
     parseFile[Table[RawRow]](pathname)
   }
 
   /**
-    * Method to parse a table from a resource as a table of Seq[String].
-    *
-    * @param s                the resource name.
-    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
-    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
-    * @param clazz            the class for which the resource should be sought (defaults to the calling class).
-    * @param codec            (implicit) the encoding.
-    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
-    */
+   * Method to parse a table from a resource as a table of Seq[String].
+   *
+   * @param s                the resource name.
+   * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
+   * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
+   * @param clazz            the class for which the resource should be sought (defaults to the calling class).
+   * @param codec            (implicit) the encoding.
+   * @return an IO of Table[RawRow] where RawRow is a Seq[String].
+   */
   def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): IO[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 
   /**
-    * Method to parse a table of raw rows from an Iterable of String.
-    *
-    * @param ws the Strings.
-    * @return an IO of Table of RawRow
-    */
+   * Method to parse a table of raw rows from an Iterable of String.
+   *
+   * @param ws the Strings.
+   * @return an IO of Table of RawRow
+   */
   def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): IO[RawTable] = {
     implicit val z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
@@ -872,7 +872,7 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
 object Header {
 
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.
-  lazy val numbers: LazyList[Int] = LazyList.from(1)
+  private lazy val numbers: LazyList[Int] = LazyList.from(1)
   lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
   //  lazy val recursiveLetters: LazyList[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
   //  lazy val generateLetters: LazyList[String] = recursiveLetters

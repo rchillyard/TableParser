@@ -1,8 +1,6 @@
 package com.phasmidsoftware.crypto
 
-import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.phasmidsoftware.parse.TableParserException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import tsec.cipher.symmetric.jca.AES128CTR

@@ -12,12 +12,11 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-import tsec.cipher.symmetric.jca.AES128CTR
-
 import scala.io.{Codec, Source}
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
+import tsec.cipher.symmetric.jca.AES128CTR
 
 class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 

@@ -8,7 +8,6 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
-
 import scala.io.Source
 
 class AnalysisSpec extends AnyFlatSpec with Matchers {
@@ -16,10 +15,10 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
   behavior of "Analysis"
 
   /**
-    * NOTE: it is perfectly proper for there to be a number of parsing problems.
-    * These are application-specific and are not indicative of any bugs in the
-    * TableParser library itself.
-    */
+   * NOTE: it is perfectly proper for there to be a number of parsing problems.
+   * These are application-specific and are not indicative of any bugs in the
+   * TableParser library itself.
+   */
   it should "be correct for airbnb2.csv" in {
     val airBNBFile = "/airbnb2.csv"
     val parser = RawTableParser(TableParser.includeAll, None, forgiving = true).setMultiline(true)

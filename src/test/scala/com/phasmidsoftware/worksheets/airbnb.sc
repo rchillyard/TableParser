@@ -3,7 +3,6 @@ import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.FP.resource
 import scala.io.{BufferedSource, Source}
-import scala.util.{Success, Try}
 
 // NOTE: We show how to parse the AirBNB dataset where the resulting Table rows.
 // are plain sequences of String (no parsing to specific types).
@@ -40,4 +39,5 @@ val zi: IO[Unit] = rti map {
 }
 
 import cats.effect.unsafe.implicits.global
+
 zi.unsafeRunSync()

@@ -8,11 +8,11 @@ class AirBNBFuncSpec extends AnyFlatSpec with Matchers {
   behavior of "AirBNB table"
 
   /**
-    * This test must be ignored when pushing to github.
-    * This is because:
-    * (1) it takes a long time so we generally ignore it;
-    * (2) but, more importantly, we do not store the source file in git!
-    */
+   * This test must be ignored when pushing to github.
+   * This is because:
+   * (1) it takes a long time so we generally ignore it;
+   * (2) but, more importantly, we do not store the source file in git!
+   */
   //  it should "be ingested properly" taggedAs Slow in {
   //    val airBNBFile = "/airbnb2.csv"
   //    //    val linesInFile = 104999

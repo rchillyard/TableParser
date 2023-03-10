@@ -4,7 +4,6 @@ import com.phasmidsoftware.table.MovieParser.MovieTableParser
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.FP.resource
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
 
 // NOTE: See also the airbnb.sc which explains the first line of code.
 
@@ -22,8 +21,9 @@ val parser: StringTableParser[Table[Movie]] = MovieTableParser
 val mti: IO[Table[Movie]] = parser parse sy
 
 val zi: IO[Unit] = mti map {
-      t => println(s"Successfully parsed ---${t.rows}--- movies")
+  t => println(s"Successfully parsed ---${t.rows}--- movies")
 }
 
 import cats.effect.unsafe.implicits.global
+
 zi.unsafeRunSync()

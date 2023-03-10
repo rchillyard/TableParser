@@ -88,11 +88,11 @@ trait TableParser[Table] {
   protected val rowParser: RowParser[Row, Input]
 
   /**
-    * Method to parse a table based on a sequence of Inputs.
-    *
-    * @param xs the sequence of Inputs, one for each row
-    * @return an IO[Table]
-    */
+   * Method to parse a table based on a sequence of Inputs.
+   *
+   * @param xs the sequence of Inputs, one for each row
+   * @return an IO[Table]
+   */
   def parse(xs: Iterator[Input], n: Int): IO[Table]
 }
 
@@ -168,15 +168,15 @@ trait CopyableTableParser[Row, Input, Table] {
 }
 
 /**
-  * Class used to parse files as a Table of Seq[String].
-  * That's to say, no parsing of individual (or groups of) columns.
-  *
-  * @param predicate        a predicate which, if true, allows inclusion of the input row.
-  * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
-  * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
-  */
+ * Class used to parse files as a Table of Seq[String].
+ * That's to say, no parsing of individual (or groups of) columns.
+ *
+ * @param predicate        a predicate which, if true, allows inclusion of the input row.
+ * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
+ * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
+ */
 case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
-  extends StringTableParser[RawTable] with CopyableTableParser[RawRow, String, RawTable] {
+        extends StringTableParser[RawTable] with CopyableTableParser[RawRow, String, RawTable] {
 
   type Row = RawRow
 
@@ -394,19 +394,19 @@ object HeadedStringTableParser {
  * Abstract base class for implementations of TableParser[T].
  * NOTE: that Table is a parametric type and does NOT refer to the type Table defined elsewhere.
  *
+ * CONSIDER making this a trait
+ * 
  * @tparam Table the (parametric) Table type.
  */
 abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
-  protected def failureHandler(ry: Try[Row]): Unit = logException[Row](ry)
-
   /**
-    * Abstract method to parse a sequence of Inputs, with a given header.
-    *
-    * @param xs     the sequence of Inputs, one for each row
-    * @param header the header to be used.
-    * @return an IO[Table]
-    */
+   * Abstract method to parse a sequence of Inputs, with a given header.
+   *
+   * @param xs     the sequence of Inputs, one for each row
+   * @param header the header to be used.
+   * @return an IO[Table]
+   */
   def parseRows(xs: Iterator[Input], header: Header): IO[Table]
 
   /**
@@ -469,6 +469,8 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     val q: Seq[Try[Row]] = mapTsToRows.toSeq
     for (rs <- processTriedRows(q.iterator)) yield builder(rs.toList, header)
   }
+
+  private def failureHandler(ry: Try[Row]): Unit = logException[Row](ry)
 }
 
 object AbstractTableParser {

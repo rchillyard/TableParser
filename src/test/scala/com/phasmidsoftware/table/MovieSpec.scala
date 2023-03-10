@@ -9,7 +9,6 @@ import com.phasmidsoftware.parse.{CellParser, InvalidParseException, RowParser, 
 import com.phasmidsoftware.util.CheckIO
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-
 import scala.util._
 
 //noinspection SpellCheckingInspection
@@ -102,6 +101,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val mty: IO[Table[Movie]] = Table.parse(movies)
+    // TODO reinstate this test code
     //    mty should matchPattern { case Success(HeadedTable(_, _)) => }
     //    mty.get.size shouldBe 1
   }
@@ -129,6 +129,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val mty: IO[Table[Movie]] = Table.parse(movies)
+    // TODO reinstate this test code
     //    mty should matchPattern { case Success(HeadedTable(_, _)) => }
     //    mty.get.size shouldBe 1
     //    val z: Table[UnMovie] = mty.get.map[UnMovie](m => UnMovie(m.title.toLowerCase))

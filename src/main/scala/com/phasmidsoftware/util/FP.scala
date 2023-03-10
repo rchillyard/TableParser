@@ -12,8 +12,8 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try, Using}
 
 /**
-  * Various utilities for functional programming.
-  */
+ * Various utilities for functional programming.
+ */
 object FP {
 
   /**
@@ -36,25 +36,25 @@ object FP {
 
   /**
    * Sequence method to combine elements of Try.
-    *
-    * @param xys an Iterable of Try[X]
-    * @tparam X the underlying type
-    * @return a Try of Seq[X]
-    *         NOTE: that the output collection type will be Seq, regardless of the input type
-    */
+   *
+   * @param xys an Iterable of Try[X]
+   * @tparam X the underlying type
+   * @return a Try of Seq[X]
+   *         NOTE: that the output collection type will be Seq, regardless of the input type
+   */
   def sequence[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
     xys.foldLeft(Try(Seq[X]())) {
       (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
     }
 
   /**
-    * Sequence method to combine elements of Try.
-    *
-    * @param xys an Iterable of Try[X].
-    * @tparam X the underlying type.
-    * @return a Try of Seq[X].
-    *         NOTE: that the output collection type will be Seq, regardless of the input type
-    */
+   * Sequence method to combine elements of Try.
+   *
+   * @param xys an Iterable of Try[X].
+   * @tparam X the underlying type.
+   * @return a Try of Seq[X].
+   *         NOTE: that the output collection type will be Seq, regardless of the input type
+   */
   def sequenceForgiving[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
     sequenceForgivingWith[X](xys) {
       case NonFatal(x) => System.err.println(s"forgiving: $x"); Success(None)
@@ -62,61 +62,61 @@ object FP {
     }
 
   /**
-    * Sequence method to combine elements of Try.
-    *
-    * @param xys       an Iterable of Try[X].
-    * @param pfFailure a partial function of type Throwable => Try of Option[X].
-    * @tparam X the underlying type.
-    * @return a Try of Seq[X].
-    *         NOTE: that the output collection type will be Seq, regardless of the input type
-    */
+   * Sequence method to combine elements of Try.
+   *
+   * @param xys       an Iterable of Try[X].
+   * @param pfFailure a partial function of type Throwable => Try of Option[X].
+   * @tparam X the underlying type.
+   * @return a Try of Seq[X].
+   *         NOTE: that the output collection type will be Seq, regardless of the input type
+   */
   def sequenceForgivingWith[X](xys: Iterable[Try[X]])(pfFailure: PartialFunction[Throwable, Try[Option[X]]]): Try[Seq[X]] =
     sequenceForgivingTransform[X](xys)(x => Success(Some(x)), pfFailure)
 
   /**
-    * Sequence method to combine elements of Try.
-    *
-    * @param xys       an Iterable of Try[X].
-    * @param fSuccess  a function of type X => Try of Option[X].
-    * @param pfFailure a partial function of type Throwable => Try of Option[X].
-    * @tparam X the underlying type.
-    * @return a Try of Seq[X].
-    *         NOTE: that the output collection type will be Seq, regardless of the input type
-    */
+   * Sequence method to combine elements of Try.
+   *
+   * @param xys       an Iterable of Try[X].
+   * @param fSuccess  a function of type X => Try of Option[X].
+   * @param pfFailure a partial function of type Throwable => Try of Option[X].
+   * @tparam X the underlying type.
+   * @return a Try of Seq[X].
+   *         NOTE: that the output collection type will be Seq, regardless of the input type
+   */
   def sequenceForgivingTransform[X](xys: Iterable[Try[X]])(fSuccess: X => Try[Option[X]], pfFailure: PartialFunction[Throwable, Try[Option[X]]]): Try[Seq[X]] = {
     val xosy: Try[Seq[Option[X]]] = sequence(for (xy <- xys) yield xy.transform[Option[X]](fSuccess, pfFailure))
     for (xos <- xosy) yield xos.filter(_.isDefined).map(_.get)
   }
 
   /**
-    * Sequence method to combine elements of Try.
-    *
-    * @param xos an Iterable of Option[X].
-    * @tparam X the underlying type.
-    * @return an Option of Seq[X].
-    *         NOTE: that the output collection type will be Seq, regardless of the input type
-    */
+   * Sequence method to combine elements of Try.
+   *
+   * @param xos an Iterable of Option[X].
+   * @tparam X the underlying type.
+   * @return an Option of Seq[X].
+   *         NOTE: that the output collection type will be Seq, regardless of the input type
+   */
   def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
     xos.foldLeft(Option(Seq[X]())) {
       (xso, xo) => for (xs <- xso; x <- xo) yield xs :+ x
     }
 
   /**
-    * Method to partition an  method to combine elements of Try as an Iterator.
-    *
-    * @param xys an Iterator of Try[X].
-    * @tparam X the underlying type.
-    * @return a tuple of two iterators of Try[X], the first one being successes, the second one being failures.
-    */
+   * Method to partition an  method to combine elements of Try as an Iterator.
+   *
+   * @param xys an Iterator of Try[X].
+   * @tparam X the underlying type.
+   * @return a tuple of two iterators of Try[X], the first one being successes, the second one being failures.
+   */
   def partition[X](xys: Iterator[Try[X]]): (Iterator[Try[X]], Iterator[Try[X]]) = xys.partition(_.isSuccess)
 
   /**
-    * Method to partition an  method to combine elements of Try.
-    *
-    * @param xys a Seq of Try[X].
-    * @tparam X the underlying type.
-    * @return a tuple of two Seqs of Try[X], the first one being successes, the second one being failures.
-    */
+   * Method to partition an  method to combine elements of Try.
+   *
+   * @param xys a Seq of Try[X].
+   * @tparam X the underlying type.
+   * @return a tuple of two Seqs of Try[X], the first one being successes, the second one being failures.
+   */
   def partition[X](xys: Iterable[Try[X]]): (Iterable[Try[X]], Iterable[Try[X]]) = xys.partition(_.isSuccess)
 
   /**
