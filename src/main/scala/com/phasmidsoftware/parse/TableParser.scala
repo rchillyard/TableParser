@@ -395,7 +395,7 @@ object HeadedStringTableParser {
  * NOTE: that Table is a parametric type and does NOT refer to the type Table defined elsewhere.
  *
  * CONSIDER making this a trait
- * 
+ *
  * @tparam Table the (parametric) Table type.
  */
 abstract class AbstractTableParser[Table] extends TableParser[Table] {
