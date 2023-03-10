@@ -21,7 +21,7 @@ import scala.reflect.ClassTag
  * @tparam O the type of the serialization result.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of Renderer[${T},{O}].")
-trait Renderer[T, O] {
+trait Renderer[-T, O] {
 
   /**
    * Render an instance of T as an O, qualifying the rendering with no attributes.
@@ -158,7 +158,7 @@ object HierarchicalRenderer {
  *
  * @tparam T the type of object to be rendered.
  */
-trait CsvRenderer[T] extends Renderer[T, String] {
+trait CsvRenderer[-T] extends Renderer[T, String] {
   // CONSIDER removing this abstract val.
   val csvAttributes: CsvAttributes
 }

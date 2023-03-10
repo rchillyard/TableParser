@@ -2,12 +2,12 @@ package com.phasmidsoftware.table
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.phasmidsoftware.parse.TableParser
-import com.phasmidsoftware.util.TryUsing
+import com.phasmidsoftware.parse.{AttributeSet, StringList, TableParser}
+import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.util.IOUsing
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.io.Source
-import scala.util.{Success, Try}
 
 class MovieFuncSpec extends AnyFlatSpec with Matchers {
 
@@ -36,29 +36,66 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
    *
    * FIXME
    */
-    ignore should "be ingested and written out properly" in {
-      import MovieParser._
+  it should "be ingested and written out properly" in {
+    import MovieParser._
 
-//      implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
-//      val mty: Try[Table[Movie]] = TryUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(parse(_))
-//      mty should matchPattern { case Success(HeadedTable(_, _)) => }
-//      for (mt <- mty) {
-//        // TODO implement this part
-//        //      mt.generateCsvHeader
-//        //      mt.toCSV
-//      }
-    }
+    val mti: IO[Table[Movie]] = IOUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(x => Table.parseSource(x))
+    implicit val csvRenderer: CsvRenderer[Movie] = createMovieCvsRenderer
+    implicit val csvGenerator: CsvGenerator[Movie] = createMovieCvsGenerator
+
+    val wi: IO[String] = for (mt <- mti) yield mt.toCSV
+    wi.unsafeRunSync().startsWith(
+      """title,format.color,format.language,format.aspectRatio,format.duration,production.country,production.budget,production.gross,production.titleYear,reviews.imdbScore,reviews.facebookLikes,reviews.contentRating.code,reviews.contentRating.age,reviews.numUsersReview,reviews.numUsersVoted,reviews.numCriticReviews,reviews.totalFacebookLikes,director.name.first,director.name.middle,director.name.last,director.name.suffix,director.facebookLikes,actor1.name.first,actor1.name.middle,actor1.name.last,actor1.name.suffix,actor1.facebookLikes,actor2.name.first,actor2.name.middle,actor2.name.last,actor2.name.suffix,actor2.facebookLikes,actor3,genres.xs,plotKeywords.xs,imdb
+        |Avatar,Color,English,1.78,178,USA,237000000,760505847,2009,7.9,33000,PG,13,3054,886204,723,4834,James,,Cameron,,0,CCH,,Pounder,,1000,Joel,David,Moore,,936,Wes,,Studi,,855,Action,Adventure,Fantasy,Sci-Fi,avatar,future,marine,native,paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1""".stripMargin) shouldBe true
+  }
 
   // FIXME
-    it should "parse and filter the movies from the IMDB dataset" in {
-      import MovieParser._
-      implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
-      implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
+  it should "parse and filter the movies from the IMDB dataset" in {
+//      import MovieParser._
+//      implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
+//      implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
 //      val mty: Try[Table[Movie]] = TryUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(parse(_))
 //      mty should matchPattern { case Success(HeadedTable(_, _)) => }
 //      val mt = mty.get
 //      val kiwiMovies = mt.filterByKey(_ == "New Zealand")
 //      kiwiMovies.size shouldBe 4
-    }
+  }
 
+  private def createMovieCvsRenderer: CsvRenderer[Movie] = {
+    import com.phasmidsoftware.render.CsvRenderers._
+    val csvRenderers = new CsvRenderers {}
+    implicit val rendererStringList: CsvRenderer[StringList] = csvRenderers.sequenceRenderer[String]
+    implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = csvRenderers.optionRenderer
+    implicit val rendererOptionInt: CsvRenderer[Option[Int]] = csvRenderers.optionRenderer
+    implicit val rendererOptionString: CsvRenderer[Option[String]] = csvRenderers.optionRenderer
+    implicit val rendererFormat: CsvRenderer[Format] = csvRenderers.renderer4(Format)
+    implicit val rendererProduction: CsvRenderer[Production] = csvRenderers.renderer4(Production)
+    implicit val rendererRating: CsvRenderer[Rating] = csvRenderers.renderer2(Rating.apply)
+    implicit val rendererReviews: CsvRenderer[Reviews] = csvRenderers.renderer7(Reviews)
+    implicit val rendererName: CsvRenderer[Name] = csvRenderers.renderer4(Name.apply)
+    implicit val rendererPrincipal: CsvRenderer[Principal] = csvRenderers.renderer2(Principal)
+    implicit val rendererOptionPrincipal: CsvRenderer[Option[Principal]] = csvRenderers.optionRenderer
+    val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
+    implicit val rendererAttributeSet: CsvRenderer[AttributeSet] = csvRenderers.renderer1(fAttributeSet)
+    csvRenderers.renderer11(Movie)
+  }
+
+  private def createMovieCvsGenerator: CsvGenerator[Movie] = {
+    import com.phasmidsoftware.render.CsvGenerators._
+    val csvGenerators = new CsvGenerators {}
+    implicit val generatorStringList: CsvGenerator[StringList] = csvGenerators.sequenceGenerator[String]
+    implicit val generatorOptionDouble: CsvGenerator[Option[Double]] = csvGenerators.optionGenerator
+    implicit val generatorOptionInt: CsvGenerator[Option[Int]] = csvGenerators.optionGenerator
+    implicit val generatorOptionString: CsvGenerator[Option[String]] = csvGenerators.optionGenerator
+    implicit val generatorFormat: CsvGenerator[Format] = csvGenerators.generator4(Format)
+    implicit val generatorProduction: CsvGenerator[Production] = csvGenerators.generator4(Production)
+    implicit val generatorRating: CsvGenerator[Rating] = csvGenerators.generator2(Rating.apply)
+    implicit val generatorReviews: CsvGenerator[Reviews] = csvGenerators.generator7(Reviews)
+    implicit val generatorName: CsvGenerator[Name] = csvGenerators.generator4(Name.apply)
+    implicit val generatorPrincipal: CsvGenerator[Principal] = csvGenerators.generator2(Principal)
+    implicit val generatorOptionPrincipal: CsvGenerator[Option[Principal]] = csvGenerators.optionGenerator
+    val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
+    implicit val generatorAttributeSet: CsvGenerator[AttributeSet] = csvGenerators.generator1(fAttributeSet)
+    csvGenerators.generator11(Movie)
+  }
 }

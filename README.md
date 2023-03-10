@@ -72,7 +72,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-Current version: 1.1.2.
+Current version: 1.1.3.
 
 See release notes below for history.
 
@@ -608,6 +608,9 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+
+V1.1.2 -> V1.1.3
+* Use of Cats IO
 
 V1.1.1 -> V1.1.2
 * Make RawRow a type (not just a type alias)
