@@ -26,7 +26,7 @@ object CsvAttributes {
  *
  * NOTE: this is an unusual type class in that none of its methods reference type T.
  *
- * @tparam T the type of the objects to be rendered by CSV.
+ * @tparam T the covariant type of the objects to be rendered by CSV.
  */
 trait CsvGenerator[-T] {
   // CONSIDER removing this abstract val.
