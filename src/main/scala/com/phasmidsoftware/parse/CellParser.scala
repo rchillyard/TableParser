@@ -17,7 +17,7 @@ import scala.util.{Failure, Success, Try}
  *
  * TODO Need to define this better so that we don't have any non-implemented methods.
  *
- * @tparam T the type of the resulting object.
+ * @tparam T the (covariant) type of the resulting object.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of CellParser[${T}]. Typically, you should invoke a suitable method from CellParsers.")
 trait CellParser[+T] {
@@ -80,11 +80,9 @@ trait MultiCellParser[T] extends CellParser[T] {
 }
 
 /**
- * Abstract class Convertible.
- *
- * CONSIDER making this a trait since it takes no value parameters.
+ * Trait Convertible.
  */
-sealed abstract class Convertible {
+sealed trait Convertible {
   def convertTo[T: CellParser]: Try[T] = cellReader.parse(this)
 }
 

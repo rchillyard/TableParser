@@ -17,7 +17,7 @@ import scala.reflect.ClassTag
  *
  * NOTE: this trait has no direct relationship with Renderable.
  *
- * @tparam T the (covariant) type of object to be rendered.
+ * @tparam T the (contravariant) type of object to be rendered.
  * @tparam O the type of the serialization result.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of Renderer[${T},{O}].")
@@ -156,7 +156,7 @@ object HierarchicalRenderer {
 /**
  * Type class for rendering instances to CSV.
  *
- * @tparam T the covariant type of object to be rendered.
+ * @tparam T the contravariant type of object to be rendered.
  */
 trait CsvRenderer[-T] extends Renderer[T, String] {
   // CONSIDER removing this abstract val.

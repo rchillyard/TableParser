@@ -649,7 +649,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.util.FP.resource
 
     val sy: IO[Source] = IO.fromTry(resource[TableSpec]("multiline.csv") map Source.fromURL)
-    CheckIO.checkResultIO(sy flatMap (s => parser.parse(s))) {
+    CheckIO.checkResultIO(parser.parse(sy)) {
       case HeadedTable(r, h) =>
         println(s"parseResourceRaw: successfully read ${r.size} rows")
         println(s"parseResourceRaw: successfully read ${h.size} columns")

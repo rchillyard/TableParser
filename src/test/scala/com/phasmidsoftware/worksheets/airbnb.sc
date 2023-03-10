@@ -1,8 +1,8 @@
+import cats.effect.IO
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.FP.resource
-
-import scala.io.Source
+import scala.io.{BufferedSource, Source}
 import scala.util.{Success, Try}
 
 // NOTE: We show how to parse the AirBNB dataset where the resulting Table rows.
@@ -14,7 +14,7 @@ import scala.util.{Success, Try}
 // The resource method is just a utility for convenience--
 // you could just as easily use the Java URL methods directly.
 // The result (sy) is a Try[Source].
-val sy = for (u <- resource[AirBNBSpec]("/airbnb2.csv")) yield Source.fromURL(u)
+val sy: IO[BufferedSource] = IO.fromTry(for (u <- resource[AirBNBSpec]("/airbnb2.csv")) yield Source.fromURL(u))
 
 // NOTE: Set up the parser as a "raw" parser (no conversion to types).
 // We set multiline to be true because the AirBNB file has many lines which "run on"
@@ -26,15 +26,18 @@ val parser: RawTableParser = RawTableParser().setMultiline(true).setPredicate(Ta
 // NOTE: parse the source to create the table.
 // This triggers usage of an implicit class (in the TableParser companion object) which defines several parse methods.
 // The result is a Try[RawTable].
-val wsty: Try[RawTable] = parser parse sy
+val rti: IO[RawTable] = parser parse sy
 
 // NOTE: if successful, analyze the resulting rows and print the analysis.
 // There should be 87 columns and approximately 128 rows in this resulting table (the exact number is random).
 // Then print the first 10 rows.
-wsty match {
-  case Success(t@HeadedTable(r, _)) =>
-    val analysis = Analysis(t)
+val zi: IO[Unit] = rti map {
+  case table@HeadedTable(r, _) =>
+    val analysis = Analysis(table)
     println(s"AirBNB: $analysis")
     r take 10 foreach println
   case _ =>
 }
+
+import cats.effect.unsafe.implicits.global
+zi.unsafeRunSync()

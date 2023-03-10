@@ -105,22 +105,6 @@ object TableParser {
    * @tparam T the underlying type of p (T will be Table[_]).
    */
   implicit class ImplicitParser[T](p: StringTableParser[T]) {
-    /**
-      * Method to parse an iterator of String.
-      *
-      * @param xs an Iterator[String].
-      * @return an IO[T].
-      */
-    def parse(xs: Iterator[String]): IO[T] = p.parse(xs, 1)
-
-    /**
-      * Method to parse a Source.
-      * NOTE the source s will be closed after parsing has been completed (no resource leaks).
-      *
-      * @param s a Source.
-      * @return an IO[T].
-      */
-    def parse(s: Source): IO[T] = IOUsing(s)(x => parse(x.getLines()))
 
     /**
      * Method to parse a IO[Source].
@@ -129,7 +113,24 @@ object TableParser {
      * @param si a IO[Source].
      * @return an IO[T].
      */
-    def parse(si: IO[Source]): IO[T] = si flatMap parse
+    def parse(si: IO[Source]): IO[T] = si flatMap doParse
+
+    /**
+     * Method to parse an iterator of String.
+     *
+     * @param xs an Iterator[String].
+     * @return an IO[T].
+     */
+    private def doParse(xs: Iterator[String]): IO[T] = p.parse(xs, 1)
+
+    /**
+     * Method to parse a Source.
+     * NOTE the source s will be closed after parsing has been completed (no resource leaks).
+     *
+     * @param s a Source.
+     * @return an IO[T].
+     */
+    private def doParse(s: Source): IO[T] = IOUsing(s)(x => doParse(x.getLines()))
   }
 
   val r: Random = new Random()

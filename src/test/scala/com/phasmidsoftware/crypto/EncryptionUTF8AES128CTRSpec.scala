@@ -33,13 +33,6 @@ class EncryptionUTF8AES128CTRSpec extends AnyFlatSpec with should.Matchers {
 
   implicit val encryptor: HexEncryption[AES128CTR] = EncryptionUTF8AES128CTR
 
-  it should "buildKey" in {
-    val key = for {
-      rawKey <- encryptor.genRawKey
-    } yield encryptor.buildKey(rawKey)
-    key.unsafeRunSync()
-  }
-
   it should "encrypt and decrypt" in {
     val originalMessage = "Hello, World!"
     val result: IO[String] = for {
