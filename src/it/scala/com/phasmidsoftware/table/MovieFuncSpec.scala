@@ -33,8 +33,6 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
    * NOTE: it is perfectly proper for there to be a number of parsing problems.
    * These are application-specific and are not indicative of any bugs in the
    * TableParser library itself.
-   *
-   * FIXME
    */
   it should "be ingested and written out properly" in {
     import MovieParser._
@@ -49,16 +47,13 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
         |Avatar,Color,English,1.78,178,USA,237000000,760505847,2009,7.9,33000,PG,13,3054,886204,723,4834,James,,Cameron,,0,CCH,,Pounder,,1000,Joel,David,Moore,,936,Wes,,Studi,,855,Action,Adventure,Fantasy,Sci-Fi,avatar,future,marine,native,paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1""".stripMargin) shouldBe true
   }
 
-  // FIXME
   it should "parse and filter the movies from the IMDB dataset" in {
-//      import MovieParser._
-//      implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
-//      implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
-//      val mty: Try[Table[Movie]] = TryUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(parse(_))
-//      mty should matchPattern { case Success(HeadedTable(_, _)) => }
-//      val mt = mty.get
-//      val kiwiMovies = mt.filterByKey(_ == "New Zealand")
-//      kiwiMovies.size shouldBe 4
+    import MovieParser._
+    implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
+    implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
+    val mti: IO[Table[Movie]] = IOUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(x => Table.parseSource(x))
+    val wi: IO[Int] = for (mt <- mti) yield mt.filterByKey(_ == "New Zealand").size
+    wi.unsafeRunSync() shouldBe 4
   }
 
   private def createMovieCvsRenderer: CsvRenderer[Movie] = {
