@@ -2,7 +2,7 @@ package com.phasmidsoftware.table
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.phasmidsoftware.parse.{AttributeSet, StringList, TableParser}
+import com.phasmidsoftware.parse.{AttributeSet, StringList}
 import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.util.IOUsing
 import org.scalatest.flatspec.AnyFlatSpec
@@ -29,6 +29,28 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
     mt take 10 foreach println
   }
 
+  // TODO move this into Movie
+  class CsvRendererMovie(implicit val csvAttributes: CsvAttributes) extends CsvRenderers with CsvRenderer[Movie] {
+
+    import com.phasmidsoftware.render.CsvRenderers._
+
+    implicit val rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
+    implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer
+    implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer
+    implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer
+    implicit val rendererFormat: CsvRenderer[Format] = renderer4(Format)
+    implicit val rendererProduction: CsvRenderer[Production] = renderer4(Production)
+    implicit val rendererRating: CsvRenderer[Rating] = renderer2(Rating.apply)
+    implicit val rendererReviews: CsvRenderer[Reviews] = renderer7(Reviews)
+    implicit val rendererName: CsvRenderer[Name] = renderer4(Name.apply)
+    implicit val rendererPrincipal: CsvRenderer[Principal] = renderer2(Principal)
+    implicit val rendererOptionPrincipal: CsvRenderer[Option[Principal]] = optionRenderer
+    val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
+    implicit val rendererAttributeSet: CsvRenderer[AttributeSet] = renderer1(fAttributeSet)
+
+    def render(t: Movie, attrs: Map[String, String]): String = renderer11(Movie).render(t, attrs)
+  }
+
   /**
    * NOTE: it is perfectly proper for there to be a number of parsing problems.
    * These are application-specific and are not indicative of any bugs in the
@@ -38,7 +60,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
     import MovieParser._
 
     val mti: IO[Table[Movie]] = IOUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(x => Table.parseSource(x))
-    implicit val csvRenderer: CsvRenderer[Movie] = createMovieCvsRenderer
+    implicit val csvRenderer: CsvRenderer[Movie] = new CsvRendererMovie()
     implicit val csvGenerator: CsvGenerator[Movie] = createMovieCvsGenerator
 
     val wi: IO[String] = for (mt <- mti) yield mt.toCSV
@@ -49,32 +71,13 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
 
   it should "parse and filter the movies from the IMDB dataset" in {
     import MovieParser._
-    implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
-    implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
     val mti: IO[Table[Movie]] = IOUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(x => Table.parseSource(x))
+    implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
     val wi: IO[Int] = for (mt <- mti) yield mt.filterByKey(_ == "New Zealand").size
     wi.unsafeRunSync() shouldBe 4
   }
 
-  private def createMovieCvsRenderer: CsvRenderer[Movie] = {
-    import com.phasmidsoftware.render.CsvRenderers._
-    val csvRenderers = new CsvRenderers {}
-    implicit val rendererStringList: CsvRenderer[StringList] = csvRenderers.sequenceRenderer[String]
-    implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = csvRenderers.optionRenderer
-    implicit val rendererOptionInt: CsvRenderer[Option[Int]] = csvRenderers.optionRenderer
-    implicit val rendererOptionString: CsvRenderer[Option[String]] = csvRenderers.optionRenderer
-    implicit val rendererFormat: CsvRenderer[Format] = csvRenderers.renderer4(Format)
-    implicit val rendererProduction: CsvRenderer[Production] = csvRenderers.renderer4(Production)
-    implicit val rendererRating: CsvRenderer[Rating] = csvRenderers.renderer2(Rating.apply)
-    implicit val rendererReviews: CsvRenderer[Reviews] = csvRenderers.renderer7(Reviews)
-    implicit val rendererName: CsvRenderer[Name] = csvRenderers.renderer4(Name.apply)
-    implicit val rendererPrincipal: CsvRenderer[Principal] = csvRenderers.renderer2(Principal)
-    implicit val rendererOptionPrincipal: CsvRenderer[Option[Principal]] = csvRenderers.optionRenderer
-    val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
-    implicit val rendererAttributeSet: CsvRenderer[AttributeSet] = csvRenderers.renderer1(fAttributeSet)
-    csvRenderers.renderer11(Movie)
-  }
-
+  // TODO move this into Movie
   private def createMovieCvsGenerator: CsvGenerator[Movie] = {
     import com.phasmidsoftware.render.CsvGenerators._
     val csvGenerators = new CsvGenerators {}
