@@ -106,9 +106,10 @@ trait CsvRenderers {
    */
   def renderer2[P1: CsvRenderer, P2: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
     def elements(t: T): Strings = {
-      val constructInner: P1 => T = construct(_, t.productElement(1).asInstanceOf[P2])
-      val sequenceFirst = renderer1(constructInner).asInstanceOf[ProductCsvRenderer[T]].elements(t)
-      sequenceFirst :+ implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
+      val p2 = t.productElement(1).asInstanceOf[P2]
+      val constructFirst: P1 => T = construct(_, p2)
+      val sequenceFirst = renderer1(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P2]].render(p2)
     }
   }
 
@@ -127,11 +128,10 @@ trait CsvRenderers {
   def renderer3[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-      )
+      val p3 = t.productElement(2).asInstanceOf[P3]
+      val constructFirst: (P1, P2) => T = construct(_, _, p3)
+      val sequenceFirst = renderer2(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P3]].render(p3)
     }
   }
 
@@ -151,12 +151,10 @@ trait CsvRenderers {
   def renderer4[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-        , implicitly[CsvRenderer[P4]].render(t.productElement(3).asInstanceOf[P4])
-      )
+      val p4 = t.productElement(3).asInstanceOf[P4]
+      val constructFirst: (P1, P2, P3) => T = construct(_, _, _, p4)
+      val sequenceFirst = renderer3(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P4]].render(p4)
     }
   }
 
@@ -177,13 +175,10 @@ trait CsvRenderers {
   def renderer5[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-        , implicitly[CsvRenderer[P4]].render(t.productElement(3).asInstanceOf[P4])
-        , implicitly[CsvRenderer[P5]].render(t.productElement(4).asInstanceOf[P5])
-      )
+      val p5 = t.productElement(4).asInstanceOf[P5]
+      val constructFirst: (P1, P2, P3, P4) => T = construct(_, _, _, _, p5)
+      val sequenceFirst = renderer4(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P5]].render(p5)
     }
   }
 
@@ -207,21 +202,15 @@ trait CsvRenderers {
   def renderer6[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-        , implicitly[CsvRenderer[P4]].render(t.productElement(3).asInstanceOf[P4])
-        , implicitly[CsvRenderer[P5]].render(t.productElement(4).asInstanceOf[P5])
-        , implicitly[CsvRenderer[P6]].render(t.productElement(5).asInstanceOf[P6])
-      )
+      val p6 = t.productElement(5).asInstanceOf[P6]
+      val constructFirst: (P1, P2, P3, P4, P5) => T = construct(_, _, _, _, _, p6)
+      val sequenceFirst = renderer5(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P6]].render(p6)
     }
   }
 
   /**
    * Method to return a CsvRenderer[T] where T is a 7-ary Product and which is based on the given "construct" function.
-   *
-   * TEST
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -239,22 +228,15 @@ trait CsvRenderers {
   def renderer7[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-        , implicitly[CsvRenderer[P4]].render(t.productElement(3).asInstanceOf[P4])
-        , implicitly[CsvRenderer[P5]].render(t.productElement(4).asInstanceOf[P5])
-        , implicitly[CsvRenderer[P6]].render(t.productElement(5).asInstanceOf[P6])
-        , implicitly[CsvRenderer[P7]].render(t.productElement(6).asInstanceOf[P7])
-      )
+      val p7 = t.productElement(6).asInstanceOf[P7]
+      val constructFirst: (P1, P2, P3, P4, P5, P6) => T = construct(_, _, _, _, _, _, p7)
+      val sequenceFirst = renderer6(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P7]].render(p7)
     }
   }
 
   /**
    * Method to return a CsvRenderer[T] where T is a 8-ary Product and which is based on the given "construct" function.
-   *
-   * TEST
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -273,23 +255,15 @@ trait CsvRenderers {
   def renderer8[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-        , implicitly[CsvRenderer[P4]].render(t.productElement(3).asInstanceOf[P4])
-        , implicitly[CsvRenderer[P5]].render(t.productElement(4).asInstanceOf[P5])
-        , implicitly[CsvRenderer[P6]].render(t.productElement(5).asInstanceOf[P6])
-        , implicitly[CsvRenderer[P7]].render(t.productElement(6).asInstanceOf[P7])
-        , implicitly[CsvRenderer[P8]].render(t.productElement(7).asInstanceOf[P8])
-      )
+      val p8 = t.productElement(7).asInstanceOf[P8]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7) => T = construct(_, _, _, _, _, _, _, p8)
+      val sequenceFirst = renderer7(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P8]].render(p8)
     }
   }
 
   /**
    * Method to return a CsvRenderer[T] where T is a 9-ary Product and which is based on the given "construct" function.
-   *
-   * TEST
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -309,24 +283,15 @@ trait CsvRenderers {
   def renderer9[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-        , implicitly[CsvRenderer[P4]].render(t.productElement(3).asInstanceOf[P4])
-        , implicitly[CsvRenderer[P5]].render(t.productElement(4).asInstanceOf[P5])
-        , implicitly[CsvRenderer[P6]].render(t.productElement(5).asInstanceOf[P6])
-        , implicitly[CsvRenderer[P7]].render(t.productElement(6).asInstanceOf[P7])
-        , implicitly[CsvRenderer[P8]].render(t.productElement(7).asInstanceOf[P8])
-        , implicitly[CsvRenderer[P9]].render(t.productElement(8).asInstanceOf[P9])
-      )
+      val p9 = t.productElement(8).asInstanceOf[P9]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8) => T = construct(_, _, _, _, _, _, _, _, p9)
+      val sequenceFirst = renderer8(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P9]].render(p9)
     }
   }
 
   /**
    * Method to return a CsvRenderer[T] where T is a 10-ary Product and which is based on the given "construct" function.
-   *
-   * TEST
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -347,25 +312,15 @@ trait CsvRenderers {
   def renderer10[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-        , implicitly[CsvRenderer[P4]].render(t.productElement(3).asInstanceOf[P4])
-        , implicitly[CsvRenderer[P5]].render(t.productElement(4).asInstanceOf[P5])
-        , implicitly[CsvRenderer[P6]].render(t.productElement(5).asInstanceOf[P6])
-        , implicitly[CsvRenderer[P7]].render(t.productElement(6).asInstanceOf[P7])
-        , implicitly[CsvRenderer[P8]].render(t.productElement(7).asInstanceOf[P8])
-        , implicitly[CsvRenderer[P9]].render(t.productElement(8).asInstanceOf[P9])
-        , implicitly[CsvRenderer[P10]].render(t.productElement(9).asInstanceOf[P10])
-      )
+      val p10 = t.productElement(9).asInstanceOf[P10]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T = construct(_, _, _, _, _, _, _, _, _, p10)
+      val sequenceFirst = renderer9(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P10]].render(p10)
     }
   }
 
   /**
    * Method to return a CsvRenderer[T] where T is a 11-ary Product and which is based on the given "construct" function.
-   *
-   * TEST
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -387,19 +342,10 @@ trait CsvRenderers {
   def renderer11[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-        , implicitly[CsvRenderer[P4]].render(t.productElement(3).asInstanceOf[P4])
-        , implicitly[CsvRenderer[P5]].render(t.productElement(4).asInstanceOf[P5])
-        , implicitly[CsvRenderer[P6]].render(t.productElement(5).asInstanceOf[P6])
-        , implicitly[CsvRenderer[P7]].render(t.productElement(6).asInstanceOf[P7])
-        , implicitly[CsvRenderer[P8]].render(t.productElement(7).asInstanceOf[P8])
-        , implicitly[CsvRenderer[P9]].render(t.productElement(8).asInstanceOf[P9])
-        , implicitly[CsvRenderer[P10]].render(t.productElement(9).asInstanceOf[P10])
-        , implicitly[CsvRenderer[P11]].render(t.productElement(10).asInstanceOf[P11])
-      )
+      val p11 = t.productElement(10).asInstanceOf[P11]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T = construct(_, _, _, _, _, _, _, _, _, _, p11)
+      val sequenceFirst = renderer10(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P11]].render(p11)
     }
   }
 
@@ -427,20 +373,10 @@ trait CsvRenderers {
   def renderer12[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, P12: CsvRenderer, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
 
     def elements(t: T): Strings = {
-      Seq(
-        implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
-        , implicitly[CsvRenderer[P2]].render(t.productElement(1).asInstanceOf[P2])
-        , implicitly[CsvRenderer[P3]].render(t.productElement(2).asInstanceOf[P3])
-        , implicitly[CsvRenderer[P4]].render(t.productElement(3).asInstanceOf[P4])
-        , implicitly[CsvRenderer[P5]].render(t.productElement(4).asInstanceOf[P5])
-        , implicitly[CsvRenderer[P6]].render(t.productElement(5).asInstanceOf[P6])
-        , implicitly[CsvRenderer[P7]].render(t.productElement(6).asInstanceOf[P7])
-        , implicitly[CsvRenderer[P8]].render(t.productElement(7).asInstanceOf[P8])
-        , implicitly[CsvRenderer[P9]].render(t.productElement(8).asInstanceOf[P9])
-        , implicitly[CsvRenderer[P10]].render(t.productElement(9).asInstanceOf[P10])
-        , implicitly[CsvRenderer[P11]].render(t.productElement(10).asInstanceOf[P11])
-        , implicitly[CsvRenderer[P12]].render(t.productElement(11).asInstanceOf[P12])
-      )
+      val p12 = t.productElement(11).asInstanceOf[P12]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T = construct(_, _, _, _, _, _, _, _, _, _, _, p12)
+      val sequenceFirst = renderer11(constructFirst).asInstanceOf[ProductCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P12]].render(p12)
     }
   }
 }
