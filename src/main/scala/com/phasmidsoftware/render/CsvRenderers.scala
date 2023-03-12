@@ -99,6 +99,8 @@ trait CsvRenderers {
    *
    * NOTE: be careful using this particular method it only applies where T is a 1-tuple (e.g. a case class with one field -- not common).
    *
+   * TESTME
+   *
    * @param construct     a function P => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
    * @param csvAttributes the (implicit) CsvAttributes.
@@ -142,6 +144,8 @@ trait CsvRenderers {
   /**
    * Method to return a CsvRenderer[T] where T is a 2-ary Product and which is based on a function to convert a (P1,P2) into a T.
    *
+   * TESTME
+   *
    * @param construct     a function (P1,P2) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
    * @param csvAttributes the (implicit) CsvAttributes.
@@ -184,6 +188,8 @@ trait CsvRenderers {
 
   /**
    * Method to return a CsvRenderer[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
+   *
+   * TESTME
    *
    * @param construct     a function (P1,P2,P3) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -243,6 +249,7 @@ trait CsvRenderers {
   (construct: (P1, P2, P3, P4) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
     def elements(t: T): Strings = renderer4(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
+    // TESTME
     def toColumnNames(po: Option[String], no: Option[String]): String =
       new CsvGenerators {}.generator4(construct).toColumnNames(po, no)
   }
@@ -274,6 +281,8 @@ trait CsvRenderers {
 
   /**
    * Method to return a CsvRenderer[T] where T is a 5-ary Product and which is based on the given "construct" function.
+   *
+   * TESTME
    *
    * @param construct     a function (P1,P2,P3,P4,P5) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -324,7 +333,7 @@ trait CsvRenderers {
   /**
    * Method to return a CsvRenderer[T] where T is a 6-ary Product and which is based on the given "construct" function.
    *
-   * TEST
+   * TESTME
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -377,7 +386,7 @@ trait CsvRenderers {
   /**
    * Method to return a CsvRenderer[T] where T is a 7-ary Product and which is based on the given "construct" function.
    *
-   * TEST
+   * TESTME
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -432,7 +441,7 @@ trait CsvRenderers {
   /**
    * Method to return a CsvRenderer[T] where T is a 8-ary Product and which is based on the given "construct" function.
    *
-   * TEST
+   * TESTME
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -489,7 +498,7 @@ trait CsvRenderers {
   /**
    * Method to return a CsvRenderer[T] where T is a 9-ary Product and which is based on the given "construct" function.
    *
-   * TEST
+   * TESTME
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -548,7 +557,7 @@ trait CsvRenderers {
   /**
    * Method to return a CsvRenderer[T] where T is a 10-ary Product and which is based on the given "construct" function.
    *
-   * TEST
+   * TESTME
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.
@@ -609,7 +618,7 @@ trait CsvRenderers {
   /**
    * Method to return a CsvRenderer[T] where T is a 11-ary Product and which is based on the given "construct" function.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -672,7 +681,7 @@ trait CsvRenderers {
   /**
    * Method to return a CsvRenderer[T] where T is a 12-ary Product and which is based on the given "construct" function.
    *
-   * TEST
+   * TESTME
    *
    * @param construct     a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) => T, usually the apply method of a case class.
    *                      The sole purpose of this function is for type inference--it is never actually invoked.

@@ -57,14 +57,12 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   it should "generate header for an Int" in {
     import CsvGenerators._
-    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicitly[CsvGenerator[Int]].toColumnName(None, "x") shouldBe "x"
     implicitly[CsvGenerator[Int]].toColumnName(Some("x"), "y") shouldBe "x.y"
   }
 
   it should "generate header for a Long, URL, Double, Boolean" in {
     import CsvGenerators._
-    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicitly[CsvGenerator[Long]].toColumnName(None, "x") shouldBe "x"
     implicitly[CsvGenerator[URL]].toColumnName(Some("x"), "y") shouldBe "x.y"
     implicitly[CsvGenerator[Double]].toColumnName(None, "x") shouldBe "x"
@@ -355,7 +353,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
           def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
         }
-        implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new BaseCsvGenerator[LocalDate]
+        implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new StandardCsvGenerator[LocalDate]
         implicit val DRRCsvRenderer: CsvRenderer[DailyRaptorReport] = new CsvRenderers {}.renderer3(DailyRaptorReport.apply)
         implicit val DRRCsvGenerator: CsvProductGenerator[DailyRaptorReport] = new CsvGenerators {}.generator3(DailyRaptorReport.apply)
         val w: String = rt.toCSV
@@ -440,7 +438,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
           def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
         }
-        implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new BaseCsvGenerator[LocalDate]
+        implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new StandardCsvGenerator[LocalDate]
         implicit val DRRCsvRenderer: CsvRenderer[NestedRaptorReport] = new CsvRenderers {}.renderer2(NestedRaptorReport.apply)
         implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = new CsvGenerators {}.generator2(NestedRaptorReport.apply)
         rt.take(1).toCSV shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n"

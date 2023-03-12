@@ -10,7 +10,8 @@ import com.phasmidsoftware.table.{Indexed, Table}
  * Polymorphic trait which defines the behavior of some sort of collection with an underlying type X and which can be rendered.
  *
  * CONSIDER: do we really need this trait?
- * This trait is not a type class because X does not appear as a parameter or result of any of the methods.
+ * This trait is not, strictly speaking, a typeclass because X does not appear as a parameter or result of any of the methods.
+ * However, it cannot be sealed which implies that it is used as a typeclass.
  *
  * NOTE: this trait has no direct relationship with Renderer.
  * CONSIDER a refactoring of the whole set of traits.
@@ -45,7 +46,7 @@ trait Renderable[X] {
   /**
    * Method to render a table in a hierarchical fashion.
    *
-   * TEST
+   * TESTME
    *
    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
    * outputting each row as you go.
@@ -61,7 +62,7 @@ trait Renderable[X] {
   /**
    * Method to render a table in a hierarchical fashion.
    *
-   * TEST
+   * TESTME
    *
    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
    * outputting each row as you go.

@@ -20,7 +20,7 @@ case class Attribute(key: String, value: String) {
  * Trait Tag to model a tagged (i.e. Markup Language-type) document.
  * Examples of a tagged document would be XML or HTML.
  */
-trait Tag {
+sealed trait Tag {
 
   /**
    * Method to yield the name of this Tag
@@ -61,11 +61,13 @@ trait Tag {
   /**
    * Method to yield the tag names depth-first in a Seq
    *
-   * TEST
+   * CONSIDER: this method is recursive. Is that what we really want?
+   *
+   * TESTME
    *
    * @return a sequence of tag names
    */
-  def \\ : Seq[String] = name +: (for (t <- tags; x <- t.\\) yield x)
+  private def \\ : Seq[String] = name +: (for (t <- tags; x <- t.\\) yield x)
 }
 
 /**
@@ -95,7 +97,7 @@ abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option
 object Attribute {
 
   /**
-   * TEST
+   * TESTME
    *
    * @param m a Map of attributes.
    * @return a Seq[Attribute].

@@ -5,7 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse.{ParserException, RowValues}
-import com.phasmidsoftware.render.CsvRenderer
+import com.phasmidsoftware.render.{CsvGenerator, CsvRenderer}
 import scala.util.{Failure, Try}
 
 /**

@@ -188,7 +188,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "conditionally parse" in {
-    trait IsInt {
+    sealed trait IsInt {
       val x: Int
     }
     case class Int1(x: Int) extends IsInt

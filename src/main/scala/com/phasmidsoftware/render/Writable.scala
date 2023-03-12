@@ -10,6 +10,7 @@ import java.io.{File, FileWriter}
 
 /**
  * Trait to enable rendering of a table to a sequential (non-hierarchical) output format.
+ * A typeclass.
  *
  * @tparam O the underlying type, for example, a StringBuilder.
  */

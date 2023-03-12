@@ -57,7 +57,7 @@ object TeamProjectParser extends CellParsers {
   val parser: StandardRowParser[TeamProject] = StandardRowParser.create[TeamProject]
 }
 
-trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
+sealed trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
   type Row = TeamProject
 
   val maybeFixedHeader: Option[Header] = None

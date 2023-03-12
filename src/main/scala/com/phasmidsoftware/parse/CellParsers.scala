@@ -94,17 +94,19 @@ trait CellParsers {
    * @return a SingleCellParser[Option[String]
    */
   lazy val cellParserOptionNonEmptyString: CellParser[Option[String]] = new SingleCellParser[Option[String]] {
-    // XXX used only for debugging
+    // NOTE used only for debugging
     override def toString: String = s"cellParserOptionNonEmptyString"
 
     private val cp: CellParser[String] = new CellParser[String]() {
       def convertString(w: String): Try[String] = Success(if (w.isEmpty) null else w)
 
+      // NOTE not used
       override def parse(wo: Option[String], row: Row, columns: Header): Try[String] = Failure(new UnsupportedOperationException)
     }
 
     def convertString(w: String): Try[Option[String]] = cp.convertString(w).map(Option(_))
 
+    // NOTE not used
     override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[String]] = cp.parse(wo, row, columns).map(Option(_))
   }
 
@@ -117,7 +119,7 @@ trait CellParsers {
    * @return a SingleCellParser which converts a String into the intermediate type P and thence into a T
    */
   def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = new SingleCellParser[T] {
-    // XXX used only for debugging
+    // NOTE used only for debugging
     override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
 
     def convertString(w: String): Try[T] = implicitly[CellParser[P]].parse(CellValue(w)).map(construct)
@@ -191,7 +193,7 @@ trait CellParsers {
    */
   def cellParser2Conditional[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map[K, CellParser[P]], fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
-      // XXX used only for debugging
+      // NOTE used only for debugging
       override def toString: String = s"MultiCellParser: cellParser2 for ${implicitly[ClassTag[T]]}"
 
       override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
@@ -588,45 +590,3 @@ trait CellParsers {
 }
 
 object StdCellParsers extends CellParsers
-
-/**
- * CONSIDER: do we really need this exception? It doesn't appear to be used.
- *
- * @param w the message.
- */
-case class ParsersException(w: String) extends Exception(w)
-
-/**
- * This class is used for the situation where a column in a table actually contains a set of
- * attributes, typically separated by "," and possibly bracketed by "{}".
- * CONSIDER allowing "|" as a separator (as described previously in the documentation here).
- *
- * @param xs the attribute values.
- */
-case class AttributeSet(xs: StringList)
-
-object AttributeSet {
-
-  /**
-   * This method is required to be a String=>AttributeSet and is only invoked inside Try.
-   * It invokes parse to get its result.
-   *
-   * NOTE: essentially, we are doing a get, and trying to make it explicit so that Codacy doesn't get upset ;)
-   *
-   * @param w the String to be converted to an AttributeSet.
-   * @return an AttributeSet.
-   */
-  def apply(w: String): AttributeSet = parse(w) match {
-    case Success(a) => a
-    case Failure(x) => throw x
-  }
-
-  /**
-   * Method to parse a String as an AttributeSet.
-   *
-   * @param w the String to be parsed as an AttributeSet.
-   * @return a Try[AttributeSet]
-   */
-  def parse(w: String): Try[AttributeSet] = Parseable.split(w).map(apply)
-}
-

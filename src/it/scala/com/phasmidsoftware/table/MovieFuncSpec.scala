@@ -3,7 +3,7 @@ package com.phasmidsoftware.table
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.parse.{AttributeSet, StringList}
-import com.phasmidsoftware.render.{CsvGenerators, CsvProduct, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.IOUsing
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

@@ -335,7 +335,7 @@ trait Table[Row] extends Iterable[Row] {
   private lazy val asOneBasedIndexedSequence = new IndexedSeq[Row]() {
     def apply(i: Int): Row = rows.toIndexedSeq(i - 1)
 
-    // TEST
+    // TESTME
     def length: Int = rows.size
   }
 }
@@ -702,8 +702,8 @@ abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
     (if (rows.knownSize > -1) rows else rows.toList) map {
       case p: Product => ww.writeRow(o2)(p)
-      case xs: Seq[Row] => ww.writeRowElements(o2)(xs) // TEST
-      case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq) // TEST
+      case xs: Seq[Row] => ww.writeRowElements(o2)(xs) // TESTME
+      case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
       case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     }
     o1
@@ -766,7 +766,7 @@ abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option
  * NOTE: the existence or not of a Header in a RenderableTable only affects how the table is rendered.
  * The parsing of a table always has a header of some sort.
  *
- * TEST this: it is currently not used.
+ * TESTME this: it is currently not used.
  *
  * @param rows the rows of the table.
  * @tparam Row the underlying type of each Row
@@ -830,7 +830,7 @@ case class HeadedTable[Row](rows: Iterable[Row], header: Header) extends Rendera
  * The apply methods provided arbitrarily use Vector as the collection for the rows of the table.
  * CONSIDER using something else such as Array.
  *
- * TEST ?
+ * TESTME ?
  */
 object HeadedTable {
   def apply[Row: ClassTag](rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows.to(List), header)

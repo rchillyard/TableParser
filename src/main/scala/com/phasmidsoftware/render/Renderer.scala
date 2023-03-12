@@ -151,7 +151,7 @@ object HierarchicalRenderer {
 
   trait BigIntHierarchicalRenderer extends UntaggedHierarchicalRenderer[BigInt]
 
-  // TEST
+  // TESTME
   implicit object BigIntHierarchicalRenderer extends BigIntHierarchicalRenderer
 
   trait DoubleHierarchicalRenderer extends UntaggedHierarchicalRenderer[Double]
@@ -160,6 +160,6 @@ object HierarchicalRenderer {
 
   trait LocalDateHierarchicalRenderer extends UntaggedHierarchicalRenderer[LocalDate]
 
-  // TEST
+  // TESTME
   implicit object LocalDateHierarchicalRenderer extends LocalDateHierarchicalRenderer
 }

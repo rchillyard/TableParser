@@ -1,6 +1,6 @@
 package com.phasmidsoftware.render
 
-import com.phasmidsoftware.table.{BaseCsvGenerator, CsvAttributes, CsvGenerator, CsvProductGenerator}
+import com.phasmidsoftware.table.CsvAttributes
 import java.net.URL
 import scala.reflect.ClassTag
 
@@ -12,7 +12,7 @@ trait CsvGenerators {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[ Seq[T] ]
    */
-  def sequenceGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Seq[T]] = new BaseCsvGenerator[Seq[T]]
+  def sequenceGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Seq[T]] = new StandardCsvGenerator[Seq[T]]
 
   /**
    * Method to return a CsvGenerator[ Option[T] ].
@@ -20,7 +20,7 @@ trait CsvGenerators {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[ Option[T] ].
    */
-  def optionGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Option[T]] = new BaseCsvGenerator[Option[T]]
+  def optionGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Option[T]] = new StandardCsvGenerator[Option[T]]
 
   /**
    * Method to return a CsvGenerator[T] which does not output a column header for at all.
@@ -33,7 +33,7 @@ trait CsvGenerators {
 
     override def toColumnName(po: Option[String], name: String): String = ""
 
-    // TEST (not actually used).
+    // TESTME (not actually used).
     def toColumnNames(po: Option[String], no: Option[String]): String = ""
   }
 
@@ -48,7 +48,7 @@ trait CsvGenerators {
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator1[P1: CsvGenerator, T <: Product : ClassTag](construct: P1 => T)(implicit c: CsvAttributes): CsvGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator1[P1: CsvGenerator, T <: Product : ClassTag](construct: P1 => T)(implicit c: CsvAttributes): CsvGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = Seq(
@@ -66,7 +66,7 @@ trait CsvGenerators {
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator2[P1: CsvGenerator, P2: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator2[P1: CsvGenerator, P2: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -89,7 +89,7 @@ trait CsvGenerators {
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator3[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator3[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -114,7 +114,7 @@ trait CsvGenerators {
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator4[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator4[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3, p4) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -141,7 +141,7 @@ trait CsvGenerators {
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator5[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator5[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3, p4, p5) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -170,7 +170,7 @@ trait CsvGenerators {
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator6[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator6[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3, p4, p5, p6) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -201,7 +201,7 @@ trait CsvGenerators {
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator7[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator7[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3, p4, p5, p6, p7) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -234,7 +234,7 @@ trait CsvGenerators {
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator8[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator8[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3, p4, p5, p6, p7, p8) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -269,7 +269,7 @@ trait CsvGenerators {
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator9[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator9[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -306,7 +306,7 @@ trait CsvGenerators {
    * @tparam T   the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator10[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator10[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -345,7 +345,7 @@ trait CsvGenerators {
    * @tparam T   the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator11[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator11[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -386,7 +386,7 @@ trait CsvGenerators {
    * @tparam T   the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
-  def generator12[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, P12: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new BaseCsvGenerator[T]() with CsvProductGenerator[T] {
+  def generator12[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, P12: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12) = fieldNames
 
     def toColumnNames(po: Option[String], no: Option[String]): String = {
@@ -410,15 +410,15 @@ trait CsvGenerators {
 }
 
 object CsvGenerators {
-  implicit object CsvGeneratorBoolean extends BaseCsvGenerator[Boolean]
+  implicit object CsvGeneratorBoolean extends StandardCsvGenerator[Boolean]
 
-  implicit object CsvGeneratorInt extends BaseCsvGenerator[Int]
+  implicit object CsvGeneratorInt extends StandardCsvGenerator[Int]
 
-  implicit object CsvGeneratorLong extends BaseCsvGenerator[Long]
+  implicit object CsvGeneratorLong extends StandardCsvGenerator[Long]
 
-  implicit object CsvGeneratorDouble extends BaseCsvGenerator[Double]
+  implicit object CsvGeneratorDouble extends StandardCsvGenerator[Double]
 
-  implicit object CsvGeneratorString extends BaseCsvGenerator[String]
+  implicit object CsvGeneratorString extends StandardCsvGenerator[String]
 
-  implicit object CsvGeneratorURL extends BaseCsvGenerator[URL]
+  implicit object CsvGeneratorURL extends StandardCsvGenerator[URL]
 }
