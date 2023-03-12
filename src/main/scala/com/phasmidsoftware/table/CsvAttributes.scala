@@ -78,3 +78,5 @@ class BaseCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T] {
     case None => no
   }
 }
+
+abstract class BaseCsvProductGenerator[T](implicit ca: CsvAttributes) extends BaseCsvGenerator[T] with CsvProductGenerator[T]

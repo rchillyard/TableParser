@@ -224,10 +224,11 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   private def createCsvRendererForTeamProject(function: CsvRenderers => CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
     val csvRenderers = new CsvRenderers {}
+    import CsvGenerators._
     import CsvRenderers._
-    implicit val optionStringGenerator: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]
-    implicit val teamGenerator: CsvRenderer[Team] = csvRenderers.renderer5(Team)
-    implicit val gradeGenerator: CsvRenderer[Grade] = function(csvRenderers)
+    implicit val optionStringRenderer: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]
+    implicit val teamRenderer: CsvRenderer[Team] = csvRenderers.renderer5(Team)
+    implicit val gradeRenderer: CsvRenderer[Grade] = function(csvRenderers)
     csvRenderers.renderer4(TeamProject)
   }
 }

@@ -3,7 +3,7 @@ package com.phasmidsoftware.table
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.parse.{AttributeSet, StringList}
-import com.phasmidsoftware.render.{CsvGenerators, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.render.{CsvGenerators, CsvProduct, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.util.IOUsing
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -30,7 +30,16 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
   }
 
   // TODO move this into Movie
+  // CONSIDER removing the csvAttributes parameter and making it an object.
   class CsvRendererMovie(implicit val csvAttributes: CsvAttributes) extends CsvRenderers with CsvRenderer[Movie] {
+
+    import com.phasmidsoftware.render.CsvGenerators._
+
+    private val csvGenerators = new CsvGenerators {}
+    implicit val generatorStringList: CsvGenerator[StringList] = csvGenerators.sequenceGenerator[String]
+    implicit val generatorOptionDouble: CsvGenerator[Option[Double]] = csvGenerators.optionGenerator
+    implicit val generatorOptionInt: CsvGenerator[Option[Int]] = csvGenerators.optionGenerator
+    implicit val generatorOptionString: CsvGenerator[Option[String]] = csvGenerators.optionGenerator
 
     import com.phasmidsoftware.render.CsvRenderers._
 
@@ -38,7 +47,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
     implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer
     implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer
     implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer
-    implicit val rendererFormat: CsvRenderer[Format] = renderer4(Format)
+    implicit val rendererFormat: CsvProduct[Format] = rendererGenerator4(Format)
     implicit val rendererProduction: CsvRenderer[Production] = renderer4(Production)
     implicit val rendererRating: CsvRenderer[Rating] = renderer2(Rating.apply)
     implicit val rendererReviews: CsvRenderer[Reviews] = renderer7(Reviews)
@@ -60,7 +69,8 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
     import MovieParser._
 
     val mti: IO[Table[Movie]] = IOUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(x => Table.parseSource(x))
-    implicit val csvRenderer: CsvRenderer[Movie] = new CsvRendererMovie()
+    // TODO create a combined renderer/generator for Movie
+    implicit val csvRenderer: CsvRenderer[Movie] = new CsvRendererMovie
     implicit val csvGenerator: CsvGenerator[Movie] = createMovieCvsGenerator
 
     val wi: IO[String] = for (mt <- mti) yield mt.toCSV

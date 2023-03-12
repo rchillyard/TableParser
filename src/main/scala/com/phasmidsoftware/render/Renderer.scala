@@ -163,7 +163,9 @@ trait CsvRenderer[-T] extends Renderer[T, String] {
   val csvAttributes: CsvAttributes
 }
 
-abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], O] {
+trait CsvProduct[-T] extends CsvRenderer[T] with CsvGenerator[T]
+
+abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]() extends Renderer[Table[T], O] {
   /**
    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
    *
@@ -207,7 +209,7 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]()(im
  * @param csvAttributes implicit instance of CsvAttributes.
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
-case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, StringBuilder]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote), csvAttributes)
+case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, StringBuilder]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote))
 
 /**
  * Case class to help render a Table to a File in CSV format.
@@ -218,7 +220,7 @@ case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvA
  * @param csvAttributes implicit instance of CsvAttributes.
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
-case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes)
+case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file))
 
 /**
  * Case class to help render a Table to a File in CSV format.
@@ -230,7 +232,7 @@ case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(impli
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
  */
-case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey, A: HexEncryption](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes) {
+case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey, A: HexEncryption](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file)) {
   override protected def generateText(ow: Writable[FileWriter], tc: CsvRenderer[T], o: FileWriter, t: T): FileWriter = {
     val key = implicitly[HasKey[T]].key(t)
     val rendering = tc.render(t, Map())
