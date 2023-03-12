@@ -2,10 +2,9 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.render
+package com.phasmidsoftware.write
 
 import scala.annotation.implicitNotFound
-
 
 /**
  * This trait defines the behavior of a hierarchical writer of objects.

@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.render
 
+import com.phasmidsoftware.write.Node
 import org.joda.time.LocalDate
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -12,7 +13,7 @@ import scala.reflect.ClassTag
  * Definition of trait Renderer for the purpose of serializing objects of type T as an object of type O.
  * This trait may be used as a type class for either T or O (or both).
  *
- * NOTE: this trait has no direct relationship with Renderable.
+ * NOTE: this trait has no direct relationship with TableRenderable.
  *
  * @tparam T the (contravariant) type of object to be rendered.
  * @tparam O the type of the serialization result.

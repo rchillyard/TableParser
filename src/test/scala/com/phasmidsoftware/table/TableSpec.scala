@@ -10,6 +10,7 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.table.Table.parseResource
 import com.phasmidsoftware.util.{CheckIO, TryUsing}
+import com.phasmidsoftware.write.{Node, TreeWriter, Writable}
 import java.io.{File, FileWriter, InputStream}
 import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -78,7 +79,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse and not filter the movies from the IMDB dataset" in {
     import MovieParser._
-    implicit val parser: TableParser[Table[Movie]] = implicitly[TableParser[Table[Movie]]]
     implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
     CheckIO.checkResultIO(parseResource("movie_metadata.csv", classOf[Movie]), Timeout(Span(3, Seconds))) {
       case mt@HeadedTable(_, _) =>

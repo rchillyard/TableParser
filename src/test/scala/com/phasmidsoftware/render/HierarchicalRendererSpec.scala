@@ -6,6 +6,7 @@ package com.phasmidsoftware.render
 
 import com.phasmidsoftware.render.tag.{Attribute, HTML}
 import com.phasmidsoftware.table.{HeadedTable, Header, Indexed}
+import com.phasmidsoftware.write.{Node, TreeWriter}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 

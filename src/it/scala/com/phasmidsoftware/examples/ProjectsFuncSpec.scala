@@ -50,6 +50,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     }
   }
 
+  // NOTE this sometimes causes a problem
   it should "be ingested and written out to encrypted file using the given header" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     checkResultIO(parseResource("TeamProject.csv", classOf[TeamProject])) {

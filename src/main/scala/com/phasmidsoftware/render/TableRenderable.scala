@@ -5,6 +5,7 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.table.{Indexed, Table}
+import com.phasmidsoftware.write.{TreeWriter, Writable}
 
 /**
  * Polymorphic trait which defines the behavior of some sort of collection with an underlying type X and which can be rendered.
@@ -16,12 +17,14 @@ import com.phasmidsoftware.table.{Indexed, Table}
  * NOTE: this trait has no direct relationship with Renderer.
  * CONSIDER a refactoring of the whole set of traits.
  *
- * @tparam X the underlying type of this Renderable.
+ * @tparam X the underlying type of this TableRenderable.
  */
-trait Renderable[X] {
+trait TableRenderable[X] {
 
   /**
-   * Method to render this Renderable to serialized type O without any constraint on O.
+   * Method to render this TableRenderable to serialized type O without any constraint on O.
+   *
+   * NOTE this is currently used only by JsonTableRendererSpec
    *
    * CONSIDER combining this with renderToWritable.
    *
@@ -34,6 +37,8 @@ trait Renderable[X] {
   def render[O](implicit ev: Renderer[Table[X], O]): O
 
   /**
+   * NOTE this is never used
+   *
    * CONSIDER redefining the definition of Renderer such that we can accommodate the various different types of output.
    *
    * Method to render a table in a sequential (serialized) fashion.

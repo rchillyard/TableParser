@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.render
 
+import com.phasmidsoftware.write.Node
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 

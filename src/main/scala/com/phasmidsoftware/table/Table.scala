@@ -11,6 +11,7 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{IOUsing, Reflection}
+import com.phasmidsoftware.write.{Node, TreeWriter, Writable}
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -678,7 +679,7 @@ object Table {
  * @param maybeHeader (optional) header
  * @tparam Row the underlying type of each Row
  */
-abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option[Header]) extends Table[Row] with Renderable[Row] {
+abstract class RenderableTable[Row](rows: Iterable[Row], val maybeHeader: Option[Header]) extends Table[Row] with TableRenderable[Row] {
   self =>
   /**
    *

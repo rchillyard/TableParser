@@ -6,6 +6,8 @@ package com.phasmidsoftware.render
 
 import com.phasmidsoftware.table.{Header, Indexed}
 import com.phasmidsoftware.util.Reflection
+import com.phasmidsoftware.write
+import com.phasmidsoftware.write.Node
 import scala.reflect.ClassTag
 
 /**
@@ -59,7 +61,7 @@ trait HierarchicalRenderers {
      * @param attrs a map of attributes for this kind of output.
      * @return an instance of type String.
      */
-    override def render(h: Header, attrs: Map[String, String]): Node = Node(style, attrs, headerElements(h).map((t: String) => renderer.render(t)))
+    override def render(h: Header, attrs: Map[String, String]): Node = write.Node(style, attrs, headerElements(h).map((t: String) => renderer.render(t)))
 
     private def headerElements(h: Header): Seq[String] = {
       if (sequenced) "" +: h.xs
@@ -76,7 +78,7 @@ trait HierarchicalRenderers {
    * @return a HierarchicalRenderer[ Seq[T] ]
    */
   def sequenceRenderer[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[Seq[T]] = new TaggedHierarchicalRenderer[Seq[T]](style, attrs) {
-    override def render(ts: Seq[T], attrs: Map[String, String]): Node = Node(style, attrs, ts map (implicitly[HierarchicalRenderer[T]].render(_)))
+    override def render(ts: Seq[T], attrs: Map[String, String]): Node = write.Node(style, attrs, ts map (implicitly[HierarchicalRenderer[T]].render(_)))
   }
 
   /**
@@ -97,7 +99,7 @@ trait HierarchicalRenderers {
     override def render(ti: Indexed[T], attrs: Map[String, String]): Node = {
       val sequence = new TaggedHierarchicalRenderer[Int](indexStyle) {}.render(ti.i)
       val value = implicitly[HierarchicalRenderer[T]].render(ti.t)
-      Node(style, attrs, Seq(sequence, value))
+      write.Node(style, attrs, Seq(sequence, value))
     }
 
     /**
@@ -115,7 +117,7 @@ trait HierarchicalRenderers {
    */
   def optionRenderer[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[Option[T]] = new TaggedHierarchicalRenderer[Option[T]](style, attrs) {
     override def render(to: Option[T], attrs: Map[String, String]): Node = to match {
-      case Some(t) => Node(style, attrs, Seq(implicitly[HierarchicalRenderer[T]].render(t)))
+      case Some(t) => write.Node(style, attrs, Seq(implicitly[HierarchicalRenderer[T]].render(t)))
       case None => Node("", None, Map(), Nil)
     }
   }

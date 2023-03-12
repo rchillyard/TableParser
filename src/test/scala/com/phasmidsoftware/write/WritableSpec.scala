@@ -2,7 +2,7 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.render
+package com.phasmidsoftware.write
 
 import java.io.{File, FileWriter}
 import org.scalatest.flatspec
