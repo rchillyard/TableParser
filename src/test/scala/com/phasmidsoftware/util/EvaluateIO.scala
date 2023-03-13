@@ -29,6 +29,22 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
   def apply[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second))): X = whenReady(xio.unsafeToFuture(), timeout)(identity)
 
   /**
+   * Method to evaluate an IO[X] as an Assertion.
+   * It does this by converting to a Future,
+   * waiting for that Future to finish and
+   * then passing the result to the given partialFunction.
+   * For usage, see EvaluateIOSpec.
+   *
+   * @param xio             a value of IO[X].
+   * @param timeout         a timeout (defaults to 1 second).
+   * @param partialFunction a PartialFunction of type X=>Assertion
+   * @tparam X the underlying type of xio.
+   * @return an Assertion.
+   */
+  def matcher[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(partialFunction: PartialFunction[X, Assertion]): Assertion =
+    whenReady(xio.unsafeToFuture(), timeout)(partialFunction)
+
+  /**
    * Check the result by converting it to a Future, and waiting for it to complete.
    *
    * CONSIDER returning IO[Assertion] like checkFailure.
