@@ -3,8 +3,8 @@ package com.phasmidsoftware.render
 import cats.effect.IO
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.table._
-import com.phasmidsoftware.util.CheckIO
-import com.phasmidsoftware.util.CheckIO.checkResultIO
+import com.phasmidsoftware.util.EvaluateIO
+import com.phasmidsoftware.util.EvaluateIO.check
 import java.net.URL
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
@@ -255,9 +255,9 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val intPairCsvRenderer: CsvRenderer[IntPair] = csvRenderers.renderer2(IntPair.apply)
     implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = csvGenerators.generator2(IntPair.apply)
     import IntPair._
-    CheckIO.checkResultIO(Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv")) {
+    EvaluateIO.check(Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv")) {
       case iIt@HeadedTable(_, _) =>
-        CsvTableStringRenderer[IntPair]().render(iIt).toString shouldBe "a, b\n1, 2\n42, 99\n"
+        EvaluateIO(CsvTableStringRenderer[IntPair]().render(iIt)).toString shouldBe "a, b\n1, 2\n42, 99\n"
     }
   }
 
@@ -342,7 +342,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   it should "parse and output raptors from raptors.csv" in {
     import DailyRaptorReport._
 
-    CheckIO.checkResultIO(for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r) {
+    EvaluateIO.check(for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r) {
       case rt@HeadedTable(_, _) =>
         rt.rows.size shouldBe 13
         import CsvGenerators._
@@ -374,8 +374,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
             |2018-09-23, Overcast, 470, 2
             |2018-09-24, Overcast/Mostly cloudy, 292, 2
             |""".stripMargin
-        checkResultIO(rt.toCSV) {
-          case `expected` => println(s"result: as expected")
+        check(rt.toCSV) {
+          case `expected` => println(s"xio: as expected")
         }
     }
 
@@ -428,7 +428,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   it should "parse and output raptors from raptors.csv with a more nested type" in {
     import NestedRaptorReport._
 
-    CheckIO.checkResultIO(for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r) {
+    EvaluateIO.check(for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r) {
       case rt@HeadedTable(_, _) =>
         rt.rows.size shouldBe 13
         import CsvGenerators._
@@ -446,7 +446,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new StandardCsvGenerator[LocalDate]
         implicit val DRRCsvRenderer: CsvRenderer[NestedRaptorReport] = new CsvRenderers {}.renderer2(NestedRaptorReport.apply)
         implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = new CsvGenerators {}.generator2(NestedRaptorReport.apply)
-        rt.take(1).toCSV shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n"
+        EvaluateIO(rt.take(1).toCSV) shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n"
     }
   }
 }

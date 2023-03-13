@@ -6,7 +6,7 @@ package com.phasmidsoftware.table
 
 import cats.effect.IO
 import com.phasmidsoftware.parse.{CellParser, InvalidParseException, RowParser, StringTableParser}
-import com.phasmidsoftware.util.CheckIO
+import com.phasmidsoftware.util.EvaluateIO
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.util._
@@ -27,7 +27,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val mty: IO[Table[Movie]] = Table.parse(movies)
-    CheckIO.checkResultIO(mty) {
+    EvaluateIO.check(mty) {
       case mt@HeadedTable(_, _) =>
         println(s"Movie: successfully parsed ${mt.size} rows")
         println(mt)
@@ -45,7 +45,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val x: IO[Table[Movie]] = Table.parse(movies)
-    CheckIO.checkResultIO(x) {
+    EvaluateIO.check(x) {
       case mt@HeadedTable(_, _) =>
         mt.size shouldBe 1
     }
@@ -75,7 +75,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
     val x: IO[Table[Movie]] = Table.parse(movies)
     import cats.effect.unsafe.implicits.global
-    CheckIO.checkFailureIO(x)(classOf[InvalidParseException]).unsafeRunSync()
+    EvaluateIO.checkFailure(x)(classOf[InvalidParseException]).unsafeRunSync()
   }
 
   it should "parse all the following rows" in {

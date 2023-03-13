@@ -2,7 +2,7 @@ package com.phasmidsoftware.table
 
 import cats.effect.IO
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
-import com.phasmidsoftware.util.CheckIO
+import com.phasmidsoftware.util.EvaluateIO
 import com.phasmidsoftware.util.FP.resource
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
@@ -26,7 +26,7 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
     // Create the table
     val wsty: IO[RawTable] = parser.parse(sy)
 
-    CheckIO.checkResultIO(wsty, Timeout(Span(4, Seconds))) {
+    EvaluateIO.check(wsty, Timeout(Span(4, Seconds))) {
       case t@HeadedTable(r, _) =>
         val analysis = Analysis(t)
         println(s"AirBNB: $analysis")

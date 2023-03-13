@@ -9,7 +9,7 @@ import cats.implicits.catsSyntaxParallelAp
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.table.Table.parseResource
-import com.phasmidsoftware.util.{CheckIO, TryUsing}
+import com.phasmidsoftware.util.{EvaluateIO, TryUsing}
 import com.phasmidsoftware.write.{Node, TreeWriter, Writable}
 import java.io.{File, FileWriter, InputStream}
 import java.net.URL
@@ -65,14 +65,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse from Seq[String]" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
 
   it should "parse input stream" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parseInputStream(IO(classOf[TableSpec].getResourceAsStream("intPairs.csv")), "UTF-8")) {
+    EvaluateIO.check(Table.parseInputStream(IO(classOf[TableSpec].getResourceAsStream("intPairs.csv")), "UTF-8")) {
       case HeadedTable(_, _) =>
     }
   }
@@ -80,7 +80,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse and not filter the movies from the IMDB dataset" in {
     import MovieParser._
     implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
-    CheckIO.checkResultIO(parseResource("movie_metadata.csv", classOf[Movie]), Timeout(Span(3, Seconds))) {
+    EvaluateIO.check(parseResource("movie_metadata.csv", classOf[Movie]), Timeout(Span(3, Seconds))) {
       case mt@HeadedTable(_, _) =>
         val kiwiMovies = mt.filterNotByKey(_ == "New Zealand")
         kiwiMovies.size shouldBe 1563
@@ -90,7 +90,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse table using URI and encryption" in {
     import IntPair._
     val url = classOf[TableSpec].getResource("intPairs.csv")
-    CheckIO.checkResultIO(Table.parse(url.toURI, "ISO-8859-1")) {
+    EvaluateIO.check(Table.parse(url.toURI, "ISO-8859-1")) {
       case HeadedTable(_, _) =>
     }
   }
@@ -99,7 +99,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     val z1 = Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv", "UTF-8")
     val z2 = Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv")
-    CheckIO.checkResultIO(z1 parProduct z2) {
+    EvaluateIO.check(z1 parProduct z2) {
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) => a.size shouldBe 2; b.size shouldBe 2
     }
   }
@@ -108,7 +108,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse table from raw file" in {
     val z1: IO[Table[RawRow]] = Table.parseFileRaw(new File("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b")))))
     val z2 = Table.parseFileRaw("src/test/resources/com/phasmidsoftware/table/intPairs.csv", TableParser.includeAll)
-    CheckIO.checkResultIO(z1 parProduct z2) {
+    EvaluateIO.check(z1 parProduct z2) {
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) => a.size shouldBe 0; b.size shouldBe 1
     }
   }
@@ -117,10 +117,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
-    CheckIO.checkResultIO(Table.writeCSVFileRow(table, new File("output.csv"))) {
+    EvaluateIO.check(Table.writeCSVFileRow(table, new File("output.csv"))) {
       case _ => println(s"written to file output.csv")
     }
-    CheckIO.checkResultIO(Table.parseFileRaw("output.csv", TableParser.includeAll)) {
+    EvaluateIO.check(Table.parseFileRaw("output.csv", TableParser.includeAll)) {
       case xt@HeadedTable(_, _) => xt.rows.head.toString() shouldBe """A="1", B="2""""
     }
     val tableWithoutHead = Table(Seq(row1), None)
@@ -129,7 +129,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse from Iterator[String]" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99").iterator)) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99").iterator)) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
@@ -138,7 +138,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
 
     val source = Source.fromChars(Array('1', ' ', '2', '\n', '4', '2', ' ', '9', '9', '\n'))
-    CheckIO.checkResultIO(Table.parseSource(source)) {
+    EvaluateIO.check(Table.parseSource(source)) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
@@ -146,13 +146,13 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse from File" in {
     import IntPair._
 
-    CheckIO.checkResultIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
+    EvaluateIO.check(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
 
   it should "parse raw resource using table parser " in {
-    CheckIO.checkResultIO(Table.parseResourceRaw("intPairs.csv", TableParser.includeAll)) {
+    EvaluateIO.check(Table.parseResourceRaw("intPairs.csv", TableParser.includeAll)) {
       case HeadedTable(_, _) =>
     }
   }
@@ -162,20 +162,20 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val f: String = null
     import cats.effect.unsafe.implicits.global
-    CheckIO.checkFailureIO(Table.parseFile(new File(f)))(classOf[NullPointerException]).unsafeRunSync()
+    EvaluateIO.checkFailure(Table.parseFile(new File(f)))(classOf[NullPointerException]).unsafeRunSync()
   }
 
   it should "parse from Resource" in {
     import IntPair._
 
-    CheckIO.checkResultIO(Table.parseResource("intPairs.csv", classOf[TableSpec])) {
+    EvaluateIO.check(Table.parseResource("intPairs.csv", classOf[TableSpec])) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
 
   it should "zip tables" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99").iterator)) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99").iterator)) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
         xt.zip(xt).rows.toSeq shouldBe Seq((IntPair(1, 2), IntPair(1, 2)), (IntPair(42, 99), IntPair(42, 99)))
     }
@@ -208,7 +208,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
 
     lazy val i: InputStream = classOf[TableSpec].getResourceAsStream("intPairs.csv")
-    CheckIO.checkResultIO(Table.parseInputStream(i)) {
+    EvaluateIO.check(Table.parseInputStream(i)) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
@@ -218,7 +218,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val iIty = Table.parse(IO(Source.fromResource(null)))
     import cats.effect.unsafe.implicits.global
-    CheckIO.checkFailureIO(iIty)(classOf[NullPointerException]).unsafeRunSync()
+    EvaluateIO.checkFailure(iIty)(classOf[NullPointerException]).unsafeRunSync()
   }
 
   it should "return failure(1)" in {
@@ -227,7 +227,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     lazy val si: IO[InputStream] = IO(classOf[TableSpec].getResourceAsStream(null))
     val iIty = for (s <- si) yield Table.parseInputStream(s)
     import cats.effect.unsafe.implicits.global
-    CheckIO.checkFailureIO(iIty)(classOf[NullPointerException]).unsafeRunSync()
+    EvaluateIO.checkFailure(iIty)(classOf[NullPointerException]).unsafeRunSync()
   }
 
   it should "return failure(2)" in {
@@ -245,7 +245,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
 
     lazy val u: URL = classOf[TableSpec].getResource("intPairs.csv")
-    CheckIO.checkResultIO(Table.parseResource(u, "UTF-8")) {
+    EvaluateIO.check(Table.parseResource(u, "UTF-8")) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
@@ -254,7 +254,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "do iterator" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
         val x = xt.iterator
         x.hasNext shouldBe true
@@ -269,7 +269,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val f: IntPair => IntPair = _ map (_ * 2)
 
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.map(f).rows shouldBe Seq(IntPair(2, 4), IntPair(84, 198))
     }
@@ -279,7 +279,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val f: IntPair => Table[IntPair] = p => HeadedTable(Seq(p), Header())
 
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.flatMap(f).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
@@ -287,7 +287,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "to Seq" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
@@ -295,7 +295,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "to Shuffle" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.shuffle.rows.size shouldBe 2
     }
@@ -303,7 +303,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "drop" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.drop(1).rows shouldBe Seq(IntPair(42, 99))
     }
@@ -311,7 +311,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "dropRight" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.dropRight(1).rows shouldBe Seq(IntPair(1, 2))
     }
@@ -319,7 +319,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "empty" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.empty.rows shouldBe Seq.empty
     }
@@ -327,7 +327,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "dropWhile" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.dropWhile(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
@@ -335,7 +335,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "filter" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.filter(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(3, 4))
     }
@@ -343,7 +343,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "filterNot" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.filterNot(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
@@ -351,7 +351,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "slice" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.slice(0, 2).rows shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
     }
@@ -359,7 +359,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "takeRight" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.takeRight(2).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
@@ -367,7 +367,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "takeWhile" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.takeWhile(_.equals(IntPair(3, 4))).rows shouldBe Seq(IntPair(3, 4))
     }
@@ -397,7 +397,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "render the table to CSV" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case HeadedTable(_, _) =>
     }
 
@@ -420,14 +420,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case r: Table[IntPair] => implicitly[Renderer[Table[IntPair], String]].render(r)
       case _ => fail("cannot render table")
     }
-    CheckIO.checkResultIO(wi) {
+    EvaluateIO.check(wi) {
       case "a|b\n1|2\n42|99\n" =>
     }
   }
 
   it should "render the table to CSV using a Writable" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99"))) {
       case HeadedTable(_, _) =>
     }
 
@@ -454,7 +454,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
         z.render(r)
       case _ => fail("cannot render table")
     }
-    CheckIO.checkResultIO(fi) {
+    EvaluateIO.check(fi) {
       case _ =>
     }
   }
@@ -475,10 +475,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
-    CheckIO.checkResultIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
+    EvaluateIO.check(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
-        ws shouldBe "a, b\n1, 2\n42, 99\n"
+        EvaluateIO(ws) shouldBe "a, b\n1, 2\n42, 99\n"
     }
   }
 
@@ -498,10 +498,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
     }
 
-    CheckIO.checkResultIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
+    EvaluateIO.check(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
-        ws shouldBe "a|b\n1|2\n42|99\n"
+        EvaluateIO(ws) shouldBe "a|b\n1|2\n42|99\n"
     }
   }
 
@@ -573,7 +573,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    CheckIO.checkResultIO(Table.parse(rows)) {
+    EvaluateIO.check(Table.parse(rows)) {
       case mt@HeadedTable(_, _) =>
         mt.size shouldBe 1
         mt.head(1).get shouldBe "Doug Walker"
@@ -594,7 +594,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    CheckIO.checkResultIO(Table.parse(rows)) {
+    EvaluateIO.check(Table.parse(rows)) {
       case rawTable@HeadedTable(_, _) =>
         rawTable.size shouldBe 1
         rawTable.head(1).get shouldBe "Doug Walker"
@@ -608,7 +608,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "sort a Table and then select" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99", "1 3"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99", "1 3"))) {
       case mt: Table[IntPair] =>
 
         implicit object IntPairOrdering extends Ordering[IntPair] {
@@ -628,7 +628,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "select from a Table" in {
     import IntPair._
-    CheckIO.checkResultIO(Table.parse(Seq("1 2", "42 99", "1 3"))) {
+    EvaluateIO.check(Table.parse(Seq("1 2", "42 99", "1 3"))) {
       case table: Table[IntPair] =>
         table.select(1).size shouldBe 1
         table.select(1).head shouldBe IntPair(1, 2)
@@ -651,7 +651,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.util.FP.resource
 
     val sy: IO[Source] = IO.fromTry(resource[TableSpec]("multiline.csv") map Source.fromURL)
-    CheckIO.checkResultIO(parser.parse(sy)) {
+    EvaluateIO.check(parser.parse(sy)) {
       case HeadedTable(r, h) =>
         println(s"parseResourceRaw: successfully read ${r.size} rows")
         println(s"parseResourceRaw: successfully read ${h.size} columns")
@@ -674,6 +674,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
-    Table.toCSVRow(table) shouldBe "a,b\n1,2\n"
+    EvaluateIO(Table.toCSVRow(table)) shouldBe "a,b\n1,2\n"
   }
 }
