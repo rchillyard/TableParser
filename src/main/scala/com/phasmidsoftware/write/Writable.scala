@@ -164,4 +164,13 @@ object Writable {
 
     override def close(o: FileWriter): Unit = o.close()
   }
+
+  // TESTME (why isn't this used? it should be)
+  def fileWritableIO(file: File): Writable[IO[FileWriter]] = new Writable[IO[FileWriter]] {
+    def unit: IO[FileWriter] = IO(new FileWriter(file))
+
+    def writeRaw(fi: IO[FileWriter])(x: CharSequence): IO[FileWriter] = for (f <- fi) yield f.append(x).asInstanceOf[FileWriter]
+
+    override def close(fi: IO[FileWriter]): Unit = for (f <- fi) yield f.close()
+  }
 }

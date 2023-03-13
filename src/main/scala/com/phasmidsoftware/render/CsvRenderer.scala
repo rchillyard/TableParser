@@ -1,5 +1,6 @@
 package com.phasmidsoftware.render
 
+import cats.effect.IO
 import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.parse.Strings
 import com.phasmidsoftware.table._
@@ -56,7 +57,7 @@ trait BaseCsvRenderer[-T] extends CsvRenderer[T] {
  */
 abstract class ProductCsvRenderer[T <: Product : ClassTag](implicit c: CsvAttributes) extends BaseCsvProductGenerator[T] with BaseCsvRenderer[T] with CsvProduct[T]
 
-abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]() extends Renderer[Table[T], O] {
+abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable] extends Renderer[Table[T], IO[O]] {
 
   /**
    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
@@ -65,7 +66,7 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]() ex
    * @param attrs a map of attributes for this value of O.
    * @return an instance of type O.
    */
-  def render(t: Table[T], attrs: Map[String, String]): O = t match {
+  def render(t: Table[T], attrs: Map[String, String]): IO[O] = t match {
     case x: Table[_] =>
       val sw = implicitly[Writable[O]]
       val tc = implicitly[CsvRenderer[T]]
@@ -74,11 +75,13 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]() ex
         case _tg: CsvProductGenerator[_] => _tg.toColumnNames(None, None)
         case _tg: CsvGenerator[_] => _tg.toColumnName(None, "")
       }
-      val o = sw.unit
-      sw.writeRawLine(o)(hdr)
-      for (r <- x.rows.toSeq) generateText(sw, tc, o, r)
-      sw.close(o)
-      o
+      IO(sw.unit) map {
+        o =>
+          // CONSIDER can remove o2 here and just use o.
+          val o2 = sw.writeRawLine(o)(hdr)
+          for (r <- x.rows.toSeq) yield generateText(sw, tc, o2, r)
+          o2
+      }
   }
 
   /**

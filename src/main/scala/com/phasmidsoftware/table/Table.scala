@@ -12,7 +12,7 @@ import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.FP._
 import com.phasmidsoftware.util.{IOUsing, Reflection}
 import com.phasmidsoftware.write.{Node, TreeWriter, Writable}
-import java.io.{File, InputStream}
+import java.io.{File, FileWriter, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
@@ -300,8 +300,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return a String.
    */
-  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): String =
-    CsvTableStringRenderer[Row]().render(this).toString
+  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[String] =
+    CsvTableStringRenderer[Row].render(this) map (_.toString)
 
   /**
    * Method to render this Table[T] as a CSV file with (maybe) header.
@@ -328,6 +328,17 @@ trait Table[Row] extends Iterable[Row] {
    */
   def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableFileRenderer[Row](file).render(this)
+
+  /**
+   * Method to render this Table[T] as a CSV file with (maybe) header.
+   *
+   * @param file          instance of File where the output should be stored.
+   * @param renderer      implicit value of CsvRenderer[Row].
+   * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param csvAttributes implicit value of CsvAttributes.
+   */
+  def writeCSVFileIO(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
+    CsvTableFileRenderer[Row](file).render(this) map { f => f.flush(); f }
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
 
@@ -602,7 +613,7 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): String = {
+  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): IO[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
@@ -619,14 +630,15 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def writeCSVFileRow(t: Table[Row], file: File)(implicit csvAttributes: CsvAttributes): Unit = {
+  def writeCSVFileRow(t: Table[Row], file: File)(implicit csvAttributes: CsvAttributes): IO[FileWriter] =
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
-        t.writeCSVFile(file)
+        // CONSIDER this is a bit ugly
+        val q: IO[FileWriter] = t.writeCSVFileIO(file)
+        q map { f => f.close(); f }
       case _ => throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
     }
-  }
 
   /**
    * Method to open source defined by an InputStream.

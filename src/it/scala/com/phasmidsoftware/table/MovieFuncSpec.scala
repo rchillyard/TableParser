@@ -2,7 +2,6 @@ package com.phasmidsoftware.table
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.phasmidsoftware.parse.{AttributeSet, StringList}
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.util.IOUsing
 import org.scalatest.flatspec.AnyFlatSpec
@@ -42,7 +41,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
     implicit val csvRenderer: CsvRenderer[Movie] = new CsvRendererMovie
     implicit val csvGenerator: CsvGenerator[Movie] = Movie.createMovieCvsGenerator
 
-    val wi: IO[String] = for (mt <- mti) yield mt.toCSV
+    val wi: IO[String] = mti flatMap (_.toCSV) // for (mt <- mti) yield mt.toCSV
     wi.unsafeRunSync().startsWith(
       """title,format.color,format.language,format.aspectRatio,format.duration,production.country,production.budget,production.gross,production.titleYear,reviews.imdbScore,reviews.facebookLikes,reviews.contentRating.code,reviews.contentRating.age,reviews.numUsersReview,reviews.numUsersVoted,reviews.numCriticReviews,reviews.totalFacebookLikes,director.name.first,director.name.middle,director.name.last,director.name.suffix,director.facebookLikes,actor1.name.first,actor1.name.middle,actor1.name.last,actor1.name.suffix,actor1.facebookLikes,actor2.name.first,actor2.name.middle,actor2.name.last,actor2.name.suffix,actor2.facebookLikes,actor3,genres.xs,plotKeywords.xs,imdb
         |Avatar,Color,English,1.78,178,USA,237000000,760505847,2009,7.9,33000,PG,13,3054,886204,723,4834,James,,Cameron,,0,CCH,,Pounder,,1000,Joel,David,Moore,,936,Wes,,Studi,,855,Action,Adventure,Fantasy,Sci-Fi,avatar,future,marine,native,paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1""".stripMargin) shouldBe true

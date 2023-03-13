@@ -117,7 +117,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
-    Table.writeCSVFileRow(table, new File("output.csv"))
+    CheckIO.checkResultIO(Table.writeCSVFileRow(table, new File("output.csv"))) {
+      case _ => println(s"written to file output.csv")
+    }
     CheckIO.checkResultIO(Table.parseFileRaw("output.csv", TableParser.includeAll)) {
       case xt@HeadedTable(_, _) => xt.rows.head.toString() shouldBe """A="1", B="2""""
     }

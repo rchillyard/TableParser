@@ -1,10 +1,11 @@
 package com.phasmidsoftware.examples
 
 import com.phasmidsoftware.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
-import com.phasmidsoftware.parse.{CellParser, EncryptedHeadedStringTableParser, RawParsers, TableParser}
+import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render.{CsvGenerator, CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.table.Table.parseResource
 import com.phasmidsoftware.table._
+import com.phasmidsoftware.util.CheckIO
 import com.phasmidsoftware.util.CheckIO.checkResultIO
 import java.io.File
 import org.scalatest.concurrent.{Futures, ScalaFutures}
@@ -79,9 +80,10 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
         }
         import CsvRenderers._
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-        val result = pt.toCSV
-        result.startsWith("Team Number,") shouldBe true
-        result.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\n") shouldBe true
+        CheckIO.checkResultIO(pt.toCSV) {
+          case w if w.startsWith("Team Number,") && w.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\n") =>
+        }
+      case x => throw ParserException(s"Expected HeadedTable but got ${x.getClass}")
     }
   }
 
@@ -96,11 +98,13 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
         }
         import CsvRenderers._
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-        pt.take(1).toCSV shouldBe
-                """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
-                  |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
-                  |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-                  |""".stripMargin
+        CheckIO.checkResultIO(pt.take(1).toCSV) {
+          case w if w ==
+                  """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
+                    |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
+                    |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
+                    |""".stripMargin =>
+        }
     }
   }
 
