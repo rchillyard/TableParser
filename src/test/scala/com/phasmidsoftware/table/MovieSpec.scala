@@ -6,7 +6,7 @@ package com.phasmidsoftware.table
 
 import cats.effect.IO
 import com.phasmidsoftware.parse.{CellParser, InvalidParseException, RowParser, StringTableParser}
-import com.phasmidsoftware.util.EvaluateIO.{checkFailure, matchIO}
+import com.phasmidsoftware.util.EvaluateIO.{check, checkFailure, matchIO}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.annotation.unused
@@ -36,7 +36,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  // TODO rework this test to be more significant
+  // CONSIDER rework this test to be more significant
   it should "parse the first (edited) movie from the IMDB dataset" in {
     import MovieParser._
 
@@ -100,11 +100,9 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    @unused
-    val mty: IO[Table[Movie]] = Table.parse(movies)
-    // TODO reinstate this test code
-    //    mty should matchPattern { case Success(HeadedTable(_, _)) => }
-    //    mty.get.size shouldBe 1
+    matchIO(Table.parse(movies)) {
+      case t@HeadedTable(_, _) => t.size shouldBe 1
+    }
   }
 
   it should "parse and transform the following rows with simple map" in {
@@ -130,13 +128,14 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     @unused
-    val mty: IO[Table[Movie]] = Table.parse(movies)
-    // TODO reinstate this test code
-    //    mty should matchPattern { case Success(HeadedTable(_, _)) => }
-    //    mty.get.size shouldBe 1
-    //    val z: Table[UnMovie] = mty.get.map[UnMovie](m => UnMovie(m.title.toLowerCase))
-    //    z.size shouldBe 1
-    //    z.head.title shouldBe "star wars: episode vii - the force awakens             "
+    val mti: IO[Table[Movie]] = Table.parse(movies)
+    check(mti) {
+      case t@HeadedTable(_, _) =>
+        t.size shouldBe 1
+        val z = t.map(m => UnMovie(m.title.toLowerCase))
+        z.size shouldBe 1
+        z.head.title shouldBe "star wars: episode vii - the force awakens             "
+    }
   }
 
   behavior of "Name"

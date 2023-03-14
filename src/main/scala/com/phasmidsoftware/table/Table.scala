@@ -393,7 +393,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](si: IO[Source]): IO[T] = IOUsing(si)(parseSource(_))
+  def parse[T: TableParser](si: => IO[Source]): IO[T] = IOUsing(si)(parseSource(_))
 
   /**
    * Method to parse a table from a URI with an implicit encoding.
@@ -679,7 +679,7 @@ object Table {
    * @param clazz the class.
    * @return an IO[Source].
    */
-  private def sourceFromClassResource(w: String, clazz: Class[_]): IO[Source] = IO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
+  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): IO[Source] = IO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
     case _: java.lang.NullPointerException => Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
   })
 }

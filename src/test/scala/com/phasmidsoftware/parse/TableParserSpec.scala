@@ -8,6 +8,7 @@ import cats.effect.IO
 import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.EvaluateIO.{checkFailure, matchIO}
+import com.phasmidsoftware.util.IOUsing
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
@@ -403,13 +404,18 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse sample.csv with Submission1" in {
     import Submissions1._
-    implicit val codec: Codec = Codec("UTF-16")
+    implicit val codec: Codec = Codec("UTF-16") // Not sure why it is in UTF-16 but it is.
     val sy: Try[Source] = Try(Source.fromURL(classOf[TableParserSpec].getResource("submissions.csv")))
-    val xy = for (s <- sy) yield Table.parse(s.getLines())
-    val qty: IO[Table[Submission]] = IO.fromTry(xy).flatten
-    // FIXME the following definition of qty fails. What's going on? It seems like it is iterating over the wrong object.
-//      val qty: IO[Table[Submission]] = Table.parseResource("submissions.csv", classOf[TableParserSpec])
-    matchIO(qty) {
+    val sti: IO[Table[Submission]] = IOUsing(sy)(s => Table.parseSource(s))
+    matchIO(sti) {
+      case st@HeadedTable(_, _) => st.size shouldBe 1
+    }
+  }
+
+  it should "parse sample.csv with Submission1 Alt" in {
+    import Submissions1._
+    implicit val codec: Codec = Codec("UTF-16") // Not sure why it is in UTF-16 but it is.
+    matchIO(Table.parseResource("submissions.csv", classOf[TableParserSpec])) {
       case rt@HeadedTable(_, _) => rt.size shouldBe 1
     }
   }
