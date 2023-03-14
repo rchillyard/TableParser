@@ -414,6 +414,8 @@ object CsvGenerators {
 
   implicit object CsvGeneratorInt extends StandardCsvGenerator[Int]
 
+  implicit object CsvGeneratorBigInt extends StandardCsvGenerator[BigInt]
+
   implicit object CsvGeneratorLong extends StandardCsvGenerator[Long]
 
   implicit object CsvGeneratorDouble extends StandardCsvGenerator[Double]

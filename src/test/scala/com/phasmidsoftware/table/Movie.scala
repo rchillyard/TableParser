@@ -5,7 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse._
-import com.phasmidsoftware.render.{CsvGenerator, CsvGenerators, CsvProduct, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.render._
 import scala.util.Try
 
 /**
@@ -233,16 +233,16 @@ class CsvRendererMovie(implicit val csvAttributes: CsvAttributes) extends CsvRen
   import com.phasmidsoftware.render.CsvRenderers._
 
   implicit val rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
-  implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer
-  implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer
-  implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer
+  implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer()
+  implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()
+  implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer()
   implicit val rendererFormat: CsvProduct[Format] = rendererGenerator4(Format)
   implicit val rendererProduction: CsvRenderer[Production] = renderer4(Production)
   implicit val rendererRating: CsvRenderer[Rating] = renderer2(Rating.apply)
   implicit val rendererReviews: CsvRenderer[Reviews] = renderer7(Reviews)
   implicit val rendererName: CsvRenderer[Name] = renderer4(Name.apply)
   implicit val rendererPrincipal: CsvRenderer[Principal] = renderer2(Principal)
-  implicit val rendererOptionPrincipal: CsvRenderer[Option[Principal]] = optionRenderer
+  implicit val rendererOptionPrincipal: CsvRenderer[Option[Principal]] = optionRenderer()
   val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
   implicit val rendererAttributeSet: CsvRenderer[AttributeSet] = renderer1(fAttributeSet)
 

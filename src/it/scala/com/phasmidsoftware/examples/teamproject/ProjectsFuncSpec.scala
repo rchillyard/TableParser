@@ -1,4 +1,4 @@
-package com.phasmidsoftware.examples
+package com.phasmidsoftware.examples.teamproject
 
 import com.phasmidsoftware.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
 import com.phasmidsoftware.parse._
@@ -246,7 +246,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
   private def createCsvRendererForTeamProject(function: CsvRenderers => CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
     val csvRenderers = new CsvRenderers {}
     import CsvRenderers._
-    implicit val optionStringRenderer: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]
+    implicit val optionStringRenderer: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]()
     implicit val teamRenderer: CsvRenderer[Team] = csvRenderers.renderer5(Team)
     implicit val gradeRenderer: CsvRenderer[Grade] = function(csvRenderers)
     csvRenderers.renderer4(TeamProject)

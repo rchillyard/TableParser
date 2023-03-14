@@ -163,7 +163,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   it should "render an Option[Int]" in {
     import CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
-    implicit val optionIntRenderer: CsvRenderer[Option[Int]] = new CsvRenderers {}.optionRenderer
+    implicit val optionIntRenderer: CsvRenderer[Option[Int]] = new CsvRenderers {}.optionRenderer()
     optionIntRenderer.render(Some(42)) shouldBe "42"
     optionIntRenderer.render(None) shouldBe ""
   }
@@ -253,6 +253,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     val csvGenerators = new CsvGenerators {}
     import CsvGenerators._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+    // NOTE that these are used (ignore what the Analyzer might say)
     implicit val intPairCsvRenderer: CsvRenderer[IntPair] = csvRenderers.renderer2(IntPair.apply)
     implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = csvGenerators.generator2(IntPair.apply)
     import IntPair._

@@ -2,7 +2,7 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.examples
+package com.phasmidsoftware.examples.teamproject
 
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.table.{HeadedTable, Header, Table}

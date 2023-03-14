@@ -52,10 +52,10 @@ trait CsvRenderers {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[ Option[T] ].
    */
-  def optionRenderer[T: CsvRenderer](implicit ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
+  def optionRenderer[T: CsvRenderer](defaultString: String = "")(implicit ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
     val csvAttributes: CsvAttributes = ca
 
-    def render(to: Option[T], attrs: Map[String, String]): String = (to map (t => implicitly[CsvRenderer[T]].render(t))).getOrElse("")
+    def render(to: Option[T], attrs: Map[String, String]): String = (to map (t => implicitly[CsvRenderer[T]].render(t))).getOrElse(defaultString)
   }
 
   /**
@@ -106,10 +106,10 @@ trait CsvRenderers {
    * @param csvAttributes the (implicit) CsvAttributes.
    * @tparam P1 the type of the (single) field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a HierarchicalRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator1[P1: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: P1 => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T] {
+  (construct: P1 => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
 
     def elements(t: T): Strings = Seq(
       implicitly[CsvRenderer[P1]].render(t.productElement(0).asInstanceOf[P1])
@@ -152,10 +152,10 @@ trait CsvRenderers {
    * @tparam P1 the type of the first field of the Product type T.
    * @tparam P2 the type of the second field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator2[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T] {
+  (construct: (P1, P2) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
 
     def elements(t: T): Strings = renderer2(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
@@ -198,10 +198,10 @@ trait CsvRenderers {
    * @tparam P2 the type of the second field of the Product type T.
    * @tparam P3 the type of the third field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator3[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2, P3) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T] {
+  (construct: (P1, P2, P3) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
     def elements(t: T): Strings = renderer3(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
     def toColumnNames(po: Option[String], no: Option[String]): String =
@@ -243,7 +243,7 @@ trait CsvRenderers {
    * @tparam P3 the type of the third field of the Product type T.
    * @tparam P4 the type of the fourth field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator4[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
   (construct: (P1, P2, P3, P4) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
@@ -293,10 +293,10 @@ trait CsvRenderers {
    * @tparam P4 the type of the fourth field of the Product type T.
    * @tparam P5 the type of the fifth field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator5[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2, P3, P4, P5) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T] {
+  (construct: (P1, P2, P3, P4, P5) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
     def elements(t: T): Strings = renderer5(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
     def toColumnNames(po: Option[String], no: Option[String]): String =
@@ -345,10 +345,10 @@ trait CsvRenderers {
    * @tparam P5 the type of the fifth field of the Product type T.
    * @tparam P6 the type of the sixth field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator6[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2, P3, P4, P5, P6) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T] {
+  (construct: (P1, P2, P3, P4, P5, P6) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
     def elements(t: T): Strings = renderer6(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
     def toColumnNames(po: Option[String], no: Option[String]): String =
@@ -399,10 +399,10 @@ trait CsvRenderers {
    * @tparam P6 the type of the sixth field of the Product type T.
    * @tparam P7 the type of the seventh field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator7[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2, P3, P4, P5, P6, P7) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T] {
+  (construct: (P1, P2, P3, P4, P5, P6, P7) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
     def elements(t: T): Strings = renderer7(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
     def toColumnNames(po: Option[String], no: Option[String]): String =
@@ -455,10 +455,10 @@ trait CsvRenderers {
    * @tparam P7 the type of the seventh field of the Product type T.
    * @tparam P8 the type of the eighth field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator8[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T] {
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
     def elements(t: T): Strings = renderer8(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
     def toColumnNames(po: Option[String], no: Option[String]): String =
@@ -513,10 +513,10 @@ trait CsvRenderers {
    * @tparam P8 the type of the eighth field of the Product type T.
    * @tparam P9 the type of the ninth field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator9[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T] {
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
     def elements(t: T): Strings = renderer9(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
     def toColumnNames(po: Option[String], no: Option[String]): String =
@@ -573,10 +573,10 @@ trait CsvRenderers {
    * @tparam P9  the type of the ninth field of the Product type T.
    * @tparam P10 the type of the tenth field of the Product type T.
    * @tparam T   the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator10[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, P10: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T]() {
     def elements(t: T): Strings = renderer10(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
     def toColumnNames(po: Option[String], no: Option[String]): String =
@@ -635,10 +635,10 @@ trait CsvRenderers {
    * @tparam P10 the type of the tenth field of the Product type T.
    * @tparam P11 the type of the eleventh field of the Product type T.
    * @tparam T   the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator11[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, P10: CsvRenderer : CsvGenerator, P11: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T)(implicit ca: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T]() {
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T)(implicit ca: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T]() {
     def elements(t: T): Strings = renderer11(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
     def toColumnNames(po: Option[String], no: Option[String]): String =
@@ -699,10 +699,10 @@ trait CsvRenderers {
    * @tparam P11 the type of the eleventh field of the Product type T.
    * @tparam P12 the type of the twelfth field of the Product type T.
    * @tparam T   the underlying type of the first parameter of the input to the render method.
-   * @return a CsvRenderer[T].
+   * @return a CsvProduct[T].
    */
   def rendererGenerator12[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, P10: CsvRenderer : CsvGenerator, P11: CsvRenderer : CsvGenerator, P12: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
-  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T)(implicit csvAttributes: CsvAttributes): CsvRenderer[T] = new ProductCsvRenderer[T] {
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
     def elements(t: T): Strings = renderer12(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
 
     def toColumnNames(po: Option[String], no: Option[String]): String =

@@ -1,7 +1,8 @@
 package com.phasmidsoftware.examples.crime
 
 import com.phasmidsoftware.parse._
-import com.phasmidsoftware.table.{HeadedTable, Header, Table}
+import com.phasmidsoftware.render._
+import com.phasmidsoftware.table.{CsvAttributes, HeadedTable, Header, Table}
 import scala.util.Try
 
 /**
@@ -34,9 +35,14 @@ case class Crime(crimeID: Option[BigInt],
                  lsoaName: String,
                  crimeType: String,
                  lastOutcomeCategory: String,
-                 context: String)
+                 context: String) {
+  def brief: CrimeBrief = CrimeBrief(crimeID, longitude, latitude)
+}
 
-object Crime {}
+case class CrimeBrief(crimeID: Option[BigInt],
+                      longitude: Double,
+                      latitude: Double) {
+}
 
 object CrimeParser extends CellParsers {
 
@@ -44,17 +50,9 @@ object CrimeParser extends CellParsers {
    * Precede each upper case letter (or digit) with _.
    */
   def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z\\d])", " $1")
-//
-//    /**
-//     * Parser of BigInt from Hexadecimal String.
-//     */
-//    implicit object ParseableBigInt extends Parseable[BigInt] {
-//      def parse(w: String, optModifier: Option[String]): Try[BigInt] = Try(BigInt(w, 16))
-//    }
 
-  implicit object BigIntCellParser$ extends SingleCellParser[BigInt] {
-    def convertString(w: String): Try[BigInt] =
-      implicitly[Parseable[BigInt]].parse(w, Some("16"))
+  implicit object BigIntCellParser extends SingleCellParser[BigInt] {
+    def convertString(w: String): Try[BigInt] = implicitly[Parseable[BigInt]].parse(w, Some("16"))
   }
 
   implicit val movieColumnHelper: ColumnHelper[Crime] = columnHelper(camelToSnakeCaseColumnNameMapper _,
@@ -84,5 +82,39 @@ object CrimeParser extends CellParsers {
   }
 
   implicit object CrimeTableParser extends CrimeTableParser
+}
+
+object CrimeRenderer extends CsvRenderers {
+
+  import CsvRenderers._
+  import com.phasmidsoftware.render.CsvGenerators._
+
+  private val generators = new CsvGenerators {}
+
+  implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt] {
+    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+    def render(t: BigInt, attrs: Map[String, String]): String = t.toString(16)
+  }
+  implicit val crimeIdRenderer: CsvRenderer[Option[BigInt]] = optionRenderer[BigInt]()
+  implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator[BigInt]
+  implicit val crimeRenderer: CsvProduct[Crime] = rendererGenerator12(Crime.apply)
+}
+
+object CrimeBriefRenderer extends CsvRenderers {
+
+  import CsvRenderers._
+  import com.phasmidsoftware.render.CsvGenerators._
+
+  private val generators = new CsvGenerators {}
+
+  implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt] {
+    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+    def render(t: BigInt, attrs: Map[String, String]): String = t.toString(16)
+  }
+  implicit val crimeIdRenderer: CsvRenderer[Option[BigInt]] = optionRenderer[BigInt]("unidentified")
+  implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator
+  implicit val crimeRenderer: CsvProduct[CrimeBrief] = rendererGenerator3(CrimeBrief.apply)
 }
 
