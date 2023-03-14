@@ -4,7 +4,7 @@ import cats.effect.IO
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.EvaluateIO
-import com.phasmidsoftware.util.EvaluateIO.check
+import com.phasmidsoftware.util.EvaluateIO.matchIO
 import java.net.URL
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
@@ -15,6 +15,7 @@ import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
 
+//noinspection SpellCheckingInspection
 class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   case class IntPair(a: Int, b: Int) {
@@ -255,10 +256,11 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val intPairCsvRenderer: CsvRenderer[IntPair] = csvRenderers.renderer2(IntPair.apply)
     implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = csvGenerators.generator2(IntPair.apply)
     import IntPair._
-    EvaluateIO.check(Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv")) {
-      case iIt@HeadedTable(_, _) =>
-        EvaluateIO(CsvTableStringRenderer[IntPair]().render(iIt)).toString shouldBe "a, b\n1, 2\n42, 99\n"
+    val tableIO = Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv")
+    val resultIO = tableIO flatMap {
+      case iIt@HeadedTable(_, _) => CsvTableStringRenderer[IntPair]().render(iIt)
     }
+    EvaluateIO(resultIO).toString shouldBe "a, b\n1, 2\n42, 99\n"
   }
 
   case class Hawks(bw: Int, rt: Int) {
@@ -342,7 +344,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   it should "parse and output raptors from raptors.csv" in {
     import DailyRaptorReport._
 
-    EvaluateIO.check(for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r) {
+    val xio = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
+    val resultIO = xio flatMap {
       case rt@HeadedTable(_, _) =>
         rt.rows.size shouldBe 13
         import CsvGenerators._
@@ -358,25 +361,26 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new StandardCsvGenerator[LocalDate]
         implicit val DRRCsvRenderer: CsvRenderer[DailyRaptorReport] = new CsvRenderers {}.renderer3(DailyRaptorReport.apply)
         implicit val DRRCsvGenerator: CsvProductGenerator[DailyRaptorReport] = new CsvGenerators {}.generator3(DailyRaptorReport.apply)
-        val expected =
-          """date, weather, hawks.bw, hawks.rt
-            |2018-09-12, Dense Fog/Light Rain, 0, 0
-            |2018-09-13, Fog/Overcast, 79, 0
-            |2018-09-14, Drizzle/Fog/Overcast, 1, 0
-            |2018-09-15, Overcast/ Mostly Cloudy, 1054, 0
-            |2018-09-16, Partly Cloudy, 3308, 5
-            |2018-09-17, Dense Fog/Light Rain, 0, 0
-            |2018-09-18, Clear/Partly cloudy, 260, 0
-            |2018-09-19, Overcast/Mostly cloudy/Partly cloudy/Clear, 821, 4
-            |2018-09-20, Overcast/Fog, 36, 1
-            |2018-09-21, Dense Fog/Overcast, 29, 0
-            |2018-09-22, Partly cloudy/Mostly cloudy/Overcast, 455, 3
-            |2018-09-23, Overcast, 470, 2
-            |2018-09-24, Overcast/Mostly cloudy, 292, 2
-            |""".stripMargin
-        check(rt.toCSV) {
-          case `expected` => println(s"xio: as expected")
-        }
+        rt.toCSV
+    }
+    val expected =
+      """date, weather, hawks.bw, hawks.rt
+        |2018-09-12, Dense Fog/Light Rain, 0, 0
+        |2018-09-13, Fog/Overcast, 79, 0
+        |2018-09-14, Drizzle/Fog/Overcast, 1, 0
+        |2018-09-15, Overcast/ Mostly Cloudy, 1054, 0
+        |2018-09-16, Partly Cloudy, 3308, 5
+        |2018-09-17, Dense Fog/Light Rain, 0, 0
+        |2018-09-18, Clear/Partly cloudy, 260, 0
+        |2018-09-19, Overcast/Mostly cloudy/Partly cloudy/Clear, 821, 4
+        |2018-09-20, Overcast/Fog, 36, 1
+        |2018-09-21, Dense Fog/Overcast, 29, 0
+        |2018-09-22, Partly cloudy/Mostly cloudy/Overcast, 455, 3
+        |2018-09-23, Overcast, 470, 2
+        |2018-09-24, Overcast/Mostly cloudy, 292, 2
+        |""".stripMargin
+    matchIO(resultIO) {
+      case `expected` => succeed
     }
 
   }
@@ -428,7 +432,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   it should "parse and output raptors from raptors.csv with a more nested type" in {
     import NestedRaptorReport._
 
-    EvaluateIO.check(for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r) {
+    val xio = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
+    val resultIO = xio flatMap {
       case rt@HeadedTable(_, _) =>
         rt.rows.size shouldBe 13
         import CsvGenerators._
@@ -446,7 +451,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new StandardCsvGenerator[LocalDate]
         implicit val DRRCsvRenderer: CsvRenderer[NestedRaptorReport] = new CsvRenderers {}.renderer2(NestedRaptorReport.apply)
         implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = new CsvGenerators {}.generator2(NestedRaptorReport.apply)
-        EvaluateIO(rt.take(1).toCSV) shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n"
+        rt.take(1).toCSV
     }
+    EvaluateIO(resultIO) shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n"
   }
 }

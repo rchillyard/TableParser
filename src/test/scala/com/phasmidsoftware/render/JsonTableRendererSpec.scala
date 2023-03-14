@@ -3,7 +3,7 @@ package com.phasmidsoftware.render
 import cats.effect.IO
 import com.phasmidsoftware.parse.{CellParser, TableParserHelper}
 import com.phasmidsoftware.table.{HeadedTable, Header, Table, TableJsonFormat}
-import com.phasmidsoftware.util.EvaluateIO
+import com.phasmidsoftware.util.EvaluateIO.matchIO
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import spray.json._
@@ -17,7 +17,7 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
   it should "render Partnership table" in {
     val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     val wy: IO[String] = for (pt <- Table.parse[Table[Player]](strings); q = Player.convertTable(pt); w = q.asInstanceOf[TableRenderable[Partnership]].render) yield w
-    EvaluateIO.check(wy) {
+    matchIO(wy) {
       case p =>
         p shouldBe "{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}"
         implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}

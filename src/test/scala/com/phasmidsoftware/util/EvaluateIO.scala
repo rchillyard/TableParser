@@ -41,7 +41,7 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
    * @tparam X the underlying type of xio.
    * @return an Assertion.
    */
-  def matcher[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(partialFunction: PartialFunction[X, Assertion]): Assertion =
+  def matchIO[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(partialFunction: PartialFunction[X, Assertion]): Assertion =
     whenReady(xio.unsafeToFuture(), timeout)(partialFunction)
 
   /**
