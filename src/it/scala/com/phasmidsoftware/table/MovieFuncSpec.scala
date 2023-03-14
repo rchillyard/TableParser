@@ -20,8 +20,8 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
   it should "be ingested properly" in {
     import MovieParser._
 
-    val mty: IO[Table[Movie]] = Table.parseResource("movie_metadata.csv")
-    val mt: Table[Movie] = mty.unsafeRunSync()
+    val mti: IO[Table[Movie]] = Table.parseResource("movie_metadata.csv")
+    val mt: Table[Movie] = mti.unsafeRunSync()
     mt should matchPattern { case HeadedTable(_, _) => }
     println(s"Movie: successfully read ${mt.size} rows")
     mt.size shouldBe 1567
