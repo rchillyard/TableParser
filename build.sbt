@@ -14,11 +14,11 @@ Test / unmanagedSourceDirectories += baseDirectory.value / "src/it/scala"
 resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
 
 lazy val scalaModules = "org.scala-lang.modules"
-lazy val scalaTestVersion = "3.2.9"
+lazy val scalaTestVersion = "3.2.15"
 
 // NOTE: this library is not currently compatible with version 2.x.x of the parser-combinators library
-lazy val scalaParserCombinatorsVersion = "1.1.2"
-lazy val nScalaTimeVersion = "2.30.0"
+lazy val scalaParserCombinatorsVersion = "2.2.0"
+lazy val nScalaTimeVersion = "2.32.0"
 lazy val tsecVersion = "0.4.0"
 
 libraryDependencies ++= Seq(
@@ -27,8 +27,8 @@ libraryDependencies ++= Seq(
   "io.spray" %%  "spray-json" % "1.3.6",
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
-  "ch.qos.logback" % "logback-classic" % "1.2.10" % "runtime",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
+  "ch.qos.logback" % "logback-classic" % "1.4.5" % "runtime",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 

@@ -24,6 +24,12 @@ class TeeIterator[X](n: Int)(xs: Iterator[X]) extends Iterator[X] {
   def next(): X = xs.next()
 }
 
+/**
+ * TESTME
+ *
+ * @param xs
+ * @tparam X
+ */
 class DebugIterator[X](xs: Iterator[X]) extends Iterator[X] {
   def hasNext: Boolean = xs.hasNext
 

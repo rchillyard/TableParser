@@ -288,6 +288,8 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * Filter method which operates on the (primary) key of each row.
    *
+   * TESTME (probably tested only in it)
+   *
    * @param p a predicate which takes a String.
    * @tparam T a super-class of Row, which provides evidence of HasKey[T].
    * @return a filtered Table[Row].
@@ -333,6 +335,8 @@ trait Table[Row] extends Iterable[Row] {
 
   /**
    * Method to render this Table[T] as a CSV file with (maybe) header.
+   *
+   * TESTME (probably tested only in it)
    *
    * @param file          instance of File where the output should be stored.
    * @param renderer      implicit value of CsvRenderer[Row].
@@ -459,6 +463,8 @@ object Table {
    *
    * NOTE: you should use parseFile(String) if you have a pathname in String form.
    *
+   * TESTME
+   *
    * @param f   the File (call by name in case there is an exception thrown while constructing the file).
    * @param enc the explicit encoding.
    * @tparam T the type of the resulting table.
@@ -473,6 +479,8 @@ object Table {
    * Method to parse a table from an File.
    *
    * NOTE: you should use parseFile(String) if you have a pathname in String form.
+   *
+   * TESTME
    *
    * @param f     the File (call by name in case there is an exception thrown while constructing the file).
    * @param codec (implicit) the encoding.

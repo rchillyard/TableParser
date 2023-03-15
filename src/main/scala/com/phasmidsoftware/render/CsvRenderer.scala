@@ -121,6 +121,8 @@ case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(impli
  *
  * TODO remove duplicate code
  *
+ * TESTME
+ *
  * @param file          the file to which the table will be written.
  * @param csvAttributes implicit instance of CsvAttributes.
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
