@@ -11,12 +11,12 @@ import scala.util.Try
  *
  * The file under resources is an edited version of the Metropolitan Crime Statistics 2023-01 (only the first 5,000 rows)
  *
- * @param crimeID             see Kaggle.
+ * @param crimeID             (optional BigInt in hexadecimal notation) see Kaggle.
  * @param month               see Kaggle.
  * @param reportedBy          see Kaggle.
  * @param fallsWithin         see Kaggle.
- * @param longitude           the longitude of the incident.
- * @param latitude            the latitude of the incident.
+ * @param longitude           (optional Double) the longitude of the incident.
+ * @param latitude            (optional Double) the latitude of the incident.
  * @param location            see Kaggle.
  * @param lsoaCode            see Kaggle.
  * @param lsoaName            see Kaggle.
@@ -28,20 +28,20 @@ case class Crime(crimeID: Option[BigInt],
                  month: String,
                  reportedBy: String,
                  fallsWithin: String,
-                 longitude: Double,
-                 latitude: Double,
+                 longitude: Option[Double],
+                 latitude: Option[Double],
                  location: String,
                  lsoaCode: String,
                  lsoaName: String,
                  crimeType: String,
                  lastOutcomeCategory: String,
                  context: String) {
-  def brief: CrimeBrief = CrimeBrief(crimeID, longitude, latitude)
+  def brief: Option[CrimeLocation] = for (long <- longitude; lat <- latitude) yield CrimeLocation(crimeID, long, lat)
 }
 
-case class CrimeBrief(crimeID: Option[BigInt],
-                      longitude: Double,
-                      latitude: Double) {
+case class CrimeLocation(crimeID: Option[BigInt],
+                         longitude: Double,
+                         latitude: Double) {
 }
 
 object CrimeParser extends CellParsers {
@@ -98,10 +98,12 @@ object CrimeRenderer extends CsvRenderers {
   }
   implicit val crimeIdRenderer: CsvRenderer[Option[BigInt]] = optionRenderer[BigInt]()
   implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator[BigInt]
+  implicit val geoRenderer: CsvRenderer[Option[Double]] = optionRenderer[Double]()
+  implicit val geoGenerator: CsvGenerator[Option[Double]] = generators.optionGenerator[Double]
   implicit val crimeRenderer: CsvProduct[Crime] = rendererGenerator12(Crime.apply)
 }
 
-object CrimeBriefRenderer extends CsvRenderers {
+object CrimeLocationRenderer extends CsvRenderers {
 
   import CsvRenderers._
   import com.phasmidsoftware.render.CsvGenerators._
@@ -115,6 +117,6 @@ object CrimeBriefRenderer extends CsvRenderers {
   }
   implicit val crimeIdRenderer: CsvRenderer[Option[BigInt]] = optionRenderer[BigInt]("unidentified")
   implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator
-  implicit val crimeRenderer: CsvProduct[CrimeBrief] = rendererGenerator3(CrimeBrief.apply)
+  implicit val crimeRenderer: CsvProduct[CrimeLocation] = rendererGenerator3(CrimeLocation.apply)
 }
 

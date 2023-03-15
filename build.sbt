@@ -9,7 +9,7 @@ scalaVersion := "2.13.7"
 scalacOptions += "-deprecation"
 
 Test / unmanagedSourceDirectories += baseDirectory.value / "src/it/scala"
-Test / unmanagedResourceDirectories += baseDirectory.value / "src/it/resources"
+//Test / unmanagedResourceDirectories += baseDirectory.value / "src/it/resources"
 
 resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
 

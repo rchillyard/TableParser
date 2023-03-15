@@ -52,12 +52,25 @@ trait Table[Row] extends Iterable[Row] {
    * Transform (flatMap) this Table[Row] into a Table[S].
    *
    * CONSIDER rewriting this method or redefining it as it can be a major source of inefficiency.
+   * In particular, we are doing a ++ operation, which is inherently bad.
    *
    * @param f a function which transforms a Row into an IterableOnce[S].
    * @tparam S the type of the rows of the result.
    * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
    */
   def flatMap[S](f: Row => Iterable[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
+
+  /**
+   * Transform (flatMap) this Table[Row] into a Table[S].
+   *
+   * CONSIDER rewriting this method or redefining it as it can be a major source of inefficiency.
+   * In particular, we are doing a ++ operation, which is inherently bad.
+   *
+   * @param f a function which transforms a Row into an IterableOnce[S].
+   * @tparam S the type of the rows of the result.
+   * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
+   */
+  def mapOptional[S](f: Row => Option[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
 
   /**
    * Method to zip two Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
@@ -301,7 +314,7 @@ trait Table[Row] extends Iterable[Row] {
    * @return a String.
    */
   def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[String] =
-    CsvTableStringRenderer[Row].render(this) map (_.toString)
+    CsvTableStringRenderer[Row]().render(this) map (_.toString)
 
   /**
    * Method to render this Table[T] as a CSV file with (maybe) header.
