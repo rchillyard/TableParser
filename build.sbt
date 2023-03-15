@@ -4,7 +4,7 @@ name := "TableParser"
 
 version := "1.1.3-SNAPSHOT"
 
-scalaVersion := "2.13.7"
+scalaVersion := "2.13.10"
 
 scalacOptions += "-deprecation"
 
@@ -16,8 +16,8 @@ resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releas
 lazy val scalaModules = "org.scala-lang.modules"
 lazy val scalaTestVersion = "3.2.15"
 
-// NOTE: this library is not currently compatible with version 2.x.x of the parser-combinators library
-lazy val scalaParserCombinatorsVersion = "2.2.0"
+// NOTE: Issue #44: this library is not currently compatible with version 2.x.x of the parser-combinators library
+lazy val scalaParserCombinatorsVersion = "1.1.2"
 lazy val nScalaTimeVersion = "2.32.0"
 lazy val tsecVersion = "0.4.0"
 
