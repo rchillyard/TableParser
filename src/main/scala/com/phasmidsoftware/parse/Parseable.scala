@@ -203,7 +203,6 @@ object Parseable {
  * @tparam T the resulting type for which there must be evidence of a Parseable[T].
  */
 abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
-  // TESTME
   def parse(s: String, optModifier: Option[String]): Try[Option[T]] = implicitly[Parseable[T]].parse(s, optModifier).map(Option(_)).recoverWith {
     case _: BlankException => Success(None)
   }

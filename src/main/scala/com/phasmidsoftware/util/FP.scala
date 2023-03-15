@@ -8,8 +8,8 @@ import cats.effect.{IO, Resource}
 import java.net.URL
 import scala.reflect.ClassTag
 import scala.util.Using.Releasable
-import scala.util.control.NonFatal
 import scala.util._
+import scala.util.control.NonFatal
 
 /**
  * Various utilities for functional programming.
@@ -96,7 +96,7 @@ object FP {
    */
   def sequenceForgivingTransform[X](xys: Iterable[Try[X]])(fSuccess: X => Try[Option[X]], pfFailure: PartialFunction[Throwable, Try[Option[X]]]): Try[Seq[X]] = {
     val xosy: Try[Seq[Option[X]]] = sequence(for (xy <- xys) yield xy.transform[Option[X]](fSuccess, pfFailure))
-    for (xos <- xosy) yield xos.filter(_.isDefined).map(_.get)
+    for (xos <- xosy) yield for (xo <- xos; x <- xo) yield x
   }
 
   /**

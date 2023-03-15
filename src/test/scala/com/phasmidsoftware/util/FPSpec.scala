@@ -46,19 +46,30 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
     sb.toString shouldBe "forgiving: com.phasmidsoftware.util.FPException: "
   }
 
-  it should "sequenceForgivingTransform" in {
-    val try2 = Success(1)
-    val try3 = Success(2)
-    val try1 = Failure(FPException(""))
+  it should "sequenceForgivingTransform 1" in {
     val sb = new mutable.StringBuilder()
     val handleException: PartialFunction[Throwable, Try[Option[Int]]] = {
       case NonFatal(x) => sb.append(s"forgiving: $x"); Success(None)
       case x => Failure(x)
     }
-    val result: Try[Iterable[Int]] = sequenceForgivingTransform(Seq(try1, try2, try3))(x => Success(Some(x + 1)), handleException)
+    val xs = Seq(Success(0), Success(1), Success(2))
+    val result: Try[Iterable[Int]] = sequenceForgivingTransform(xs)(x => Success(Some(x + 1)), handleException)
+    result should matchPattern { case Success(List(1, 2, 3)) => }
+    sb.toString shouldBe ""
+  }
+
+  it should "sequenceForgivingTransform 2" in {
+    val sb = new mutable.StringBuilder()
+    val handleException: PartialFunction[Throwable, Try[Option[Int]]] = {
+      case NonFatal(x) => sb.append(s"forgiving: $x"); Success(None)
+      case x => Failure(x)
+    }
+    val xs = Seq(Failure(FPException("")), Success(1), Success(2))
+    val result: Try[Iterable[Int]] = sequenceForgivingTransform(xs)(x => Success(Some(x + 1)), handleException)
     result should matchPattern { case Success(List(2, 3)) => }
     sb.toString shouldBe "forgiving: com.phasmidsoftware.util.FPException: "
   }
+
   it should "sequenceForgiving 0" in {
     val try2 = Success(1)
     val try3 = Success(2)

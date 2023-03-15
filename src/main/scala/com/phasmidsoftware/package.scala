@@ -4,6 +4,5 @@
 
 package com
 
-package object phasmidsoftware {
-
-}
+// NOTE Currently, there are no package-wide definitions.
+package object phasmidsoftware
