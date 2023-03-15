@@ -1,6 +1,5 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/app/scalaprof/TableParser?utm_source=github.com&utm_medium=referral&utm_content=rchillyard/TableParser&utm_campaign=Badge_Grade_Settings)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.phasmidsoftware/tableparser_2.13/badge.svg?color=blue)](https://maven-badges.herokuapp.com/maven-central/com.phasmidsoftware_2.13/tableparser/)
-[![CircleCI](https://circleci.com/gh/rchillyard/TableParser.svg?style=svg)](https://circleci.com/gh/rchillyard/TableParser)
 ![GitHub Top Languages](https://img.shields.io/github/languages/top/rchillyard/TableParser)
 ![GitHub](https://img.shields.io/github/license/rchillyard/TableParser)
 ![GitHub last commit](https://img.shields.io/github/last-commit/rchillyard/TableParser)
@@ -611,6 +610,8 @@ Release Notes
 
 V1.1.2 -> V1.1.3
 * Use of Cats IO
+  [![CircleCI](https://circleci.com/gh/rchillyard/TableParser.svg?style=svg)](https://circleci.com/gh/rchillyard/TableParser)
+[CircleCI failure due to missing library]
 
 V1.1.1 -> V1.1.2
 * Make RawRow a type (not just a type alias)
