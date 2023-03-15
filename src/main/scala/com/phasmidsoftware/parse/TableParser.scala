@@ -140,11 +140,14 @@ object TableParser {
   /**
    * Method to return a random sampling function.
    *
+   * CONSIDER using FP.sampler
+   *
    * @param n this is the sample factor: approximately one in every n successful results will form part of the result.
-   * @return a Try[Any] => Boolean function which is always yields false if its input is a failure, otherwise,
+   * @tparam X the underlying type of the sampler.
+   * @return a Try[X] => Boolean function which is always yields false if its input is a failure, otherwise,
    *         it chooses every nth value (approximately).
    */
-  def sampler(n: Int): Try[Any] => Boolean = {
+  def sampler[X](n: Int): Try[X] => Boolean = {
     case Success(_) => r.nextInt(n) == 0
     case _ => false
   }

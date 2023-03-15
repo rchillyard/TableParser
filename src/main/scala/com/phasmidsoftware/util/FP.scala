@@ -9,12 +9,23 @@ import java.net.URL
 import scala.reflect.ClassTag
 import scala.util.Using.Releasable
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try, Using}
+import scala.util._
 
 /**
  * Various utilities for functional programming.
  */
 object FP {
+
+  /**
+   * Method to return a random sampling function.
+   *
+   * @param n this is the sample factor: approximately one in every n successful results will form part of the result.
+   * @param r (implicit) Random source of entropy.
+   * @tparam X the underlying type of the sampler.
+   * @return a X => Boolean function which is always yields false if its input is a failure, otherwise,
+   *         it chooses every nth value (approximately).
+   */
+  def sampler[X](n: Int)(implicit r: Random): X => Boolean = _ => r.nextInt(n) == 0
 
   /**
    * Sequence method to combine elements of Try.
