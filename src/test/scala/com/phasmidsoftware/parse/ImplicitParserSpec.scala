@@ -3,7 +3,7 @@ package com.phasmidsoftware.parse
 import cats.effect.IO
 import com.phasmidsoftware.table.MovieParser.MovieTableParser
 import com.phasmidsoftware.table.{HeadedTable, Movie, Table}
-import com.phasmidsoftware.util.EvaluateIO.{check, matchIO}
+import com.phasmidsoftware.util.EvaluateIO.matchIO
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec
 import org.scalatest.matchers.should

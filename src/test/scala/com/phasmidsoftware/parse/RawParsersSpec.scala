@@ -5,7 +5,7 @@
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{HeadedTable, RawTable, Table}
-import com.phasmidsoftware.util.EvaluateIO.{check, matchIO}
+import com.phasmidsoftware.util.EvaluateIO.matchIO
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
