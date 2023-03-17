@@ -28,8 +28,9 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
     // Set up the source
     val sy: IO[Source] = IO.fromTry(for (u <- resource[CrimeFuncSpec](crimeFile)) yield Source.fromURL(u))
 
+    val fraction = 1
     // Set up the parser (we set the predicate only for demonstration purposes)
-    val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(2))
+    val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(fraction))
 
     // Create the table
     val wsty: IO[RawTable] = parser.parse(sy)
@@ -39,7 +40,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
       case t@HeadedTable(r, _) =>
         val analysis = Analysis(t)
         println(s"Crime: $analysis")
-        analysis.rows shouldBe 43650 +- 2000
+        analysis.rows shouldBe 87211/fraction +- 2000
         r take 10 foreach println
         succeed
     }
