@@ -40,11 +40,13 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
      * The requirements of the application are that the rows of the Player table are grouped by twos
      * and each resulting entity (an array of length 2) is taken to form a Partnership.
      *
+     * CONSIDER merging with duplicate code in: TableParserSpec.scala
+     *
      * @param pt a Table[Player]
      * @return a Table[Partnership]
      */
     def convertTable(pt: Table[Player]): Table[Partnership] =
-      pt.processRows(xs => Rows((xs.toSeq grouped 2).map(r => Converters.convert(r)).toList)).replaceHeader(Some(Header.create("playerA", "playerB")))
+      pt.processRows(xs => Content((xs.toSeq grouped 2).map(r => Converters.convert(r)).toList)).replaceHeader(Some(Header.create("playerA", "playerB")))
   }
 
   case class Partnership(playerA: String, playerB: String)

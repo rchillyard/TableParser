@@ -145,11 +145,11 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     matchIO(for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r) {
       case rt@HeadedTable(_, _) =>
-        rt.rows.size shouldBe 13
+        rt.content.size shouldBe 13
         // TODO fix deprecation. Also in two other places in this module.
         //noinspection ScalaDeprecation
         val date = new LocalDate(2018, 9, 12)
-        rt.rows.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
+        rt.content.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
     }
   }
 
@@ -161,10 +161,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       "09/19/2018\tOvercast/Mostly cloudy/Partly cloudy/Clear\tNW\t4-7\t0\t0\t0\t47\t12\t0\t84\t10\t0\t0\t1\t821\t4\t0\t1\t0\t0\t27\t4\t1\t0\t2\t0\t1014")
     matchIO(for (r <- Table.parse(raw)) yield r) {
       case rt@HeadedTable(_, _) =>
-        rt.rows.size shouldBe 2
+        rt.content.size shouldBe 2
         //noinspection ScalaDeprecation
         val date = new LocalDate(2018, 9, 16)
-        rt.rows.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
+        rt.content.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
     }
   }
 
@@ -236,10 +236,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       Seq("09/19/2018", "Overcast/Mostly cloudy/Partly cloudy/Clear", "NW", "4-7", "0", "0", "0", "47", "12", "0", "84", "10", "0", "0", "1", "821", "4", "0", "1", "0", "0", "27", "4", "1", "0", "2", "0", "1014"))
     matchIO(for (r <- Table.parseSequence(raw.iterator)) yield r) {
       case rt@HeadedTable(_, _) =>
-        rt.rows.size shouldBe 2
+        rt.content.size shouldBe 2
         //noinspection ScalaDeprecation
         val date = new LocalDate(2018, 9, 16)
-        rt.rows.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
+        rt.content.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
     }
   }
 
@@ -290,10 +290,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     matchIO(for (r <- Table.parseResource("noHeader.csv", classOf[TableParserSpec])) yield r) {
       case rt@HeadedTable(_, _) =>
-        rt.rows.size shouldBe 13
+        rt.content.size shouldBe 13
         // TODO fix deprecation. Also in two other places in this module.
         val date = new LocalDate(2018, 9, 12)
-        rt.rows.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
+        rt.content.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
     }
   }
 
@@ -438,10 +438,12 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
      * The requirements of the application are that the rows of the Player table are grouped by twos
      * and each resulting entity (an array of length 2) is taken to form a Partnership.
      *
+     * CONSIDER merging with duplicate code in: TableParserHelperSpec.scala
+     *
      * @param pt a Table[Player]
      * @return a Table[Partnership]
      */
-    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => Rows((xs.toSeq grouped 2).map(r => Partnership(r)).toList))
+    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => Content((xs.toSeq grouped 2).map(r => Partnership(r)).toList))
 //      pt.processRows(xs => (xs.toSeq grouped 2)).map(r => Partnership(r))
   }
 

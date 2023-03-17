@@ -348,7 +348,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     val xio = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
     val resultIO = xio flatMap {
       case rt@HeadedTable(_, _) =>
-        rt.rows.size shouldBe 13
+        rt.content.size shouldBe 13
         import CsvGenerators._
         import CsvRenderers._
         implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
@@ -436,7 +436,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     val xio = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
     val resultIO = xio flatMap {
       case rt@HeadedTable(_, _) =>
-        rt.rows.size shouldBe 13
+        rt.content.size shouldBe 13
         import CsvGenerators._
         import CsvRenderers._
         implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")

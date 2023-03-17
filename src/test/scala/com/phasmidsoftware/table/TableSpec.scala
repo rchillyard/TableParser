@@ -125,7 +125,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
                         y <- Table.parseFileRaw("output.csv", TableParser.includeAll)
                         } yield y
     matchIO(resultIO) {
-      case xt@HeadedTable(_, _) => xt.rows.head.toString() shouldBe """A="1", B="2""""
+      case xt@HeadedTable(_, _) => xt.content.head.toString() shouldBe """A="1", B="2""""
     }
     val tableWithoutHead = Table(Seq(row1), None)
     the[TableException] thrownBy Table.writeCSVFileRow(tableWithoutHead, new File("output.csv"))
@@ -181,7 +181,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("1 2", "42 99").iterator)) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
-        xt.zip(xt).rows.toSeq shouldBe Seq((IntPair(1, 2), IntPair(1, 2)), (IntPair(42, 99), IntPair(42, 99)))
+        xt.zip(xt).content.toSeq shouldBe Seq((IntPair(1, 2), IntPair(1, 2)), (IntPair(42, 99), IntPair(42, 99)))
     }
   }
 
@@ -190,7 +190,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "headed table object" in {
-    HeadedTable.apply(Seq(0, 1), Header.create("r", "i")).rows.toSeq shouldBe Seq(0, 1)
+    HeadedTable.apply(Seq(0, 1), Header.create("r", "i")).content.toSeq shouldBe Seq(0, 1)
   }
 
   behavior of "Unheaded Table"
@@ -212,7 +212,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     def isEven(x: Int): Option[Int] = if (x % 2 == 0) Some(x) else None
 
     val result: Table[Int] = ut.mapOptional(isEven)
-    result.rows.toSeq shouldBe List(2, 4)
+    result.content.toSeq shouldBe List(2, 4)
   }
 
   behavior of "parse with safeResource"
@@ -284,7 +284,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.map(f).rows.toSeq shouldBe Seq(IntPair(2, 4), IntPair(84, 198))
+        xt.map(f).content.toSeq shouldBe Seq(IntPair(2, 4), IntPair(84, 198))
     }
   }
 
@@ -294,7 +294,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.flatMap(f).rows.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+        xt.flatMap(f).content.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
   }
 
@@ -310,7 +310,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.shuffle.rows.size shouldBe 2
+        xt.shuffle.content.size shouldBe 2
     }
   }
 
@@ -318,7 +318,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.drop(1).rows.toSeq shouldBe Seq(IntPair(42, 99))
+        xt.drop(1).content.toSeq shouldBe Seq(IntPair(42, 99))
     }
   }
 
@@ -334,7 +334,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.empty.rows.toSeq shouldBe Seq.empty
+        xt.empty.content.toSeq shouldBe Seq.empty
     }
   }
 
@@ -342,7 +342,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.dropWhile(_.equals(IntPair(3, 4))).rows.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+        xt.dropWhile(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
   }
 
@@ -350,7 +350,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.filter(_.equals(IntPair(3, 4))).rows.toSeq shouldBe Seq(IntPair(3, 4))
+        xt.filter(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(3, 4))
     }
   }
 
@@ -358,7 +358,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.filterNot(_.equals(IntPair(3, 4))).rows.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+        xt.filterNot(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
   }
 
@@ -366,7 +366,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.slice(0, 2).rows.toSeq shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
+        xt.slice(0, 2).content.toSeq shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
     }
   }
 //
@@ -382,7 +382,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
-        xt.takeWhile(_.equals(IntPair(3, 4))).rows.toSeq shouldBe Seq(IntPair(3, 4))
+        xt.takeWhile(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(3, 4))
     }
   }
 

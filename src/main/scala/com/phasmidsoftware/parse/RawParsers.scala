@@ -33,7 +33,7 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
 
     //    protected def builder(rows: Iterable[Row], header: Header): RawTable = HeadedTable(rows.map(r => RawRow(r, header)), header)
 
-    protected def builder(rows: Iterable[Row], header: Header): RawTable = new HeadedTable(Rows(rows), header)
+    protected def builder(rows: Iterable[Row], header: Header): RawTable = new HeadedTable(Content(rows), header)
 
     protected val rowParser: RowParser[Row, Input] = implicitly[RowParser[Row, String]]
   }

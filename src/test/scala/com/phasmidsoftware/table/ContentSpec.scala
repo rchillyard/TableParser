@@ -4,9 +4,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import scala.collection.parallel.CollectionConverters._
 
-class RowsSpec extends AnyFlatSpec with should.Matchers {
+class ContentSpec extends AnyFlatSpec with should.Matchers {
 
-  behavior of "Rows"
+  behavior of "Content"
 
   it should "drop" in {
 
@@ -85,12 +85,12 @@ class RowsSpec extends AnyFlatSpec with should.Matchers {
   }
 
   it should "apply1" in {
-    val target: Rows[Int] = Rows(List(1, 2, 3))
+    val target: Content[Int] = Content(List(1, 2, 3))
     target.toSeq shouldBe List(1, 2, 3)
   }
 
   it should "apply2" in {
-    val target: Rows[Int] = Rows(List(1, 2, 3).par)
+    val target: Content[Int] = Content(List(1, 2, 3).par)
     target.toSeq shouldBe List(1, 2, 3)
   }
 

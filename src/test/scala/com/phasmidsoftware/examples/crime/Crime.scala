@@ -78,7 +78,7 @@ object CrimeParser extends CellParsers {
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    protected def builder(rows: Iterable[Crime], header: Header): Table[Row] = HeadedTable(Rows(rows), header)
+    protected def builder(rows: Iterable[Crime], header: Header): Table[Row] = HeadedTable(Content(rows), header)
   }
 
   implicit object CrimeTableParser extends CrimeTableParser

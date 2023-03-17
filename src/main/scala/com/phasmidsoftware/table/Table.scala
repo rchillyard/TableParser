@@ -20,7 +20,7 @@ import scala.reflect.ClassTag
 import scala.util.{Failure, Random, Try}
 
 /**
- * A Table of Rows.
+ * A Table of Content.
  *
  * @tparam Row the type of each row.
  */
@@ -37,7 +37,7 @@ trait Table[Row] extends Iterable[Row] {
    * @param ho an optional Header.
    * @return a Table[Row] with the same rows as this, but with ho as its maybeHeader.
    */
-  def replaceHeader(ho: Option[Header]): Table[Row] = unit(rows, ho)
+  def replaceHeader(ho: Option[Header]): Table[Row] = unit(content, ho)
 
   /**
    * Transform (map) this Table[Row] into a Table[S].
@@ -46,7 +46,7 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the type of the rows of the result.
    * @return a Table[S] where each row has value f(x) where x is the value of the corresponding row in this.
    */
-  override def map[S](f: Row => S): Table[S] = unit[S](rows map f, maybeHeader)
+  override def map[S](f: Row => S): Table[S] = unit[S](content map f, maybeHeader)
 
   /**
    * Transform (flatMap) this Table[Row] into a Table[S].
@@ -58,21 +58,16 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the type of the rows of the result.
    * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
    */
-  def flatMap[S](f: Row => Iterable[S]): Table[S] = (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
+  def flatMap[S](f: Row => Iterable[S]): Table[S] = (content map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
 
   /**
    * Transform (flatMap) this Table[Row] into a Table[S].
-   *
-   * CONSIDER rewriting this method or redefining it as it can be a major source of inefficiency.
-   * In particular, we are doing a ++ operation, which is inherently bad.
    *
    * @param f a function which transforms a Row into an IterableOnce[S].
    * @tparam S the type of the rows of the result.
    * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
    */
-  def mapOptional[S](f: Row => Option[S]): Table[S] =
-    unit[S](Rows(for (q <- rows.xs.map(f); r <- q) yield r), maybeHeader)
-//    (rows map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
+  def mapOptional[S](f: Row => Option[S]): Table[S] = unit[S](content.mapOptional(f), maybeHeader)
 
   /**
    * Method to zip two Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
@@ -81,27 +76,27 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam R the underlying type of the other Table.
    * @return a Table of (Row, R).
    */
-  def zip[R](rt: Table[R]): Table[(Row, R)] = processRowsAsIterable[R, (Row, R)]((rs1, rs2) => rs1.toSeq zip rs2.toSeq)(rt)
+  def zip[R](rt: Table[R]): Table[(Row, R)] = doZip[R, (Row, R)]((rs1, rs2) => rs1.toSeq zip rs2.toSeq)(rt)
 
   /**
-   * Method to concatenate two Rows
+   * Method to concatenate two Content
    *
    * @param table a table to be concatenated with this table.
    * @tparam S the type of the rows of the result.
    * @return a new table, which is concatenated to this table, by rows.
    */
-  def ++[S >: Row](table: Table[S]): Table[S] = unit[S](rows ++ table.rows, maybeHeader)
+  def ++[S >: Row](table: Table[S]): Table[S] = unit[S](content ++ table.content, maybeHeader)
 
   /**
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param sr          a Rows of S.
+   * @param sr          a Content of S.
    * @param maybeHeader an optional Header to be used in the resulting Table.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  def unit[S](sr: Rows[S], maybeHeader: Option[Header]): Table[S]
+  def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S]
 
   /**
    * Method to generate a Table[S] for a set of rows.
@@ -129,7 +124,7 @@ trait Table[Row] extends Iterable[Row] {
    *
    * @return the rows, in the same sequence in which they were parsed.
    */
-  def rows: Rows[Row]
+  def content: Content[Row]
 
   /**
    * Method to select those rows defined by the given range.
@@ -159,7 +154,7 @@ trait Table[Row] extends Iterable[Row] {
    */
   override def toSeq: Seq[Row] = {
     // XXX huh?
-    lazy val rs = rows.toSeq
+    lazy val rs = content.toSeq
     rs
   }
 
@@ -171,7 +166,7 @@ trait Table[Row] extends Iterable[Row] {
    */
   override def toArray[Element >: Row : ClassTag]: Array[Element] = {
     // XXX huh?
-    lazy val rs = rows.toArray[Element]
+    lazy val rs = content.toArray[Element]
     rs
   }
 
@@ -180,7 +175,7 @@ trait Table[Row] extends Iterable[Row] {
    *
    * @return the rows in the form of Iterator[Row]
    */
-  def iterator: Iterator[Row] = rows.iterator
+  def iterator: Iterator[Row] = content.iterator
 
   /**
    * Method to process the rows as an Iterable into an Iterable which will make up the resulting Table.
@@ -190,7 +185,7 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the underlying type of the result.
    * @return a table[S]
    */
-  def processRows[S](f: Rows[Row] => Rows[S]): Table[S] = unit(f(rows), maybeHeader)
+  def processRows[S](f: Content[Row] => Content[S]): Table[S] = unit(f(content), maybeHeader)
 
   /**
    * Method to process the rows as an Iterable into an Iterable which will make up the resulting Table.
@@ -201,19 +196,7 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the underlying type of the result.
    * @return a table[S]
    */
-  def processRowsMap[S](f: Row => S): Table[S] = unit(rows.map(f), maybeHeader)
-
-  /**
-   * Method to process the rows of this Table and the other Table as a pair of Iterables resulting in an Iterable which will make up the resulting Table.
-   * NOTE: this is used by zip.
-   *
-   * @param f     a function which takes an Iterable[Row] and an Iterable[R] and returns an Iterable[S]
-   * @param other the other table of type Iterable[R].
-   * @tparam R the underlying type of the other table.
-   * @tparam S the underlying type of the result.
-   * @return a table[S]
-   */
-  def processRowsAsIterable[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(other: Table[R]): Table[S] = unit(f(rows.toSeq, other.rows.toSeq))
+  def processRowsMap[S](f: Row => S): Table[S] = unit(content.map(f), maybeHeader)
 
   /**
    * Method to transform this Table[Row] into a sorted Table[S] where S is a super-class of Row and for which there is
@@ -222,14 +205,14 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the underlying type of the resulting Table (a super-type of Row and for which there is evidence of Ordering[S]).
    * @return a Table[S].
    */
-  def sort[S >: Row : Ordering]: Table[S] = processRows(rs => Rows(rs.toSeq.map(_.asInstanceOf[S]).sorted))
+  def sort[S >: Row : Ordering]: Table[S] = unit[S](content.sorted[S], maybeHeader)
 
   /**
    * Method to shuffle this Table[Row].
    *
    * @return a Table[Row].
    */
-  lazy val shuffle: Table[Row] = processRows(rs => Rows(Random.shuffle(rs.toSeq)))
+  lazy val shuffle: Table[Row] = processRows(rs => Content(Random.shuffle(rs.toSeq)))
 
   /**
    * drop (as defined by Iterable).
@@ -238,14 +221,6 @@ trait Table[Row] extends Iterable[Row] {
    * @return a Table like this Table but without its first n rows.
    */
   override def drop(n: Int): Table[Row] = processRows(_.drop(n))
-//
-//  /**
-//   * dropRight (as defined by Iterable).
-//   *
-//   * @param n the number of rows to dropRight.
-//   * @return a Table like this Table but with dropRight(n) rows.
-//   */
-//  override def dropRight(n: Int): Table[Row] = processRows(_.dropRight(n))
 
   /**
    * dropWhile (as defined by Iterable).
@@ -294,14 +269,6 @@ trait Table[Row] extends Iterable[Row] {
    * @return a Table like this Table but with only its first n rows.
    */
   override def take(n: Int): Table[Row] = processRows(_.take(n))
-//
-//  /**
-//   * takeRight (as defined by Iterable).
-//   *
-//   * @param n the number of rows to takeRight.
-//   * @return a Table like this Table but with takeRight(n) rows.
-//   */
-//  override def takeRight(n: Int): Table[Row] = processRows(_.takeRight(n))
 
   /**
    * takeWhile (as defined by Iterable).
@@ -387,11 +354,22 @@ trait Table[Row] extends Iterable[Row] {
 
   def column(name: String): Iterator[Option[String]]
 
+  /**
+   * Method to process the rows of this Table and the other Table as a pair of Iterables resulting in an Iterable which will make up the resulting Table.
+   *
+   * @param f     a function which takes an Iterable[Row] and an Iterable[R] and returns an Iterable[S]
+   * @param other the other table of type Iterable[R].
+   * @tparam R the underlying type of the other table.
+   * @tparam S the underlying type of the result.
+   * @return a table[S]
+   */
+  private def doZip[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(other: Table[R]): Table[S] = unit(f(content.toSeq, other.content.toSeq))
+
   private lazy val asOneBasedIndexedSequence = new IndexedSeq[Row]() {
-    def apply(i: Int): Row = rows.toIndexedSeq(i - 1)
+    def apply(i: Int): Row = content.toIndexedSeq(i - 1)
 
     // TESTME
-    def length: Int = rows.size
+    def length: Int = content.size
   }
 }
 
@@ -649,8 +627,8 @@ object Table {
    * @return a Table[X] which is either a HeadedTable or an UnheadedTable, as appropriate.
    */
   def apply[X](xs: Iterable[X], maybeHeader: Option[Header]): Table[X] = maybeHeader match {
-    case Some(h) => HeadedTable(Rows(xs), h)
-    case None => UnheadedTable(Rows(xs))
+    case Some(h) => HeadedTable(Content(xs), h)
+    case None => UnheadedTable(Content(xs))
   }
 
   /**
@@ -738,7 +716,7 @@ object Table {
  * @param maybeHeader (optional) header
  * @tparam Row the underlying type of each Row
  */
-abstract class RenderableTable[Row](rows: Rows[Row], val maybeHeader: Option[Header]) extends Table[Row] with TableRenderable[Row] {
+abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[Header]) extends Table[Row] with TableRenderable[Row] {
   self =>
 
   /**
@@ -749,7 +727,7 @@ abstract class RenderableTable[Row](rows: Rows[Row], val maybeHeader: Option[Hea
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  override def unit[S](sr: Rows[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+  override def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
     case Some(h) => HeadedTable(sr, h)
     case None => UnheadedTable(sr)
   }
@@ -775,9 +753,8 @@ abstract class RenderableTable[Row](rows: Rows[Row], val maybeHeader: Option[Hea
     val o1 = ww.unit
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
     val knownSize1 = rows.knownSize
-    // TODO this makes no sense now: the decision is taken inside Rows.
-    // TODO fix because map is deprecated here
-    (if (knownSize1 > -1) rows.xs.toSeq else rows.toSeq) map {
+    // TODO this makes no sense now: the decision is taken inside Content.
+    (if (knownSize1 > -1) rows.toSeq else rows.toSeq) map {
       case p: Product => ww.writeRow(o2)(p)
       case xs: Seq[Row] => ww.writeRowElements(o2)(xs) // TESTME
       case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
@@ -845,10 +822,10 @@ abstract class RenderableTable[Row](rows: Rows[Row], val maybeHeader: Option[Hea
  *
  * TESTME this: it is currently not used.
  *
- * @param rows the rows of the table.
+ * @param content the rows of the table.
  * @tparam Row the underlying type of each Row
  */
-case class UnheadedTable[Row](rows: Rows[Row]) extends RenderableTable[Row](rows, None) {
+case class UnheadedTable[Row](content: Content[Row]) extends RenderableTable[Row](content, None) {
   /**
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
@@ -858,8 +835,8 @@ case class UnheadedTable[Row](rows: Rows[Row]) extends RenderableTable[Row](rows
    * @return a new instance of Table[S].
    */
   override def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(Rows(ss), h)
-    case None => UnheadedTable(Rows(ss))
+    case Some(h) => HeadedTable(Content(ss), h)
+    case None => UnheadedTable(Content(ss))
   }
 
   def column(name: String): Iterator[Option[String]] = Iterator.empty
@@ -867,7 +844,7 @@ case class UnheadedTable[Row](rows: Rows[Row]) extends RenderableTable[Row](rows
 
 object UnheadedTable {
 
-  def apply[Row: ClassTag](rows: Iterable[Row]): Table[Row] = new UnheadedTable(Rows(rows))
+  def apply[Row: ClassTag](rows: Iterable[Row]): Table[Row] = new UnheadedTable(Content(rows))
 
   def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = UnheadedTable(rows.to(List))
 
@@ -880,11 +857,11 @@ object UnheadedTable {
  * NOTE: the existence or not of a Header in a RenderableTable only affects how the table is rendered.
  * The parsing of a table always has a header of some sort.
  *
- * @param rows   the rows of the table, stored as an Array.
- * @param header the header.
+ * @param content the rows of the table, stored as an Array.
+ * @param header  the header.
  * @tparam Row the underlying type of each Row
  */
-case class HeadedTable[Row](rows: Rows[Row], header: Header) extends RenderableTable[Row](rows, Some(header)) {
+case class HeadedTable[Row](content: Content[Row], header: Header) extends RenderableTable[Row](content, Some(header)) {
 
   /**
    * Method to generate a Table[S] for a set of rows.
@@ -895,20 +872,20 @@ case class HeadedTable[Row](rows: Rows[Row], header: Header) extends RenderableT
    * @return a new instance of Table[S].
    */
   override def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(Rows(ss), h)
-    case None => UnheadedTable(Rows(ss))
+    case Some(h) => HeadedTable(Content(ss), h)
+    case None => UnheadedTable(Content(ss))
   }
 
   def column(name: String): Iterator[Option[String]] = {
     val maybeIndex = maybeColumnNames map (_.indexOf(name))
-    rows.iterator map {
+    content.iterator map {
       case row: RawRow => maybeIndex map (row.ws(_))
       case ws: Seq[Any] => maybeIndex map (ws(_).toString)
       case _ => None
     }
   }
 
-  override def toString(): String = s"HeadedTable($header) with ${rows.size} rows"
+  override def toString(): String = s"HeadedTable($header) with ${content.size} rows"
 }
 
 /**
@@ -920,7 +897,7 @@ case class HeadedTable[Row](rows: Rows[Row], header: Header) extends RenderableT
  */
 object HeadedTable {
 
-  def apply[Row: ClassTag](rows: Iterable[Row], header: Header): RenderableTable[Row] = new HeadedTable(Rows(rows), header)
+  def apply[Row: ClassTag](rows: Iterable[Row], header: Header): RenderableTable[Row] = new HeadedTable(Content(rows), header)
 
   def apply[Row: ClassTag](rows: Iterable[Row]): RenderableTable[Row] = HeadedTable(rows, Header[Row]())
 

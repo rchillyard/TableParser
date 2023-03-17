@@ -79,7 +79,7 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable] exte
         o =>
           // CONSIDER can remove o2 here and just use o.
           val o2 = sw.writeRawLine(o)(hdr)
-          for (r <- x.rows.toSeq) yield generateText(sw, tc, o2, r)
+          for (r <- x.content.toSeq) yield generateText(sw, tc, o2, r)
           o2
       }
   }

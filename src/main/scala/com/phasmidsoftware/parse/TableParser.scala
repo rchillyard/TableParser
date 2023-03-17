@@ -190,7 +190,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
   val rowParser: RowParser[Row, String] = StandardRowParser.create[Row]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
-  protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(Rows(rows), header)
+  protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(Content(rows), header)
 
   def setHeader(header: Header): RawTableParser = copy(maybeFixedHeader = Some(header))
 
@@ -376,7 +376,7 @@ sealed abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFix
 
   type Row = X
 
-  protected def builder(rows: Iterable[X], header: Header): Table[Row] = HeadedTable(Rows(rows), header)
+  protected def builder(rows: Iterable[X], header: Header): Table[Row] = HeadedTable(Content(rows), header)
 
   protected val rowParser: RowParser[X, String] = StandardRowParser.create[X]
 }
