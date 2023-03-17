@@ -35,7 +35,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
      * @param pt a Table[Player]
      * @return a Table[Partnership]
      */
-    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Partnership(r))
+    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => Rows((xs.toSeq grouped 2).map(r => Partnership(r)).toList))
   }
 
   case class Partnership(playerA: String, playerB: String) {

@@ -192,8 +192,8 @@ object Parseable {
     f(w).recoverWith {
       case x: IllegalArgumentException =>
         Failure(if (w.nonEmpty) InvalidParseException(msg(w), x) else BlankException(x))
-      case x: NumberFormatException =>
-        Failure(if (w.nonEmpty) InvalidParseException(msg(w), x) else BlankException(x))
+//      case x: NumberFormatException =>
+//        Failure(if (w.nonEmpty) InvalidParseException(msg(w), x) else BlankException(x))
     }
 }
 

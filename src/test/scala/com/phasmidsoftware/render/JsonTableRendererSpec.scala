@@ -2,7 +2,7 @@ package com.phasmidsoftware.render
 
 import cats.effect.IO
 import com.phasmidsoftware.parse.{CellParser, TableParserHelper}
-import com.phasmidsoftware.table.{HeadedTable, Header, Table, TableJsonFormat}
+import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.EvaluateIO.matchIO
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
@@ -43,7 +43,8 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
      * @param pt a Table[Player]
      * @return a Table[Partnership]
      */
-    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Converters.convert(r)).replaceHeader(Some(Header.create("playerA", "playerB")))
+    def convertTable(pt: Table[Player]): Table[Partnership] =
+      pt.processRows(xs => Rows((xs.toSeq grouped 2).map(r => Converters.convert(r)).toList)).replaceHeader(Some(Header.create("playerA", "playerB")))
   }
 
   case class Partnership(playerA: String, playerB: String)

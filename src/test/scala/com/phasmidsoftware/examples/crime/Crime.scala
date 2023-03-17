@@ -2,7 +2,7 @@ package com.phasmidsoftware.examples.crime
 
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
-import com.phasmidsoftware.table.{CsvAttributes, HeadedTable, Header, Table}
+import com.phasmidsoftware.table._
 import scala.util.Try
 
 /**
@@ -78,7 +78,7 @@ object CrimeParser extends CellParsers {
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    protected def builder(rows: Iterable[Crime], header: Header): Table[Row] = HeadedTable(rows, header)
+    protected def builder(rows: Iterable[Crime], header: Header): Table[Row] = HeadedTable(Rows(rows), header)
   }
 
   implicit object CrimeTableParser extends CrimeTableParser

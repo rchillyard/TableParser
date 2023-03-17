@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.parse
 
-import com.phasmidsoftware.table.{HeadedTable, Header, RawRow, RawTable}
+import com.phasmidsoftware.table._
 
 /**
  * Abstract class to define a raw parser, that's to say a Parser of Seq[String]
@@ -33,7 +33,7 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
 
     //    protected def builder(rows: Iterable[Row], header: Header): RawTable = HeadedTable(rows.map(r => RawRow(r, header)), header)
 
-    protected def builder(rows: Iterable[Row], header: Header): RawTable = HeadedTable(rows, header)
+    protected def builder(rows: Iterable[Row], header: Header): RawTable = new HeadedTable(Rows(rows), header)
 
     protected val rowParser: RowParser[Row, Input] = implicitly[RowParser[Row, String]]
   }

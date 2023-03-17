@@ -71,7 +71,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val strings: Seq[String] = Seq("1 2")
     matchIO(Table.parse(strings)) {
       case t: Table[IntPair] =>
-        t.rows shouldBe List(IntPair(1, 2))
+        t.toSeq shouldBe List(IntPair(1, 2))
     }
   }
 
@@ -441,7 +441,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
      * @param pt a Table[Player]
      * @return a Table[Partnership]
      */
-    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Partnership(r))
+    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => Rows((xs.toSeq grouped 2).map(r => Partnership(r)).toList))
+//      pt.processRows(xs => (xs.toSeq grouped 2)).map(r => Partnership(r))
   }
 
   case class Partnership(playerA: String, playerB: String) {
