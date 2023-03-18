@@ -30,6 +30,8 @@ object FP {
   /**
    * Sequence method to combine elements of Try.
    *
+   * CONSIDER invoking sequenceRev
+   *
    * @param xys an Iterator of Try[X]
    * @tparam X the underlying type
    * @return a Try of Iterator[X]
@@ -37,7 +39,7 @@ object FP {
   def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] = sequence(xys.to(List)).map(_.iterator)
 
   /**
-   * Sequence method to combine elements of Try.
+   * Sequence method to combine elements of Try while retaining their original order.
    *
    * @param xys an Iterable of Try[X]
    * @tparam X the underlying type
@@ -45,8 +47,21 @@ object FP {
    *         NOTE: that the output collection type will be Seq, regardless of the input type
    */
   def sequence[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
+    sequenceRev(xys) map (xs => xs.reverse)
+
+  /**
+   * Sequence method to combine elements of Try.
+   *
+   * NOTE: this method is much faster than sequence but does return the elements in their reverse order.
+   *
+   * @param xys an Iterable of Try[X]
+   * @tparam X the underlying type
+   * @return a Try of Seq[X]
+   *         NOTE: that the output collection type will be Seq, regardless of the input type
+   */
+  def sequenceRev[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
     xys.foldLeft(Try(Seq[X]())) {
-      (xsy, xy) => for (xs <- xsy; x <- xy) yield xs :+ x
+      (xsy, xy) => for (xs <- xsy; x <- xy) yield x +: xs
     }
 
   /**

@@ -9,7 +9,7 @@ import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.parse.AbstractTableParser.logException
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.table._
-import com.phasmidsoftware.util.FP.partition
+import com.phasmidsoftware.util.FP.{partition, sequence}
 import com.phasmidsoftware.util._
 import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.implicitNotFound
@@ -463,11 +463,12 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
     def processTriedRows(rys: Iterator[Try[Row]]) = if (forgiving) {
       val (good, bad) = partition(rys)
+      // CONSIDER using sequenceRev in order to save time
       bad foreach failureHandler //AbstractTableParser.logException[Row]
-      FP.sequence(good filter predicate)
+      sequence(good filter predicate)
     }
     else
-      FP.sequence(rys filter predicate)
+      sequence(rys filter predicate)
 
     val q: Seq[Try[Row]] = mapTsToRows.toSeq
     for (rs <- processTriedRows(q.iterator)) yield builder(rs.toList, header)
