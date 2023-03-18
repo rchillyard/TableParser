@@ -16,7 +16,7 @@ import scala.util.{Failure, Success, Try}
 
 class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
-  behavior of "Option sequence"
+  behavior of "Option sequence and sequenceInc"
 
   it should "sequence an Iterable" in {
     sequence(List(Some(1), Some(2))) shouldBe Some(List(2, 1))
@@ -25,6 +25,11 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "sequence an Iterator" in {
     sequence(List(Some(1), Some(2)).iterator) shouldBe Some(List(2, 1))
     sequence(List(Some(1), None).iterator) shouldBe None
+  }
+  it should "sequenceInc an Iterable" in {
+    sequenceInc(List(Some(1), Some(2))) shouldBe Some(List(2, 1))
+    sequenceInc(List(Some(1), None)) shouldBe Some(List(1))
+    sequenceInc(List(None, None)) shouldBe None
   }
 
   behavior of "FP"
