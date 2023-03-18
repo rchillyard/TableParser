@@ -8,7 +8,8 @@ scalaVersion := "2.13.10"
 
 scalacOptions += "-deprecation"
 
-Test / unmanagedSourceDirectories += baseDirectory.value / "src/it/scala"
+// NOTE: if you reinstate these directories, you will need to manage the large crimes file (see code).
+//Test / unmanagedSourceDirectories += baseDirectory.value / "src/it/scala"
 //Test / unmanagedResourceDirectories += baseDirectory.value / "src/it/resources"
 
 resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
