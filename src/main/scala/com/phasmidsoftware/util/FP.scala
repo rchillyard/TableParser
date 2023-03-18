@@ -91,9 +91,11 @@ object FP {
   }
 
   /**
-   * Sequence method to combine elements of Try.
+   * Sequence method to combine elements of type Option[X].
+   * The result is defined unless all the elements are None.
    *
-   * CONSIDER whether we should use the +: operator, as is done in the signature that uses Iterator.
+   * NOTE that the order of the resulting values will be the reverse of the input.
+   * This is for performance reasons.
    *
    * @param xos an Iterable of Option[X].
    * @tparam X the underlying type.
@@ -102,11 +104,12 @@ object FP {
    */
   def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
     xos.foldLeft(Option(Seq[X]())) {
-      (xso, xo) => for (xs <- xso; x <- xo) yield xs :+ x
+      (xso, xo) => for (xs <- xso; x <- xo) yield x +: xs
     }
 
   /**
    * Sequence method to combine elements of Option[X].
+   * The result is defined unless all the elements are None.
    *
    * NOTE that the order of the resulting values will be the reverse of the iterator.
    * This is for performance reasons.

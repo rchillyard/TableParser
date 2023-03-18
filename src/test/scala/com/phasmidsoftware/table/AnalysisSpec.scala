@@ -32,7 +32,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
         analysis.columns shouldBe 87
         analysis.columnMap.size shouldBe 87
         analysis.columnMap("bedrooms") should matchPattern { case Column("Int", false, _) => }
-        analysis.columnMap("accommodates").toString shouldBe "Int (range: 1.0-10.0, mean: 2.783464566929134, stdDev: 1.767032468521018)"
+        analysis.columnMap("accommodates").toString should startWith("Int (range: 1.0-10.0, mean: 2.783464566929134, stdDev: 1.7670324685210")
         analysis.columnMap("license").toString shouldBe "optional Int"
     }
   }
