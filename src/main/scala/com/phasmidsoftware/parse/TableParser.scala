@@ -9,7 +9,7 @@ import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.parse.AbstractTableParser.logException
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.table._
-import com.phasmidsoftware.util.FP.partition
+import com.phasmidsoftware.util.FP.{partition, sequence}
 import com.phasmidsoftware.util._
 import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.implicitNotFound
@@ -190,7 +190,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
   val rowParser: RowParser[Row, String] = StandardRowParser.create[Row]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
-  protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+  protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(Content(rows), header)
 
   def setHeader(header: Header): RawTableParser = copy(maybeFixedHeader = Some(header))
 
@@ -273,7 +273,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
   private val phase2Parser = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
 
   override def parse(xr: Iterator[String], n: Int): IO[Table[X]] = {
-    def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] = for (wt <- decryptTable(xt); xt <- phase2Parser.parseRows(wt.rows.iterator, h)) yield xt
+    def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] = for (wt <- decryptTable(xt); xt <- phase2Parser.parseRows(wt.iterator, h)) yield xt
 
     val sr: TeeIterator[String] = new TeeIterator(n)(xr)
     val hi: IO[Header] = rowParser.parseHeader(sr.tee)
@@ -346,7 +346,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
 
   private def decryptTable(xt: RawTable): IO[Table[String]] = {
     val wit: Table[IO[String]] = xt.map(row => HexEncryption.decryptRow(keyFunction)(row.ws))
-    for (ws <- IO.parSequenceN(2)(wit.rows.toSeq)) yield wit.unit(ws)
+    for (ws <- IO.parSequenceN(2)(wit.toSeq)) yield wit.unit(ws)
   }
 }
 
@@ -376,7 +376,7 @@ sealed abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFix
 
   type Row = X
 
-  protected def builder(rows: Iterable[X], header: Header): Table[Row] = HeadedTable(rows, header)
+  protected def builder(rows: Iterable[X], header: Header): Table[Row] = HeadedTable(Content(rows), header)
 
   protected val rowParser: RowParser[X, String] = StandardRowParser.create[X]
 }
@@ -463,11 +463,12 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
     def processTriedRows(rys: Iterator[Try[Row]]) = if (forgiving) {
       val (good, bad) = partition(rys)
+      // CONSIDER using sequenceRev in order to save time
       bad foreach failureHandler //AbstractTableParser.logException[Row]
-      FP.sequence(good filter predicate)
+      sequence(good filter predicate)
     }
     else
-      FP.sequence(rys filter predicate)
+      sequence(rys filter predicate)
 
     val q: Seq[Try[Row]] = mapTsToRows.toSeq
     for (rs <- processTriedRows(q.iterator)) yield builder(rs.toList, header)

@@ -198,7 +198,9 @@ object Rating {
 }
 
 object Movie {
+
   import com.phasmidsoftware.render.CsvGenerators._
+
   val csvGenerators: CsvGenerators = new CsvGenerators {}
 
   def createMovieCvsGenerator: CsvGenerator[Movie] = {
