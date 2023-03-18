@@ -32,10 +32,14 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
      * The requirements of the application are that the rows of the Player table are grouped by twos
      * and each resulting entity (an array of length 2) is taken to form a Partnership.
      *
+     * CONSIDER extracting a general method and moving it into Content.
+     *
+     * CONSIDER merging with duplicate code in: TableParserSpec.scala
+     *
      * @param pt a Table[Player]
      * @return a Table[Partnership]
      */
-    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Partnership(r))
+    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => Content((xs.toSeq grouped 2).map(r => Partnership(r)).toList))
   }
 
   case class Partnership(playerA: String, playerB: String) {

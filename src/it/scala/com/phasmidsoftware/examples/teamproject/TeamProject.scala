@@ -5,7 +5,7 @@
 package com.phasmidsoftware.examples.teamproject
 
 import com.phasmidsoftware.parse._
-import com.phasmidsoftware.table.{HeadedTable, Header, Table}
+import com.phasmidsoftware.table.{Content, HeadedTable, Header, Table}
 import java.net.URL
 
 /**
@@ -68,7 +68,7 @@ sealed trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]
 
   val rowParser: RowParser[Row, String] = TeamProjectParser.parser
 
-  protected def builder(rows: Iterable[TeamProject], header: Header): Table[Row] = HeadedTable(rows, header)
+  protected def builder(rows: Iterable[TeamProject], header: Header): Table[Row] = HeadedTable(Content(rows), header)
 }
 
 object TeamProjectTableParser extends TeamProjectTableParser

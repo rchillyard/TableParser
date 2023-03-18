@@ -21,7 +21,7 @@ val parser: StringTableParser[Table[Movie]] = MovieTableParser
 val mti: IO[Table[Movie]] = parser parse sy
 
 val zi: IO[Unit] = mti map {
-  t => println(s"Successfully parsed ---${t.rows}--- movies")
+  t => println(s"Successfully parsed ---${t.content}--- movies")
 }
 
 import cats.effect.unsafe.implicits.global

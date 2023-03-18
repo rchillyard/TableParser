@@ -3,7 +3,7 @@ package com.phasmidsoftware.parse
 import cats.effect.IO
 import com.phasmidsoftware.table.MovieParser.MovieTableParser
 import com.phasmidsoftware.table.{HeadedTable, Movie, Table}
-import com.phasmidsoftware.util.EvaluateIO.{check, matchIO}
+import com.phasmidsoftware.util.EvaluateIO.matchIO
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -22,7 +22,7 @@ class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val parsed: IO[Table[Movie]] = parser.parse(si)
     matchIO(parsed, Timeout(Span(5, Seconds))) {
       case tm@HeadedTable(_, _) =>
-        println(s"Table read with ${tm.rows} rows")
+        println(s"Table read with ${tm.content} rows")
         succeed
     }
   }

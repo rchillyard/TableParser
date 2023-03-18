@@ -25,10 +25,13 @@ libraryDependencies ++= Seq(
   "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
   "com.phasmidsoftware" %% "flog" % "1.0.8",
   "io.spray" %%  "spray-json" % "1.3.6",
+//noinspection SbtDependencyVersionInspection
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
   "ch.qos.logback" % "logback-classic" % "1.4.5" % "runtime",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
+libraryDependencies +=
+        "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
 

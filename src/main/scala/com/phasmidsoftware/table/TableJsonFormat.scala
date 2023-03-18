@@ -9,9 +9,9 @@ import spray.json.{JsArray, JsObject, JsValue, JsonFormat, RootJsonFormat, enric
  * @tparam T for which there must be evidence of JsonFormat[T].
  */
 abstract class TableJsonFormat[T: JsonFormat] extends RootJsonFormat[Table[T]] {
-  def write(obj: Table[T]): JsValue = {
-    val jso = obj.maybeHeader map (h => h.xs.map(_.toJson))
-    val jSm = Map[String, JsValue]("rows" -> JsArray((obj.rows map (_.toJson)).toVector))
+  def write(table: Table[T]): JsValue = {
+    val jso = table.maybeHeader map (h => h.xs.map(_.toJson))
+    val jSm = Map[String, JsValue]("rows" -> JsArray((table.toSeq map (_.toJson)).toVector))
     val jSm2: Map[String, JsValue] = jso match {
       case None => jSm
       case Some(js) => jSm + ("header" -> JsArray(js.toVector))
