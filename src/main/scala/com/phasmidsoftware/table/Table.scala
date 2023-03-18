@@ -14,6 +14,7 @@ import com.phasmidsoftware.util.{IOUsing, Reflection}
 import com.phasmidsoftware.write.{Node, TreeWriter, Writable}
 import java.io.{File, FileWriter, InputStream}
 import java.net.{URI, URL}
+import scala.annotation.unused
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
@@ -196,6 +197,7 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the underlying type of the result.
    * @return a table[S]
    */
+  @unused
   def processRowsMap[S](f: Row => S): Table[S] = unit(content.map(f), maybeHeader)
 
   /**
@@ -352,6 +354,14 @@ trait Table[Row] extends Iterable[Row] {
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
 
+  /**
+   * Method to get all the elements of a particular column.
+   *
+   * Complexity: N + C where N is the number of rows and C is the number of columns.
+   *
+   * @param name the column name.
+   * @return an Iterator of Option[String].
+   */
   def column(name: String): Iterator[Option[String]]
 
   /**
@@ -876,6 +886,14 @@ case class HeadedTable[Row](content: Content[Row], header: Header) extends Rende
     case None => UnheadedTable(Content(ss))
   }
 
+  /**
+   * Method to get all the elements of a particular column.
+   *
+   * Complexity: N + C where N is the number of rows and C is the number of columns.
+   *
+   * @param name the column name.
+   * @return an Iterator of Option[String].
+   */
   def column(name: String): Iterator[Option[String]] = {
     val maybeIndex = maybeColumnNames map (_.indexOf(name))
     content.iterator map {
