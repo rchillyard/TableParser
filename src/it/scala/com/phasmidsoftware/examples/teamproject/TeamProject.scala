@@ -2,10 +2,10 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.examples
+package com.phasmidsoftware.examples.teamproject
 
 import com.phasmidsoftware.parse._
-import com.phasmidsoftware.table.{HeadedTable, Header, Table}
+import com.phasmidsoftware.table.{Content, HeadedTable, Header, Table}
 import java.net.URL
 
 /**
@@ -57,7 +57,7 @@ object TeamProjectParser extends CellParsers {
   val parser: StandardRowParser[TeamProject] = StandardRowParser.create[TeamProject]
 }
 
-trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
+sealed trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
   type Row = TeamProject
 
   val maybeFixedHeader: Option[Header] = None
@@ -68,7 +68,7 @@ trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
 
   val rowParser: RowParser[Row, String] = TeamProjectParser.parser
 
-  protected def builder(rows: Iterable[TeamProject], header: Header): Table[Row] = HeadedTable(rows, header)
+  protected def builder(rows: Iterable[TeamProject], header: Header): Table[Row] = HeadedTable(Content(rows), header)
 }
 
 object TeamProjectTableParser extends TeamProjectTableParser

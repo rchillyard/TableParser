@@ -6,6 +6,8 @@ package com.phasmidsoftware.render
 
 import com.phasmidsoftware.table.{Header, Indexed}
 import com.phasmidsoftware.util.Reflection
+import com.phasmidsoftware.write
+import com.phasmidsoftware.write.Node
 import scala.reflect.ClassTag
 
 /**
@@ -29,7 +31,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where you wish to explicitly define a conversion o a T into a String.
    *
-   * TEST
+   * TESTME
    *
    * @param style the style of the resulting renderer.
    * @param attrs a set of base attributes which are explicitly set for this HierarchicalRenderer;
@@ -59,14 +61,13 @@ trait HierarchicalRenderers {
      * @param attrs a map of attributes for this kind of output.
      * @return an instance of type String.
      */
-    override def render(h: Header, attrs: Map[String, String]): Node = Node(style, attrs, headerElements(h).map((t: String) => renderer.render(t)))
+    override def render(h: Header, attrs: Map[String, String]): Node = write.Node(style, attrs, headerElements(h).map((t: String) => renderer.render(t)))
 
     private def headerElements(h: Header): Seq[String] = {
       if (sequenced) "" +: h.xs
       else h.xs
     }
   }
-
 
   /**
    * Method to return a HierarchicalRenderer[ Seq[T] ].
@@ -76,7 +77,7 @@ trait HierarchicalRenderers {
    * @return a HierarchicalRenderer[ Seq[T] ]
    */
   def sequenceRenderer[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[Seq[T]] = new TaggedHierarchicalRenderer[Seq[T]](style, attrs) {
-    override def render(ts: Seq[T], attrs: Map[String, String]): Node = Node(style, attrs, ts map (implicitly[HierarchicalRenderer[T]].render(_)))
+    override def render(ts: Seq[T], attrs: Map[String, String]): Node = write.Node(style, attrs, ts map (implicitly[HierarchicalRenderer[T]].render(_)))
   }
 
   /**
@@ -97,7 +98,7 @@ trait HierarchicalRenderers {
     override def render(ti: Indexed[T], attrs: Map[String, String]): Node = {
       val sequence = new TaggedHierarchicalRenderer[Int](indexStyle) {}.render(ti.i)
       val value = implicitly[HierarchicalRenderer[T]].render(ti.t)
-      Node(style, attrs, Seq(sequence, value))
+      write.Node(style, attrs, Seq(sequence, value))
     }
 
     /**
@@ -115,7 +116,7 @@ trait HierarchicalRenderers {
    */
   def optionRenderer[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[Option[T]] = new TaggedHierarchicalRenderer[Option[T]](style, attrs) {
     override def render(to: Option[T], attrs: Map[String, String]): Node = to match {
-      case Some(t) => Node(style, attrs, Seq(implicitly[HierarchicalRenderer[T]].render(t)))
+      case Some(t) => write.Node(style, attrs, Seq(implicitly[HierarchicalRenderer[T]].render(t)))
       case None => Node("", None, Map(), Nil)
     }
   }
@@ -127,7 +128,7 @@ trait HierarchicalRenderers {
    * It probably shouldn't ever be used in practice. It can cause strange initialization errors!
    * This note may be irrelevant now that we have overridden convertString to fix issue #1.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function P => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -169,7 +170,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -194,7 +195,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where T is a 4-ary Product and which is based on a function to convert a (P1,P2,P3,P4) into a T.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3,P4) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -248,7 +249,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where T is a 6-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6) into a T.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -278,7 +279,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where T is a 7-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7) into a T.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -311,7 +312,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where T is a 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -346,7 +347,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where T is a 9-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9) into a T.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -383,7 +384,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where T is a 10-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) into a T.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -422,7 +423,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where T is a 11-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) into a T.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -463,7 +464,7 @@ trait HierarchicalRenderers {
   /**
    * Method to return a HierarchicalRenderer[T] where T is a 12-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) into a T.
    *
-   * TEST
+   * TESTME
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -503,5 +504,5 @@ trait HierarchicalRenderers {
     }
   }
 
-  def nameAttr(value: String): Map[String, String] = Map("name" -> value)
+  private def nameAttr(value: String): Map[String, String] = Map("name" -> value)
 }

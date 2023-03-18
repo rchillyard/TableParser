@@ -4,9 +4,12 @@
 
 package com.phasmidsoftware.table
 
-import com.phasmidsoftware.parse.{CellParser, RowParser, StringTableParser}
+import cats.effect.IO
+import com.phasmidsoftware.parse.{CellParser, InvalidParseException, RowParser, StringTableParser}
+import com.phasmidsoftware.util.EvaluateIO.{check, checkFailure, matchIO}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+import scala.annotation.unused
 import scala.util._
 
 //noinspection SpellCheckingInspection
@@ -24,15 +27,16 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       "Color,James Cameron,723,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,237000000,2009,936,7.9,1.78,33000"
     )
 
-    val mty: Try[Table[Movie]] = Table.parse(movies)
-    mty should matchPattern { case Success(HeadedTable(_, _)) => }
-    val mt: Table[Movie] = mty.get
-    println(s"Movie: successfully parsed ${mt.size} rows")
-    println(mt)
-    mt.size shouldBe 1
+    val mty: IO[Table[Movie]] = Table.parse(movies)
+    matchIO(mty) {
+      case mt@HeadedTable(_, _) =>
+        println(s"Movie: successfully parsed ${mt.size} rows")
+        println(mt)
+        mt.size shouldBe 1
+    }
   }
 
-  // TODO rework this test to be more significant
+  // CONSIDER rework this test to be more significant
   it should "parse the first (edited) movie from the IMDB dataset" in {
     import MovieParser._
 
@@ -41,9 +45,10 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
     )
 
-    val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Success(HeadedTable(_, _)) => }
-    x.get.size shouldBe 1
+    matchIO(Table.parse(movies)) {
+      case mt@HeadedTable(_, _) =>
+        mt.size shouldBe 1
+    }
   }
 
   it should "fail to parse the first (edited) movie from the IMDB dataset" in {
@@ -68,8 +73,9 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       movieHeader,
       "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-,,2009,936,7.9,1.78,33000"
     )
-    val x: Try[Table[Movie]] = Table.parse(movies)
-    x should matchPattern { case Failure(_) => }
+    val x: IO[Table[Movie]] = Table.parse(movies)
+    import cats.effect.unsafe.implicits.global
+    checkFailure(x)(classOf[InvalidParseException]).unsafeRunSync()
   }
 
   it should "parse all the following rows" in {
@@ -94,9 +100,9 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    val mty = Table.parse(movies)
-    mty should matchPattern { case Success(HeadedTable(_, _)) => }
-    mty.get.size shouldBe 1
+    matchIO(Table.parse(movies)) {
+      case t@HeadedTable(_, _) => t.size shouldBe 1
+    }
   }
 
   it should "parse and transform the following rows with simple map" in {
@@ -121,12 +127,15 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    val mty = Table.parse(movies)
-    mty should matchPattern { case Success(HeadedTable(_, _)) => }
-    mty.get.size shouldBe 1
-    val z: Table[UnMovie] = mty.get.map[UnMovie](m => UnMovie(m.title.toLowerCase))
-    z.size shouldBe 1
-    z.head.title shouldBe "star wars: episode vii - the force awakens             "
+    @unused
+    val mti: IO[Table[Movie]] = Table.parse(movies)
+    check(mti) {
+      case t@HeadedTable(_, _) =>
+        t.size shouldBe 1
+        val z = t.map(m => UnMovie(m.title.toLowerCase))
+        z.size shouldBe 1
+        z.head.title shouldBe "star wars: episode vii - the force awakens             "
+    }
   }
 
   behavior of "Name"

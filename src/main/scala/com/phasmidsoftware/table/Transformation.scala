@@ -4,6 +4,8 @@
 
 package com.phasmidsoftware.table
 
+import scala.annotation.unused
+
 /**
  * Trait which transforms an X into a Y.
  * Basically, this is just a sub-class of Function1.
@@ -21,14 +23,15 @@ case class RawTableTransformation(transformers: Map[String, Transformation[Strin
 }
 
 /**
- * TEST
+ * TESTME
  *
  * @param aggregators a Map of Transformations indexed by String.
  */
+@unused
 case class RawTableAggregation(aggregators: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable] {
   def apply(t: RawTable): RawTable = {
     val header = t.maybeHeader.get // there must be a header for a raw table.
-    // TODO fix this get
+    // TODO avoid use of "get" (after we have created a unit test for this)
     val xm: Map[Int, Transformation[String, String]] = for ((k, x) <- aggregators; index = header.getIndex(k).get) yield (index, x)
     t.map(RawRowTransformation(xm))
   }

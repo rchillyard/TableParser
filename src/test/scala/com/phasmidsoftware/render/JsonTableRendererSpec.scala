@@ -1,10 +1,11 @@
 package com.phasmidsoftware.render
 
+import cats.effect.IO
 import com.phasmidsoftware.parse.{CellParser, TableParserHelper}
-import com.phasmidsoftware.table.{HeadedTable, Header, Table, TableJsonFormat}
+import com.phasmidsoftware.table._
+import com.phasmidsoftware.util.EvaluateIO.matchIO
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
-import scala.util.{Success, Try}
 import spray.json._
 
 class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
@@ -15,10 +16,13 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
 
   it should "render Partnership table" in {
     val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
-    val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings); q = Player.convertTable(pt); w = q.asInstanceOf[Renderable[Partnership]].render) yield w
-    wy should matchPattern { case Success("{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}") => }
-    implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}
-    wy.map(p => p.parseJson.convertTo[Table[Partnership]]) should matchPattern { case Success(HeadedTable(_, _)) => }
+    val wy: IO[String] = for (pt <- Table.parse[Table[Player]](strings); q = Player.convertTable(pt); w = q.asInstanceOf[TableRenderable[Partnership]].render) yield w
+    matchIO(wy) {
+      case p =>
+        p shouldBe "{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}"
+        implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}
+        p.parseJson.convertTo[Table[Partnership]] should matchPattern { case HeadedTable(_, _) => }
+    }
   }
 
   case class Player(first: String, last: String) {
@@ -36,10 +40,13 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
      * The requirements of the application are that the rows of the Player table are grouped by twos
      * and each resulting entity (an array of length 2) is taken to form a Partnership.
      *
+     * CONSIDER merging with duplicate code in: TableParserSpec.scala
+     *
      * @param pt a Table[Player]
      * @return a Table[Partnership]
      */
-    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Converters.convert(r)).replaceHeader(Some(Header.create("playerA", "playerB")))
+    def convertTable(pt: Table[Player]): Table[Partnership] =
+      pt.processRows(xs => Content((xs.toSeq grouped 2).map(r => Converters.convert(r)).toList)).replaceHeader(Some(Header.create("playerA", "playerB")))
   }
 
   case class Partnership(playerA: String, playerB: String)

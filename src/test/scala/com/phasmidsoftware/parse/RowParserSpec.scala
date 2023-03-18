@@ -15,7 +15,7 @@ class RowParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   case class HawkCount(species: String, count: Int)
 
   object HawkCountParser extends CellParsers {
-    val header: Header = Header.create("species", "count") // TODO do we need this?
+    val header: Header = Header.create("species", "count") // CONSIDER do we need this?
 
     implicit val hawkCountParser: CellParser[HawkCount] = cellParser2(HawkCount)
   }

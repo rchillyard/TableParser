@@ -6,6 +6,7 @@ package com.phasmidsoftware.render
 
 import com.phasmidsoftware.render.tag.{Attribute, HTML}
 import com.phasmidsoftware.table.{HeadedTable, Header, Indexed}
+import com.phasmidsoftware.write.{Node, TreeWriter}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
@@ -106,7 +107,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
 
   it should "render a table of Complexes in HTML without a header" in {
     import Complex1._
-    val table = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header.create("r", "i"))
+    val table: TableRenderable[Complex] = HeadedTable(Seq(Complex(0, 1), Complex(-1, 0)), Header.create("r", "i"))
     val h = table.renderHierarchical("table", Map("border" -> "1"))
     h shouldBe """<table>: "" (border -> 1) [<thead>: "" () [<tr>: "" () [<th>: "r" () [] ,<th>: "i" () [] ] ] ,<tbody>: "" () [<complex>: "" () [<>: "0.0" (name -> r) [] ,<>: "1.0" (name -> i) [] ] ,<complex>: "" () [<>: "-1.0" (name -> r) [] ,<>: "0.0" (name -> i) [] ] ] ] """
   }

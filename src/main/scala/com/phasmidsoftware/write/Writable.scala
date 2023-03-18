@@ -2,7 +2,7 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.render
+package com.phasmidsoftware.write
 
 import cats.effect.IO
 import com.phasmidsoftware.crypto.HexEncryption
@@ -10,6 +10,7 @@ import java.io.{File, FileWriter}
 
 /**
  * Trait to enable rendering of a table to a sequential (non-hierarchical) output format.
+ * A typeclass.
  *
  * @tparam O the underlying type, for example, a StringBuilder.
  */
@@ -162,5 +163,14 @@ object Writable {
     def writeRaw(o: FileWriter)(x: CharSequence): FileWriter = o.append(x).asInstanceOf[FileWriter]
 
     override def close(o: FileWriter): Unit = o.close()
+  }
+
+  // TESTME (why isn't this used? it should be)
+  def fileWritableIO(file: File): Writable[IO[FileWriter]] = new Writable[IO[FileWriter]] {
+    def unit: IO[FileWriter] = IO(new FileWriter(file))
+
+    def writeRaw(fi: IO[FileWriter])(x: CharSequence): IO[FileWriter] = for (f <- fi) yield f.append(x).asInstanceOf[FileWriter]
+
+    override def close(fi: IO[FileWriter]): Unit = for (f <- fi) yield f.close()
   }
 }

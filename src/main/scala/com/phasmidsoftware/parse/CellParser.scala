@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2019. Phasmid Software
  */
-
 package com.phasmidsoftware.parse
 
 import com.phasmidsoftware.table.{Header, Row}
@@ -12,12 +11,12 @@ import scala.annotation.implicitNotFound
 import scala.util.{Failure, Success, Try}
 
 /**
- * Type class trait CellParser[T].
+ * Type-class trait CellParser[T].
  * This trait has methods to parse and to convert from String to T.
  *
  * TODO Need to define this better so that we don't have any non-implemented methods.
  *
- * @tparam T the type of the resulting object.
+ * @tparam T the (covariant) type of the resulting object.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of CellParser[${T}]. Typically, you should invoke a suitable method from CellParsers.")
 trait CellParser[+T] {
@@ -38,7 +37,7 @@ trait CellParser[+T] {
   def parse(value: Convertible): Try[T] = value match {
     case CellValue(w) => convertString(w)
     case RowValues(row, columns) => parse(None, row, columns)
-    case _ => Failure(ParsersException(s"CellParser: cannot convert value $value of type ${value.getClass}"))
+    case _ => Failure(ParserException(s"CellParser: cannot convert value $value of type ${value.getClass}"))
   }
 
   /**
@@ -61,7 +60,7 @@ trait CellParser[+T] {
 trait SingleCellParser[T] extends CellParser[T] {
   def parse(w: Option[String], row: Row, columns: Header): Try[T] = Failure(new UnsupportedOperationException)
 
-  // NOTE not used
+  // NOTE used only for debugging
   override def toString: String = "SingleCellParser"
 }
 
@@ -75,38 +74,8 @@ trait MultiCellParser[T] extends CellParser[T] {
   //noinspection NotImplementedCode
   def convertString(w: String): Try[T] = Failure(new UnsupportedOperationException)
 
-  // NOTE not used
+  // NOTE used only for debugging
   override def toString: String = "MultiCellParser"
-}
-
-/**
- * Abstract class Convertible.
- *
- * CONSIDER making this a trait since it takes no value parameters.
- */
-sealed abstract class Convertible {
-  def convertTo[T: CellParser]: Try[T] = cellReader.parse(this)
-}
-
-/**
- * A concrete Convertible corresponding to a cell value.
- *
- * @param w the String contained by a cell.
- */
-case class CellValue(w: String) extends Convertible
-
-/**
- * A concrete Convertible corresponding to a row.
- *
- * @param row    the Row containing several values.
- * @param header the Header.
- */
-case class RowValues(row: Row, header: Header) extends Convertible {
-  override def toString: String = (for ((h, x) <- header.xs zip row.ws) yield s"""${h.toUpperCase}="$x"""").mkString(", ")
-}
-
-object RowValues {
-  def apply(row: Row): RowValues = RowValues(row, row.hdr)
 }
 
 object CellParser {
@@ -114,70 +83,70 @@ object CellParser {
   implicit object BooleanCellParser$ extends SingleCellParser[Boolean] {
     def convertString(w: String): Try[Boolean] = implicitly[Parseable[Boolean]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "BooleanCellParser$"
   }
 
   implicit object CharCellParser$ extends SingleCellParser[Char] {
     def convertString(w: String): Try[Char] = implicitly[Parseable[Char]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "CharCellParser$"
   }
 
   implicit object ByteCellParser$ extends SingleCellParser[Byte] {
     def convertString(w: String): Try[Byte] = implicitly[Parseable[Byte]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "ByteCellParser$"
   }
 
   implicit object ShortCellParser$ extends SingleCellParser[Short] {
     def convertString(w: String): Try[Short] = implicitly[Parseable[Short]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "ShortCellParser$"
   }
 
   implicit object IntCellParser$ extends SingleCellParser[Int] {
     def convertString(w: String): Try[Int] = implicitly[Parseable[Int]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "IntCellParser$"
   }
 
   implicit object LongCellParser$ extends SingleCellParser[Long] {
     def convertString(w: String): Try[Long] = implicitly[Parseable[Long]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "LongCellParser$"
   }
 
   implicit object BigIntCellParser$ extends SingleCellParser[BigInt] {
     def convertString(w: String): Try[BigInt] = implicitly[Parseable[BigInt]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "BigIntCellParser$"
   }
 
   implicit object FloatCellParser$ extends SingleCellParser[Float] {
     def convertString(w: String): Try[Float] = implicitly[Parseable[Float]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "FloatCellParser$"
   }
 
   implicit object DoubleCellParser$ extends SingleCellParser[Double] {
     def convertString(w: String): Try[Double] = implicitly[Parseable[Double]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "DoubleCellParser$"
   }
 
   implicit object BigDecimalCellParser$ extends SingleCellParser[BigDecimal] {
     def convertString(w: String): Try[BigDecimal] = implicitly[Parseable[BigDecimal]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "BigDecimalCellParser$"
   }
 
@@ -187,28 +156,28 @@ object CellParser {
   implicit object StringCellParser$ extends SingleCellParser[String] {
     def convertString(w: String): Try[String] = Success(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "StringCellParser$"
   }
 
   implicit object DateTimeParser$ extends SingleCellParser[LocalDate] {
     def convertString(w: String): Try[LocalDate] = implicitly[Parseable[LocalDate]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "DateTimeParser$"
   }
 
   implicit object URLParser$ extends SingleCellParser[URL] {
     override def convertString(w: String): Try[URL] = implicitly[Parseable[URL]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "URLParser$"
   }
 
   implicit object FileParser$ extends SingleCellParser[File] {
     def convertString(w: String): Try[File] = implicitly[Parseable[File]].parse(w)
 
-    // XXX not used
+    // NOTE used only for debugging
     override def toString: String = "FileParser$"
   }
 

@@ -21,7 +21,9 @@ class LineParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   val p3 = new LineParser(", *".r, """[\w_\?:=\./]+""".r, "", '|', quote = '\'')
   //  val p4 = new LineParser("""\|""".r, """[^|]*""".r, "{}", ',', quote = '"')
   private val helloQuoteGoodbye = """"Hello ""Goodbye""""
-  private val helloQuoteGoodbyeWithNewline = """"Hello \nme old mate" "Goodbye""""
+  private val helloQuoteGoodbyeWithNewline =
+    """"Hello
+      |me old mate" "Goodbye"""".stripMargin
   private val HelloGoodbye = """Hello "Goodbye"""
   val HelloCommaGoodbye = """{Hello,Goodbye}"""
 

@@ -4,18 +4,22 @@
 
 package com.phasmidsoftware.parse
 
+import cats.effect.IO
 import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.table._
+import com.phasmidsoftware.util.EvaluateIO.{checkFailure, matchIO}
+import com.phasmidsoftware.util.IOUsing
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-import scala.io.Codec
+import scala.io.{Codec, Source}
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 import tsec.cipher.symmetric.jca.AES128CTR
 
+//noinspection SpellCheckingInspection
 class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "TableParser"
@@ -39,7 +43,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      override def parseHeader(w: Seq[String]): Try[Header] = ???
+      override def parseHeader(w: Seq[String]): IO[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -65,9 +69,9 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
 
     val strings: Seq[String] = Seq("1 2")
-    Table.parse(strings) match {
-      case Success(_) => succeed
-      case Failure(x) => fail(x.getLocalizedMessage)
+    matchIO(Table.parse(strings)) {
+      case t: Table[IntPair] =>
+        t.toSeq shouldBe List(IntPair(1, 2))
     }
   }
 
@@ -127,10 +131,11 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val rowParser = implicitly[RowParser[DailyRaptorReport, String]]
     val firstRow = headerRaptors
     val row = "09/16/2018\t" + partlyCloudy + "\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410"
-    val Success(header) = rowParser.parseHeader(Seq(firstRow))
-
-    val hawkCount: Try[DailyRaptorReport] = parser.parse((row, 0))(header)
-    hawkCount should matchPattern { case Success(DailyRaptorReport(_, `partlyCloudy`, 3308, 5)) => }
+    matchIO(rowParser.parseHeader(Seq(firstRow))) {
+      case header@Header(_, _) =>
+        val hawkCount: Try[DailyRaptorReport] = parser.parse((row, 0))(header)
+        hawkCount should matchPattern { case Success(DailyRaptorReport(_, `partlyCloudy`, 3308, 5)) => }
+    }
   }
 
   behavior of "Table.parse"
@@ -138,13 +143,14 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse raptors from raptors.csv" in {
     import DailyRaptorReport._
 
-    val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
-    x should matchPattern { case Success(HeadedTable(_, _)) => }
-    x.get.rows.size shouldBe 13
-    // TODO fix deprecation. Also in two other places in this module.
-    //noinspection ScalaDeprecation
-    val date = new LocalDate(2018, 9, 12)
-    x.get.rows.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
+    matchIO(for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r) {
+      case rt@HeadedTable(_, _) =>
+        rt.content.size shouldBe 13
+        // TODO fix deprecation. Also in two other places in this module.
+        //noinspection ScalaDeprecation
+        val date = new LocalDate(2018, 9, 12)
+        rt.content.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
+    }
   }
 
   it should "parse raptors from Seq[String]" in {
@@ -153,12 +159,13 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val raw = Seq(headerRaptors,
       "09/16/2018\t" + partlyCloudy + "\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410",
       "09/19/2018\tOvercast/Mostly cloudy/Partly cloudy/Clear\tNW\t4-7\t0\t0\t0\t47\t12\t0\t84\t10\t0\t0\t1\t821\t4\t0\t1\t0\t0\t27\t4\t1\t0\t2\t0\t1014")
-    val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parse(raw)) yield r
-    x should matchPattern { case Success(HeadedTable(_, _)) => }
-    x.get.rows.size shouldBe 2
-    //noinspection ScalaDeprecation
-    val date = new LocalDate(2018, 9, 16)
-    x.get.rows.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
+    matchIO(for (r <- Table.parse(raw)) yield r) {
+      case rt@HeadedTable(_, _) =>
+        rt.content.size shouldBe 2
+        //noinspection ScalaDeprecation
+        val date = new LocalDate(2018, 9, 16)
+        rt.content.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
+    }
   }
 
   it should "fail empty sequence" in {
@@ -166,17 +173,18 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val raw = Seq(headerRaptors,
       "")
-    val xty: Try[Table[DailyRaptorReport]] = for (r <- Table.parse(raw)) yield r
-    xty.isSuccess shouldBe false
+    import cats.effect.unsafe.implicits.global
+    checkFailure(for (r <- Table.parse(raw)) yield r)(classOf[ParserException]).unsafeRunSync()
   }
 
   it should "parse empty sequence" in {
 
     val raw = Seq(headerRaptors,
       "")
-    val xty: Try[RawTable] = for (r <- Table.parseRaw(raw, TableParser.includeAll)) yield r
-    xty.isSuccess shouldBe true
-    xty.get.size shouldBe 0
+    matchIO(for (r <- Table.parseRaw(raw, TableParser.includeAll)) yield r) {
+      case rt@HeadedTable(_, _) =>
+        rt.size shouldBe 0
+    }
   }
 
   object DailyRaptorReportSeq {
@@ -226,12 +234,13 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val raw = Seq(Seq("Date", "Weather", "Wnd Dir", "Wnd Spd", "BV", "TV", "UV", "OS", "BE", "NH", "SS", "CH", "GO", "UA", "RS", "BW", "RT", "RL", "UB", "GE", "UE", "AK", "M", "P", "UF", "UR", "Oth", "Tot"),
       Seq("09/16/2018", partlyCloudy, "SE", "6-12", "0", "0", "0", "4", "19", "3", "30", "2", "0", "0", "2", "3308", "5", "0", "0", "0", "0", "27", "8", "1", "0", "1", "0", "3410"),
       Seq("09/19/2018", "Overcast/Mostly cloudy/Partly cloudy/Clear", "NW", "4-7", "0", "0", "0", "47", "12", "0", "84", "10", "0", "0", "1", "821", "4", "0", "1", "0", "0", "27", "4", "1", "0", "2", "0", "1014"))
-    val x: Try[Table[DailyRaptorReport]] = for (r <- Table.parseSequence(raw.iterator)) yield r
-    x should matchPattern { case Success(HeadedTable(_, _)) => }
-    x.get.rows.size shouldBe 2
-    //noinspection ScalaDeprecation
-    val date = new LocalDate(2018, 9, 16)
-    x.get.rows.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
+    matchIO(for (r <- Table.parseSequence(raw.iterator)) yield r) {
+      case rt@HeadedTable(_, _) =>
+        rt.content.size shouldBe 2
+        //noinspection ScalaDeprecation
+        val date = new LocalDate(2018, 9, 16)
+        rt.content.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
+    }
   }
 
   object DailyRaptorReportNoHeader {
@@ -279,14 +288,13 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse raptors without header" in {
     import DailyRaptorReportNoHeader._
 
-    val x: Try[Table[DailyRaptorReport]] =
-      for (r <- Table.parseResource("noHeader.csv", classOf[TableParserSpec])) yield r
-    x should matchPattern { case Success(HeadedTable(_, _)) => }
-    x.get.rows.size shouldBe 13
-    // TODO fix deprecation. Also in two other places in this module.
-    val date = new LocalDate(2018, 9, 12)
-    x.get.rows.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
-
+    matchIO(for (r <- Table.parseResource("noHeader.csv", classOf[TableParserSpec])) yield r) {
+      case rt@HeadedTable(_, _) =>
+        rt.content.size shouldBe 13
+        // TODO fix deprecation. Also in two other places in this module.
+        val date = new LocalDate(2018, 9, 12)
+        rt.content.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
+    }
   }
 
 
@@ -335,29 +343,26 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     import Submissions._
     // TODO note that the column lookup isn't correct for Question ID 1
-    val qty: Try[Table[Submission]] = Table.parseSequence(rows.iterator)
-    qty should matchPattern { case Success(_) => }
-    qty.get.size shouldBe 1
-    println(qty.get.head)
+
+    matchIO(Table.parseSequence(rows.iterator)) {
+      case rt@HeadedTable(_, _) =>
+        println(rt.head)
+        rt.size shouldBe 1
+    }
   }
 
   it should "fail on incompatible parser" in {
     import Submissions._
     val strings: Seq[String] = Nil
-    Table.parse(strings) match {
-      case Success(_) => fail("should fail")
-      case Failure(_) => succeed
-    }
+    import cats.effect.unsafe.implicits.global
+    checkFailure(Table.parse(strings))(classOf[ParserException]).unsafeRunSync()
   }
 
   it should "fail on empty rows" in {
     import Submissions._
     val rows: Seq[Seq[String]] = Nil
-    val qty: Try[Table[Submission]] = Table.parseSequence(rows.iterator)
-    qty match {
-      case Success(_) => fail("should fail")
-      case Failure(_) => succeed
-    }
+    import cats.effect.unsafe.implicits.global
+    checkFailure(Table.parseSequence(rows.iterator))(classOf[NoSuchElementException]).unsafeRunSync()
   }
 
 
@@ -399,10 +404,20 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse sample.csv with Submission1" in {
     import Submissions1._
-    implicit val codec: Codec = Codec("UTF-16")
-    val qty: Try[Table[Submission]] = Table.parseResource("submissions.csv", classOf[TableParserSpec])
-    qty should matchPattern { case Success(_) => }
-    qty.get.size shouldBe 1
+    implicit val codec: Codec = Codec("UTF-16") // Not sure why it is in UTF-16 but it is.
+    val sy: Try[Source] = Try(Source.fromURL(classOf[TableParserSpec].getResource("submissions.csv")))
+    val sti: IO[Table[Submission]] = IOUsing(sy)(s => Table.parseSource(s))
+    matchIO(sti) {
+      case st@HeadedTable(_, _) => st.size shouldBe 1
+    }
+  }
+
+  it should "parse sample.csv with Submission1 Alt" in {
+    import Submissions1._
+    implicit val codec: Codec = Codec("UTF-16") // Not sure why it is in UTF-16 but it is.
+    matchIO(Table.parseResource("submissions.csv", classOf[TableParserSpec])) {
+      case rt@HeadedTable(_, _) => rt.size shouldBe 1
+    }
   }
 
   /**
@@ -423,10 +438,13 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
      * The requirements of the application are that the rows of the Player table are grouped by twos
      * and each resulting entity (an array of length 2) is taken to form a Partnership.
      *
+     * CONSIDER merging with duplicate code in: TableParserHelperSpec.scala
+     *
      * @param pt a Table[Player]
      * @return a Table[Partnership]
      */
-    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => (xs grouped 2).toList).map(r => Partnership(r))
+    def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => Content((xs.toSeq grouped 2).map(r => Partnership(r)).toList))
+//      pt.processRows(xs => (xs.toSeq grouped 2)).map(r => Partnership(r))
   }
 
   case class Partnership(playerA: String, playerB: String) {
@@ -443,14 +461,13 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "support header defined in a header row in the input" in {
     val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
-    val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
-    val tsy: Try[Table[Partnership]] = for (pt <- pty) yield Player.convertTable(pt)
-    val sy: Try[Partnerships] = for (ts <- tsy) yield Partnerships((for (t <- ts) yield t.asArray).toArray)
-    sy should matchPattern { case Success(_) => }
-    val partnerships: Partnerships = sy.get
-    partnerships.size shouldBe 2
-    partnerships.partners.head shouldBe Array("Adam S", "Amy A")
-    partnerships.partners.last shouldBe Array("Ann P", "Barbara G")
+    matchIO(Table.parse[Table[Player]](strings.iterator)) {
+      case pt@HeadedTable(_, _) =>
+        val partnerships: Partnerships = Partnerships((for (t <- Player.convertTable(pt)) yield t.asArray).toArray)
+        partnerships.size shouldBe 2
+        partnerships.partners.head shouldBe Array("Adam S", "Amy A")
+        partnerships.partners.last shouldBe Array("Ann P", "Barbara G")
+    }
   }
 
   behavior of "RawTableParser"

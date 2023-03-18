@@ -9,7 +9,7 @@ import tsec.cipher.symmetric
 import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
 
 /**
- * Trait to deal with Encryption for Strings.
+ * Typeclass trait to deal with Encryption for Strings.
  * The encoding of the Strings is dependent on the concrete implementation of this trait.
  *
  * It is general in nature, but has only been tested with JCA AES128CTR.
@@ -68,7 +68,7 @@ trait Encryption[A] {
 }
 
 /**
- * Trait to deal with Encryption to/from Hex strings.
+ * Typeclass trait to deal with Encryption to/from Hex strings.
  *
  * @tparam A the cipher algorithm.
  */
@@ -171,7 +171,7 @@ object Encryption {
    *
    * CONSIDER using Cats effect for Random.
    */
-  val asyncRandom: IO[Random] = IO(new Random)
+  private val asyncRandom: IO[Random] = IO(new Random)
 
   val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-abcdefghijklmnopqrstuvwxyz_0123456789"
 

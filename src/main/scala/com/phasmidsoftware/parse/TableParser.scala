@@ -9,7 +9,7 @@ import com.phasmidsoftware.crypto.HexEncryption
 import com.phasmidsoftware.parse.AbstractTableParser.logException
 import com.phasmidsoftware.parse.TableParser.includeAll
 import com.phasmidsoftware.table._
-import com.phasmidsoftware.util.FP.partition
+import com.phasmidsoftware.util.FP.{partition, sequence}
 import com.phasmidsoftware.util._
 import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.implicitNotFound
@@ -91,9 +91,9 @@ trait TableParser[Table] {
    * Method to parse a table based on a sequence of Inputs.
    *
    * @param xs the sequence of Inputs, one for each row
-   * @return a Try[Table]
+   * @return an IO[Table]
    */
-  def parse(xs: Iterator[Input], n: Int): Try[Table]
+  def parse(xs: Iterator[Input], n: Int): IO[Table]
 }
 
 object TableParser {
@@ -105,31 +105,32 @@ object TableParser {
    * @tparam T the underlying type of p (T will be Table[_]).
    */
   implicit class ImplicitParser[T](p: StringTableParser[T]) {
+
+    /**
+     * Method to parse a IO[Source].
+     * NOTE the underlying source of sy will be closed after parsing has been completed (no resource leaks).
+     *
+     * @param si a IO[Source].
+     * @return an IO[T].
+     */
+    def parse(si: IO[Source]): IO[T] = si flatMap doParse
+
     /**
      * Method to parse an iterator of String.
      *
      * @param xs an Iterator[String].
-     * @return a Try[T].
+     * @return an IO[T].
      */
-    def parse(xs: Iterator[String]): Try[T] = p.parse(xs, 1)
+    private def doParse(xs: Iterator[String]): IO[T] = p.parse(xs, 1)
 
     /**
      * Method to parse a Source.
      * NOTE the source s will be closed after parsing has been completed (no resource leaks).
      *
      * @param s a Source.
-     * @return a Try[T].
+     * @return an IO[T].
      */
-    def parse(s: Source): Try[T] = TryUsing(s)(x => parse(x.getLines()))
-
-    /**
-     * Method to parse a Try[Source].
-     * NOTE the underlying source of sy will be closed after parsing has been completed (no resource leaks).
-     *
-     * @param sy a Source.
-     * @return a Try[T].
-     */
-    def parse(sy: Try[Source]): Try[T] = sy flatMap parse
+    private def doParse(s: Source): IO[T] = IOUsing(s)(x => doParse(x.getLines()))
   }
 
   val r: Random = new Random()
@@ -139,11 +140,14 @@ object TableParser {
   /**
    * Method to return a random sampling function.
    *
+   * CONSIDER using FP.sampler
+   *
    * @param n this is the sample factor: approximately one in every n successful results will form part of the result.
-   * @return a Try[Any] => Boolean function which is always yields false if its input is a failure, otherwise,
+   * @tparam X the underlying type of the sampler.
+   * @return a Try[X] => Boolean function which is always yields false if its input is a failure, otherwise,
    *         it chooses every nth value (approximately).
    */
-  def sampler(n: Int): Try[Any] => Boolean = {
+  def sampler[X](n: Int): Try[X] => Boolean = {
     case Success(_) => r.nextInt(n) == 0
     case _ => false
   }
@@ -167,15 +171,15 @@ trait CopyableTableParser[Row, Input, Table] {
 }
 
 /**
-  * Class used to parse files as a Table of Seq[String].
-  * That's to say, no parsing of individual (or groups of) columns.
-  *
-  * @param predicate        a predicate which, if true, allows inclusion of the input row.
-  * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
-  * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
-  */
+ * Class used to parse files as a Table of Seq[String].
+ * That's to say, no parsing of individual (or groups of) columns.
+ *
+ * @param predicate        a predicate which, if true, allows inclusion of the input row.
+ * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the file.
+ * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
+ */
 case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
-  extends StringTableParser[RawTable] with CopyableTableParser[RawRow, String, RawTable] {
+        extends StringTableParser[RawTable] with CopyableTableParser[RawRow, String, RawTable] {
 
   type Row = RawRow
 
@@ -186,7 +190,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
   val rowParser: RowParser[Row, String] = StandardRowParser.create[Row]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
-  protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+  protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(Content(rows), header)
 
   def setHeader(header: Header): RawTableParser = copy(maybeFixedHeader = Some(header))
 
@@ -268,17 +272,13 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
 
   private val phase2Parser = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
 
-  override def parse(xs: Iterator[String], n: Int): Try[Table[X]] = {
-    def decryptAndParse(h: Header, xt: RawTable): Try[Table[X]] = {
-      val wti: IO[Table[String]] = decryptTable(xt)
-      import cats.effect.unsafe.implicits.global
-      for (wt <- Try(wti.unsafeRunSync()); xt <- phase2Parser.parseRows(wt.rows.iterator, h)) yield xt
-    }
+  override def parse(xr: Iterator[String], n: Int): IO[Table[X]] = {
+    def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] = for (wt <- decryptTable(xt); xt <- phase2Parser.parseRows(wt.iterator, h)) yield xt
 
-    val ys = new TeeIterator(n)(xs)
-    val hy: Try[Header] = rowParser.parseHeader(ys.tee)
-    val xty: Try[RawTable] = createPhase1Parser.parse(ys)
-    for (h <- hy; xt1 <- xty; xt2 <- decryptAndParse(h, xt1)) yield xt2
+    val sr: TeeIterator[String] = new TeeIterator(n)(xr)
+    val hi: IO[Header] = rowParser.parseHeader(sr.tee)
+    val xti: IO[RawTable] = createPhase1Parser.parse(sr)
+    for (h <- hi; xt1 <- xti; xt2 <- decryptAndParse(h, xt1)) yield xt2
   }
 
   /**
@@ -346,7 +346,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
 
   private def decryptTable(xt: RawTable): IO[Table[String]] = {
     val wit: Table[IO[String]] = xt.map(row => HexEncryption.decryptRow(keyFunction)(row.ws))
-    for (ws <- IO.parSequenceN(2)(wit.rows.toSeq)) yield wit.unit(ws)
+    for (ws <- IO.parSequenceN(2)(wit.toSeq)) yield wit.unit(ws)
   }
 }
 
@@ -376,7 +376,7 @@ sealed abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFix
 
   type Row = X
 
-  protected def builder(rows: Iterable[X], header: Header): Table[Row] = HeadedTable(rows, header)
+  protected def builder(rows: Iterable[X], header: Header): Table[Row] = HeadedTable(Content(rows), header)
 
   protected val rowParser: RowParser[X, String] = StandardRowParser.create[X]
 }
@@ -397,39 +397,39 @@ object HeadedStringTableParser {
  * Abstract base class for implementations of TableParser[T].
  * NOTE: that Table is a parametric type and does NOT refer to the type Table defined elsewhere.
  *
+ * CONSIDER making this a trait
+ *
  * @tparam Table the (parametric) Table type.
  */
 abstract class AbstractTableParser[Table] extends TableParser[Table] {
-
-  protected def failureHandler(ry: Try[Row]): Unit = logException[Row](ry)
 
   /**
    * Abstract method to parse a sequence of Inputs, with a given header.
    *
    * @param xs     the sequence of Inputs, one for each row
    * @param header the header to be used.
-   * @return a Try[Table]
+   * @return an IO[Table]
    */
-  def parseRows(xs: Iterator[Input], header: Header): Try[Table]
+  def parseRows(xs: Iterator[Input], header: Header): IO[Table]
 
   /**
    * Method to parse a table based on a sequence of Inputs.
    *
    * NOTE: this is invoked implicitly by:
-   * def parse[T: TableParser](ws: Iterator[String]): Try[T]
+   * def parse[T: TableParser](ws: Iterator[String]): IO[T]
    * in Table object.
    *
-   * @param xs the sequence of Inputs, one for each row
+   * @param xr the sequence of Inputs, one for each row
    * @param n  the number of lines that should be used as a Header.
    *           If n == 0 == maybeFixedHeader.empty then there is a logic error.
-   * @return a Try[Table]
+   * @return an IO[Table]
    */
-  def parse(xs: Iterator[Input], n: Int = 0): Try[Table] = maybeFixedHeader match {
-    case Some(h) => parseRows(xs drop n, h) // CONSIDER reverting to check that n = 0
+  def parse(xr: Iterator[Input], n: Int = 0): IO[Table] = maybeFixedHeader match {
+    case Some(h) => parseRows(xr drop n, h) // CONSIDER reverting to check that n = 0
     case None if n > 0 =>
-      val ys = new TeeIterator(n)(xs)
-      for (h <- rowParser.parseHeader(ys.tee); t <- parseRows(ys, h)) yield t
-    case _ => throw TableParserException("parse: logic error")
+      val yr: TeeIterator[Input] = new TeeIterator(n)(xr)
+      for (h <- rowParser.parseHeader(yr.tee); t <- parseRows(yr, h)) yield t
+    case _ => IO.raiseError(TableParserException("parse: logic error"))
   }
 
   /**
@@ -463,15 +463,18 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
     def processTriedRows(rys: Iterator[Try[Row]]) = if (forgiving) {
       val (good, bad) = partition(rys)
+      // CONSIDER using sequenceRev in order to save time
       bad foreach failureHandler //AbstractTableParser.logException[Row]
-      FP.sequence(good filter predicate)
+      sequence(good filter predicate)
     }
     else
-      FP.sequence(rys filter predicate)
+      sequence(rys filter predicate)
 
     val q: Seq[Try[Row]] = mapTsToRows.toSeq
     for (rs <- processTriedRows(q.iterator)) yield builder(rs.toList, header)
   }
+
+  private def failureHandler(ry: Try[Row]): Unit = logException[Row](ry)
 }
 
 object AbstractTableParser {
@@ -497,7 +500,7 @@ object AbstractTableParser {
 abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
   type Input = String
 
-  def parseRows(xs: Iterator[String], header: Header): Try[Table] = doParseRows(xs, header, rowParser.parse)
+  def parseRows(wr: Iterator[String], header: Header): IO[Table] = IO.fromTry(doParseRows(wr, header, rowParser.parse))
 }
 
 /**
@@ -509,7 +512,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
 abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
   type Input = Strings
 
-  def parseRows(xs: Iterator[Strings], header: Header): Try[Table] = doParseRows(xs, header, rowParser.parse)
+  def parseRows(wsr: Iterator[Strings], header: Header): IO[Table] = IO.fromTry(doParseRows(wsr, header, rowParser.parse))
 }
 
 /**

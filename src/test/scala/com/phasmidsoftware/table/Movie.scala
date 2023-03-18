@@ -5,6 +5,7 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.parse._
+import com.phasmidsoftware.render._
 import scala.util.Try
 
 /**
@@ -140,7 +141,7 @@ object MovieParser extends CellParsers {
   implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
   implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
   implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
-  implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
+  implicit val movieParser: CellParser[Movie] = cellParser11(Movie.apply)
 
   implicit object MovieConfig extends DefaultRowConfig {
     override val listEnclosure: String = ""
@@ -194,5 +195,58 @@ object Rating {
     }
 
   private val rRating = """^(\w*)(-(\d\d))?$""".r
+}
 
+object Movie {
+
+  import com.phasmidsoftware.render.CsvGenerators._
+
+  val csvGenerators: CsvGenerators = new CsvGenerators {}
+
+  def createMovieCvsGenerator: CsvGenerator[Movie] = {
+    implicit val generatorStringList: CsvGenerator[StringList] = csvGenerators.sequenceGenerator[String]
+    implicit val generatorOptionDouble: CsvGenerator[Option[Double]] = csvGenerators.optionGenerator
+    implicit val generatorOptionInt: CsvGenerator[Option[Int]] = csvGenerators.optionGenerator
+    implicit val generatorOptionString: CsvGenerator[Option[String]] = csvGenerators.optionGenerator
+    implicit val generatorFormat: CsvGenerator[Format] = csvGenerators.generator4(Format)
+    implicit val generatorProduction: CsvGenerator[Production] = csvGenerators.generator4(Production)
+    implicit val generatorRating: CsvGenerator[Rating] = csvGenerators.generator2(Rating.apply)
+    implicit val generatorReviews: CsvGenerator[Reviews] = csvGenerators.generator7(Reviews)
+    implicit val generatorName: CsvGenerator[Name] = csvGenerators.generator4(Name.apply)
+    implicit val generatorPrincipal: CsvGenerator[Principal] = csvGenerators.generator2(Principal)
+    implicit val generatorOptionPrincipal: CsvGenerator[Option[Principal]] = csvGenerators.optionGenerator
+    val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
+    implicit val generatorAttributeSet: CsvGenerator[AttributeSet] = csvGenerators.generator1(fAttributeSet)
+    csvGenerators.generator11(Movie.apply)
+  }
+}
+
+// CONSIDER removing the csvAttributes parameter and making it an object.
+class CsvRendererMovie(implicit val csvAttributes: CsvAttributes) extends CsvRenderers with CsvRenderer[Movie] {
+
+  import com.phasmidsoftware.render.CsvGenerators._
+
+  private val csvGenerators = new CsvGenerators {}
+  implicit val generatorStringList: CsvGenerator[StringList] = csvGenerators.sequenceGenerator[String]
+  implicit val generatorOptionDouble: CsvGenerator[Option[Double]] = csvGenerators.optionGenerator
+  implicit val generatorOptionInt: CsvGenerator[Option[Int]] = csvGenerators.optionGenerator
+  implicit val generatorOptionString: CsvGenerator[Option[String]] = csvGenerators.optionGenerator
+
+  import com.phasmidsoftware.render.CsvRenderers._
+
+  implicit val rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
+  implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer()
+  implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()
+  implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer()
+  implicit val rendererFormat: CsvProduct[Format] = rendererGenerator4(Format)
+  implicit val rendererProduction: CsvRenderer[Production] = renderer4(Production)
+  implicit val rendererRating: CsvRenderer[Rating] = renderer2(Rating.apply)
+  implicit val rendererReviews: CsvRenderer[Reviews] = renderer7(Reviews)
+  implicit val rendererName: CsvRenderer[Name] = renderer4(Name.apply)
+  implicit val rendererPrincipal: CsvRenderer[Principal] = renderer2(Principal)
+  implicit val rendererOptionPrincipal: CsvRenderer[Option[Principal]] = optionRenderer()
+  val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
+  implicit val rendererAttributeSet: CsvRenderer[AttributeSet] = renderer1(fAttributeSet)
+
+  def render(t: Movie, attrs: Map[String, String]): String = renderer11(Movie.apply).render(t, attrs)
 }

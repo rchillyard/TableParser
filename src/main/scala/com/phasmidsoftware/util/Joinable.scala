@@ -43,10 +43,10 @@ object Joinable {
   }
 
   implicit object JoinableStrings extends Joinable[Seq[String]] {
-    def join(t1: Seq[String], t2: Seq[String]): Seq[String] = t1 ++ t2 // TEST
+    def join(t1: Seq[String], t2: Seq[String]): Seq[String] = t1 ++ t2 // TESTME
 
     val zero: Seq[String] = Nil
 
-    def valid(t: Seq[String]): Boolean = t.nonEmpty // TEST
+    def valid(t: Seq[String]): Boolean = t.nonEmpty // TESTME
   }
 }

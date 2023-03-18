@@ -25,7 +25,7 @@ trait Parseable[T] {
    * @param s the String to be parsed.
    * @return the corresponding value of type T, wrapped in Try.
    */
-  def parse(s: String): Try[T]
+  def parse(s: String, optModifier: Option[String] = None): Try[T]
 }
 
 object Parseable {
@@ -35,7 +35,7 @@ object Parseable {
    * The exception is useful for ensuring a None in the case of an optional String.
    */
   trait ParseableString extends Parseable[String] {
-    def parse(s: String): Try[String] = if (s.isEmpty) Failure(BlankException()) else Success(s)
+    def parse(s: String, optModifier: Option[String]): Try[String] = if (s.isEmpty) Failure(BlankException()) else Success(s)
   }
 
   implicit object ParseableString extends ParseableString
@@ -44,7 +44,7 @@ object Parseable {
    * Parser of Boolean.
    */
   trait ParseableBoolean extends Parseable[Boolean] {
-    def parse(s: String): Try[Boolean] = parseAndRecover(s)(lift(_.toBoolean))(w => s"ParseableBoolean: cannot interpret '$w' as a Boolean")
+    def parse(s: String, optModifier: Option[String]): Try[Boolean] = parseAndRecover(s)(lift(_.toBoolean))(w => s"ParseableBoolean: cannot interpret '$w' as a Boolean")
   }
 
   implicit object ParseableBoolean extends ParseableBoolean
@@ -53,7 +53,7 @@ object Parseable {
    * Parser of Byte.
    */
   trait ParseableByte extends Parseable[Byte] {
-    def parse(s: String): Try[Byte] = parseAndRecover(s)(lift(_.toByte))(w => s"ParseableByte: cannot interpret '$w' as a Byte")
+    def parse(s: String, optModifier: Option[String]): Try[Byte] = parseAndRecover(s)(lift(_.toByte))(w => s"ParseableByte: cannot interpret '$w' as a Byte")
   }
 
   implicit object ParseableByte extends ParseableByte
@@ -62,7 +62,7 @@ object Parseable {
    * Parser of Char.
    */
   trait ParseableChar extends Parseable[Char] {
-    def parse(s: String): Try[Char] = parseAndRecover(s)(lift(_.head))(w => s"ParseableChar: cannot interpret '$w' as a Char")
+    def parse(s: String, optModifier: Option[String]): Try[Char] = parseAndRecover(s)(lift(_.head))(w => s"ParseableChar: cannot interpret '$w' as a Char")
   }
 
   implicit object ParseableChar extends ParseableChar
@@ -71,7 +71,7 @@ object Parseable {
    * Parser of Short.
    */
   trait ParseableShort extends Parseable[Short] {
-    def parse(s: String): Try[Short] = parseAndRecover(s)(lift(_.toShort))(w => s"ParseableShort: cannot interpret '$w' as a Short")
+    def parse(s: String, optModifier: Option[String]): Try[Short] = parseAndRecover(s)(lift(_.toShort))(w => s"ParseableShort: cannot interpret '$w' as a Short")
   }
 
   implicit object ParseableShort extends ParseableShort
@@ -80,7 +80,8 @@ object Parseable {
    * Parser of Int.
    */
   trait ParseableInt extends Parseable[Int] {
-    def parse(s: String): Try[Int] = parseAndRecover(s)(lift(_.toInt))(w => s"ParseableInt: cannot interpret '$w' as an Int")
+    // CONSIDER supporting different radix
+    def parse(s: String, optModifier: Option[String]): Try[Int] = parseAndRecover(s)(lift(_.toInt))(w => s"ParseableInt: cannot interpret '$w' as an Int")
   }
 
   implicit object ParseableInt extends ParseableInt
@@ -89,7 +90,8 @@ object Parseable {
    * Parser of Long.
    */
   trait ParseableLong extends Parseable[Long] {
-    def parse(s: String): Try[Long] = parseAndRecover(s)(lift(_.toLong))(w => s"ParseableLong: cannot interpret '$w' as a Long")
+    // CONSIDER supporting different radix
+    def parse(s: String, optModifier: Option[String]): Try[Long] = parseAndRecover(s)(lift(_.toLong))(w => s"ParseableLong: cannot interpret '$w' as a Long")
   }
 
   implicit object ParseableLong extends ParseableLong
@@ -98,7 +100,11 @@ object Parseable {
    * Parser of BigInt.
    */
   trait ParseableBigInt extends Parseable[BigInt] {
-    def parse(s: String): Try[BigInt] = parseAndRecover(s)(lift(BigInt.apply))(w => s"ParseableBigInt: cannot interpret '$w' as a BigInt")
+    def parse(s: String, optModifier: Option[String]): Try[BigInt] = {
+      val radix = optModifier map (_.toInt) getOrElse 10
+      val f: String => BigInt = BigInt(_, radix)
+      parseAndRecover(s)(lift(f))(w => s"ParseableBigInt: cannot interpret '$w' in radix $radix as a BigInt")
+    }
   }
 
   implicit object ParseableBigInt extends ParseableBigInt
@@ -107,7 +113,7 @@ object Parseable {
    * Parser of BigDecimal.
    */
   trait ParseableBigDecimal extends Parseable[BigDecimal] {
-    def parse(s: String): Try[BigDecimal] = parseAndRecover(s)(lift(BigDecimal.apply))(w => s"ParseableBigDecimal: cannot interpret '$w' as a BigDecimal")
+    def parse(s: String, optModifier: Option[String]): Try[BigDecimal] = parseAndRecover(s)(lift(BigDecimal.apply))(w => s"ParseableBigDecimal: cannot interpret '$w' as a BigDecimal")
   }
 
   implicit object ParseableBigDecimal extends ParseableBigDecimal
@@ -116,7 +122,7 @@ object Parseable {
    * Parser of Double.
    */
   trait ParseableDouble extends Parseable[Double] {
-    def parse(s: String): Try[Double] = parseAndRecover(s)(lift(_.toDouble))(w => s"ParseableDouble: cannot interpret '$w' as a Double")
+    def parse(s: String, optModifier: Option[String]): Try[Double] = parseAndRecover(s)(lift(_.toDouble))(w => s"ParseableDouble: cannot interpret '$w' as a Double")
   }
 
   implicit object ParseableDouble extends ParseableDouble
@@ -125,7 +131,7 @@ object Parseable {
    * Parser of Float.
    */
   trait ParseableFloat extends Parseable[Float] {
-    def parse(s: String): Try[Float] = parseAndRecover(s)(lift(_.toFloat))(w => s"ParseableFloat: cannot interpret '$w' as a Float")
+    def parse(s: String, optModifier: Option[String]): Try[Float] = parseAndRecover(s)(lift(_.toFloat))(w => s"ParseableFloat: cannot interpret '$w' as a Float")
   }
 
   implicit object ParseableFloat extends ParseableFloat
@@ -134,7 +140,7 @@ object Parseable {
    * Parser of LocalDate.
    */
   trait ParseableLocalDate extends Parseable[LocalDate] {
-    def parse(s: String): Try[LocalDate] = parseAndRecover(s)(lift(LocalDate.parse))(w => s"ParseableLocalDate: cannot interpret '$w' as a LocalDate")
+    def parse(s: String, optModifier: Option[String]): Try[LocalDate] = parseAndRecover(s)(lift(LocalDate.parse))(w => s"ParseableLocalDate: cannot interpret '$w' as a LocalDate")
   }
 
   implicit object ParseableLocalDate extends ParseableLocalDate
@@ -143,7 +149,7 @@ object Parseable {
    * Parser of URL.
    */
   trait ParseableURL extends Parseable[URL] {
-    def parse(s: String): Try[URL] = parseAndRecover(s)(lift(new URL(_)))(w => s"ParseableURL: cannot interpret '$w' as an URL")
+    def parse(s: String, optModifier: Option[String]): Try[URL] = parseAndRecover(s)(lift(new URL(_)))(w => s"ParseableURL: cannot interpret '$w' as an URL")
   }
 
   implicit object ParseableURL extends ParseableURL
@@ -152,7 +158,7 @@ object Parseable {
    * Parser of File.
    */
   trait ParseableFile extends Parseable[File] {
-    def parse(s: String): Try[File] = parseAndRecover(s)(lift(new File(_)))(w => s"ParseableFile: cannot interpret '$w' as a File")
+    def parse(s: String, optModifier: Option[String]): Try[File] = parseAndRecover(s)(lift(new File(_)))(w => s"ParseableFile: cannot interpret '$w' as a File")
   }
 
   implicit object ParseableFile extends ParseableFile
@@ -162,7 +168,7 @@ object Parseable {
    * This trait splits strings of the form {x,y,z}, regardless of the format specified by the RowConfig object.
    */
   trait ParseableStringList extends Parseable[StringList] {
-    def parse(s: String): Try[StringList] = parseAndRecover(s)(split)(w => s"ParseableStringList: cannot interpret '$w' as a StringList")
+    def parse(s: String, optModifier: Option[String]): Try[StringList] = parseAndRecover(s)(split)(w => s"ParseableStringList: cannot interpret '$w' as a StringList")
   }
 
   implicit object ParseableStringList extends ParseableStringList
@@ -184,7 +190,10 @@ object Parseable {
 
   private def parseAndRecover[T](w: String)(f: String => Try[T])(msg: String => String): Try[T] =
     f(w).recoverWith {
-      case x: IllegalArgumentException => Failure(if (w.nonEmpty) InvalidParseException(msg(w), x) else BlankException(x))
+      case x: IllegalArgumentException =>
+        Failure(if (w.nonEmpty) InvalidParseException(msg(w), x) else BlankException(x))
+//      case x: NumberFormatException =>
+//        Failure(if (w.nonEmpty) InvalidParseException(msg(w), x) else BlankException(x))
     }
 }
 
@@ -194,7 +203,7 @@ object Parseable {
  * @tparam T the resulting type for which there must be evidence of a Parseable[T].
  */
 abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
-  def parse(s: String): Try[Option[T]] = implicitly[Parseable[T]].parse(s).map(Option(_)).recoverWith {
+  def parse(s: String, optModifier: Option[String]): Try[Option[T]] = implicitly[Parseable[T]].parse(s, optModifier).map(Option(_)).recoverWith {
     case _: BlankException => Success(None)
   }
 }
