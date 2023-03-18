@@ -69,7 +69,6 @@ trait HierarchicalRenderers {
     }
   }
 
-
   /**
    * Method to return a HierarchicalRenderer[ Seq[T] ].
    * NOTE: there are no identifiers generated with this HierarchicalRenderer.

@@ -2,7 +2,6 @@ package com.phasmidsoftware.table
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.phasmidsoftware.flog.Flog
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.util.FP
 import com.phasmidsoftware.util.FP.sequence
@@ -36,7 +35,7 @@ object Analysis {
      * @param names a sequence of column names.
      * @return a sequence of String,Column tuples.
      */
-    def createColumnMap(names: Seq[String]): Seq[(String, Column)] = for (name <- names; column <- Column.makeColumn(table, name)) yield name -> column
+    def createColumnMap(names: Seq[String]): Seq[(String, Column)] = for (name <- names; column <- Column.make(table, name)) yield name -> column
 
     val columnMap = for (ws <- table.maybeColumnNames.toSeq; z <- createColumnMap(ws)) yield z
     new Analysis(table.size, table.head.ws.size, columnMap.toMap)
@@ -74,7 +73,7 @@ object Column {
    * @param name  the name of the column.
    * @return an optional Column.
    */
-  def makeColumn(table: RawTable, name: String): Option[Column] = sequence(table.column(name)) flatMap (ws => make(ws))
+  def make(table: RawTable, name: String): Option[Column] = sequence(table.column(name)) flatMap (ws => make(ws))
 
   /**
    * Method to make a Column, the analysis of a column of a (raw) Table.

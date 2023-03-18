@@ -6,6 +6,8 @@ import scala.reflect.ClassTag
 
 /**
  * Class to represent the rows of a Table.
+ * NOTE: do not expect an iterator on Content to be in any particular order.
+ *
  * At present, the rows are implemented as a ParIterable.
  * However, we might later change the internal representation, thus xs is private.
  *
