@@ -120,6 +120,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
+    implicit val z: Ordering[Row] = NonSequential.randomOrdering[Row]
     val resultIO = for {_ <- Table.writeCSVFileRow(table, new File("output.csv"))
                         _ = println(s"written to file output.csv")
                         y <- Table.parseFileRaw("output.csv", TableParser.includeAll)
@@ -314,35 +315,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  it should "drop" in {
-    import IntPair._
-    matchIO(Table.parse(Seq("1 2", "42 99"))) {
-      case xt@HeadedTable(_, _) =>
-        xt.drop(1).content.toSeq shouldBe Seq(IntPair(42, 99))
-    }
-  }
-
-//  it should "dropRight" in {
-//    import IntPair._
-//    matchIO(Table.parse(Seq("1 2", "42 99"))) {
-//      case xt@HeadedTable(_, _) =>
-//        xt.dropRight(1).rows shouldBe Seq(IntPair(1, 2))
-//    }
-//  }
-
   it should "empty" in {
     import IntPair._
     matchIO(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.empty.content.toSeq shouldBe Seq.empty
-    }
-  }
-
-  it should "dropWhile" in {
-    import IntPair._
-    matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
-      case xt@HeadedTable(_, _) =>
-        xt.dropWhile(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
   }
 
@@ -362,6 +339,22 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
+  it should "drop" in {
+    import IntPair._
+    matchIO(Table.parse(Seq("1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.drop(1).content.toSeq shouldBe Seq(IntPair(42, 99))
+    }
+  }
+
+  it should "dropWhile" in {
+    import IntPair._
+    matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.dropWhile(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+    }
+  }
+
   it should "slice" in {
     import IntPair._
     matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
@@ -369,14 +362,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
         xt.slice(0, 2).content.toSeq shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
     }
   }
-//
-//  it should "takeRight" in {
-//    import IntPair._
-//    matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
-//      case xt@HeadedTable(_, _) =>
-//        xt.takeRight(2).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
-//    }
-//  }
+
+  it should "take" in {
+    import IntPair._
+    matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.take(2).content.toSeq shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
+    }
+  }
 
   it should "takeWhile" in {
     import IntPair._
@@ -492,6 +485,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
+    implicit val randomIntPairOrdering: Ordering[IntPair] = NonSequential.randomOrdering[IntPair]
     matchIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
@@ -515,6 +509,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
     }
 
+    implicit val randomIntPairOrdering: Ordering[IntPair] = NonSequential.randomOrdering[IntPair]
     matchIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
@@ -693,6 +688,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
+    implicit val randomRowOrdering: Ordering[Row] = NonSequential.randomOrdering[Row]
     EvaluateIO(Table.toCSVRow(table)) shouldBe "a,b\n1,2\n"
   }
 }

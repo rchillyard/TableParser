@@ -610,7 +610,6 @@ Release Notes
 
 V1.1.2 -> V1.1.3
 * Use of Cats IO
-  [![CircleCI](https://circleci.com/gh/rchillyard/TableParser.svg?style=svg)](https://circleci.com/gh/rchillyard/TableParser)
 [CircleCI failure due to missing library]
 
 V1.1.1 -> V1.1.2

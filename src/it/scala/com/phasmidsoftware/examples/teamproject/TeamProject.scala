@@ -5,7 +5,7 @@
 package com.phasmidsoftware.examples.teamproject
 
 import com.phasmidsoftware.parse._
-import com.phasmidsoftware.table.{Content, HeadedTable, Header, Table}
+import com.phasmidsoftware.table._
 import java.net.URL
 
 /**
@@ -31,6 +31,10 @@ import java.net.URL
  */
 case class TeamProject(team: Team, grade: Grade, remarks: String, repository: URL)
 
+object TeamProject {
+  implicit val orderingTeamProject: Ordering[TeamProject] = NonSequential.ordering[TeamProject, Int](p => p.team.number)
+}
+
 case class Team(number: Int, member_1: String, member_2: Option[String], member_3: Option[String], member_4: Option[String])
 
 case class Grade(totalScore: Double, onTime: Double, scopeScale: Double, planningPresentation: Double, presentation: Double, idea: Double, useCases: Double, acceptanceCriteria: Double, teamExecution: Double, code: Double, unitTests: Double, repo: Double)
@@ -48,7 +52,7 @@ object TeamProjectParser extends CellParsers {
   implicit val teamParser: CellParser[Team] = cellParser5(Team)
   implicit val gradeParser: CellParser[Grade] = cellParser12(Grade)
   implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
-  implicit val teamProjectParser: CellParser[TeamProject] = cellParser4(TeamProject)
+  implicit val teamProjectParser: CellParser[TeamProject] = cellParser4(TeamProject.apply)
 
   implicit object TeamProjectConfig extends DefaultRowConfig {
     override val listEnclosure: String = ""

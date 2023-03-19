@@ -3,9 +3,12 @@ package com.phasmidsoftware.table
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.render._
+import com.phasmidsoftware.util.EvaluateIO.matchIO
 import com.phasmidsoftware.util.IOUsing
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{Seconds, Span}
 import scala.io.Source
 
 class MovieFuncSpec extends AnyFlatSpec with Matchers {
@@ -42,9 +45,14 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
     implicit val csvGenerator: CsvGenerator[Movie] = Movie.createMovieCvsGenerator
 
     val wi: IO[String] = mti flatMap (_.toCSV) // for (mt <- mti) yield mt.toCSV
-    wi.unsafeRunSync().startsWith(
-      """title,format.color,format.language,format.aspectRatio,format.duration,production.country,production.budget,production.gross,production.titleYear,reviews.imdbScore,reviews.facebookLikes,reviews.contentRating.code,reviews.contentRating.age,reviews.numUsersReview,reviews.numUsersVoted,reviews.numCriticReviews,reviews.totalFacebookLikes,director.name.first,director.name.middle,director.name.last,director.name.suffix,director.facebookLikes,actor1.name.first,actor1.name.middle,actor1.name.last,actor1.name.suffix,actor1.facebookLikes,actor2.name.first,actor2.name.middle,actor2.name.last,actor2.name.suffix,actor2.facebookLikes,actor3,genres.xs,plotKeywords.xs,imdb
-        |Avatar,Color,English,1.78,178,USA,237000000,760505847,2009,7.9,33000,PG,13,3054,886204,723,4834,James,,Cameron,,0,CCH,,Pounder,,1000,Joel,David,Moore,,936,Wes,,Studi,,855,Action,Adventure,Fantasy,Sci-Fi,avatar,future,marine,native,paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1""".stripMargin) shouldBe true
+    matchIO(wi, Timeout(Span(10, Seconds))) {
+      w =>
+        w.substring(0, 1000) shouldBe
+                """title,format.color,format.language,format.aspectRatio,format.duration,production.country,production.budget,production.gross,production.titleYear,reviews.imdbScore,reviews.facebookLikes,reviews.contentRating.code,reviews.contentRating.age,reviews.numUsersReview,reviews.numUsersVoted,reviews.numCriticReviews,reviews.totalFacebookLikes,director.name.first,director.name.middle,director.name.last,director.name.suffix,director.facebookLikes,actor1.name.first,actor1.name.middle,actor1.name.last,actor1.name.suffix,actor1.facebookLikes,actor2.name.first,actor2.name.middle,actor2.name.last,actor2.name.suffix,actor2.facebookLikes,actor3,genres.xs,plotKeywords.xs,imdb
+                  |102 Dalmatians ,Color,English,1.85,100,USA,85000000,66941559,2000,4.8,372,G,,77,26413,84,4182,Kevin,,Lima,,36,Ioan,,Gruffudd,,2000,Eric,,Idle,,795,Jim,,Carter,,439,Adventure,Comedy,Family,dog,parole,parole officer,prison,puppy,http://www.imdb.com/title/tt0211181/?ref_=fn_tt_tt_1
+                  |13 Hours ,Color,English,2.35,144,USA,50000000,52822418,""".stripMargin
+        succeed
+    }
   }
 
   it should "parse and filter the movies from the IMDB dataset" in {

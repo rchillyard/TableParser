@@ -1,8 +1,8 @@
 package com.phasmidsoftware.examples.crime
 
 import cats.effect.IO
-import com.phasmidsoftware.parse.{RawTableParser, TableParser}
-import com.phasmidsoftware.table.{Analysis, HeadedTable, RawTable, Table}
+import com.phasmidsoftware.parse.{RawTableParser, StandardStringsParser, TableParser}
+import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.EvaluateIO.matchIO
 import com.phasmidsoftware.util.FP.resource
 import com.phasmidsoftware.util.{FP, IOUsing}
@@ -11,9 +11,19 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
 import scala.io.Source
-import scala.util.Random
+import scala.util.{Random, Success, Try}
 
 class CrimeSpec extends AnyFlatSpec with Matchers {
+
+  behavior of "CrimeLocation"
+
+  it should "parse from Strings" in {
+    import com.phasmidsoftware.examples.crime.LocationParser._
+    val header: Header = Header.create("longitude", "latitude", "location", "LSOA code", "LSOA name")
+    val parser = StandardStringsParser[CrimeLocation]()
+    val location: Try[CrimeLocation] = parser.parse((Seq("0.140127", "51.588913", "On or near Beansland Grove", "E01000027", "Barking and Dagenham 001A"), 0))(header)
+    location shouldBe Success(CrimeLocation(Some(0.140127), Some(51.588913), "On or near Beansland Grove", "E01000027", "Barking and Dagenham 001A"))
+  }
 
   behavior of "Crime"
   val crimeFile = "2023-01-metropolitan-street-sample.csv"
@@ -37,6 +47,25 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
         r take 10 foreach println
         succeed
     }
+  }
+
+  it should "get the order right for Crime" in {
+    val sequence1 = Sequence(1)
+    val sequence2 = sequence1.next
+    val x1 = Crime(sequence1, None, "", "", "", CrimeLocation(None, None, "", "", ""), "", "", "")
+    val x2 = Crime(sequence2, None, "", "", "", CrimeLocation(None, None, "", "", ""), "", "", "")
+    val co = implicitly[Ordering[Crime]]
+    co.compare(x1, x2) shouldBe -1
+  }
+
+  it should "get the order right for CrimeBrief" in {
+    val x1 = CrimeBrief(Some(BigInt(0)), 0.0, 0.0)
+    val x2 = CrimeBrief(Some(BigInt(1)), 0.0, 0.0)
+    val x3 = CrimeBrief(None, 0.0, 0.0)
+    val co = implicitly[Ordering[CrimeBrief]]
+    co.compare(x1, x2) shouldBe -1
+    co.compare(x2, x1) shouldBe 1
+    co.compare(x1, x3) shouldBe 0
   }
 
   // FIXME this is because the output is essentially in random order.

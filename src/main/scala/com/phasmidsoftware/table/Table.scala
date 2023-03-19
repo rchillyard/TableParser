@@ -141,7 +141,10 @@ trait Table[Row] extends Iterable[Row] {
 
   /**
    * Method to select those rows defined by the given range.
+   *
    * NOTE: the rows are numbered 1..N.
+   *
+   * NOTE: unless explicitly ordered, the content might be in random order.
    *
    * @param n the desired row.
    * @return a new Table[Row] consisting only the row requested.
@@ -307,10 +310,11 @@ trait Table[Row] extends Iterable[Row] {
    *
    * @param renderer      implicit value of CsvRenderer[Row].
    * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param ordering      implicit value of Ordering[Row] (apparently not used but I think it is).
    * @param csvAttributes implicit value of CsvAttributes.
    * @return a String.
    */
-  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[String] =
+  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], ordering: Ordering[Row], csvAttributes: CsvAttributes): IO[String] =
     CsvTableStringRenderer[Row]().render(this) map (_.toString)
 
   /**
@@ -319,13 +323,14 @@ trait Table[Row] extends Iterable[Row] {
    * @param file      instance of File where the output should be stored.
    * @param renderer  implicit value of CsvRenderer[Row].
    * @param generator implicit value of CsvProductGenerator[Row].
+   * @param ordering  implicit value of Ordering[Row] (apparently not used but I think it is).
    * @param hasKey    implicit value of HasKey[Row].
    *                  This relates to a column which is the "key" column in a CSV (used for identification).
    *                  It is not directly related to cryptography.
    * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
    * @param csvAttributes implicit value of CsvAttributes.
    */
-  def writeCSVFileEncrypted[A: HexEncryption](file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
+  def writeCSVFileEncrypted[A: HexEncryption](file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], ordering: Ordering[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableEncryptedFileRenderer[Row, A](file).render(this)
 
   /**
@@ -336,9 +341,10 @@ trait Table[Row] extends Iterable[Row] {
    * @param file          instance of File where the output should be stored.
    * @param renderer      implicit value of CsvRenderer[Row].
    * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param ordering      implicit value of Ordering[Row] (apparently not used but I think it is).
    * @param csvAttributes implicit value of CsvAttributes.
    */
-  def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
+  def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], ordering: Ordering[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableFileRenderer[Row](file).render(this)
 
   /**
@@ -347,9 +353,10 @@ trait Table[Row] extends Iterable[Row] {
    * @param file          instance of File where the output should be stored.
    * @param renderer      implicit value of CsvRenderer[Row].
    * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param ordering      implicit value of Ordering[Row] (apparently not used but I think it is).
    * @param csvAttributes implicit value of CsvAttributes.
    */
-  def writeCSVFileIO(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
+  def writeCSVFileIO(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], ordering: Ordering[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
     CsvTableFileRenderer[Row](file).render(this) map { f => f.flush(); f }
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
@@ -648,7 +655,7 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): IO[String] = {
+  def toCSVRow(t: Table[Row])(implicit ordering: Ordering[Row], csvAttributes: CsvAttributes): IO[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
@@ -665,7 +672,7 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def writeCSVFileRow(t: Table[Row], file: File)(implicit csvAttributes: CsvAttributes): IO[FileWriter] =
+  def writeCSVFileRow(t: Table[Row], file: File)(implicit ordering: Ordering[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)

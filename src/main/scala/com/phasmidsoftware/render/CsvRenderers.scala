@@ -122,6 +122,8 @@ trait CsvRenderers {
   /**
    * Method to return a CsvRenderer[T] where T is a 2-ary Product and which is based on a function to convert a (P1,P2) into a T.
    *
+   * CONSIDER for this and similar methods, reverse the order of rendering the fields and use +: instead of :+
+   *
    * @param construct a function (P1,P2) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
    * @param ca        the (implicit) CsvAttributes.

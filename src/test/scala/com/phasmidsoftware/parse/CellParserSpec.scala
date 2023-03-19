@@ -121,6 +121,8 @@ class CellParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     p.convertString("test") should matchPattern { case Failure(_) => }
   }
 
+  // CONSIDER moving this into the it directory.
+  // TODO why does this take so long?
   it should "parse option URL" in {
     val p = implicitly[CellParser[Option[URL]]]
 

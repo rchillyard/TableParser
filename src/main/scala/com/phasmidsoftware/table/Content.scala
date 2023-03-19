@@ -11,6 +11,10 @@ import scala.reflect.ClassTag
  * At present, the rows are implemented as a ParIterable.
  * However, we might later change the internal representation, thus xs is private.
  *
+ * CONSIDER making the private val parameter an Either of ParIterable[Row] or Iterable[Row].
+ * That's to say lazy/parallelized vs. eager.
+ * Take care, however, as both extend GenIterable[Row].
+ *
  * @param xs a ParIterable[Row].
  * @tparam Row the underlying Row type.
  */
@@ -92,6 +96,15 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    * @return a Content[S].
    */
   def sorted[S >: Row : Ordering]: Content[S] = Content(toIndexedSeq.map(_.asInstanceOf[S]).sorted)
+
+  /**
+   * Method to transform this Content[Row] into a sorted Seq[S] where S is a super-class of Row and for which there is
+   * evidence of Ordering[S].
+   *
+   * @tparam S the underlying type of the resulting Table (a super-type of Row and for which there is evidence of Ordering[S]).
+   * @return a Seq[S].
+   */
+  def ordered[S >: Row : Ordering]: Seq[S] = toSeq.map(_.asInstanceOf[S]).sorted
 
 }
 

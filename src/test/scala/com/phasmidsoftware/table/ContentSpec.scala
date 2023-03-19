@@ -4,12 +4,39 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import scala.collection.parallel.CollectionConverters._
 
+/**
+ * ContentSpec
+ *
+ * NOTE: The methods here depend on the behavior of the ParIterable parameter of Content.
+ */
 class ContentSpec extends AnyFlatSpec with should.Matchers {
 
   behavior of "Content"
 
-  it should "drop" in {
+  it should "ordered" in {
+    val target: Content[Int] = Content(List(1, 2, 3))
+    target.ordered shouldBe List(1, 2, 3)
+  }
 
+  it should "sorted" in {
+    val target: Content[Int] = Content(List(2, 1, 3))
+    target.sorted shouldBe Content(List(1, 2, 3))
+  }
+
+  it should "drop" in {
+    val target: Content[Int] = Content(List(1, 2, 3))
+    // CONSIDER forcing sorted on the drop method.
+    target.drop(1).toSeq shouldBe List(2, 3)
+  }
+
+  it should "take" in {
+    val target: Content[Int] = Content(List(1, 2, 3))
+    target.take(2).toSeq shouldBe List(1, 2)
+  }
+
+  it should "slice" in {
+    val target: Content[Int] = Content(List(1, 2, 3, 4))
+    target.slice(1, 3).toSeq shouldBe List(2, 3)
   }
 
   it should "toIndexedSeq" in {
@@ -44,10 +71,6 @@ class ContentSpec extends AnyFlatSpec with should.Matchers {
 
   }
 
-  it should "slice" in {
-
-  }
-
   it should "toArray" in {
 
   }
@@ -69,10 +92,6 @@ class ContentSpec extends AnyFlatSpec with should.Matchers {
   }
 
   it should "flatMap" in {
-
-  }
-
-  it should "take" in {
 
   }
 
