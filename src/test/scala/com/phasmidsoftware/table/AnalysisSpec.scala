@@ -64,7 +64,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
 
   behavior of "Column"
 
-  it should "make" in {
+  it should "makeNumeric" in {
     val ti: IO[RawTable] = Table.parseResource(airBNBFile)
     matchIO(ti) {
       case t: RawTable =>
@@ -72,7 +72,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
         val maybeColumn: Option[Column] = sequence(z) flatMap (ws => make(ws))
         maybeColumn should matchPattern { case Some(Column(_, _, Some(_))) => }
         maybeColumn.get match {
-          case Column("Int", false, Some(statistics)) =>
+          case Column("Int", false, Some(statistics: Statistics)) =>
             statistics.mu shouldBe 2.783464566929134
           case x => fail(x.toString)
         }

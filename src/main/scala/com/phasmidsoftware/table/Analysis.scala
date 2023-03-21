@@ -3,8 +3,10 @@ package com.phasmidsoftware.table
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
+import com.phasmidsoftware.table.Statistics.{makeHistogram, makeNumeric}
 import com.phasmidsoftware.util.FP
 import com.phasmidsoftware.util.FP.sequence
+import scala.collection.mutable
 import scala.io.Source
 
 /**
@@ -12,7 +14,7 @@ import scala.io.Source
  *
  * @param rows      the number of rows.
  * @param columns   the number of columns.
- * @param columnMap a map of column names to Column objects (the statistics of a column).
+ * @param columnMap a map of column names to Column objects (the analytics of a column).
  */
 case class Analysis(rows: Int, columns: Int, columnMap: Map[String, Column]) {
   override def toString: String = s"Analysis: rows: $rows, columns: $columns, $showColumnMap"
@@ -45,16 +47,16 @@ object Analysis {
 /**
  * A representation of the analysis of a column.
  *
- * @param clazz           a String denoting which class (maybe which variant of class) this column may be represented as.
- * @param optional        if true then this column contains nulls (empty strings).
- * @param maybeStatistics an optional set of statistics but only if the column represents numbers.
+ * @param clazz         a String denoting which class (maybe which variant of class) this column may be represented as.
+ * @param optional      if true then this column contains nulls (empty strings).
+ * @param maybeAnalytic an optional Analytic but only if the column represents something which can be analyzed.
  */
-case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[Statistics]) {
+case class Column(clazz: String, optional: Boolean, maybeAnalytic: Option[Analytic]) {
   override def toString: String = {
     val sb = new StringBuilder
     if (optional) sb.append("optional ")
     sb.append(clazz)
-    maybeStatistics match {
+    maybeAnalytic match {
       case Some(s) => sb.append(s" $s")
       case _ =>
     }
@@ -87,32 +89,65 @@ object Column {
   def make(xs: Seq[String]): Option[Column] = {
     val (ws, nulls) = xs.partition(_.nonEmpty)
     val nullable: Boolean = nulls.nonEmpty
-    val co1 = for (xs <- sequence(for (w <- ws) yield w.toIntOption); ys = xs map (_.toDouble)) yield Column("Int", nullable, Statistics.make(ys))
-    lazy val co2 = for (xs <- sequence(for (w <- ws) yield w.toDoubleOption); ys = xs) yield Column("Double", nullable, Statistics.make(ys))
-    co1 orElse co2 orElse Some(Column("String", nullable, None))
+    // CONSIDER we can combine the following two lines
+    val co1 = for (xs <- sequence(for (w <- ws) yield w.toIntOption); ys = xs map (_.toDouble)) yield Column("Int", nullable, makeNumeric(ys))
+    lazy val co2 = for (xs <- sequence(for (w <- ws) yield w.toDoubleOption); ys = xs) yield Column("Double", nullable, makeNumeric(ys))
+    lazy val maybeHistogram: Option[Analytic] = makeHistogram(ws)
+    co1 orElse co2 orElse Some(Column("String", nullable, maybeHistogram))
   }
 }
 
+trait Analytic
+
 /**
- * Class to represent the statistics of a column.
+ * Class to represent the statistics of a numerical column.
  *
  * @param mu    the mean value.
  * @param sigma the standard deviation.
  * @param min   the smallest value.
  * @param max   the largest value.
  */
-case class Statistics(mu: Double, sigma: Double, min: Double, max: Double) {
+case class Statistics(mu: Double, sigma: Double, min: Double, max: Double) extends Analytic {
   override def toString: String = s"(range: $min-$max, mean: $mu, stdDev: $sigma)"
 }
 
+case class Histogram[K](keyFreq: Map[K, Int]) extends Analytic {
+  override def toString: String = keyFreq.toSeq.sortBy(x => x._2).reverse.map { case (k, n) => s"$k: $n" }.mkString("\n")
+}
+
 object Statistics {
-  def make(xs: Seq[Double]): Option[Statistics] = xs match {
+  /**
+   * Make an (optional) Statistics object for a sequence of Double.
+   * CONSIDER defining the underlying type as a parametric type with context bound Numeric.
+   *
+   * @param xs a sequence of Double.
+   * @return an optional Statistics.
+   */
+  def makeNumeric(xs: Seq[Double]): Option[Statistics] = xs match {
     case Nil => None
     case h :: Nil => Some(Statistics(h, 0, h, h))
-    case _ => doMake(xs)
+    case _ => doMakeNumeric(xs)
   }
 
-  private def doMake(xs: Seq[Double]): Option[Statistics] = {
+  /**
+   * Make an (optional) Histogram object for a sequence of String.
+   * CONSIDER defining the underlying type as a parametric type.
+   *
+   * @param xs a sequence of String.
+   * @return an optional Histogram.
+   */
+  def makeHistogram(xs: Seq[String], ratio: Int = 10): Option[Histogram[String]] = {
+    val m: mutable.Map[String, Int] = mutable.HashMap[String, Int]()
+    xs foreach {
+      x =>
+        val freq = m.getOrElse(x, 0)
+        m.put(x, freq + 1)
+    }
+    if (m.size < xs.size / ratio) Some(Histogram(m.toMap))
+    else None
+  }
+
+  private def doMakeNumeric(xs: Seq[Double]): Option[Statistics] = {
     val mu = xs.sum / xs.size
     val variance = (xs map (_ - mu) map (x => x * x)).sum / xs.size
     Some(Statistics(mu, math.sqrt(variance), xs.min, xs.max))
