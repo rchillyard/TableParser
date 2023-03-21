@@ -56,8 +56,12 @@ case class Column(clazz: String, optional: Boolean, maybeAnalytic: Option[Analyt
     val sb = new StringBuilder
     if (optional) sb.append("optional ")
     sb.append(clazz)
+    sb.append(": ")
     maybeAnalytic match {
-      case Some(s) => sb.append(s" $s")
+      case Some(s) =>
+        sb.append(s"total: ${s.total}")
+        sb.append("\n")
+        sb.append(s" $s")
       case _ =>
     }
     sb.toString()
@@ -97,7 +101,9 @@ object Column {
   }
 }
 
-trait Analytic
+trait Analytic {
+  def total: Int
+}
 
 /**
  * Class to represent the statistics of a numerical column.
@@ -107,12 +113,22 @@ trait Analytic
  * @param min   the smallest value.
  * @param max   the largest value.
  */
-case class Statistics(mu: Double, sigma: Double, min: Double, max: Double) extends Analytic {
+case class Statistics(total: Int, mu: Double, sigma: Double, min: Double, max: Double) extends Analytic {
   override def toString: String = s"(range: $min-$max, mean: $mu, stdDev: $sigma)"
 }
 
+/**
+ * Case class to represent the histogram of a non-numerical column.
+ *
+ * @param keyFreq the key-frequency values.
+ * @tparam K the key type.
+ */
 case class Histogram[K](keyFreq: Map[K, Int]) extends Analytic {
+  def total: Int = keyFreq.values.sum
+
   override def toString: String = keyFreq.toSeq.sortBy(x => x._2).reverse.map { case (k, n) => s"$k: $n" }.mkString("\n")
+
+//  override def toString: String = keyFreq.toSeq.sortBy(x => x._2).take(269).reverse.map { case (k, n) => s""""$k"""" }.mkString(",")
 }
 
 object Statistics {
@@ -125,7 +141,7 @@ object Statistics {
    */
   def makeNumeric(xs: Seq[Double]): Option[Statistics] = xs match {
     case Nil => None
-    case h :: Nil => Some(Statistics(h, 0, h, h))
+    case h :: Nil => Some(Statistics(xs.length, h, 0, h, h))
     case _ => doMakeNumeric(xs)
   }
 
@@ -150,7 +166,7 @@ object Statistics {
   private def doMakeNumeric(xs: Seq[Double]): Option[Statistics] = {
     val mu = xs.sum / xs.size
     val variance = (xs map (_ - mu) map (x => x * x)).sum / xs.size
-    Some(Statistics(mu, math.sqrt(variance), xs.min, xs.max))
+    Some(Statistics(xs.size, mu, math.sqrt(variance), xs.min, xs.max))
   }
 }
 

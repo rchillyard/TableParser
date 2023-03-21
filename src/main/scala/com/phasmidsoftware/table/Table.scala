@@ -259,6 +259,14 @@ trait Table[Row] extends Iterable[Row] {
   override def filterNot(p: Row => Boolean): Table[Row] = processRows(_.filterNot(p))
 
   /**
+   * Method to retain only the rows which satisfy the isValid method of ev (i.e. a Validity[Row]).
+   *
+   * @param ev (implicit) a Validity[Row].
+   * @return Table[Row] consisting only of rows which satisfy Validity.
+   */
+  def filterValid(implicit ev: Validity[Row]): Table[Row] = filter(r => ev.isValid(r))
+
+  /**
    * slice (as defined by Iterable).
    *
    * @param from  the index at which to begin the slice (1-based counting).

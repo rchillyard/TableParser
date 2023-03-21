@@ -1,6 +1,7 @@
 package com.phasmidsoftware.table
 
 import cats.effect.IO
+import com.phasmidsoftware.examples.crime.CrimeLocation
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table.Column.make
 import com.phasmidsoftware.util.EvaluateIO.matchIO
@@ -33,13 +34,22 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
         analysis.columns shouldBe 87
         analysis.columnMap.size shouldBe 87
         analysis.columnMap("bedrooms") should matchPattern { case Column("Int", false, _) => }
-        analysis.columnMap("accommodates").toString should startWith("Int (range: 1.0-10.0, mean: 2.783464566929134, stdDev: 1.7670324685210")
-        analysis.columnMap("license").toString shouldBe "optional Int"
+        analysis.columnMap("accommodates").toString should startWith("Int: total: 254\n (range: 1.0-10.0, mean: 2.783464566929134, stdDev: 1.7670324685210")
+        analysis.columnMap("license").toString shouldBe "optional Int: "
     }
   }
 
   it should "analyze the complete crime file" in {
     val crimeFile = "../examples/crime/2023-01-metropolitan-street.csv"
+
+    implicit object validityRawRow extends Validity[RawRow] {
+      def isValid(r: RawRow): Boolean = ! {
+        val latitude: Double = r("latitude").get.toDoubleOption.getOrElse(55)
+        val longitude: Double = r("longitude").get.toDoubleOption.getOrElse(1)
+        val lsoaCode = r("LSOA code").getOrElse("")
+        CrimeLocation.isValid(longitude, latitude, lsoaCode)
+      }
+    }
 
     // Set up the source
     val sy: IO[Source] = IO.fromTry(for (u <- FP.resource[Analysis](crimeFile)) yield Source.fromURL(u))
@@ -50,9 +60,9 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
 
     EvaluateIO.check(parser.parse(sy), Timeout(Span(10, Seconds))) {
       case t@HeadedTable(r, _) =>
-        val analysis = Analysis(t)
-        analysis match {
-          case a@Analysis(87205, 12, _) =>
+        val q = t.filterValid
+        Analysis(q) match {
+          case a@Analysis(_, 12, _) =>
             println(s"Crime analysis: $a")
             r take 10 foreach println
           case _ =>
