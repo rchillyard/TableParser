@@ -3,7 +3,7 @@ package com.phasmidsoftware.table
 import com.phasmidsoftware.parse.CellParser
 import com.phasmidsoftware.render.CsvProduct
 import com.phasmidsoftware.table.Sequence.SequenceOrdering
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 trait Sequential {
   val sequence: Sequence
@@ -55,15 +55,6 @@ object Sequence {
 object NonSequential {
 
   /**
-   * TESTME Need to test this.
-   * CONSIDER it might throw compare contract exception.
-   *
-   * @tparam T the underlying type.
-   * @return an Ordering[T] which always treats everything as the same.
-   */
-  def randomOrdering[T]: Ordering[T] = (x: T, y: T) => 0
-
-  /**
    * Method to create an Ordering for type T based on an element of type P.
    *
    * @param f lens function to retrieve a P from a T.
@@ -71,10 +62,8 @@ object NonSequential {
    * @tparam P the underlying type of the key element.
    * @return an Ordering[T]
    */
-  def ordering[T, P: Ordering](f: T => P): Ordering[T] = (x: T, y: T) => {
-    implicit val po = implicitly[Ordering[P]]
-    po.compare(f(x), f(y))
-  }
+  def ordering[T, P: Ordering](f: T => P): Ordering[T] = (x: T, y: T) =>
+    implicitly[Ordering[P]].compare(f(x), f(y))
 
   /**
    * Method to create an Ordering for type T based on an optional element of type P.
@@ -82,15 +71,13 @@ object NonSequential {
    * NOTE: this is more complex than it seems to require but if we allow all non-Some/Some cases to return 0,
    * we get a Contract exception.
    *
-   * TODO Create a new type-class which extends Ordering but has only the zero additional method (to be used instead of Numeric).
-   *
    * @param f lens function to retrieve an Option[P] from a T.
    * @tparam T the underlying type of the elements to be ordered.
    * @tparam P the underlying type of the (optional) key element.
    * @return an Ordering[T]
    */
-  def optionalOrdering[T, P: Numeric](f: T => Option[P]): Ordering[T] = (x: T, y: T) => {
-    implicit val po = implicitly[Numeric[P]]
+  def optionalOrdering[T, P: OrderingWithZero](f: T => Option[P]): Ordering[T] = (x: T, y: T) => {
+    implicit val po = implicitly[OrderingWithZero[P]] // XXX You should ignore the request to add a type annotation here.
     (f(x), f(y)) match {
       case (Some(a), Some(b)) =>
         po.compare(a, b)
@@ -105,20 +92,59 @@ object NonSequential {
 
   /**
    * Method to create an Ordering for type T based on a tried element of type P.
+   * See comments on optionalOrdering (above).
    *
-   * TESTME write this like optionOrdering.
-   *
-   * @param f lens function to retrieve an Option[P] from a T.
+   * @param f lens function to retrieve an Try[P] from a T.
    * @tparam T the underlying type of the elements to be ordered.
-   * @tparam P the underlying type of the (optional) key element.
+   * @tparam P the underlying type of the (tried) key element.
    * @return an Ordering[T]
    */
-  def tryOrdering[T, P: Ordering](f: T => Try[P]): Ordering[T] = (x: T, y: T) => {
-    implicit val po = implicitly[Ordering[P]]
+  def tryOrdering[T, P: OrderingWithZero](f: T => Try[P]): Ordering[T] = (x: T, y: T) => {
+    val po = implicitly[OrderingWithZero[P]]
     (f(x), f(y)) match {
-      case (Success(a), Success(b)) => po.compare(a, b)
-      case _ => 0
+      case (Success(a), Success(b)) =>
+        po.compare(a, b)
+      case (Success(a), Failure(_)) =>
+        po.compare(a, po.zero)
+      case (Failure(_), Success(b)) =>
+        po.compare(po.zero, b)
+      case _ =>
+        0
     }
   }
 
+}
+
+trait OrderingWithZero[X] extends Ordering[X] {
+  def zero: X
+}
+
+object OrderingWithZero {
+
+  implicit object OrderingWithZeroString extends OrderingWithZero[String] {
+    def zero: String = ""
+
+    def compare(x: String, y: String): Int = x.compareTo(y)
+  }
+
+  implicit object OrderingWithZeroBoolean extends OrderingWithZero[Boolean] {
+    def zero: Boolean = false
+
+    def compare(x: Boolean, y: Boolean): Int = x.compare(y)
+  }
+
+  /**
+   * Implicit method to convert an implicit Numeric[X] into an OrderingWithZero[X] for use with
+   * optionOrdering and tryOrdering methods.
+   *
+   * @tparam X the underlying type (must have evidence of Numeric[X]).
+   * @return an OrderingWithZero[X]
+   */
+  implicit def convert[X: Numeric]: OrderingWithZero[X] = new OrderingWithZeroFromNumeric[X] {}
+
+  private abstract class OrderingWithZeroFromNumeric[X: Numeric] extends OrderingWithZero[X] {
+    def zero: X = implicitly[Numeric[X]].zero
+
+    def compare(x: X, y: X): Int = implicitly[Numeric[X]].compare(x, y)
+  }
 }

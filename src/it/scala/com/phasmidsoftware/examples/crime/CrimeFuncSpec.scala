@@ -20,6 +20,9 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
    * The following file is ignored for git purposes:
    * You need to download and extract it from here:
    * [[https://www.kaggle.com/datasets/marshuu/crimes-in-uk-2023/download]]
+   * Once you have downloaded it, remove the first six data rows as these don't seem to belong to the Metropolitan area.
+   *
+   * The area of the
    */
   val crimeFile = "2023-01-metropolitan-street.csv"
 
@@ -55,7 +58,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
 
     matchIO(wsty, Timeout(Span(60, Seconds))) {
       case t@HeadedTable(r, _) =>
-        t.size shouldBe 87211
+        t.size shouldBe 87205
         r take 100 foreach println
         succeed
     }

@@ -120,7 +120,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
-    implicit val z: Ordering[Row] = NonSequential.randomOrdering[Row]
+    implicit val z: Ordering[Row] = Content.noOrdering[Row]
     val resultIO = for {_ <- Table.writeCSVFileRow(table, new File("output.csv"))
                         _ = println(s"written to file output.csv")
                         y <- Table.parseFileRaw("output.csv", TableParser.includeAll)
@@ -485,7 +485,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
-    implicit val randomIntPairOrdering: Ordering[IntPair] = NonSequential.randomOrdering[IntPair]
+    implicit val randomIntPairOrdering: Ordering[IntPair] = Content.noOrdering[IntPair]
     matchIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
@@ -509,7 +509,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
     }
 
-    implicit val randomIntPairOrdering: Ordering[IntPair] = NonSequential.randomOrdering[IntPair]
+    implicit val randomIntPairOrdering: Ordering[IntPair] = Content.noOrdering[IntPair]
     matchIO(Table.parseFile(new File("src/test/resources/com/phasmidsoftware/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
@@ -688,7 +688,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
-    implicit val randomRowOrdering: Ordering[Row] = NonSequential.randomOrdering[Row]
+    implicit val randomRowOrdering: Ordering[Row] = Content.noOrdering[Row]
     EvaluateIO(Table.toCSVRow(table)) shouldBe "a,b\n1,2\n"
   }
 }

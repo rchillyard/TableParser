@@ -1,5 +1,6 @@
 package com.phasmidsoftware.table
 
+import com.phasmidsoftware.table.Content.noOrdering
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParIterable
 import scala.reflect.ClassTag
@@ -14,6 +15,14 @@ import scala.reflect.ClassTag
  * CONSIDER making the private val parameter an Either of ParIterable[Row] or Iterable[Row].
  * That's to say lazy/parallelized vs. eager.
  * Take care, however, as both extend GenIterable[Row].
+ *
+ * See [[https://docs.scala-lang.org/overviews/parallel-collections/overview.html]] for more information on parallel collections.
+ * However, we can note a few things here:
+ * <ol>
+ * <li>parallel collections remain ordered unless transformed with "bulk" operations such as map, filter;</li>
+ * <li>seq is always an efficient method on parallel collections;</li>
+ * <li>for now, imposition of an explicit ordering is done via sorted or ordered methods.</li>
+ * </ol>
  *
  * @param xs a ParIterable[Row].
  * @tparam Row the underlying Row type.
@@ -81,6 +90,8 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
 
   def slice(from: Int, until: Int): Content[Row] = Content(xs.slice(from, until))
 
+  def sample(n: Int): Content[Row] = Content(xs.seq.grouped(n).map(ys => ys.head).toSeq)
+
   /**
    * This should be used only by unit tests and not be code.
    *
@@ -92,10 +103,16 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    * Method to transform this Content[Row] into a sorted Content[S] where S is a super-class of Row and for which there is
    * evidence of Ordering[S].
    *
+   * NOTE that if the specified ordering is noOrdering, then no ordering takes place.
+   *
    * @tparam S the underlying type of the resulting Table (a super-type of Row and for which there is evidence of Ordering[S]).
    * @return a Content[S].
    */
-  def sorted[S >: Row : Ordering]: Content[S] = Content(toIndexedSeq.map(_.asInstanceOf[S]).sorted)
+  def sorted[S >: Row : Ordering]: Content[S] =
+    if (implicitly[Ordering[S]] != noOrdering)
+      Content(toIndexedSeq.map(_.asInstanceOf[S]).sorted)
+    else
+      this
 
   /**
    * Method to transform this Content[Row] into a sorted Seq[S] where S is a super-class of Row and for which there is
@@ -104,10 +121,25 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    * @tparam S the underlying type of the resulting Table (a super-type of Row and for which there is evidence of Ordering[S]).
    * @return a Seq[S].
    */
-  def ordered[S >: Row : Ordering]: Seq[S] = toSeq.map(_.asInstanceOf[S]).sorted
+  def ordered[S >: Row : Ordering]: Seq[S] =
+    if (implicitly[Ordering[S]] != noOrdering)
+      toSeq.map(_.asInstanceOf[S]).sorted
+    else
+      toSeq
 
 }
 
 object Content {
   def apply[T](xs: Iterable[T]): Content[T] = Content(xs.par)
+
+  /**
+   * Ordering such that all elements appear equal.
+   * Ideally, this should take linear time for any adaptive sorting method such as Timsort, insertion sort, etc.
+   * However, within the context of Content, we don't invoke this ordering at all if it is referenced.
+   *
+   * @tparam T the underlying type.
+   * @return an Ordering[T] which always treats everything as the same.
+   */
+  def noOrdering[T]: Ordering[T] =
+    (_: T, _: T) => 0
 }

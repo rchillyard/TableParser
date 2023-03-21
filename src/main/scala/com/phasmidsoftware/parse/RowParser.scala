@@ -116,3 +116,10 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
    */
   def parseHeader(ws: Seq[Strings]): IO[Header] = IO(Header(ws))
 }
+
+trait SelectiveParser[Row, Table] {
+
+  def setForgiving(forgiving: Boolean): TableParser[Table]
+
+  def setPredicate(predicate: Try[Row] => Boolean): TableParser[Table]
+}

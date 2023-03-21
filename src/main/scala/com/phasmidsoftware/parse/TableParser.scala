@@ -158,14 +158,10 @@ object TableParser {
   val includeAll: Try[Any] => Boolean = _ => true
 }
 
-trait CopyableTableParser[Row, Input, Table] {
+trait CopyableTableParser[Row, Input, Table] extends SelectiveParser[Row, Table] {
   def setHeader(header: Header): TableParser[Table]
 
-  def setForgiving(forgiving: Boolean): TableParser[Table]
-
   def setMultiline(multiline: Boolean): TableParser[Table]
-
-  def setPredicate(predicate: Try[Row] => Boolean): TableParser[Table]
 
   def setRowParser(rowParser: RowParser[Row, Input]): TableParser[Table]
 }

@@ -5,6 +5,7 @@ import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table.Column.make
 import com.phasmidsoftware.util.EvaluateIO.matchIO
 import com.phasmidsoftware.util.FP.{resource, sequence}
+import com.phasmidsoftware.util.{EvaluateIO, FP}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -34,6 +35,30 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
         analysis.columnMap("bedrooms") should matchPattern { case Column("Int", false, _) => }
         analysis.columnMap("accommodates").toString should startWith("Int (range: 1.0-10.0, mean: 2.783464566929134, stdDev: 1.7670324685210")
         analysis.columnMap("license").toString shouldBe "optional Int"
+    }
+  }
+
+  it should "analyze the complete crime file" in {
+    val crimeFile = "../examples/crime/2023-01-metropolitan-street.csv"
+
+    // Set up the source
+    val sy: IO[Source] = IO.fromTry(for (u <- FP.resource[Analysis](crimeFile)) yield Source.fromURL(u))
+
+    val fraction = 1
+    // Set up the parser (we set the predicate only for demonstration purposes)
+    val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(fraction))
+
+    EvaluateIO.check(parser.parse(sy), Timeout(Span(10, Seconds))) {
+      case t@HeadedTable(r, _) =>
+        val analysis = Analysis(t)
+        analysis match {
+          case a@Analysis(87205, 12, _) =>
+            println(s"Crime analysis: $a")
+            r take 10 foreach println
+          case _ =>
+            println(s"Not good analysis")
+            fail("didnt match")
+        }
     }
   }
 

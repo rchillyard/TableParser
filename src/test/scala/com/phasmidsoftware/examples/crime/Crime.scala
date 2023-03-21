@@ -3,6 +3,10 @@ package com.phasmidsoftware.examples.crime
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.table._
+import com.phasmidsoftware.util.{EvaluateIO, IOUsing}
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatest.time.{Seconds, Span}
+import scala.io.Source
 import scala.util.Try
 
 /**
@@ -106,21 +110,23 @@ object CrimeParser extends CellParsers {
 
   implicit val parser: StandardRowParser[Crime] = StandardRowParser.create[Crime]
 
-  trait CrimeTableParser extends StringTableParser[Table[Crime]] {
+  case class CrimeTableParser(override val forgiving: Boolean, override val predicate: Try[Crime] => Boolean) extends StringTableParser[Table[Crime]] with SelectiveParser[Crime, Table[Crime]] {
     type Row = Crime
 
     val maybeFixedHeader: Option[Header] = None
 
     val headerRowsToRead: Int = 1
 
-    override val forgiving: Boolean = true
-
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+
+    def setForgiving(b: Boolean): TableParser[Table[Crime]] = copy(forgiving = b)
+
+    def setPredicate(p: Try[Crime] => Boolean): TableParser[Table[Crime]] = copy(predicate = p)
 
     protected def builder(rows: Iterable[Crime], header: Header): Table[Row] = HeadedTable(Content(rows), header)
   }
 
-  implicit object CrimeTableParser extends CrimeTableParser
+  implicit object CrimeTableParser extends CrimeTableParser(true, _ => true)
 }
 
 object CrimeRenderer extends CsvRenderers {
@@ -160,3 +166,22 @@ object CrimeLocationRenderer extends CsvRenderers {
   implicit val crimeRenderer: CsvProduct[CrimeBrief] = rendererGenerator3(CrimeBrief.apply)
 }
 
+object Main extends App {
+
+  import CrimeLocationRenderer._
+  import CrimeParser._
+  import cats.effect.IO
+
+  val crimeFile = "2023-01-metropolitan-street.csv"
+
+  val cti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => Table.parseSource(x))
+
+  val wi: IO[String] = for {
+    ct <- cti
+    lt <- IO(ct.mapOptional(m => m.brief).filter(m => m.crimeID.isDefined))
+    st <- IO(lt.processRows(c => c.sample(450))) //slice(150, 170))
+    w <- st.toCSV
+  } yield w
+
+  println(EvaluateIO(wi, Timeout(Span(10, Seconds))))
+}
