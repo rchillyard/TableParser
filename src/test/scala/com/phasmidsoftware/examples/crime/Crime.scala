@@ -5,10 +5,11 @@ import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.{EvaluateIO, IOUsing}
+import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
 import scala.io.Source
-import scala.util.Try
+import scala.util.{Random, Try}
 
 /**
  * Case class to represent a Crime from the Kaggle data set:
@@ -46,6 +47,9 @@ object Crime extends CellParsers with CsvRenderers {
 
   import CsvRenderers.{CsvRendererDouble, CsvRendererString}
   import com.phasmidsoftware.render.CsvGenerators._
+
+  val filename: String = "2023-01-metropolitan-street.csv"
+  val crimeTriedResource: Try[URL] = Try(classOf[Crime].getResource(Crime.filename))
 
   implicit object crimeValidity extends Validity[Crime] {
     def isValid(c: Crime): Boolean = c.isValid
@@ -181,19 +185,20 @@ object CrimeParser extends CellParsers {
 }
 
 /**
- * Main program to create a sample of valid rows from the complete Metropolitan crime dataset.
+ * Main program to create a step of valid rows from the complete Metropolitan crime dataset.
  */
 object Main extends App {
 
   import CrimeParser._
   import cats.effect.IO
 
-  val crimeFile = "2023-01-metropolitan-street.csv"
+  implicit val random: Random = new Random()
 
   val wi: IO[String] = for {
-    ct <- IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => Table.parseSource(x))
+    url <- IO.fromTry(Crime.crimeTriedResource)
+    ct <- IOUsing(Source.fromURL(url))(x => Table.parseSource(x))
     lt <- IO(ct.filterValid.mapOptional(m => m.brief).filter(m => m.crimeID.isDefined))
-    st <- IO(lt.processRows(c => c.sample(450))) //these are not random
+    st <- IO(lt.sample(450))
     w <- st.toCSV
   } yield w
 

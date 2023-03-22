@@ -4,32 +4,30 @@ import cats.effect.IO
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table.{Analysis, HeadedTable, RawTable, Table}
 import com.phasmidsoftware.util.EvaluateIO.matchIO
-import com.phasmidsoftware.util.FP.resource
 import com.phasmidsoftware.util.IOUsing
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
 import scala.io.Source
+import scala.util.Random
 
 class CrimeFuncSpec extends AnyFlatSpec with Matchers {
 
   behavior of "Crime"
 
   /**
-   * The following file is ignored for git purposes:
+   * The file whose filename is <code>Crime.filename</code> is ignored for git purposes:
    * You need to download and extract it from here:
    * [[https://www.kaggle.com/datasets/marshuu/crimes-in-uk-2023/download]]
    * Once you have downloaded it, remove the first six data rows as these don't seem to belong to the Metropolitan area.
    *
-   * The area of the
    */
-  val crimeFile = "2023-01-metropolitan-street.csv"
 
   it should "be ingested and analyzed as a RawTable" in {
 
     // Set up the source
-    val sy: IO[Source] = IO.fromTry(for (u <- resource[CrimeFuncSpec](crimeFile)) yield Source.fromURL(u))
+    val sy: IO[Source] = IO.fromTry(for (u <- Crime.crimeTriedResource) yield Source.fromURL(u))
 
     val fraction = 4
     // Set up the parser (we set the predicate only for demonstration purposes)
@@ -53,8 +51,8 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
 
     import CrimeParser._
 
-    // Create the table
-    val wsty: IO[Table[Crime]] = Table.parseResource(crimeFile, classOf[CrimeFuncSpec])
+      // Create the table
+      val wsty: IO[Table[Crime]] = Table.parseResource(Crime.filename, classOf[CrimeFuncSpec])
 
     matchIO(wsty, Timeout(Span(60, Seconds))) {
       case t@HeadedTable(r, _) =>
@@ -67,7 +65,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
   it should "be ingested and written out properly to CSV" in {
     import CrimeParser._
 
-    val mti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => Table.parseSource(x))
+    val mti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(Crime.filename)))(x => Table.parseSource(x))
 
     val wi: IO[String] = mti flatMap (_.toCSV)
     matchIO(wi, Timeout(Span(60, Seconds))) {
@@ -76,10 +74,24 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
     }
   }
 
+  it should "create out a sample of brief entries" in {
+    import CrimeParser._
+    implicit val random: Random = new Random(0)
+    val wi: IO[Table[CrimeBrief]] = for {
+      ct <- IOUsing(Source.fromURL(classOf[Crime].getResource(Crime.filename)))(x => Table.parseSource(x))
+      lt <- IO(ct.filterValid.mapOptional(m => m.brief).filter(m => m.crimeID.isDefined))
+      st <- IO(lt.sample(450))
+    } yield st
+    matchIO(wi, Timeout(Span(10, Seconds))) {
+      ct => ct.size shouldBe 155
+    }
+  }
+
   it should "be ingested and written out in brief to CSV" in {
     import CrimeParser._
 
-    val cti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => Table.parseSource(x))
+    // CONSIDER defining this URL in Crime
+    val cti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(Crime.filename)))(x => Table.parseSource(x))
 
     val wi: IO[String] = for {
       ct <- cti

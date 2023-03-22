@@ -6,6 +6,7 @@ import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.EvaluateIO.matchIO
 import com.phasmidsoftware.util.FP.resource
 import com.phasmidsoftware.util.{FP, IOUsing}
+import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -25,12 +26,13 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
   }
 
   behavior of "Crime"
-  val crimeFile = "2023-01-metropolitan-street-sample.csv"
+  val crimeSampleFile = "2023-01-metropolitan-street-sample.csv"
+  val triedCrimeSampleResource: Try[URL] = resource[CrimeSpec](crimeSampleFile)
 
   it should "be ingested and analyzed as a RawTable" in {
 
     // Set up the source
-    val sy: IO[Source] = IO.fromTry(for (u <- resource[CrimeSpec](crimeFile)) yield Source.fromURL(u))
+    val sy: IO[Source] = IO.fromTry(for (u <- triedCrimeSampleResource) yield Source.fromURL(u))
 
     // Set up the parser (we set the predicate only for demonstration purposes)
     val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(10))
@@ -71,10 +73,9 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
   ignore should "be ingested and written out in brief to CSV" in {
     import CrimeParser._
     implicit val random: Random = new Random(0)
-    val cti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => Table.parseSource(x))
-
     val wi: IO[String] = for {
-      ct <- cti
+      url <- IO.fromTry(Crime.crimeTriedResource)
+      ct <- IOUsing(Source.fromURL(url))(x => Table.parseSource(x))
       lt <- IO(ct.mapOptional(m => m.brief))
       st <- IO(lt.filter(FP.sampler(10)))
       w <- st.toCSV

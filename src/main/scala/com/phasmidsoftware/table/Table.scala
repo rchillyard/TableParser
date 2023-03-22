@@ -267,6 +267,15 @@ trait Table[Row] extends Iterable[Row] {
   def filterValid(implicit ev: Validity[Row]): Table[Row] = filter(r => ev.isValid(r))
 
   /**
+   * Method to randomly sample from this Table.
+   *
+   * @param n      the odds against choosing any particular element.
+   * @param random an (implicit) Random number generator.
+   * @return a new Table[Row] with approximately size/n elements.
+   */
+  def sample(n: Int)(implicit random: Random): Table[Row] = processRows(c => c.sample(n))
+
+  /**
    * slice (as defined by Iterable).
    *
    * @param from  the index at which to begin the slice (1-based counting).

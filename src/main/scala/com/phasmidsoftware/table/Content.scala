@@ -1,9 +1,11 @@
 package com.phasmidsoftware.table
 
 import com.phasmidsoftware.table.Content.noOrdering
+import com.phasmidsoftware.util.FP
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParIterable
 import scala.reflect.ClassTag
+import scala.util.Random
 
 /**
  * Class to represent the rows of a Table.
@@ -90,7 +92,23 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
 
   def slice(from: Int, until: Int): Content[Row] = Content(xs.slice(from, until))
 
-  def sample(n: Int): Content[Row] = Content(xs.seq.grouped(n).map(ys => ys.head).toSeq)
+  /**
+   * Method to sample from this Content by a deterministic method (every nth row is chosen).
+   * NOTE: this is not random.
+   *
+   * @param n the number of rows from which we select the first.
+   * @return a new Content[Row] with approximately size/n elements.
+   */
+  def step(n: Int): Content[Row] = Content(xs.seq.grouped(n).map(ys => ys.head).toSeq)
+
+  /**
+   * Method to randomly sample from this Content.
+   *
+   * @param n      the odds against choosing any particular element.
+   * @param random an (implicit) Random number generator.
+   * @return a new Content[Row] with approximately size/n elements.
+   */
+  def sample(n: Int)(implicit random: Random): Content[Row] = filter(FP.sampler(n))
 
   /**
    * This should be used only by unit tests and not be code.
