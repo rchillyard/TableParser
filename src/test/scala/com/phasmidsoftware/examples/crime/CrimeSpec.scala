@@ -18,7 +18,6 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
   behavior of "CrimeLocation"
 
   it should "parse from Strings" in {
-    import com.phasmidsoftware.examples.crime.LocationParser._
     val header: Header = Header.create("longitude", "latitude", "location", "LSOA code", "LSOA name")
     val parser = StandardStringsParser[CrimeLocation]()
     val location: Try[CrimeLocation] = parser.parse((Seq("0.140127", "51.588913", "On or near Beansland Grove", "E01000027", "Barking and Dagenham 001A"), 0))(header)
@@ -70,7 +69,6 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
 
   // FIXME this is because the output is essentially in random order.
   ignore should "be ingested and written out in brief to CSV" in {
-    import CrimeLocationRenderer._
     import CrimeParser._
     implicit val random: Random = new Random(0)
     val cti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => Table.parseSource(x))

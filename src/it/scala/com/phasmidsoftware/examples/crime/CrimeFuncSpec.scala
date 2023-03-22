@@ -66,7 +66,6 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
 
   it should "be ingested and written out properly to CSV" in {
     import CrimeParser._
-    import CrimeRenderer._
 
     val mti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => Table.parseSource(x))
 
@@ -78,7 +77,6 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be ingested and written out in brief to CSV" in {
-    import CrimeLocationRenderer._
     import CrimeParser._
 
     val cti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => Table.parseSource(x))
