@@ -725,6 +725,8 @@ object CsvRenderers {
 
   implicit object CsvRendererLong extends StandardCsvRenderer[Long]
 
+  implicit object CsvRendererBigInt extends StandardCsvRenderer[BigInt]
+
   implicit object CsvRendererDouble extends StandardCsvRenderer[Double]
 
   implicit object CsvRendererString extends StandardCsvRenderer[String]
