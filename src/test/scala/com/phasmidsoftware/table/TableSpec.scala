@@ -401,8 +401,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
   }
 
-  // FIXME this is a mystery
-  ignore should "render the table to CSV" in {
+  it should "render the table to CSV" in {
     import IntPair._
     matchIO(Table.parse(Seq("1 2", "42 99"))) {
       case HeadedTable(_, _) => succeed

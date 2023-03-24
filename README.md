@@ -12,7 +12,7 @@ A functional parser of tables implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.
 However, it is perfectly possible to parse other formats.
 
-_TableParser_ aims to make it as simple as possible to ingest a fully-typed tabular dataset.
+_TableParser_ aims to make it as simple as possible to ingest a strictly-typed tabular dataset.
 The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
 All conversions from strings to standard types are performed automatically.
 For non-standard types, it suffices simply to provide an implicit converter of the form _String=>T_.
@@ -34,10 +34,12 @@ together with something like, for instance, a Json writer.
 Quick Intro
 ===========
 
-The simplest way to get an introduction to TableParser is to consult the airbnb.sc and movie.sc worksheets.
+The simplest way to get an introduction to _TableParser_ is to consult the airbnb.sc and movie.sc worksheets.
 These give detailed descriptions of each stage of the process.
 
-Another way to see how it works is to look at this application Pairings which takes a CSV file, parses it, transforms the data,
+Take a look also at the _Main_ object in the  _Crime.scala_ module (it's under the _test_ directory).
+
+Another way to see how it works is to look at this application _Pairings_ which takes a CSV file, parses it, transforms the data,
 and outputs a JSON file.
 This way of parsing is a little different from what is shown in the worksheets.
 But both are effective.
@@ -610,7 +612,9 @@ Release Notes
 
 V1.1.2 -> V1.1.3
 * Use of Cats IO
-[CircleCI failure due to missing library]
+* Table contents are now parallelized
+* Option of having sequential rows of user type
+* Improved Analysis by allowing Histogram
 
 V1.1.1 -> V1.1.2
 * Make RawRow a type (not just a type alias)

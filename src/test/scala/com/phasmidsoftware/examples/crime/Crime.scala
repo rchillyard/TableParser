@@ -185,7 +185,7 @@ object CrimeParser extends CellParsers {
 }
 
 /**
- * Main program to create a step of valid rows from the complete Metropolitan crime dataset.
+ * Main program to create a sample of valid rows from the complete Metropolitan crime dataset.
  */
 object Main extends App {
 
@@ -195,11 +195,11 @@ object Main extends App {
   implicit val random: Random = new Random()
 
   val wi: IO[String] = for {
-    url <- IO.fromTry(Crime.crimeTriedResource)
-    ct <- IOUsing(Source.fromURL(url))(x => Table.parseSource(x))
-    lt <- IO(ct.filterValid.mapOptional(m => m.brief).filter(m => m.crimeID.isDefined))
-    st <- IO(lt.sample(450))
-    w <- st.toCSV
+    url <- IO.fromTry(Crime.crimeTriedResource) // get a URL for the full crime file (there is also a sample available)
+    ct <- IOUsing(Try(Source.fromURL(url)))(x => Table.parseSource(x)) // open/close resource  and parse it as a Table[Crime].
+    lt <- IO(ct.filterValid.mapOptional(m => m.brief)) // filter according to validity and then convert rows to CrimeBrief.
+    st <- IO(lt.sample(450)) // sample 1 in every (approximately) 450 rows.
+    w <- st.toCSV // write the table out in CSV format.
   } yield w
 
   println(EvaluateIO(wi, Timeout(Span(10, Seconds))))
