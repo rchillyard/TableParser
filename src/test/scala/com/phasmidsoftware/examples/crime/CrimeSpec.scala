@@ -22,7 +22,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     val header: Header = Header.create("longitude", "latitude", "location", "LSOA code", "LSOA name")
     val parser = StandardStringsParser[CrimeLocation]()
     val location: Try[CrimeLocation] = parser.parse((Seq("0.140127", "51.588913", "On or near Beansland Grove", "E01000027", "Barking and Dagenham 001A"), 0))(header)
-    location shouldBe Success(CrimeLocation(Some(0.140127), Some(51.588913), "On or near Beansland Grove", "E01000027", "Barking and Dagenham 001A"))
+    location shouldBe Success(CrimeLocation(0.140127, 51.588913, "On or near Beansland Grove", "E01000027", "Barking and Dagenham 001A"))
   }
 
   behavior of "Crime"
@@ -53,20 +53,18 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
   it should "get the order right for Crime" in {
     val sequence1 = Sequence(1)
     val sequence2 = sequence1.next
-    val x1 = Crime(sequence1, None, "", "", "", CrimeLocation(None, None, "", "", ""), "", "", "")
-    val x2 = Crime(sequence2, None, "", "", "", CrimeLocation(None, None, "", "", ""), "", "", "")
+    val x1 = Crime(sequence1, None, "", "", "", None, "", "", "")
+    val x2 = Crime(sequence2, None, "", "", "", None, "", "", "")
     val co = implicitly[Ordering[Crime]]
     co.compare(x1, x2) shouldBe -1
   }
 
   it should "get the order right for CrimeBrief" in {
-    val x1 = CrimeBrief(Some(BigInt(0)), 0.0, 0.0)
-    val x2 = CrimeBrief(Some(BigInt(1)), 0.0, 0.0)
-    val x3 = CrimeBrief(None, 0.0, 0.0)
+    val x1 = CrimeBrief(BigInt(0), 0.0, 0.0)
+    val x2 = CrimeBrief(BigInt(1), 0.0, 0.0)
     val co = implicitly[Ordering[CrimeBrief]]
     co.compare(x1, x2) shouldBe -1
     co.compare(x2, x1) shouldBe 1
-    co.compare(x1, x3) shouldBe 0
   }
 
   it should "be ingested and written out in brief to CSV" in {
@@ -75,7 +73,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     val wi: IO[String] = for {
       url <- IO.fromTry(Crime.crimeTriedResource)
       ct <- IOUsing(Source.fromURL(url))(x => Table.parseSource(x))
-      lt <- IO(ct.mapOptional(m => m.brief).filter(b => b.crimeID.isDefined))
+      lt <- IO(ct.mapOptional(m => m.brief))
       st <- IO(lt.filter(FP.sampler(10)))
       w <- st.toCSV
     } yield w

@@ -70,7 +70,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
     val wi: IO[String] = mti flatMap (_.toCSV)
     matchIO(wi, Timeout(Span(60, Seconds))) {
       case w =>
-        w.substring(0, 100) shouldBe ",crimeID,month,reportedBy,fallsWithin,crimeLocation.longitude,crimeLocation.latitude,crimeLocation.l"
+        w.substring(0, 101) shouldBe ",crimeId,month,reportedBy,fallsWithin,location.longitude,location.latitude,location.location,location"
     }
   }
 
@@ -79,7 +79,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
     implicit val random: Random = new Random(0)
     val wi: IO[Table[CrimeBrief]] = for {
       ct <- IOUsing(Source.fromURL(classOf[Crime].getResource(Crime.filename)))(x => Table.parseSource(x))
-      lt <- IO(ct.filterValid.mapOptional(m => m.brief).filter(m => m.crimeID.isDefined))
+      lt <- IO(ct.filterValid.mapOptional(m => m.brief))
       st <- IO(lt.sample(450))
     } yield st
     matchIO(wi, Timeout(Span(10, Seconds))) {
@@ -95,7 +95,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
 
     val wi: IO[String] = for {
       ct <- cti
-      lt <- IO(ct.mapOptional(m => m.brief).filter(m => m.crimeID.isDefined))
+      lt <- IO(ct.mapOptional(m => m.brief))
       st <- IO(lt.sort.slice(150, 170))
       w <- st.toCSV
     } yield w

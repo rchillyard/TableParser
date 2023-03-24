@@ -17,27 +17,27 @@ import scala.util.{Random, Try}
  *
  * The file under main/resources is an edited version of the Metropolitan Crime Statistics 2023-01 (only the first 5,000 rows)
  *
- * @param crimeID             (optional BigInt in hexadecimal notation) see Kaggle.
+ * @param maybeCrimeId        (optional BigInt in hexadecimal notation) see Kaggle.
  * @param month               see Kaggle.
  * @param reportedBy          see Kaggle.
  * @param fallsWithin         see Kaggle.
- * @param crimeLocation       a CrimeLocation.
+ * @param maybeLocation       a CrimeLocation.
  * @param crimeType           see Kaggle.
  * @param lastOutcomeCategory see Kaggle.
  * @param context             see Kaggle.
  */
 case class Crime(sequence: Sequence,
-                 crimeID: Option[BigInt],
+                 maybeCrimeId: Option[BigInt],
                  month: String,
                  reportedBy: String,
                  fallsWithin: String,
-                 crimeLocation: CrimeLocation,
+                 maybeLocation: Option[CrimeLocation],
                  crimeType: String,
                  lastOutcomeCategory: String,
                  context: String) extends Sequential {
-  def isValid: Boolean = crimeID.isDefined && crimeLocation.isValid
+  def isValid: Boolean = maybeCrimeId.isDefined && maybeLocation.isDefined
 
-  def brief: Option[CrimeBrief] = for (long <- crimeLocation.longitude; lat <- crimeLocation.latitude) yield CrimeBrief(crimeID, long, lat)
+  def brief: Option[CrimeBrief] = for (crimeId <- maybeCrimeId; location <- maybeLocation) yield CrimeBrief(crimeId, location.longitude, location.latitude)
 }
 
 /**
@@ -60,13 +60,14 @@ object Crime extends CellParsers with CsvRenderers {
   }
 
   implicit val crimeColumnHelper: ColumnHelper[Crime] = columnHelper(camelToSnakeCaseColumnNameMapper _,
-    "crimeID" -> "Crime ID")
+    "maybeCrimeId" -> "Crime ID")
 
   implicit object CrimeConfig extends DefaultRowConfig {
     override val listEnclosure: String = ""
   }
 
   implicit val crimeIdParser: CellParser[Option[BigInt]] = cellParserOption[BigInt]
+  implicit val crimeLocationParser: CellParser[Option[CrimeLocation]] = cellParserOption[CrimeLocation]
   implicit val crimeParser: CellParser[Crime] = cellParser9(Crime.apply)
   implicit val parser: StandardRowParser[Crime] = StandardRowParser.create[Crime]
   implicit val crimeOrdering: Ordering[Crime] = Sequential.ordering[Crime]
@@ -82,31 +83,25 @@ object Crime extends CellParsers with CsvRenderers {
   implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator[BigInt]
   implicit val geoRenderer: CsvRenderer[Option[Double]] = optionRenderer[Double]()
   implicit val geoGenerator: CsvGenerator[Option[Double]] = generators.optionGenerator[Double]
+  implicit val crimeLocationProduct: CsvProduct[Option[CrimeLocation]] = optionProduct[CrimeLocation]()
   implicit val crimeRenderer: CsvProduct[Crime] = rendererGenerator9(Crime.apply)
 }
 
 /**
  * CrimeLocation.
  *
- * CONSIDER making all members non-Optional.
- *
- * @param longitude (optional Double) the longitude of the incident.
- * @param latitude  (optional Double) the latitude of the incident.
+ * @param longitude (the longitude of the incident.
+ * @param latitude  the latitude of the incident.
  * @param location  see Kaggle.
  * @param lsoaCode  see Kaggle.
  * @param lsoaName  see Kaggle.
  */
-case class CrimeLocation(longitude: Option[Double],
-                         latitude: Option[Double],
+case class CrimeLocation(longitude: Double,
+                         latitude: Double,
                          location: String,
                          lsoaCode: String,
                          lsoaName: String
-                        ) {
-  def isValid: Boolean = (longitude, latitude) match {
-    case (Some(long), Some(lat)) => CrimeLocation.isValid(long, lat, lsoaCode)
-    case _ => false
-  }
-}
+                        )
 
 /**
  * Companion object to CrimeLocation.
@@ -132,9 +127,6 @@ object CrimeLocation extends CellParsers with CsvRenderers {
   import CsvGenerators._
   import CsvRenderers._
 
-  private val generators = new CsvGenerators {}
-  implicit val geoRenderer: CsvRenderer[Option[Double]] = optionRenderer[Double]()
-  implicit val geoGenerator: CsvGenerator[Option[Double]] = generators.optionGenerator[Double]
   implicit val locationRenderer: CsvProduct[CrimeLocation] = rendererGenerator5(CrimeLocation.apply)
 }
 
@@ -142,17 +134,17 @@ object CrimeLocation extends CellParsers with CsvRenderers {
  * Case class to model a very brief version of a crime (only the ID, and geographic location).
  * This is for the INFO6205 project, Spring 2023, solving the TSP.
  *
- * @param crimeID   : Option[BigInt].
+ * @param crimeID   (BigInt) the crime ID of the incident, expressed in CSV in hexadecimal.
  * @param longitude (Double) the longitude of the incident.
  * @param latitude  (Double) the latitude of the incident.
  */
-case class CrimeBrief(crimeID: Option[BigInt],
+case class CrimeBrief(crimeID: BigInt,
                       longitude: Double,
                       latitude: Double) {
 }
 
 object CrimeBrief extends CsvRenderers {
-  implicit val crimeBriefOrdering: Ordering[CrimeBrief] = NonSequential.optionalOrdering[CrimeBrief, BigInt](c => c.crimeID)
+  implicit val crimeBriefOrdering: Ordering[CrimeBrief] = NonSequential.ordering[CrimeBrief, BigInt](c => c.crimeID)
 
   import Crime.crimeIDRenderer
   import CsvRenderers.CsvRendererDouble
