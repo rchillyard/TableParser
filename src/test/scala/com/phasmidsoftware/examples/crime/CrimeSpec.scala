@@ -71,7 +71,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     import CrimeParser._
     implicit val random: Random = new Random(0)
     val wi: IO[String] = for {
-      url <- IO.fromTry(Crime.triedResource)
+      url <- IO.fromTry(Crime.triedSampleResource)
       ct <- IOUsing(Source.fromURL(url))(x => Table.parseSource(x))
       lt <- IO(ct.mapOptional(m => m.brief))
       st <- IO(lt.filter(FP.sampler(10)))

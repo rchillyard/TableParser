@@ -49,7 +49,7 @@ object Crime extends CellParsers with CsvRenderers {
   import com.phasmidsoftware.render.CsvGenerators._
 
   val filename: String = "2023-01-metropolitan-street.csv"
-  val triedResource: Try[URL] = Try(classOf[Crime].getResource(Crime.filename))
+  val triedResourceNotAvailableOnGithub: Try[URL] = Try(classOf[Crime].getResource(Crime.filename))
 
   // TODO merge the two copies of this sample file into one (it needs to be at the root level of resources)
   val sampleFile = "2023-01-metropolitan-street-sample.csv"
@@ -203,7 +203,8 @@ object Main extends App {
   import cats.effect.IO
 
   implicit val random: Random = new Random()
-  val wi: IO[String] = Crime.doMain(Crime.triedResource) // The complete Metropolitan file.
+  // NOTE: we specify the complete Metropolitan file (not available on GitHub).
+  val wi: IO[String] = Crime.doMain(Crime.triedResourceNotAvailableOnGithub)
 
   println(EvaluateIO(wi, Timeout(Span(10, Seconds))))
 }
