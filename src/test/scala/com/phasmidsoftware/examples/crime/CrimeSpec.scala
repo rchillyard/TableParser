@@ -71,7 +71,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     import CrimeParser._
     implicit val random: Random = new Random(0)
     val wi: IO[String] = for {
-      url <- IO.fromTry(Crime.crimeTriedResource)
+      url <- IO.fromTry(Crime.triedResource)
       ct <- IOUsing(Source.fromURL(url))(x => Table.parseSource(x))
       lt <- IO(ct.mapOptional(m => m.brief))
       st <- IO(lt.filter(FP.sampler(10)))
@@ -87,8 +87,8 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
 
   it should "doMain" in {
     implicit val random: Random = new Random(0)
-    matchIO(Crime.doMain(Crime.crimeTriedResource), Timeout(Span(20, Seconds))) {
-      case w => w.lines().count() shouldBe 156
+    matchIO(Crime.doMain(Crime.triedSampleResource), Timeout(Span(20, Seconds))) {
+      case w => w.lines().count() shouldBe 18
     }
   }
 }

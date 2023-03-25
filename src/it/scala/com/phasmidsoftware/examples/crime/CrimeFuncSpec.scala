@@ -27,7 +27,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
   it should "be ingested and analyzed as a RawTable" in {
 
     // Set up the source
-    val sy: IO[Source] = IO.fromTry(for (u <- Crime.crimeTriedResource) yield Source.fromURL(u))
+    val sy: IO[Source] = IO.fromTry(for (u <- Crime.triedResource) yield Source.fromURL(u))
 
     val fraction = 4
     // Set up the parser (we set the predicate only for demonstration purposes)

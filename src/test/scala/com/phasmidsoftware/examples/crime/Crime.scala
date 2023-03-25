@@ -4,7 +4,7 @@ import com.phasmidsoftware.examples.crime.CrimeLocation.camelToSnakeCaseColumnNa
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.table._
-import com.phasmidsoftware.util.{EvaluateIO, IOUsing}
+import com.phasmidsoftware.util.{EvaluateIO, FP, IOUsing}
 import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
@@ -49,7 +49,11 @@ object Crime extends CellParsers with CsvRenderers {
   import com.phasmidsoftware.render.CsvGenerators._
 
   val filename: String = "2023-01-metropolitan-street.csv"
-  val crimeTriedResource: Try[URL] = Try(classOf[Crime].getResource(Crime.filename))
+  val triedResource: Try[URL] = Try(classOf[Crime].getResource(Crime.filename))
+
+  // TODO merge the two copies of this sample file into one (it needs to be at the root level of resources)
+  val sampleFile = "2023-01-metropolitan-street-sample.csv"
+  val triedSampleResource: Try[URL] = FP.resource[Crime](sampleFile)
 
   implicit object crimeValidity extends Validity[Crime] {
     def isValid(c: Crime): Boolean = c.isValid
@@ -92,13 +96,12 @@ object Crime extends CellParsers with CsvRenderers {
 
   def doMain(triedResource: Try[URL])(implicit random: Random): IO[String] =
     for {
-      url <- IO.fromTry(triedResource) // get a URL for the full crime file (there is also a sample available)
+      url <- IO.fromTry(triedResource) // get the URL for either the complete file or a sample file.
       ct <- IOUsing(Try(Source.fromURL(url)))(x => Table.parseSource(x)) // open/close resource  and parse it as a Table[Crime].
       lt <- IO(ct.filterValid.mapOptional(m => m.brief)) // filter according to validity and then convert rows to CrimeBrief.
       st <- IO(lt.sample(450)) // sample 1 in every (approximately) 450 rows.
       w <- st.toCSV // write the table out in CSV format.
     } yield w
-
 }
 
 /**
@@ -200,7 +203,7 @@ object Main extends App {
   import cats.effect.IO
 
   implicit val random: Random = new Random()
-  val wi: IO[String] = Crime.doMain(Crime.crimeTriedResource)
+  val wi: IO[String] = Crime.doMain(Crime.triedResource) // The complete Metropolitan file.
 
   println(EvaluateIO(wi, Timeout(Span(10, Seconds))))
 }

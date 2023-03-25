@@ -6,8 +6,10 @@ import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table.Statistics.{makeHistogram, makeNumeric}
 import com.phasmidsoftware.util.FP
 import com.phasmidsoftware.util.FP.sequence
+import java.net.URL
 import scala.collection.mutable
 import scala.io.Source
+import scala.util.Try
 
 /**
  * Class to represent the analysis of a table.
@@ -171,11 +173,12 @@ object Statistics {
 }
 
 object Main extends App {
-  // TODO merge the two copies of this file into one (it needs to be at the root level of resources)
-  val crimeFile = "2023-01-metropolitan-street-sample.csv"
+  // TODO merge the two copies of this sample file into one (it needs to be at the root level of resources)
+  private val sampleFile = "2023-01-metropolitan-street-sample.csv"
+  private val triedSampleResource: Try[URL] = FP.resource[Analysis](sampleFile)
 
   // Set up the source
-  val sy: IO[Source] = IO.fromTry(for (u <- FP.resource[Analysis](crimeFile)) yield Source.fromURL(u))
+  val sy: IO[Source] = IO.fromTry(for (u <- triedSampleResource) yield Source.fromURL(u))
 
   val fraction = 1
   // Set up the parser (we set the predicate only for demonstration purposes)
