@@ -35,7 +35,7 @@ case class Crime(sequence: Sequence,
                  crimeType: String,
                  lastOutcomeCategory: String,
                  context: String) extends Sequential {
-  def isValid: Boolean = maybeCrimeId.isDefined && maybeLocation.isDefined
+  def isValid: Boolean = maybeCrimeId.isDefined && maybeLocation.exists(_.isValid)
 
   def brief: Option[CrimeBrief] = for (crimeId <- maybeCrimeId; location <- maybeLocation) yield CrimeBrief(crimeId, location.longitude, location.latitude)
 }
@@ -85,12 +85,26 @@ object Crime extends CellParsers with CsvRenderers {
   implicit val geoGenerator: CsvGenerator[Option[Double]] = generators.optionGenerator[Double]
   implicit val crimeLocationProduct: CsvProduct[Option[CrimeLocation]] = optionProduct[CrimeLocation]()
   implicit val crimeRenderer: CsvProduct[Crime] = rendererGenerator9(Crime.apply)
+  // CONSIDER why doesn't including the implicit object CrimeParser.CrimeTableParser work?
+  implicit val p: CrimeParser.CrimeTableParser = new CrimeParser.CrimeTableParser(true, _ => true)
+
+  import cats.effect.IO
+
+  def doMain(triedResource: Try[URL])(implicit random: Random): IO[String] =
+    for {
+      url <- IO.fromTry(triedResource) // get a URL for the full crime file (there is also a sample available)
+      ct <- IOUsing(Try(Source.fromURL(url)))(x => Table.parseSource(x)) // open/close resource  and parse it as a Table[Crime].
+      lt <- IO(ct.filterValid.mapOptional(m => m.brief)) // filter according to validity and then convert rows to CrimeBrief.
+      st <- IO(lt.sample(450)) // sample 1 in every (approximately) 450 rows.
+      w <- st.toCSV // write the table out in CSV format.
+    } yield w
+
 }
 
 /**
  * CrimeLocation.
  *
- * @param longitude (the longitude of the incident.
+ * @param longitude the longitude of the incident.
  * @param latitude  the latitude of the incident.
  * @param location  see Kaggle.
  * @param lsoaCode  see Kaggle.
@@ -101,7 +115,9 @@ case class CrimeLocation(longitude: Double,
                          location: String,
                          lsoaCode: String,
                          lsoaName: String
-                        )
+                        ) {
+  def isValid: Boolean = CrimeLocation.isValid(longitude, latitude, lsoaCode)
+}
 
 /**
  * Companion object to CrimeLocation.
@@ -181,18 +197,10 @@ object CrimeParser extends CellParsers {
  */
 object Main extends App {
 
-  import CrimeParser._
   import cats.effect.IO
 
   implicit val random: Random = new Random()
-
-  val wi: IO[String] = for {
-    url <- IO.fromTry(Crime.crimeTriedResource) // get a URL for the full crime file (there is also a sample available)
-    ct <- IOUsing(Try(Source.fromURL(url)))(x => Table.parseSource(x)) // open/close resource  and parse it as a Table[Crime].
-    lt <- IO(ct.filterValid.mapOptional(m => m.brief)) // filter according to validity and then convert rows to CrimeBrief.
-    st <- IO(lt.sample(450)) // sample 1 in every (approximately) 450 rows.
-    w <- st.toCSV // write the table out in CSV format.
-  } yield w
+  val wi: IO[String] = Crime.doMain(Crime.crimeTriedResource)
 
   println(EvaluateIO(wi, Timeout(Span(10, Seconds))))
 }

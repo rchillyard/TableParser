@@ -85,4 +85,10 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     }
   }
 
+  it should "doMain" in {
+    implicit val random: Random = new Random(0)
+    matchIO(Crime.doMain(Crime.crimeTriedResource), Timeout(Span(20, Seconds))) {
+      case w => w.lines().count() shouldBe 156
+    }
+  }
 }

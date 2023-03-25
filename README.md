@@ -38,6 +38,9 @@ The simplest way to get an introduction to _TableParser_ is to consult the airbn
 These give detailed descriptions of each stage of the process.
 
 Take a look also at the _Main_ object in the  _Crime.scala_ module (it's under the _test_ directory).
+The model is relatively simple, but not too simple.
+There are 12 columns in total, but five have been grouped into _CrimeLocation_, with the remaining seven at the top level, i.e., in _Crime_.
+The members _CrimeID_ and _CrimeLocation_ are optional.
 
 Another way to see how it works is to look at this application _Pairings_ which takes a CSV file, parses it, transforms the data,
 and outputs a JSON file.
