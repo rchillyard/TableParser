@@ -1,12 +1,10 @@
 package com.phasmidsoftware.table
 
 import cats.effect.IO
-import com.phasmidsoftware.examples.crime.CrimeLocation
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table.Column.make
 import com.phasmidsoftware.util.EvaluateIO.matchIO
 import com.phasmidsoftware.util.FP.{resource, sequence}
-import com.phasmidsoftware.util.{EvaluateIO, FP}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -41,7 +39,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
 
   behavior of "Column"
 
-  it should "makeNumeric" in {
+  it should "make" in {
     val ti: IO[RawTable] = Table.parseResource(airBNBFile)
     matchIO(ti) {
       case t: RawTable =>
@@ -55,4 +53,8 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
         }
     }
   }
+
+  behavior of "Histogram"
+
+  it should "make a histogram"
 }

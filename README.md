@@ -41,6 +41,21 @@ Take a look also at the _Main_ object in the  _Crime.scala_ module (it's under t
 The model is relatively simple, but not too simple.
 There are 12 columns in total, but five have been grouped into _CrimeLocation_, with the remaining seven at the top level, i.e., in _Crime_.
 The members _CrimeID_ and _CrimeLocation_ are optional.
+A sample data file is located in com/phasmidsoftware/examples/crime/2023-01-metropolitan-street-sample.csv.
+The full file can be downloaded from Kaggle (see code) in _Crime_.
+
+One possibility is to run an analysis on the data (see CrimeSpec: Crime/be ingested and analyzed as a RawTable).
+In order to read the dataset as a _Table\[Crime]_.
+
+    import CrimeParser._
+    val cti: IO[Table[Crime]] = Table.parseResource(Crime.sampleFile, classOf[Crime])
+    matchIO(cti, Timeout(Span(60, Seconds))) {
+      case table@HeadedTable(_, _) =>
+        // operate on table
+    }
+
+Notice that the parsed table is wrapped inside _IO_, the Cats I/O monad.
+This has some technical advantages over using _Future_ or _Try_, which we won't detail here.
 
 Another way to see how it works is to look at this application _Pairings_ which takes a CSV file, parses it, transforms the data,
 and outputs a JSON file.
@@ -54,7 +69,7 @@ The minimum code necessary to read parse the CSV file as a table of "Player"s, u
       def cellParser: CellParser[Player] = cellParser2(apply)
     }
 
-    val pty: Try[Table[Player]] = Table.parseFile[Table[Player]]("players.csv")
+    val pty: IO[Table[Player]] = Table.parseFile[Table[Player]]("players.csv")
 
 This assumes that the source input file ("players.csv") contains a header row which includes column names corresponding to the parameters
 of the case class _Player_ (in this case "first" and "last").
@@ -95,14 +110,24 @@ you will start with (1) and run an analysis on the columns to help you design th
 
 For the first option, you will do something like the following (see the _AnalysisSpec_ unit tests):
 
-    Table.parseResourceRaw(resourceName) match {
-      case Success(t@HeadedTable(_, _)) => println(Analysis(t))
-      case _ =>
+    private val sampleFile = "2023-01-metropolitan-street-sample.csv"
+    private val triedSampleResource: Try[URL] = FP.resource[Analysis](sampleFile)
+    val fraction = 4
+    val parser = RawTableParser().setPredicate(TableParser.sampler(fraction))
+    val ui = IOUsing(for (u <- triedSampleResource) yield Source.fromURL(u)) {
+        s => parser.doParse(s) map (rawTable => println(Analysis(rawTable)))
     }
+    ui.unsafeRunSync()
 
-This analysis will give you a list of columns, each showing its name,
-whether it is optional (i.e. contains nulls), and (if it's a numerical column),
-its range, mean, and standard deviation.
+This analysis will give you a list of columns, each showing its name, size, and
+whether it is optional (i.e. contains nulls), together with an _Analytic_:
+* if it's a numerical column: its range, mean, and standard deviation.
+* if it's a column made up of a relatively small number of classes:
+a histogram giving the class names with frequency, in order of decreasing frequency.
+
+Note the use of the predicate and sampler.
+This allows you to randomly choose a subset of the rows.
+In the example given, approximately one quarter of the rows will be chosen.
 
 Incidentally, this raw parser has three signatures, one for resources, one for files, and one for a sequence of Strings.
 And the default for raw row parsing is to allow quoted strings to span multiple lines.

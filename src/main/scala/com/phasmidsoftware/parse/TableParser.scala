@@ -101,10 +101,12 @@ object TableParser {
   /**
    * Class to allow the simplification of an expression to parse a source, given a StringTableParser.
    *
-   * @param p a StringTableParser.
-   * @tparam T the underlying type of p (T will be Table[_]).
+   * CONSIDER should we generalize the type of parser?
+   *
+   * @param parser a StringTableParser.
+   * @tparam T the underlying type of parser (T will be Table[_]).
    */
-  implicit class ImplicitParser[T](p: StringTableParser[T]) {
+  implicit class ImplicitParser[T](parser: StringTableParser[T]) {
 
     /**
      * Method to parse a IO[Source].
@@ -113,15 +115,7 @@ object TableParser {
      * @param si a IO[Source].
      * @return an IO[T].
      */
-    def parse(si: IO[Source]): IO[T] = si flatMap doParse
-
-    /**
-     * Method to parse an iterator of String.
-     *
-     * @param xs an Iterator[String].
-     * @return an IO[T].
-     */
-    private def doParse(xs: Iterator[String]): IO[T] = p.parse(xs, 1)
+    def parse(si: IO[Source]): IO[T] = si flatMap parse
 
     /**
      * Method to parse a Source.
@@ -130,7 +124,15 @@ object TableParser {
      * @param s a Source.
      * @return an IO[T].
      */
-    private def doParse(s: Source): IO[T] = IOUsing(s)(x => doParse(x.getLines()))
+    def parse(s: Source): IO[T] = IOUsing(s)(x => doParse(x.getLines()))
+
+    /**
+     * Method to parse an iterator of String.
+     *
+     * @param xs an Iterator[String].
+     * @return an IO[T].
+     */
+    private def doParse(xs: Iterator[String]): IO[T] = parser.parse(xs, 1)
   }
 
   val r: Random = new Random()

@@ -1,11 +1,10 @@
 package com.phasmidsoftware.table
 
-import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.table.Statistics.{makeHistogram, makeNumeric}
-import com.phasmidsoftware.util.FP
 import com.phasmidsoftware.util.FP.sequence
+import com.phasmidsoftware.util.{FP, IOUsing}
 import java.net.URL
 import scala.collection.mutable
 import scala.io.Source
@@ -129,8 +128,6 @@ case class Histogram[K](keyFreq: Map[K, Int]) extends Analytic {
   def total: Int = keyFreq.values.sum
 
   override def toString: String = keyFreq.toSeq.sortBy(x => x._2).reverse.map { case (k, n) => s"$k: $n" }.mkString("\n")
-
-//  override def toString: String = keyFreq.toSeq.sortBy(x => x._2).take(269).reverse.map { case (k, n) => s""""$k"""" }.mkString(",")
 }
 
 object Statistics {
@@ -176,18 +173,10 @@ object Main extends App {
   // TODO merge the two copies of this sample file into one (it needs to be at the root level of resources)
   private val sampleFile = "2023-01-metropolitan-street-sample.csv"
   private val triedSampleResource: Try[URL] = FP.resource[Analysis](sampleFile)
-
-  // Set up the source
-  val sy: IO[Source] = IO.fromTry(for (u <- triedSampleResource) yield Source.fromURL(u))
-
-  val fraction = 1
-  // Set up the parser (we set the predicate only for demonstration purposes)
-  val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(fraction))
-
-  parser.parse(sy).unsafeRunSync() match {
-    case t@HeadedTable(r, _) =>
-      val analysis = Analysis(t)
-      println(s"Crime: $analysis")
-      r take 10 foreach println
+  private val fraction = 1
+  private val parser = RawTableParser().setPredicate(TableParser.sampler(fraction))
+  private val ui = IOUsing(for (u <- triedSampleResource) yield Source.fromURL(u)) {
+    s => parser.parse(s) map (rawTable => println(Analysis(rawTable)))
   }
+  ui.unsafeRunSync()
 }

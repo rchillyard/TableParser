@@ -26,19 +26,19 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
   }
 
   behavior of "Crime"
-  val crimeSampleFile = "2023-01-metropolitan-street-sample.csv"
-  val triedCrimeSampleResource: Try[URL] = resource[CrimeSpec](crimeSampleFile)
+  val sampleFile = "2023-01-metropolitan-street-sample.csv"
+  val triedCrimeSampleResource: Try[URL] = resource[CrimeSpec](sampleFile)
 
   it should "be ingested and analyzed as a RawTable" in {
 
     // Set up the source
-    val sy: IO[Source] = IO.fromTry(for (u <- triedCrimeSampleResource) yield Source.fromURL(u))
+    val si: IO[Source] = IO.fromTry(for (u <- triedCrimeSampleResource) yield Source.fromURL(u))
 
     // Set up the parser (we set the predicate only for demonstration purposes)
     val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(10))
 
     // Create the table
-    val wsty: IO[RawTable] = parser.parse(sy)
+    val wsty: IO[RawTable] = parser.parse(si)
 
     matchIO(wsty, Timeout(Span(10, Seconds))) {
       case t@HeadedTable(r, _) =>

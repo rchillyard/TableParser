@@ -11,7 +11,9 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 /**
- * Interim utilities for checking IO.
+ * Interim utilities for checking IO in a testing context.
+ *
+ * NOTE that these are based on Scalatest classes.
  *
  * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
  */
