@@ -27,7 +27,7 @@ import scala.util.{Failure, Random, Try}
  */
 trait Table[Row] extends Iterable[Row] {
 
-  /**
+/**
    * Optional value of the Header of this Table, if there is one.
    */
   val maybeHeader: Option[Header]
@@ -59,7 +59,7 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the type of the rows of the result.
    * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
    */
-  def flatMap[S](f: Row => Iterable[S]): Table[S] = (content map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
+  def flatMap[S](f: Row => Iterable[S]): Table[S] = (content map f).iterator.foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
 
   /**
    * Transform (flatMap) this Table[Row] into a Table[S].
@@ -170,7 +170,7 @@ trait Table[Row] extends Iterable[Row] {
    */
   override def toArray[Element >: Row : ClassTag]: Array[Element] = {
     // XXX huh?
-    lazy val rs = content.toArray[Element]
+    lazy val rs = content.iterator.toArray[Element]
     rs
   }
 
@@ -792,8 +792,8 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
     // TODO this makes no sense now: the decision is taken inside Content.
     (if (knownSize1 > -1) rows.toSeq else rows.toSeq) map {
       case p: Product => ww.writeRow(o2)(p)
-      case xs: Seq[Row] => ww.writeRowElements(o2)(xs) // TESTME
-      case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
+      case xs: Seq[_] => ww.writeRowElements(o2)(xs) // TESTME
+      case xs: Array[_] => ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
       case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     }
     o1

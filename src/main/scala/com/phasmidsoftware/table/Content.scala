@@ -4,7 +4,6 @@ import com.phasmidsoftware.table.Content.noOrdering
 import com.phasmidsoftware.util.FP
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParIterable
-import scala.reflect.ClassTag
 import scala.util.Random
 
 /**
@@ -29,19 +28,15 @@ import scala.util.Random
  * @param xs a ParIterable[Row].
  * @tparam Row the underlying Row type.
  */
-case class Content[+Row](private val xs: ParIterable[Row]) {
+case class Content[+Row](private val xs: ParIterable[Row]) extends IterableOnce[Row] {
 
   def size: Int = xs.size
 
-  def knownSize: Int = xs.knownSize
+  def toSeq: Seq[Row] = xs.to(List)
 
-  def toSeq: Seq[Row] = xs.to(Seq)
+  def toIndexedSeq: IndexedSeq[Row] = xs.toIndexedSeq
 
-  def toIndexedSeq: IndexedSeq[Row] = xs.to(IndexedSeq)
-
-  def toArray[B >: Row : ClassTag]: Array[B] = xs.toArray
-
-  def iterator: Iterator[Row] = xs.toIterator
+  def iterator: Iterator[Row] = xs.iterator
 
   def foreach(f: Row => Unit): Unit = xs foreach f
 
@@ -69,8 +64,6 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    */
   def mapOptional[S](f: Row => Option[S]): Content[S] =
     Content(for (q <- xs.map(f); r <- q) yield r)
-
-  def foldLeft[B](z: B)(op: (B, Row) => B): B = xs.foldLeft(z)(op)
 
   /**
    * Method to concatenate two Contents.
@@ -128,7 +121,7 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    */
   def sorted[S >: Row : Ordering]: Content[S] =
     if (implicitly[Ordering[S]] != noOrdering)
-      Content(toIndexedSeq.map(_.asInstanceOf[S]).sorted)
+      Content(xs.to(IndexedSeq).map(_.asInstanceOf[S]).sorted)
     else
       this
 
@@ -141,10 +134,9 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    */
   def ordered[S >: Row : Ordering]: Seq[S] =
     if (implicitly[Ordering[S]] != noOrdering)
-      toSeq.map(_.asInstanceOf[S]).sorted
+      xs.to(Seq).map(_.asInstanceOf[S]).sorted
     else
-      toSeq
-
+      xs.to(Seq)
 }
 
 object Content {
