@@ -47,15 +47,6 @@ case class Content[+Row](private val xs: ParIterable[Row]) extends IterableOnce[
   def map[B](f: Row => B): Content[B] = Content(xs map f)
 
   /**
-   * This is not, strictly speaking, the correct definition of flatMap for allowing Content to be a monad.
-   *
-   * @param f a function of type Row=>ParIterable[B]
-   * @tparam B the underlying type of the result.
-   * @return a Content[B].
-   */
-  def flatMap[B](f: Row => ParIterable[B]): Content[B] = Content(xs flatMap f)
-
-  /**
    * Transform (flatMap) this Table[Row] into a Table[S].
    *
    * @param f a function which transforms a Row into an IterableOnce[S].
@@ -88,6 +79,8 @@ case class Content[+Row](private val xs: ParIterable[Row]) extends IterableOnce[
   /**
    * Method to sample from this Content by a deterministic method (every nth row is chosen).
    * NOTE: this is not random.
+   *
+   * TESTME
    *
    * @param n the number of rows from which we select the first.
    * @return a new Content[Row] with approximately size/n elements.

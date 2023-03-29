@@ -72,7 +72,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     import CrimeParser._
     implicit val random: Random = new Random(0)
     val wi: IO[String] = for {
-      url <- IO.fromTry(Crime.triedSampleResource)
+      url <- Crime.ioSampleResource
       ct <- IOUsing(Source.fromURL(url))(x => Table.parseSource(x))
       lt <- IO(ct.mapOptional(m => m.brief))
       st <- IO(lt.filter(FP.sampler(10)))
@@ -88,7 +88,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
 
   it should "doMain" in {
     implicit val random: Random = new Random(0)
-    matchIO(Crime.doMain(Crime.triedSampleResource), Timeout(Span(20, Seconds))) {
+    matchIO(Crime.doMain(Crime.ioSampleResource), Timeout(Span(20, Seconds))) {
       case w => w.lines().count() shouldBe 18
     }
   }
@@ -97,38 +97,18 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     import CrimeParser._
     import cats.effect.unsafe.implicits.global
     implicit val random: Random = new Random(0)
-
-    def writeLines(writer: FileWriter, content: String): IO[Unit] =
-      IO.println("Writing the contents to file") >> IO(writer.write(content))
-
-    def closeWriteFile(writer: FileWriter): IO[Unit] =
-      IO.println("Closing the file writer") >> IO(writer.close())
-
-    val fileWriter = new FileWriter("tmp/Crime.use.Resource.csv")
-    val makeResourceForWrite: Resource[IO, FileWriter] = Resource.make(IO(fileWriter))(fw => closeWriteFile(fw))
+    val filename = "tmp/Crime.use.Resource.csv"
     val wi: IO[Unit] = for {
-      url <- IO.fromTry(Crime.triedSampleResource)
-      resource = Resource.make(IO(Source.fromURL(url)))(src => IO(src.close()))
-      ct <- resource.use(src => Table.parseSource(src))
+      url <- Crime.ioSampleResource
+      readResource = Resource.make(IO(Source.fromURL(url)))(src => IO(src.close()))
+      writeResource = Resource.make(IO(new FileWriter(filename)))(fw => IO(fw.close()))
+      ct <- readResource.use(src => Table.parseSource(src))
       lt <- IO(ct.mapOptional(m => m.brief))
       st <- IO(lt.filter(FP.sampler(10)))
       w <- st.toCSV
-      _ <- makeResourceForWrite.use(fw => writeLines(fw, w))
+      _ <- writeResource.use(fw => IO(fw.write(w)))
     } yield ()
 
     wi.unsafeRunSync()
   }
-
-//    for {
-//      w <- wi
-//      writerIO = writeLines(fileWriter, w)
-//      x <- Resource.make(writerIO)(fw => closeWriteFile(fw))
-//    }
-//
-//    val makeResourceForWrite: Resource[IO, FileWriter] = Resource.make(writerIO)(fw => closeWriteFile(fw))
-//    val readWriteWithResource: IO[Unit] = for {
-//      content <- readWithResource
-//      _ <- makeResourceForWrite.use(fw => writeLines(fw, content))
-//    } yield ()
-//  }
 }

@@ -1,5 +1,6 @@
 package com.phasmidsoftware.examples.crime
 
+import cats.effect.IO
 import com.phasmidsoftware.examples.crime.CrimeLocation.camelToSnakeCaseColumnNameMapper
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
@@ -49,11 +50,11 @@ object Crime extends CellParsers with CsvRenderers {
   import com.phasmidsoftware.render.CsvGenerators._
 
   val filename: String = "2023-01-metropolitan-street.csv"
-  val triedResourceNotAvailableOnGithub: Try[URL] = Try(classOf[Crime].getResource(Crime.filename))
+  val ioResourceNotAvailableOnGithub: IO[URL] = IO.fromTry(FP.resource[Crime](filename))
 
   // TODO merge the two copies of this sample file into one (it needs to be at the root level of resources)
   val sampleFile = "2023-01-metropolitan-street-sample.csv"
-  val triedSampleResource: Try[URL] = FP.resource[Crime](sampleFile)
+  val ioSampleResource: IO[URL] = IO.fromTry(FP.resource[Crime](sampleFile))
 
   implicit object crimeValidity extends Validity[Crime] {
     def isValid(c: Crime): Boolean = c.isValid
@@ -94,9 +95,9 @@ object Crime extends CellParsers with CsvRenderers {
 
   import cats.effect.IO
 
-  def doMain(triedResource: Try[URL])(implicit random: Random): IO[String] =
+  def doMain(ioResource: IO[URL])(implicit random: Random): IO[String] =
     for {
-      url <- IO.fromTry(triedResource) // get the URL for either the complete file or a sample file.
+      url <- ioResource // get the URL for either the complete file or a sample file.
       ct <- IOUsing(Try(Source.fromURL(url)))(x => Table.parseSource(x)) // open/close resource  and parse it as a Table[Crime].
       lt <- IO(ct.filterValid.mapOptional(m => m.brief)) // filter according to validity and then convert rows to CrimeBrief.
       st <- IO(lt.sample(450)) // sample 1 in every (approximately) 450 rows.
@@ -204,7 +205,7 @@ object Main extends App {
 
   implicit val random: Random = new Random()
   // NOTE: we specify the complete Metropolitan file (not available on GitHub).
-  val wi: IO[String] = Crime.doMain(Crime.triedResourceNotAvailableOnGithub)
+  val wi: IO[String] = Crime.doMain(Crime.ioResourceNotAvailableOnGithub)
 
   println(EvaluateIO(wi, Timeout(Span(10, Seconds))))
 }

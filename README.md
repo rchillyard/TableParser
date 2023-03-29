@@ -375,6 +375,24 @@ For an example of this in use, see the _Crime_ class:
 There is no column in the CSV corresponding to _sequence_.
 However, the parser auto-generates that column.
 
+We can parse the file and write out a one-tenth sample with something like the following:
+
+    import CrimeParser._
+    import cats.effect.unsafe.implicits.global
+    implicit val random: Random = new Random()
+    val filename = "tmp/Crime.use.Resource.csv"
+    val wi: IO[Unit] = for {
+      url <- Crime.ioSampleResource
+      readResource = Resource.make(IO(Source.fromURL(url)))(src => IO(src.close()))
+      writeResource = Resource.make(IO(new FileWriter(filename)))(fw => IO(fw.close()))
+      ct <- readResource.use(src => Table.parseSource(src))
+      lt <- IO(ct.mapOptional(m => m.brief))
+      st <- IO(lt.filter(FP.sampler(10)))
+      w <- st.toCSV
+      _ <- writeResource.use(fw => IO(fw.write(w)))
+    } yield ()
+    wi.unsafeRunSync()
+
 ## Caveats
 
 A case class which represents a row (or part of a row) of the table you want to create from parsing,

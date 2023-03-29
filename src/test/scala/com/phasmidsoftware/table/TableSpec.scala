@@ -124,7 +124,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit val z: Ordering[Row] = Content.noOrdering[Row]
     val outputFile = "tmp/Table-write Table To File.csv"
     val resultIO = for {_ <- Table.writeCSVFileRow(table, new File(outputFile))
-                        _ = println(s"written to file " + outputFile)
+                        _ <- IO.println(s"written to file " + outputFile)
                         y <- Table.parseFileRaw(outputFile, TableParser.includeAll)
                         } yield y
     matchIO(resultIO) {

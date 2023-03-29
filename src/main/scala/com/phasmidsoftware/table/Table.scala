@@ -929,6 +929,9 @@ case class HeadedTable[Row](content: Content[Row], header: Header) extends Rende
     }
   }
 
+  /**
+   * @return a String representation of this Table
+   */
   override def toString(): String = s"HeadedTable($header) with ${content.size} rows"
 }
 
