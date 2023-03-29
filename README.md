@@ -170,44 +170,61 @@ See section on _CellParsers_ below.
 
 ## Table
 
-The _Table_ class, which implements _Iterable\[Row]_, also has several methods for manipulation:
+The _Table_ class, which extends _Iterable\[Row]_, also has several methods for manipulation:
 ### query methods
-* def rows: Seq\[Row]
+* def content: Content\[Row]
 * def maybeHeader: Option\[Header]
 * def toCSV(implicit renderer: CsvRenderer\[Row], generator: CsvProductGenerator\[Row], csvAttributes: CsvAttributes): Iterable\[String]
 * def maybeColumnNames: Option\[Seq\[String]]
 * def column(name: String): Iterator\[Option\[String]]
+* writeCSVFile(file: File)(implicit renderer: CsvRenderer\[Row], generator: CsvGenerator\[Row], ordering: Ordering\[Row], csvAttributes: CsvAttributes): Unit
+* def writeCSVFileEncrypted[A: HexEncryption](file: File)(implicit renderer: CsvRenderer\[Row], generator: CsvGenerator\[Row], ordering: Ordering\[Row], hasKey: HasKey\[Row], csvAttributes: CsvAttributes): Unit
 
 ### transformation methods
+* def filter(p: Row => Boolean): Table\[Row]
+* def filterNot(p: Row => Boolean): Table\[Row]
+* def filterValid(implicit rv: Validity\[Row]): Table\[Row]
+* def map\[S](f: Row => S): Table\[S]
 * def flatMap\[U](f: Row => Iterable\[U]): Table\[U]
+* def mapOptional\[S](f: Row => Option\[S]): Table\[S]
+* def unit\[S](sc: Content\[S], maybeHeader: Option\[Header]): Table\[S]
 * def unit\[S](rows: Iterable\[S], maybeHeader: Option\[Header]): Table\[S]
 * def ++\[U >: Row](table: Table\[U]): Table\[U]
+* def zip\[R](rt: Table\[R]): Table\[(Row, R)]
 * def processRows\[S](f: Iterable\[Row] => Iterable\[S]): Table\[S]
 * def processRows\[R, S](f: (Iterable\[Row], Iterable\[R]) => Iterable\[S])(other: Table\[R]): Table\[S]
 * def sort\[S >: Row : Ordering]: Table\[S]
 * def select(range: Range): Table\[Row]
 * def select(n: Int): Table\[Row]
+* def drop(n: Int): Table\[Row]
+* def dropWhile(p: Row => Boolean): Table\[Row]
+* def take(n: Int): Table\[Row]
+* def takeWhile(p: Row => Boolean): Table\[Row]
+* def sample(n: Int)(implicit random: Random): Table\[Row]
+* def slice(from: Int, until: Int): Table\[Row]
 * lazy val shuffle: Table\[Row]
-
 
 It is to be expected that _join_ methods will be added later (based upon the second signature of processRows).
 
-The following **object** methods are available for parsing text:
-*  def parse\[T: TableParser](ws: Seq\[String]): Try\[T]
-*  def parse\[T: TableParser](ws: Iterator\[String]): Try\[T]
-*  def parse\[T: TableParser](x: => Source): Try\[T]
-*  def parse\[T: TableParser](u: URI)(implicit codec: Codec): Try\[T]
-*  def parse\[T: TableParser](u: URI, enc: String): Try\[T]
-*  def parseInputStream\[T: TableParser](i: InputStream)(implicit codec: Codec): Try\[T]
-*  def parseInputStream\[T: TableParser](i: InputStream, enc: String): Try\[T]
-*  def parseFile\[T: TableParser](f: File)(implicit codec: Codec): Try\[T]
-*  def parseFile\[T: TableParser](f: File, enc: String): Try\[T]
-*  def parseFile\[T: TableParser](pathname: String)(implicit codec: Codec): Try\[T]
-*  def parseFile\[T: TableParser](pathname: String, enc: String): Try\[T]
-*  def parseResource\[T: TableParser](s: String, clazz: Class\[_] = getClass)(implicit codec: Codec): Try\[T]
-*  def parseResource\[T: TableParser](u: URL, enc: String): Try\[T]
-*  def parseResource\[T: TableParser](u: URL)(implicit codec: Codec): Try\[T]
-*  def parseSequence\[T: TableParser](wss: Seq\[Seq\[String]]): Try\[T]
+The following **object** methods are available for parsing text in _Table_:
+* def parse\[T: TableParser](ws: Iterable\[String]): IO\[T]
+* def parse\[T: TableParser](ws: Iterator\[String]): IO\[T]
+* def parseSource\[T: TableParser](x: => Source): IO\[T]
+* def parse\[T: TableParser](si: => IO\[Source]): IO\[T]
+* def parse\[T: TableParser](u: URI)(implicit codec: Codec): IO\[T]
+* def parse\[T: TableParser](u: URI, enc: String): IO\[T]
+* def parseInputStream\[T: TableParser](i: InputStream)(implicit codec: Codec): IO\[T]
+* def parseInputStream\[T: TableParser](i: InputStream, enc: String): IO\[T]
+* def parseFile\[T: TableParser](f: File)(implicit codec: Codec): IO\[T]
+* def parseFile\[T: TableParser](f: File, enc: String): IO\[T]
+* def parseFile\[T: TableParser](pathname: String)(implicit codec: Codec): IO\[T]
+* def parseFile\[T: TableParser](pathname: String, enc: String): IO\[T]
+* def parseResource\[T: TableParser](s: String, clazz: Class\[_] = getClass)(implicit codec: Codec): IO\[T]
+* def parseResource\[T: TableParser](u: URL, enc: String): IO\[T]
+* def parseResource\[T: TableParser](u: URL)(implicit codec: Codec): IO\[T]
+* def parseSequence\[T: TableParser](wss: Seq\[Seq\[String]]): IO\[T]
+* def parseFileRaw(f: File, predicate: Try\[RawRow] => Boolean, maybeFixedHeader: Option\[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): IO\[Table\[RawRow]]
+* def parseFileRaw(pathname: String, predicate: Try\[RawRow] => Boolean)(implicit codec: Codec): IO\[Table\[RawRow]]
 
 Please note that, in the case of a parameter being an Auto-closeable object such as _InputStream_ or Source,
 it is the caller's responsibility to close it after parsing.
@@ -238,7 +255,7 @@ It is defined thus:
       val predicate: Try[Row] => Boolean = includeAll
       def rowParser: RowParser[Row]
       def builder(rows: Seq[Row]): Table
-      def parse(ws: Seq[String]): Try[Table] = ...
+      def parse(ws: Seq[String]): IO[Table] = ...
 }
 
 The type _Row_ defines the specific row type (for example, _Movie_, in the example below).
@@ -277,9 +294,9 @@ Typically, the _StandardRowParser_ is used, which takes as its constructor param
 
 The methods of _RowParser_ are:
 
-    def parse(w: String)(header: Header): Try[Row]
+    def parse(w: String)(header: Header): IO[Row]
 
-    def parseHeader(w: String): Try[Header]
+    def parseHeader(w: String): IO[Header]
 
 ## LineParser
 
@@ -298,9 +315,9 @@ Typically, the _StandardStringsParser_ is used.
 
 The methods of _StringsParser_ are:
 
-    def parse(ws: Seq[String])(header: Header): Try[Row]
+    def parse(ws: Seq[String])(header: Header): IO[Row]
 
-    def parseHeader(ws: Seq[String]): Try[Header]
+    def parseHeader(ws: Seq[String]): IO[Header]
 
 ## CellParsers
 
@@ -328,6 +345,36 @@ In this case, you must supply a _Map_ which specifies which parser is to be used
 If the value in that column is not one of the keys of the map, an exception will be thrown.
 For an example of this, please see the example in _CellParsersSpec_ ("conditionally parse").
 
+## Content
+
+The rows of a _Table_ are represented by a case class called _Content_:
+
+    case class Content[+Row](private val xs: ParIterable[Row])
+
+Currently, the internal rows are represented by a _ParIterable\[Row]_ which holds the rows in parallel partitions.
+This necessarily shuffles the ordering of the rows.
+
+### Sequence and Sequential
+
+Tables can be ordered explicitly or they can be ordered by a _Sequence_ member whose values are generated by the parser.
+The trait _Sequential_ enables the definition of type constructors which can provide evidence of the 
+corresponding order.
+
+For an example of this in use, see the _Crime_ class:
+
+    case class Crime(sequence: Sequence,
+        maybeCrimeId: Option[BigInt],
+        month: String,
+        reportedBy: String,
+        fallsWithin: String,
+        maybeLocation: Option[CrimeLocation],
+        crimeType: String,
+        lastOutcomeCategory: String,
+        context: String) extends Sequential
+
+There is no column in the CSV corresponding to _sequence_.
+However, the parser auto-generates that column.
+
 ## Caveats
 
 A case class which represents a row (or part of a row) of the table you want to create from parsing,
@@ -343,7 +390,7 @@ In this example, we parse the IMDB Movie dataset from Kaggle.
 The basic structure of the application code will look something like this:
 
         import MovieParser._
-        val x: Try[Table[Movie]] = Table.parseResource("movie_metadata.csv")
+        val x: IO[Table[Movie]] = Table.parseResource("movie_metadata.csv")
      
 In this example, the row type is _Movie_, a case class with eleven parameters.
 The data can be found in a local resource (relative to this class) called movie_metadata.csv.
@@ -477,7 +524,7 @@ The example comes from a report on the submissions to a Scala exam. Only one que
         )
 
       import Submissions._
-      val qty: Try[Table[Submission]] = Table.parseSequence(rows)
+      val qty: IO[Table[Submission]] = Table.parseSequence(rows)
 
 Note the use of _cellParserRepetition_. The parameter allows the programmer to define the start value of the sequence number for the columns.
 In this case, we use the default value: 1 and so don't have to explicitly specify it.
@@ -630,7 +677,7 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 
     val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
-    val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).asInstanceOf[Renderable[Partnership]].render
+    val wy: IO[String] = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).asInstanceOf[Renderable[Partnership]].render
     wy should matchPattern { case Success("{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}") => }
     implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}
     wy.map(p => p.parseJson.convertTo[Table[Partnership]]) should matchPattern { case Success(HeadedTable(_, _)) => }

@@ -23,3 +23,9 @@ hprof.samples.txt
 crimeSample.csv
 
 src/junk.csv
+
+tmp/Crime.use.Resource.csv
+
+tmp/other-render to CSV.csv
+
+tmp/Table-write Table To File.csv

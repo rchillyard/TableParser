@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.write
 
+import com.phasmidsoftware.write.WritableSpec.complexFile
 import java.io.{File, FileWriter}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -48,8 +49,8 @@ class WritableSpec extends flatspec.AnyFlatSpec with should.Matchers {
         				|""".stripMargin
   }
 
-  it should "writeRow to a File" in {
-    val file = new File("output.csv")
+  it should "writeRowToFile" in {
+    val file = new File(complexFile)
     val fw: Writable[FileWriter] = Writable.fileWritable(file)
     val o = fw.unit
     fw.writeRow(o)(Complex(1, -1))
@@ -64,4 +65,8 @@ class WritableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     o.toString shouldBe "Hello World!\n"
   }
 
+}
+
+object WritableSpec {
+  val complexFile = "tmp/Writable-writeRowToFile.csv"
 }

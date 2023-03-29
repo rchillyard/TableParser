@@ -5,13 +5,13 @@
 package com.phasmidsoftware.table
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxParallelAp
+import cats.implicits.catsSyntaxNonEmptyParallelAp
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.table.Table.parseResource
 import com.phasmidsoftware.util.EvaluateIO.matchIO
 import com.phasmidsoftware.util.{EvaluateIO, TryUsing}
-import com.phasmidsoftware.write.{Node, TreeWriter, Writable}
+import com.phasmidsoftware.write.{Node, TreeWriter, Writable, WritableSpec}
 import java.io.{File, FileWriter, InputStream}
 import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -107,8 +107,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   // NOTE: this test can be flaky. Perhaps we should just use zip instead of parProduct.
+  // TODO we are relying on the existence of WritableSpec.complexFile, which may not exist.
   it should "parse table from raw file" in {
-    val z1: IO[Table[RawRow]] = Table.parseFileRaw(new File("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b")))))
+    val z1: IO[Table[RawRow]] = Table.parseFileRaw(new File(WritableSpec.complexFile), TableParser.includeAll, Some(Header(Seq(Seq("a", "b")))))
     val z2: IO[Table[RawRow]] = Table.parseFileRaw("src/test/resources/com/phasmidsoftware/table/intPairs.csv", TableParser.includeAll)
     matchIO(z1 parProduct z2) {
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) =>
@@ -116,20 +117,21 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  it should "write table to the file" in {
+  it should "write table to file" in {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
     implicit val z: Ordering[Row] = Content.noOrdering[Row]
-    val resultIO = for {_ <- Table.writeCSVFileRow(table, new File("output.csv"))
-                        _ = println(s"written to file output.csv")
-                        y <- Table.parseFileRaw("output.csv", TableParser.includeAll)
+    val outputFile = "tmp/Table-write Table To File.csv"
+    val resultIO = for {_ <- Table.writeCSVFileRow(table, new File(outputFile))
+                        _ = println(s"written to file " + outputFile)
+                        y <- Table.parseFileRaw(outputFile, TableParser.includeAll)
                         } yield y
     matchIO(resultIO) {
       case xt@HeadedTable(_, _) => xt.content.head.toString() shouldBe """A="1", B="2""""
     }
     val tableWithoutHead = Table(Seq(row1), None)
-    the[TableException] thrownBy Table.writeCSVFileRow(tableWithoutHead, new File("output.csv"))
+    the[TableException] thrownBy Table.writeCSVFileRow(tableWithoutHead, new File(outputFile))
   }
 
   it should "parse from Iterator[String]" in {
@@ -264,7 +266,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  behavior of "other"
+  behavior of "Other"
 
   it should "do iterator" in {
     import IntPair._
@@ -440,7 +442,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case HeadedTable(_, _) => succeed
     }
 
-    val file = new File("output.csv")
+    val file = new File("tmp/other-render to CSV.csv")
     implicit val fw: Writable[FileWriter] = Writable.fileWritable(file)
 
     implicit object FileRenderer extends Renderer[Table[IntPair], FileWriter] {

@@ -23,6 +23,8 @@ lazy val nScalaTimeVersion = "2.32.0"
 lazy val tsecVersion = "0.4.0"
 
 libraryDependencies ++= Seq(
+  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+  "org.typelevel" %% "cats-effect" % "3.4.8",
   "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
   "com.phasmidsoftware" %% "flog" % "1.0.8",
   "io.spray" %%  "spray-json" % "1.3.6",
@@ -33,6 +35,3 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
-libraryDependencies +=
-        "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
-

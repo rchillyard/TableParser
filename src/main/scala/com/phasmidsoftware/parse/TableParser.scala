@@ -155,7 +155,7 @@ object TableParser {
   }
 
   /**
-   * a function which always evaluates as true, regardless of the successfulness of the input.
+   * A constant function which always evaluates as true, regardless of the successfulness of the input.
    */
   val includeAll: Try[Any] => Boolean = _ => true
 }

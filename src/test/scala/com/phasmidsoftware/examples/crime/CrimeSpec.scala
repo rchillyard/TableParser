@@ -1,11 +1,12 @@
 package com.phasmidsoftware.examples.crime
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import com.phasmidsoftware.parse.{RawTableParser, StandardStringsParser, TableParser}
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.EvaluateIO.matchIO
 import com.phasmidsoftware.util.FP.resource
 import com.phasmidsoftware.util.{FP, IOUsing}
+import java.io.FileWriter
 import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
@@ -91,4 +92,43 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
       case w => w.lines().count() shouldBe 18
     }
   }
+
+  it should "use Resource" in {
+    import CrimeParser._
+    import cats.effect.unsafe.implicits.global
+    implicit val random: Random = new Random(0)
+
+    def writeLines(writer: FileWriter, content: String): IO[Unit] =
+      IO.println("Writing the contents to file") >> IO(writer.write(content))
+
+    def closeWriteFile(writer: FileWriter): IO[Unit] =
+      IO.println("Closing the file writer") >> IO(writer.close())
+
+    val fileWriter = new FileWriter("tmp/Crime.use.Resource.csv")
+    val makeResourceForWrite: Resource[IO, FileWriter] = Resource.make(IO(fileWriter))(fw => closeWriteFile(fw))
+    val wi: IO[Unit] = for {
+      url <- IO.fromTry(Crime.triedSampleResource)
+      resource = Resource.make(IO(Source.fromURL(url)))(src => IO(src.close()))
+      ct <- resource.use(src => Table.parseSource(src))
+      lt <- IO(ct.mapOptional(m => m.brief))
+      st <- IO(lt.filter(FP.sampler(10)))
+      w <- st.toCSV
+      _ <- makeResourceForWrite.use(fw => writeLines(fw, w))
+    } yield ()
+
+    wi.unsafeRunSync()
+  }
+
+//    for {
+//      w <- wi
+//      writerIO = writeLines(fileWriter, w)
+//      x <- Resource.make(writerIO)(fw => closeWriteFile(fw))
+//    }
+//
+//    val makeResourceForWrite: Resource[IO, FileWriter] = Resource.make(writerIO)(fw => closeWriteFile(fw))
+//    val readWriteWithResource: IO[Unit] = for {
+//      content <- readWithResource
+//      _ <- makeResourceForWrite.use(fw => writeLines(fw, content))
+//    } yield ()
+//  }
 }

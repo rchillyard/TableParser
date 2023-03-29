@@ -92,12 +92,12 @@ trait Table[Row] extends Iterable[Row] {
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param sr          a Content of S.
+   * @param sc          a Content of S.
    * @param maybeHeader an optional Header to be used in the resulting Table.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S]
+  def unit[S](sc: Content[S], maybeHeader: Option[Header]): Table[S]
 
   /**
    * Method to generate a Table[S] for a set of rows.
@@ -261,10 +261,10 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * Method to retain only the rows which satisfy the isValid method of ev (i.e. a Validity[Row]).
    *
-   * @param ev (implicit) a Validity[Row].
+   * @param rv (implicit) a Validity[Row].
    * @return Table[Row] consisting only of rows which satisfy Validity.
    */
-  def filterValid(implicit ev: Validity[Row]): Table[Row] = filter(r => ev.isValid(r))
+  def filterValid(implicit rv: Validity[Row]): Table[Row] = filter(r => rv.isValid(r))
 
   /**
    * Method to randomly sample from this Table.
@@ -604,6 +604,7 @@ object Table {
    * Method to parse a table from a File as a table of Seq[String].
    *
    * @param f                the file.
+   * @param predicate        a predicate which takes a Try[RawRow] and returns a Boolean.
    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
    * @param codec            (implicit) the encoding.
@@ -617,8 +618,9 @@ object Table {
   /**
    * Method to parse a table from a File as a table of Seq[String].
    *
-   * @param pathname the path name.
-   * @param codec    (implicit) the encoding.
+   * @param pathname  the path name.
+   * @param predicate a predicate which takes a Try[RawRow] and returns a Boolean.
+   * @param codec     (implicit) the encoding.
    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): IO[Table[RawRow]] = {
@@ -757,13 +759,13 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param sr a sequence of S.
+   * @param sc a sequence of S.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  override def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(sr, h)
-    case None => UnheadedTable(sr)
+  override def unit[S](sc: Content[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+    case Some(h) => HeadedTable(sc, h)
+    case None => UnheadedTable(sc)
   }
 
   /**
