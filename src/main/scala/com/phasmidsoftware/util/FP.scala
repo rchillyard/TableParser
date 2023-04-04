@@ -193,6 +193,15 @@ object FP {
   def resource[C: ClassTag](resourceName: String): Try[URL] = resourceForClass(resourceName, implicitly[ClassTag[C]].runtimeClass)
 
   /**
+   * Method to yield a URL for a given resourceForClass in the classpath for C.
+   *
+   * @param resourceName the name of the resourceForClass.
+   * @tparam C a class of the package containing the resourceForClass.
+   * @return a Try[URL].
+   */
+  def ioResource[C: ClassTag](resourceName: String): IO[URL] = IO.fromTry(resource(resourceName))
+
+  /**
    * Method to yield a Try[URL] for a resource name and a given class.
    *
    * @param resourceName the name of the resource.
@@ -203,6 +212,15 @@ object FP {
     case Some(u) => Success(u)
     case None => Failure(FPException(s"$resourceName is not a valid resource for $clazz"))
   }
+
+  /**
+   * Method to yield a Try[URL] for a resource name and a given class.
+   *
+   * @param resourceName the name of the resource.
+   * @param clazz        the class, relative to which, the resource can be found (defaults to the caller's class).
+   * @return a Try[URL]
+   */
+  def ioResourceForClass(resourceName: String, clazz: Class[_] = getClass): IO[URL] = IO.fromTry(resourceForClass(resourceName, clazz))
 
   /**
    * Method to determine if the String w was found at a valid index (i).

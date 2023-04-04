@@ -98,10 +98,10 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     import cats.effect.unsafe.implicits.global
     implicit val random: Random = new Random(0)
     val filename = "tmp/Crime.use.Resource.csv"
+    val writeResource = Resource.make(IO(new FileWriter(filename)))(fw => IO(fw.close()))
     val wi: IO[Unit] = for {
       url <- Crime.ioSampleResource
       readResource = Resource.make(IO(Source.fromURL(url)))(src => IO(src.close()))
-      writeResource = Resource.make(IO(new FileWriter(filename)))(fw => IO(fw.close()))
       ct <- readResource.use(src => Table.parseSource(src))
       lt <- IO(ct.mapOptional(m => m.brief))
       st <- IO(lt.filter(FP.sampler(10)))

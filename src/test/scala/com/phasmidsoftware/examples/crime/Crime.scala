@@ -5,7 +5,8 @@ import com.phasmidsoftware.examples.crime.CrimeLocation.camelToSnakeCaseColumnNa
 import com.phasmidsoftware.parse._
 import com.phasmidsoftware.render._
 import com.phasmidsoftware.table._
-import com.phasmidsoftware.util.{EvaluateIO, FP, IOUsing}
+import com.phasmidsoftware.util.FP.ioResource
+import com.phasmidsoftware.util.{EvaluateIO, IOUsing}
 import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.time.{Seconds, Span}
@@ -50,11 +51,11 @@ object Crime extends CellParsers with CsvRenderers {
   import com.phasmidsoftware.render.CsvGenerators._
 
   val filename: String = "2023-01-metropolitan-street.csv"
-  val ioResourceNotAvailableOnGithub: IO[URL] = IO.fromTry(FP.resource[Crime](filename))
+  val ioResourceNotAvailableOnGithub: IO[URL] = ioResource[Crime](filename)
 
   // TODO merge the two copies of this sample file into one (it needs to be at the root level of resources)
   val sampleFile = "2023-01-metropolitan-street-sample.csv"
-  val ioSampleResource: IO[URL] = IO.fromTry(FP.resource[Crime](sampleFile))
+  val ioSampleResource: IO[URL] = ioResource[Crime](sampleFile)
 
   implicit object crimeValidity extends Validity[Crime] {
     def isValid(c: Crime): Boolean = c.isValid
@@ -90,7 +91,7 @@ object Crime extends CellParsers with CsvRenderers {
   implicit val geoGenerator: CsvGenerator[Option[Double]] = generators.optionGenerator[Double]
   implicit val crimeLocationProduct: CsvProduct[Option[CrimeLocation]] = optionProduct[CrimeLocation]()
   implicit val crimeRenderer: CsvProduct[Crime] = rendererGenerator9(Crime.apply)
-  // CONSIDER why doesn't including the implicit object CrimeParser.CrimeTableParser work?
+  // CONSIDER why doesn't importing the implicit object CrimeParser.CrimeTableParser work?
   implicit val p: CrimeParser.CrimeTableParser = new CrimeParser.CrimeTableParser(true, _ => true)
 
   import cats.effect.IO
@@ -98,7 +99,7 @@ object Crime extends CellParsers with CsvRenderers {
   def doMain(ioResource: IO[URL])(implicit random: Random): IO[String] =
     for {
       url <- ioResource // get the URL for either the complete file or a sample file.
-      ct <- IOUsing(Try(Source.fromURL(url)))(x => Table.parseSource(x)) // open/close resource  and parse it as a Table[Crime].
+      ct <- IOUsing(IO(Source.fromURL(url)))(x => Table.parseSource(x)) // open/close resource  and parse it as a Table[Crime].
       lt <- IO(ct.filterValid.mapOptional(m => m.brief)) // filter according to validity and then convert rows to CrimeBrief.
       st <- IO(lt.sample(450)) // sample 1 in every (approximately) 450 rows.
       w <- st.toCSV // write the table out in CSV format.
