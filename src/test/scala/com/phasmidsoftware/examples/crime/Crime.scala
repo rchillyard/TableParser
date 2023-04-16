@@ -101,7 +101,7 @@ object Crime extends CellParsers with CsvRenderers {
       url <- ioResource // get the URL for either the complete file or a sample file.
       ct <- IOUsing(IO(Source.fromURL(url)))(x => Table.parseSource(x)) // open/close resource  and parse it as a Table[Crime].
       lt <- IO(ct.filterValid.mapOptional(m => m.brief)) // filter according to validity and then convert rows to CrimeBrief.
-      st <- IO(lt.sample(450)) // sample 1 in every (approximately) 450 rows.
+      st <- IO(lt.sample(120)) // sample 1 in every (approximately) 120 rows.
       w <- st.toCSV // write the table out in CSV format.
     } yield w
 }

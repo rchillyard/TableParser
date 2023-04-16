@@ -379,12 +379,13 @@ We can parse the file and write out a one-tenth sample with something like the f
 
     import CrimeParser._
     import cats.effect.unsafe.implicits.global
-    implicit val random: Random = new Random()
-    val filename = "tmp/Crime.use.Resource.csv"
+    implicit val random: Random = new Random(0)
+    val sampleFile = "2023-01-metropolitan-street-sample.csv"
+    val outputFile = "tmp/Crime.use.Resource.csv"
+    val writeResource = Resource.make(IO(new FileWriter(outputFile)))(fw => IO(fw.close()))
     val wi: IO[Unit] = for {
-      url <- Crime.ioSampleResource
+      url <- ioResource[Crime](sampleFile)
       readResource = Resource.make(IO(Source.fromURL(url)))(src => IO(src.close()))
-      writeResource = Resource.make(IO(new FileWriter(filename)))(fw => IO(fw.close()))
       ct <- readResource.use(src => Table.parseSource(src))
       lt <- IO(ct.mapOptional(m => m.brief))
       st <- IO(lt.filter(FP.sampler(10)))
