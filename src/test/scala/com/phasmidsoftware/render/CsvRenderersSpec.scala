@@ -24,6 +24,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   object IntPair {
 
+    implicit val intPairOrdering: Ordering[IntPair] = NonSequential.ordering[IntPair, Int](c => c.a)
+
     object IntPairParser extends JavaTokenParsers {
       lazy val pair: Parser[(Int, Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
     }
@@ -305,6 +307,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   object DailyRaptorReport {
 
+    implicit val dailyRaptorReportOrdering: Ordering[DailyRaptorReport] = NonSequential.ordering[DailyRaptorReport, LocalDate](c => c.date)
+
     object DailyRaptorReportParser extends CellParsers {
       private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
 
@@ -391,6 +395,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   case class NestedRaptorReport(date: LocalDate, weatherHawks: WeatherHawks)
 
   object NestedRaptorReport {
+    implicit val nestedRaptorReportOrdering: Ordering[NestedRaptorReport] = NonSequential.ordering[NestedRaptorReport, LocalDate](c => c.date)
 
     object NestedRaptorReportParser extends CellParsers {
       private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")

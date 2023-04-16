@@ -240,7 +240,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     implicit val optionStringGenerator: CsvGenerator[Option[String]] = csvGenerators.optionGenerator[String]
     implicit val teamGenerator: CsvGenerator[Team] = csvGenerators.generator5(Team)
     implicit val gradeGenerator: CsvGenerator[Grade] = function(csvGenerators)
-    csvGenerators.generator4(TeamProject)
+    csvGenerators.generator4(TeamProject.apply)
   }
 
   private def createCsvRendererForTeamProject(function: CsvRenderers => CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
@@ -249,6 +249,6 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     implicit val optionStringRenderer: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]()
     implicit val teamRenderer: CsvRenderer[Team] = csvRenderers.renderer5(Team)
     implicit val gradeRenderer: CsvRenderer[Grade] = function(csvRenderers)
-    csvRenderers.renderer4(TeamProject)
+    csvRenderers.renderer4(TeamProject.apply)
   }
 }

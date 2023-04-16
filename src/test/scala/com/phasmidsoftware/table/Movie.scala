@@ -14,6 +14,8 @@ import scala.util.Try
  *
  * Created by scalaprof on 9/12/16.
  *
+ * CONSIDER moving this into examples package
+ *
  * Common questions in this assignment:
  * 1. Where is main method?
  * In most case, you don't need to run main method for assignments.
@@ -219,6 +221,8 @@ object Movie {
     implicit val generatorAttributeSet: CsvGenerator[AttributeSet] = csvGenerators.generator1(fAttributeSet)
     csvGenerators.generator11(Movie.apply)
   }
+
+  implicit val orderingTeamProject: Ordering[Movie] = NonSequential.ordering[Movie, String](p => p.title)
 }
 
 // CONSIDER removing the csvAttributes parameter and making it an object.

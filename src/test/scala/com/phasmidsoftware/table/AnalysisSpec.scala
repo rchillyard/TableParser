@@ -32,8 +32,8 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
         analysis.columns shouldBe 87
         analysis.columnMap.size shouldBe 87
         analysis.columnMap("bedrooms") should matchPattern { case Column("Int", false, _) => }
-        analysis.columnMap("accommodates").toString should startWith("Int (range: 1.0-10.0, mean: 2.783464566929134, stdDev: 1.7670324685210")
-        analysis.columnMap("license").toString shouldBe "optional Int"
+        analysis.columnMap("accommodates").toString should startWith("Int: total: 254\n (range: 1.0-10.0, mean: 2.783464566929134, stdDev: 1.7670324685210")
+        analysis.columnMap("license").toString shouldBe "optional Int: "
     }
   }
 
@@ -47,10 +47,14 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
         val maybeColumn: Option[Column] = sequence(z) flatMap (ws => make(ws))
         maybeColumn should matchPattern { case Some(Column(_, _, Some(_))) => }
         maybeColumn.get match {
-          case Column("Int", false, Some(statistics)) =>
+          case Column("Int", false, Some(statistics: Statistics)) =>
             statistics.mu shouldBe 2.783464566929134
           case x => fail(x.toString)
         }
     }
   }
+
+  behavior of "Histogram"
+
+  it should "make a histogram"
 }

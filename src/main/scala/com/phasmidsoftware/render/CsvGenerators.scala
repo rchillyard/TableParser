@@ -20,7 +20,9 @@ trait CsvGenerators {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[ Option[T] ].
    */
-  def optionGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Option[T]] = new StandardCsvGenerator[Option[T]]
+  def optionGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Option[T]] = new StandardCsvGenerator[Option[T]] {
+    override def toColumnName(po: Option[String], name: String): String = super.toColumnName(po, CsvGenerators.stripMaybe(name))
+  }
 
   /**
    * Method to return a CsvGenerator[T] which does not output a column header for at all.
@@ -410,6 +412,15 @@ trait CsvGenerators {
 }
 
 object CsvGenerators {
+
+  private val regexMaybe = """maybe([A-Z])(\w*)""".r
+
+  def stripMaybe(name: String): String = name match {
+    case regexMaybe(initial, remainder) =>
+      initial.toLowerCase() + remainder
+    case x => x
+  }
+
   implicit object CsvGeneratorBoolean extends StandardCsvGenerator[Boolean]
 
   implicit object CsvGeneratorInt extends StandardCsvGenerator[Int]

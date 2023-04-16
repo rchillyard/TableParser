@@ -1,18 +1,21 @@
 package com.phasmidsoftware.table
 
-import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.parse.{RawTableParser, TableParser}
-import com.phasmidsoftware.util.FP
+import com.phasmidsoftware.table.Statistics.{makeHistogram, makeNumeric}
 import com.phasmidsoftware.util.FP.sequence
+import com.phasmidsoftware.util.{FP, IOUsing}
+import java.net.URL
+import scala.collection.mutable
 import scala.io.Source
+import scala.util.Try
 
 /**
  * Class to represent the analysis of a table.
  *
  * @param rows      the number of rows.
  * @param columns   the number of columns.
- * @param columnMap a map of column names to Column objects (the statistics of a column).
+ * @param columnMap a map of column names to Column objects (the analytics of a column).
  */
 case class Analysis(rows: Int, columns: Int, columnMap: Map[String, Column]) {
   override def toString: String = s"Analysis: rows: $rows, columns: $columns, $showColumnMap"
@@ -45,17 +48,21 @@ object Analysis {
 /**
  * A representation of the analysis of a column.
  *
- * @param clazz           a String denoting which class (maybe which variant of class) this column may be represented as.
- * @param optional        if true then this column contains nulls (empty strings).
- * @param maybeStatistics an optional set of statistics but only if the column represents numbers.
+ * @param clazz         a String denoting which class (maybe which variant of class) this column may be represented as.
+ * @param optional      if true then this column contains nulls (empty strings).
+ * @param maybeAnalytic an optional Analytic but only if the column represents something which can be analyzed.
  */
-case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[Statistics]) {
+case class Column(clazz: String, optional: Boolean, maybeAnalytic: Option[Analytic]) {
   override def toString: String = {
     val sb = new StringBuilder
     if (optional) sb.append("optional ")
     sb.append(clazz)
-    maybeStatistics match {
-      case Some(s) => sb.append(s" $s")
+    sb.append(": ")
+    maybeAnalytic match {
+      case Some(s) =>
+        sb.append(s"total: ${s.total}")
+        sb.append("\n")
+        sb.append(s" $s")
       case _ =>
     }
     sb.toString()
@@ -87,53 +94,89 @@ object Column {
   def make(xs: Seq[String]): Option[Column] = {
     val (ws, nulls) = xs.partition(_.nonEmpty)
     val nullable: Boolean = nulls.nonEmpty
-    val co1 = for (xs <- sequence(for (w <- ws) yield w.toIntOption); ys = xs map (_.toDouble)) yield Column("Int", nullable, Statistics.make(ys))
-    lazy val co2 = for (xs <- sequence(for (w <- ws) yield w.toDoubleOption); ys = xs) yield Column("Double", nullable, Statistics.make(ys))
-    co1 orElse co2 orElse Some(Column("String", nullable, None))
+    // CONSIDER we can combine the following two lines
+    val co1 = for (xs <- sequence(for (w <- ws) yield w.toIntOption); ys = xs map (_.toDouble)) yield Column("Int", nullable, makeNumeric(ys))
+    lazy val co2 = for (xs <- sequence(for (w <- ws) yield w.toDoubleOption); ys = xs) yield Column("Double", nullable, makeNumeric(ys))
+    lazy val maybeHistogram: Option[Analytic] = makeHistogram(ws)
+    co1 orElse co2 orElse Some(Column("String", nullable, maybeHistogram))
   }
 }
 
+trait Analytic {
+  def total: Int
+}
+
 /**
- * Class to represent the statistics of a column.
+ * Class to represent the statistics of a numerical column.
  *
  * @param mu    the mean value.
  * @param sigma the standard deviation.
  * @param min   the smallest value.
  * @param max   the largest value.
  */
-case class Statistics(mu: Double, sigma: Double, min: Double, max: Double) {
+case class Statistics(total: Int, mu: Double, sigma: Double, min: Double, max: Double) extends Analytic {
   override def toString: String = s"(range: $min-$max, mean: $mu, stdDev: $sigma)"
 }
 
+/**
+ * Case class to represent the histogram of a non-numerical column.
+ *
+ * @param keyFreq the key-frequency values.
+ * @tparam K the key type.
+ */
+case class Histogram[K](keyFreq: Map[K, Int]) extends Analytic {
+  def total: Int = keyFreq.values.sum
+
+  override def toString: String = keyFreq.toSeq.sortBy(x => x._2).reverse.map { case (k, n) => s"$k: $n" }.mkString("\n")
+}
+
 object Statistics {
-  def make(xs: Seq[Double]): Option[Statistics] = xs match {
+  /**
+   * Make an (optional) Statistics object for a sequence of Double.
+   * CONSIDER defining the underlying type as a parametric type with context bound Numeric.
+   *
+   * @param xs a sequence of Double.
+   * @return an optional Statistics.
+   */
+  def makeNumeric(xs: Seq[Double]): Option[Statistics] = xs match {
     case Nil => None
-    case h :: Nil => Some(Statistics(h, 0, h, h))
-    case _ => doMake(xs)
+    case h :: Nil => Some(Statistics(xs.length, h, 0, h, h))
+    case _ => doMakeNumeric(xs)
   }
 
-  private def doMake(xs: Seq[Double]): Option[Statistics] = {
+  /**
+   * Make an (optional) Histogram object for a sequence of String.
+   * CONSIDER defining the underlying type as a parametric type.
+   *
+   * @param xs a sequence of String.
+   * @return an optional Histogram.
+   */
+  def makeHistogram(xs: Seq[String], ratio: Int = 10): Option[Histogram[String]] = {
+    val m: mutable.Map[String, Int] = mutable.HashMap[String, Int]()
+    xs foreach {
+      x =>
+        val freq = m.getOrElse(x, 0)
+        m.put(x, freq + 1)
+    }
+    if (m.size < xs.size / ratio) Some(Histogram(m.toMap))
+    else None
+  }
+
+  private def doMakeNumeric(xs: Seq[Double]): Option[Statistics] = {
     val mu = xs.sum / xs.size
     val variance = (xs map (_ - mu) map (x => x * x)).sum / xs.size
-    Some(Statistics(mu, math.sqrt(variance), xs.min, xs.max))
+    Some(Statistics(xs.size, mu, math.sqrt(variance), xs.min, xs.max))
   }
 }
 
 object Main extends App {
-  // TODO merge the two copies of this file into one (it needs to be at the root level of resources)
-  val crimeFile = "2023-01-metropolitan-street-sample.csv"
-
-  // Set up the source
-  val sy: IO[Source] = IO.fromTry(for (u <- FP.resource[Analysis](crimeFile)) yield Source.fromURL(u))
-
-  val fraction = 1
-  // Set up the parser (we set the predicate only for demonstration purposes)
-  val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(fraction))
-
-  parser.parse(sy).unsafeRunSync() match {
-    case t@HeadedTable(r, _) =>
-      val analysis = Analysis(t)
-      println(s"Crime: $analysis")
-      r take 10 foreach println
+  // TODO merge the two copies of this sample file into one (it needs to be at the root level of resources)
+  private val sampleFile = "2023-01-metropolitan-street-sample.csv"
+  private val triedSampleResource: Try[URL] = FP.resource[Analysis](sampleFile)
+  private val fraction = 1
+  private val parser = RawTableParser().setPredicate(TableParser.sampler(fraction))
+  private val ui = IOUsing(for (u <- triedSampleResource) yield Source.fromURL(u)) {
+    s => parser.parse(s) map (rawTable => println(Analysis(rawTable)))
   }
+  ui.unsafeRunSync()
 }

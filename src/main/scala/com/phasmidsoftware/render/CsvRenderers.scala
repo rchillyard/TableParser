@@ -5,6 +5,7 @@
 package com.phasmidsoftware.render
 
 import com.phasmidsoftware.parse.Strings
+import com.phasmidsoftware.render.CsvGenerators.stripMaybe
 import com.phasmidsoftware.table._
 import java.net.URL
 import scala.reflect.ClassTag
@@ -121,6 +122,8 @@ trait CsvRenderers {
 
   /**
    * Method to return a CsvRenderer[T] where T is a 2-ary Product and which is based on a function to convert a (P1,P2) into a T.
+   *
+   * CONSIDER for this and similar methods, reverse the order of rendering the fields and use +: instead of :+
    *
    * @param construct a function (P1,P2) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -708,6 +711,22 @@ trait CsvRenderers {
     def toColumnNames(po: Option[String], no: Option[String]): String =
       new CsvGenerators {}.generator12(construct).toColumnNames(po, no)
   }
+
+  /**
+   * Method to return a CsvRenderer[ Option[T] ].
+   *
+   * @param ca the (implicit) CsvAttributes.
+   * @tparam T the underlying type of the first parameter of the input to the render method.
+   * @return a CsvRenderer[ Option[T] ].
+   */
+  def optionProduct[T: CsvRenderer : CsvGenerator](defaultString: String = "")(implicit ca: CsvAttributes): CsvProduct[Option[T]] = new CsvProduct[Option[T]] {
+    val csvAttributes: CsvAttributes = ca
+
+    def render(to: Option[T], attrs: Map[String, String]): String = (to map (t => implicitly[CsvRenderer[T]].render(t))).getOrElse(defaultString)
+
+    def toColumnName(po: Option[String], name: String): String =
+      implicitly[CsvGenerator[T]].toColumnName(po, stripMaybe(name))
+  }
 }
 
 object CsvRenderers {
@@ -722,6 +741,8 @@ object CsvRenderers {
   implicit object CsvRendererInt extends StandardCsvRenderer[Int]
 
   implicit object CsvRendererLong extends StandardCsvRenderer[Long]
+
+  implicit object CsvRendererBigInt extends StandardCsvRenderer[BigInt]
 
   implicit object CsvRendererDouble extends StandardCsvRenderer[Double]
 

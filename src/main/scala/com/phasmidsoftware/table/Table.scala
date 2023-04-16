@@ -27,7 +27,7 @@ import scala.util.{Failure, Random, Try}
  */
 trait Table[Row] extends Iterable[Row] {
 
-  /**
+/**
    * Optional value of the Header of this Table, if there is one.
    */
   val maybeHeader: Option[Header]
@@ -59,7 +59,7 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the type of the rows of the result.
    * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
    */
-  def flatMap[S](f: Row => Iterable[S]): Table[S] = (content map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
+  def flatMap[S](f: Row => Iterable[S]): Table[S] = (content map f).iterator.foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
 
   /**
    * Transform (flatMap) this Table[Row] into a Table[S].
@@ -92,12 +92,12 @@ trait Table[Row] extends Iterable[Row] {
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param sr          a Content of S.
+   * @param sc          a Content of S.
    * @param maybeHeader an optional Header to be used in the resulting Table.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S]
+  def unit[S](sc: Content[S], maybeHeader: Option[Header]): Table[S]
 
   /**
    * Method to generate a Table[S] for a set of rows.
@@ -141,7 +141,10 @@ trait Table[Row] extends Iterable[Row] {
 
   /**
    * Method to select those rows defined by the given range.
+   *
    * NOTE: the rows are numbered 1..N.
+   *
+   * NOTE: unless explicitly ordered, the content might be in random order.
    *
    * @param n the desired row.
    * @return a new Table[Row] consisting only the row requested.
@@ -167,7 +170,7 @@ trait Table[Row] extends Iterable[Row] {
    */
   override def toArray[Element >: Row : ClassTag]: Array[Element] = {
     // XXX huh?
-    lazy val rs = content.toArray[Element]
+    lazy val rs = content.iterator.toArray[Element]
     rs
   }
 
@@ -256,6 +259,23 @@ trait Table[Row] extends Iterable[Row] {
   override def filterNot(p: Row => Boolean): Table[Row] = processRows(_.filterNot(p))
 
   /**
+   * Method to retain only the rows which satisfy the isValid method of ev (i.e. a Validity[Row]).
+   *
+   * @param rv (implicit) a Validity[Row].
+   * @return Table[Row] consisting only of rows which satisfy Validity.
+   */
+  def filterValid(implicit rv: Validity[Row]): Table[Row] = filter(r => rv.isValid(r))
+
+  /**
+   * Method to randomly sample from this Table.
+   *
+   * @param n      the odds against choosing any particular element.
+   * @param random an (implicit) Random number generator.
+   * @return a new Table[Row] with approximately size/n elements.
+   */
+  def sample(n: Int)(implicit random: Random): Table[Row] = processRows(c => c.sample(n))
+
+  /**
    * slice (as defined by Iterable).
    *
    * @param from  the index at which to begin the slice (1-based counting).
@@ -307,10 +327,11 @@ trait Table[Row] extends Iterable[Row] {
    *
    * @param renderer      implicit value of CsvRenderer[Row].
    * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param ordering      implicit value of Ordering[Row] (apparently not used but I think it is).
    * @param csvAttributes implicit value of CsvAttributes.
    * @return a String.
    */
-  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[String] =
+  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], ordering: Ordering[Row], csvAttributes: CsvAttributes): IO[String] =
     CsvTableStringRenderer[Row]().render(this) map (_.toString)
 
   /**
@@ -319,13 +340,14 @@ trait Table[Row] extends Iterable[Row] {
    * @param file      instance of File where the output should be stored.
    * @param renderer  implicit value of CsvRenderer[Row].
    * @param generator implicit value of CsvProductGenerator[Row].
+   * @param ordering  implicit value of Ordering[Row] (apparently not used but I think it is).
    * @param hasKey    implicit value of HasKey[Row].
    *                  This relates to a column which is the "key" column in a CSV (used for identification).
    *                  It is not directly related to cryptography.
    * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
    * @param csvAttributes implicit value of CsvAttributes.
    */
-  def writeCSVFileEncrypted[A: HexEncryption](file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
+  def writeCSVFileEncrypted[A: HexEncryption](file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], ordering: Ordering[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableEncryptedFileRenderer[Row, A](file).render(this)
 
   /**
@@ -336,9 +358,10 @@ trait Table[Row] extends Iterable[Row] {
    * @param file          instance of File where the output should be stored.
    * @param renderer      implicit value of CsvRenderer[Row].
    * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param ordering      implicit value of Ordering[Row] (apparently not used but I think it is).
    * @param csvAttributes implicit value of CsvAttributes.
    */
-  def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
+  def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], ordering: Ordering[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableFileRenderer[Row](file).render(this)
 
   /**
@@ -347,9 +370,10 @@ trait Table[Row] extends Iterable[Row] {
    * @param file          instance of File where the output should be stored.
    * @param renderer      implicit value of CsvRenderer[Row].
    * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param ordering      implicit value of Ordering[Row] (apparently not used but I think it is).
    * @param csvAttributes implicit value of CsvAttributes.
    */
-  def writeCSVFileIO(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
+  def writeCSVFileIO(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], ordering: Ordering[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
     CsvTableFileRenderer[Row](file).render(this) map { f => f.flush(); f }
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
@@ -580,6 +604,7 @@ object Table {
    * Method to parse a table from a File as a table of Seq[String].
    *
    * @param f                the file.
+   * @param predicate        a predicate which takes a Try[RawRow] and returns a Boolean.
    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
    * @param codec            (implicit) the encoding.
@@ -593,8 +618,9 @@ object Table {
   /**
    * Method to parse a table from a File as a table of Seq[String].
    *
-   * @param pathname the path name.
-   * @param codec    (implicit) the encoding.
+   * @param pathname  the path name.
+   * @param predicate a predicate which takes a Try[RawRow] and returns a Boolean.
+   * @param codec     (implicit) the encoding.
    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): IO[Table[RawRow]] = {
@@ -648,7 +674,7 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): IO[String] = {
+  def toCSVRow(t: Table[Row])(implicit ordering: Ordering[Row], csvAttributes: CsvAttributes): IO[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
@@ -665,7 +691,7 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def writeCSVFileRow(t: Table[Row], file: File)(implicit csvAttributes: CsvAttributes): IO[FileWriter] =
+  def writeCSVFileRow(t: Table[Row], file: File)(implicit ordering: Ordering[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
@@ -733,13 +759,13 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param sr a sequence of S.
+   * @param sc a sequence of S.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  override def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(sr, h)
-    case None => UnheadedTable(sr)
+  override def unit[S](sc: Content[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+    case Some(h) => HeadedTable(sc, h)
+    case None => UnheadedTable(sc)
   }
 
   /**
@@ -766,8 +792,8 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
     // TODO this makes no sense now: the decision is taken inside Content.
     (if (knownSize1 > -1) rows.toSeq else rows.toSeq) map {
       case p: Product => ww.writeRow(o2)(p)
-      case xs: Seq[Row] => ww.writeRowElements(o2)(xs) // TESTME
-      case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
+      case xs: Seq[_] => ww.writeRowElements(o2)(xs) // TESTME
+      case xs: Array[_] => ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
       case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     }
     o1
@@ -903,6 +929,9 @@ case class HeadedTable[Row](content: Content[Row], header: Header) extends Rende
     }
   }
 
+  /**
+   * @return a String representation of this Table
+   */
   override def toString(): String = s"HeadedTable($header) with ${content.size} rows"
 }
 
