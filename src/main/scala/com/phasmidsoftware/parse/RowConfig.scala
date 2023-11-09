@@ -36,6 +36,9 @@ trait RowConfig {
 
 /**
  * Default RowConfig trait.
+ *
+ * TODO Issue #48. Need method for default RowConfig.
+ * The problem with the current version is that, if the delimiter is changed, the string regex must change too.
  */
 trait DefaultRowConfig extends RowConfig {
   /**
