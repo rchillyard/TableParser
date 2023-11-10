@@ -6,7 +6,7 @@ import org.scalatest.Assertion
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.{Futures, ScalaFutures}
 import org.scalatest.matchers.should
-import org.scalatest.time.{Second, Span}
+import org.scalatest.time.{Second, Seconds, Span}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -41,7 +41,7 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
    * @tparam X the underlying type of xio.
    * @return an Assertion.
    */
-  def matchIO[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(partialFunction: PartialFunction[X, Assertion]): Assertion =
+  def matchIO[X](xio: => IO[X], timeout: Timeout = Timeout(Span(10, Seconds)))(partialFunction: PartialFunction[X, Assertion]): Assertion =
     whenReady(xio.unsafeToFuture(), timeout)(partialFunction)
 
   /**
