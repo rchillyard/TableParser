@@ -408,8 +408,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
   }
 
-  // FIXME this is a mystery
-  ignore should "render the table to CSV" in {
+  // TODO this is a mystery: it sometimes fails (?)
+  it should "render the table to CSV" in {
     import IntPair._
     matchIO(Table.parse(Seq("1 2", "42 99"))) {
       case HeadedTable(_, _) => succeed
@@ -522,11 +522,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  // FIXME ...
   it should "render the parsed table with TreeWriter" in {
     import IntPair._
     @unused
     val iIty: IO[Table[IntPair]] = Table.parse(Seq("1 2", "42 99"))
+    // TODO restore ...
 //      val hy = iIty map {
 //        case r: HeadedTable[IntPair] => r.render
 //      }
