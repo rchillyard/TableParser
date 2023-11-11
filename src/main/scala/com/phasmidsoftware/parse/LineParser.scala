@@ -52,9 +52,9 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
   lazy val quotedString: Parser[String] = quotedStringWithQuotes | pureQuotedString | failure("invalid quoted string")
 
-  lazy val pureQuotedString: Parser[String] = quote ~> stringInQuotes <~ quote
+  private lazy val pureQuotedString: Parser[String] = quote ~> stringInQuotes <~ quote
 
-  lazy val stringInQuotes: Parser[String] = s"""[^$quote]*""".r
+  private lazy val stringInQuotes: Parser[String] = s"""[^$quote]*""".r
 
   lazy val quotedStringWithQuotes: Parser[String] = quotedStringWithQuotesAsList ^^ (ws => ws.mkString(s"$quote"))
 

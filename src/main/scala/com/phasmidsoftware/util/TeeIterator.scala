@@ -27,13 +27,15 @@ class TeeIterator[X](n: Int)(xs: Iterator[X]) extends Iterator[X] {
 /**
  * TESTME
  *
- * @param xs
- * @tparam X
+ * @param xs an iterator on X.
+ * @tparam X the underlying type of the iterator.
  */
 class DebugIterator[X](xs: Iterator[X]) extends Iterator[X] {
   def hasNext: Boolean = xs.hasNext
 
   def next(): X = {
-    val x = xs.next(); println(x); x
+    val x = xs.next()
+    println(x)
+    x
   }
 }
