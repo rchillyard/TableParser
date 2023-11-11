@@ -248,7 +248,7 @@ object ListParser extends JavaTokenParsers {
 
   lazy val strings: Parser[StringList] = repsep("""[^,}]+""".r, ",")
 
-  lazy val singleton: Parser[StringList] = """\w*""".r ^^ { w: String => List(w) }
+  private lazy val singleton: Parser[StringList] = """\w*""".r ^^ { w: String => List(w) }
 }
 
 case class ParseLogicException(msg: String, e: Throwable = null) extends Exception(msg, e)

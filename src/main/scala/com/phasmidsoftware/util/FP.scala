@@ -126,7 +126,7 @@ object FP {
           case Some(x) => x +: xs
           case None => xs
         }
-    }.collect{
+    }.collect {
       case list@_ :: _ => list
     }
 
