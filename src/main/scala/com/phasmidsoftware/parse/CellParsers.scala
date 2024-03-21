@@ -101,7 +101,7 @@ trait CellParsers {
       def convertString(w: String): Try[String] = Success(if (w.isEmpty) null else w)
 
       // NOTE not used
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[String] = Failure(new UnsupportedOperationException)
+      def parse(wo: Option[String], row: Row, columns: Header): Try[String] = Failure(new UnsupportedOperationException)
     }
 
     def convertString(w: String): Try[Option[String]] = cp.convertString(w).map(Option(_))
@@ -166,7 +166,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser2 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -196,7 +196,7 @@ trait CellParsers {
       // NOTE used only for debugging
       override def toString: String = s"MultiCellParser: cellParser2 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case Seq(f1, f2) =>
             for {
@@ -221,7 +221,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser3 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -247,7 +247,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser4 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -274,7 +274,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser5 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -302,7 +302,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser6 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -332,7 +332,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser7 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -363,7 +363,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser8 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -394,7 +394,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser9 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -426,7 +426,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser10 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -459,7 +459,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser11 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -493,7 +493,7 @@ trait CellParsers {
     new MultiCellParser[T] {
       override def toString: String = s"MultiCellParser: cellParser12 for ${implicitly[ClassTag[T]]}"
 
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           case f1 :: fs =>
             for {
@@ -589,4 +589,7 @@ trait CellParsers {
   }
 }
 
+/**
+ * TODO resolve the naming issue here.
+ */
 object StdCellParsers extends CellParsers

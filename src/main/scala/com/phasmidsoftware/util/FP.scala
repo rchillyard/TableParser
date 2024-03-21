@@ -143,7 +143,7 @@ object FP {
    *         NOTE: that the output collection type will be Seq, regardless of the input type
    */
   def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
-    xos.foldLeft(Option(Seq[X]())) {
+    xos.foldLeft(Option(Seq[X]())) { // TODO merge code with duplicate
       (xso, xo) => for (xs <- xso; x <- xo) yield x +: xs
     }
 
@@ -160,7 +160,7 @@ object FP {
    *         NOTE: that the output collection type will be Seq, regardless of the input type
    */
   def sequence[X](xos: Iterator[Option[X]]): Option[Seq[X]] =
-    xos.foldLeft(Option(Seq[X]())) {
+    xos.foldLeft(Option(Seq[X]())) { // TODO merge code with duplicate
       (xso, xo) => for (xs <- xso; x <- xo) yield x +: xs
     }
 
@@ -271,7 +271,7 @@ object IOUsing {
    * @tparam A the underlying type of the result.
    * @return a IO[A], the result of invoking apply(IO(resource))(f).
    */
-  def apply[R: Releasable, A](resource: => R)(f: R => IO[A]): IO[A] = apply(IO(resource))(f)
+  def apply[R: Releasable, A](resource: => R)(f: R => IO[A]): IO[A] = IOUsing(IO(resource))(f)
 
   /**
    * This alternative apply method signature is to allow proper handling of Releasable resources which are themselves wrapped in IO, using IO.

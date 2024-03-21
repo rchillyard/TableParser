@@ -95,7 +95,7 @@ trait HierarchicalRenderers {
      * @param attrs a map of attributes for this value of U.
      * @return a new instance of U.
      */
-    override def render(ti: Indexed[T], attrs: Map[String, String]): Node = {
+    def render(ti: Indexed[T], attrs: Map[String, String]): Node = {
       val sequence = new TaggedHierarchicalRenderer[Int](indexStyle) {}.render(ti.i)
       val value = implicitly[HierarchicalRenderer[T]].render(ti.t)
       write.Node(style, attrs, Seq(sequence, value))

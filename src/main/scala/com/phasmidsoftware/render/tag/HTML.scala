@@ -27,7 +27,7 @@ case class HTML(name: String, attributes: Seq[Attribute], content: Option[String
    * @param tag the tag to be added
    * @return a new version of this Tag with the additional tag added as a child
    */
-  override def :+(tag: Tag): Tag = HTML(name, attributes, content, tags :+ tag)
+  def :+(tag: Tag): Tag = HTML(name, attributes, content, tags :+ tag)
 }
 
 /**

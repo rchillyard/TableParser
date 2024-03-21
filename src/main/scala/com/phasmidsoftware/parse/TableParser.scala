@@ -272,6 +272,14 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
 
   private val phase2Parser = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
 
+  /**
+   * TESTME
+   *
+   * @param xr the sequence of Inputs, one for each row
+   * @param n  the number of lines that should be used as a Header.
+   *           If n == 0 == maybeFixedHeader.empty then there is a logic error.
+   * @return an IO[Table]
+   */
   override def parse(xr: Iterator[String], n: Int): IO[Table[X]] = {
     def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] = for (wt <- decryptTable(xt); xt <- phase2Parser.parseRows(wt.iterator, h)) yield xt
 

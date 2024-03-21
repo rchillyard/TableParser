@@ -168,7 +168,7 @@ object CellParser {
   }
 
   implicit object URLParser$ extends SingleCellParser[URL] {
-    override def convertString(w: String): Try[URL] = implicitly[Parseable[URL]].parse(w)
+    def convertString(w: String): Try[URL] = implicitly[Parseable[URL]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "URLParser$"
