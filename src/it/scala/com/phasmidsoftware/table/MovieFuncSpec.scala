@@ -27,6 +27,17 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
     mt.size shouldBe 1567
     mt take 10 foreach println
   }
+  
+  it should "not be ingested properly" in {
+    import MovieParser._
+
+    var errorString = ""
+    val errorFunc: Throwable => IO[Unit] = e => IO{errorString = e.getLocalizedMessage}
+
+    val mti: IO[Table[Movie]] = Table.parseResource("movie_metadataX.csv").onError(errorFunc)
+    mti.attempt.unsafeRunSync() should matchPattern { case Left(e) => }
+    errorString shouldBe "Table.sourceFromClassResource: cannot find resource 'movie_metadataX.csv' relative to class com.phasmidsoftware.table.Table$"
+  }
 
   /**
    * NOTE: it is perfectly proper for there to be a number of parsing problems.
