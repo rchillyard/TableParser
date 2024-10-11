@@ -5,6 +5,7 @@
 package com.phasmidsoftware.parse
 
 import cats.effect.IO
+import com.phasmidsoftware.flog.Flog
 import com.phasmidsoftware.table.{Header, Row}
 import com.phasmidsoftware.util.FP
 import scala.annotation.implicitNotFound
@@ -54,6 +55,10 @@ trait StringParser[Row] extends RowParser[Row, String]
  */
 case class StandardRowParser[Row: CellParser](parser: LineParser) extends StringParser[Row] {
 
+  val flog = Flog[StandardRowParser[_]]
+
+  import flog._
+
   /**
    * Method to parse a String and return a Try[Row].
    *
@@ -62,7 +67,10 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
    * @return a Try[Row].
    */
   def parse(indexedString: (String, Int))(header: Header): Try[Row] =
-    for (ws <- parser.parseRow(indexedString); r <- doConversion(indexedString, header, ws)) yield r
+    for {
+      ws <- s"parsed row from $indexedString" !! parser.parseRow(indexedString)
+      r <- s"after conversion" !! doConversion(indexedString, header, ws)
+    } yield r
 
   /**
    * Method to parse a String as a IO[Header].

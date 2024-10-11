@@ -23,10 +23,14 @@ class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends 
   private var ry: Try[R] = Failure(new Exception("FunctionIterator: uninitialized"))
 
   def hasNext: Boolean = takeFromIterator match {
-    case Success(r) => ry = Success(r); true
-    case Failure(IteratorExhaustedException) => false // NOTE: normal end of iterator
-    case Failure(f@MultiLineException(_)) => throw f // NOTE: this would be a logic error
-    case f@Failure(_) => ry = f; true
+    case Success(r) =>
+      ry = Success(r); true
+    case Failure(IteratorExhaustedException) =>
+      false // NOTE: normal end of iterator
+    case Failure(f@MultiLineException(_)) =>
+      throw f // NOTE: this would be a logic error
+    case f@Failure(_) =>
+      ry = f; true
   }
 
   def next(): Try[R] = ry

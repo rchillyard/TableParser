@@ -2,9 +2,9 @@ organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-version := "1.1.3"
+version := "1.1.4-SNAPSHOT"
 
-scalaVersion := "2.13.10"
+scalaVersion := "2.13.14"
 
 scalacOptions += "-deprecation"
 

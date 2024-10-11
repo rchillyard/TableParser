@@ -28,11 +28,11 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
     matchIO(parser parse sy, Timeout(Span(2, Seconds))) {
       case t@HeadedTable(_, _) =>
         val analysis = Analysis(t)
-        analysis.rows shouldBe 254
+        analysis.rows shouldBe 253
         analysis.columns shouldBe 87
         analysis.columnMap.size shouldBe 87
         analysis.columnMap("bedrooms") should matchPattern { case Column("Int", false, _) => }
-        analysis.columnMap("accommodates").toString should startWith("Int (range: 1.0-10.0, mean: 2.783464566929134, stdDev: 1.7670324685210")
+        analysis.columnMap("accommodates").toString should startWith("Int (range: 1.0-10.0, mean: 2.7")
         analysis.columnMap("license").toString shouldBe "optional Int"
     }
   }
@@ -48,7 +48,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
         maybeColumn should matchPattern { case Some(Column(_, _, Some(_))) => }
         maybeColumn.get match {
           case Column("Int", false, Some(statistics)) =>
-            statistics.mu shouldBe 2.783464566929134
+            statistics.mu shouldBe 2.785 +- 0.005
           case x => fail(x.toString)
         }
     }

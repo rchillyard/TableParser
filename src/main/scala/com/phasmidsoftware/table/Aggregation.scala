@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.table
 
+// NOTE: unused
 trait Aggregation[X] extends (Seq[X] => X)
 
 //case class RowAggregation(transformers: Map[String, CellTransformation[_]]) extends Aggregation[Row]
