@@ -4,7 +4,7 @@ name := "TableParser"
 
 version := "1.1.4-SNAPSHOT"
 
-scalaVersion := "2.13.12"
+scalaVersion := "2.13.14"
 
 scalacOptions += "-deprecation"
 
