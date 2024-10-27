@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.parse
 
+import com.phasmidsoftware.parse.ColumnHelper.identityMapper
 import com.phasmidsoftware.table._
 import com.phasmidsoftware.util.{FP, Reflection}
 import scala.reflect.ClassTag
@@ -512,7 +513,7 @@ trait CellParsers {
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
    */
-  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, maybePrefix, aliases: _*)
+  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identityMapper, maybePrefix, aliases: _*)
 
   /**
    * Method to yield a ColumnHelper[T] based on a column name mapper, and some number of explicit aliases,
@@ -546,7 +547,7 @@ trait CellParsers {
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
    */
-  def columnHelper[T](aliases: (String, String)*): ColumnHelper[T] = columnHelper(identity[String] _, aliases: _*)
+  def columnHelper[T](aliases: (String, String)*): ColumnHelper[T] = columnHelper(identityMapper, aliases: _*)
 
   /**
    * A default column mapper which will work for any underlying type T and which provides no column name mapping at all.

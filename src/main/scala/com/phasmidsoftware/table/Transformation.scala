@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.table
 
+import com.phasmidsoftware.parse.ColumnHelper.identityMapper
 import scala.annotation.unused
 
 /**
@@ -46,7 +47,7 @@ case class RawTableProjection(columns: Seq[String]) extends Transformation[RawTa
 
 case class RawRowTransformation(transformers: Map[Int, Transformation[String, String]]) extends Transformation[RawRow, RawRow] {
 
-  def apply(r: RawRow): RawRow = RawRow(for ((x, i) <- r.ws.zipWithIndex; f = transformers.getOrElse(i, identity[String] _)) yield f(x), r.header)
+  def apply(r: RawRow): RawRow = RawRow(for ((x, i) <- r.ws.zipWithIndex; f = transformers.getOrElse(i, identityMapper)) yield f(x), r.header)
 }
 
 case class RawRowProjection(columns: Seq[Int]) extends Transformation[RawRow, RawRow] {

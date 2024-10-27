@@ -119,20 +119,20 @@ object MovieParser extends CellParsers {
   /**
    * Precede each upper case letter (or digit) with _.
    */
-  def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z\\d])", "_$1")
+  val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", "_$1")
 
-  implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper _,
+  implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper,
     "title" -> "movie_title",
     "imdb" -> "movie_imdb_link")
-  implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapper _,
+  implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapper,
     "facebookLikes" -> "movie_facebook_likes",
     "numUsersReview" -> "num_user_for_reviews",
     "numUsersVoted" -> "num_voted_users",
     "numCriticReviews" -> "num_critic_for_reviews",
     "totalFacebookLikes" -> "cast_total_facebook_likes")
-  implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper _)
-  implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper _)
-  implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper _, Some("$x_$c"))
+  implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper)
+  implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper)
+  implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
   implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
   implicit val formatParser: CellParser[Format] = cellParser4(Format)
   implicit val productionParser: CellParser[Production] = cellParser4(Production)

@@ -45,7 +45,10 @@ trait ColumnHelper[T] {
 }
 
 object ColumnHelper {
-  def camelCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
+  val camelCaseColumnNameMapper: String => String = _.replaceAll("([A-Z0-9])", "_$1")
 
-  def camelCaseColumnNameMapperSpace(w: String): String = w.replaceAll("([A-Z0-9])", " $1")
+  val camelCaseColumnNameMapperSpace: String => String = _.replaceAll("([A-Z0-9])", " $1")
+
+  val identityMapper: String => String = identity
+
 }

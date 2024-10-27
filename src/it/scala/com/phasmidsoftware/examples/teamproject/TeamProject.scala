@@ -37,13 +37,13 @@ case class Grade(totalScore: Double, onTime: Double, scopeScale: Double, plannin
 
 object TeamProjectParser extends CellParsers {
 
-  def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z\\d])", "_$1")
+  private val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", "_$1")
 
-  def identifierToCapitalizedWordColumnNameMapper(w: String): String = w.replaceAll("([A-Z\\d])", " $1").replaceAll("_", "")
+  private val identifierToCapitalizedWordColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", " $1").replaceAll("_", "")
 
-  implicit val teamProjectColumnHelper: ColumnHelper[TeamProject] = columnHelper(camelToSnakeCaseColumnNameMapper _)
-  implicit val gradeColumnHelper: ColumnHelper[Grade] = columnHelper(identifierToCapitalizedWordColumnNameMapper _)
-  implicit val teamColumnHelper: ColumnHelper[Team] = columnHelper(identifierToCapitalizedWordColumnNameMapper _, Some("$x $c"))
+  implicit val teamProjectColumnHelper: ColumnHelper[TeamProject] = columnHelper(camelToSnakeCaseColumnNameMapper)
+  implicit val gradeColumnHelper: ColumnHelper[Grade] = columnHelper(identifierToCapitalizedWordColumnNameMapper)
+  implicit val teamColumnHelper: ColumnHelper[Team] = columnHelper(identifierToCapitalizedWordColumnNameMapper, Some("$x $c"))
   implicit val optionalStringParser: CellParser[Option[String]] = cellParserOption
   implicit val teamParser: CellParser[Team] = cellParser5(Team)
   implicit val gradeParser: CellParser[Grade] = cellParser12(Grade)

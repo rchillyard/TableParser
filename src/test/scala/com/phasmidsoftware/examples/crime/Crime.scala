@@ -49,13 +49,13 @@ object CrimeParser extends CellParsers {
   /**
    * Precede each upper case letter (or digit) with _.
    */
-  def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z\\d])", " $1")
+  private val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", " $1")
 
   implicit object BigIntCellParser extends SingleCellParser[BigInt] {
     def convertString(w: String): Try[BigInt] = implicitly[Parseable[BigInt]].parse(w, Some("16"))
   }
 
-  implicit val movieColumnHelper: ColumnHelper[Crime] = columnHelper(camelToSnakeCaseColumnNameMapper _,
+  implicit val movieColumnHelper: ColumnHelper[Crime] = columnHelper(camelToSnakeCaseColumnNameMapper,
     "crimeID" -> "Crime ID")
 
   implicit val crimeIdParser: CellParser[Option[BigInt]] = cellParserOption[BigInt]

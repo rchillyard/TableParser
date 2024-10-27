@@ -78,7 +78,6 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
     }
   }
 
-  // TODO fix this test
   it should "be ingested and written out in brief to CSV" in {
     import CrimeLocationRenderer._
     import CrimeParser._

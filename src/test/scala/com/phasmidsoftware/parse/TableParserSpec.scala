@@ -308,10 +308,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   object Submissions extends CellParsers {
 
-    def baseColumnNameMapper(w: String): String = w.replaceAll("(_)", " ")
+    private val baseColumnNameMapper: String => String = _.replaceAll("(_)", " ")
 
-    implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace _, Some("$c $x"))
-    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"), "questionId" -> "question_ID")
+    implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, Some("$c $x"))
+    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper, Some("$c $x"), "questionId" -> "question_ID")
     implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
     implicit val questionParser: CellParser[Question] = cellParser6(Question)
     implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
@@ -370,10 +370,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   object Submissions1 extends CellParsers {
 
-    def baseColumnNameMapper(w: String): String = w.replaceAll("(_)", " ")
+    private val baseColumnNameMapper: String => String = _.replaceAll("(_)", " ")
 
-    implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace _)
-    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _)
+    implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace)
+    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper)
     implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
     implicit val questionParser: CellParser[Question] = cellParser6(Question)
     implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
