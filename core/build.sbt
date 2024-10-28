@@ -1,0 +1,27 @@
+name := "tableparser-core"
+
+//Compile / doc / scalacOptions ++= Seq("-Vimplicits", "-deprecation", "-Ywarn-dead-code", "-Ywarn-value-discard", "-Ywarn-unused")
+
+
+lazy val scalaModules = "org.scala-lang.modules"
+lazy val scalaTestVersion = "3.2.15"
+
+// NOTE: Issue #44: this library is not currently compatible with version 2.x.x of the parser-combinators library
+lazy val scalaParserCombinatorsVersion = "1.1.2"
+lazy val nScalaTimeVersion = "2.32.0"
+lazy val tsecVersion = "0.4.0"
+
+libraryDependencies ++= Seq(
+  "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
+  "com.phasmidsoftware" %% "flog" % "1.0.8",
+  "io.spray" %%  "spray-json" % "1.3.6",
+//noinspection SbtDependencyVersionInspection
+  scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
+  "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
+  "ch.qos.logback" % "logback-classic" % "1.4.5" % "runtime",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+  "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+)
+libraryDependencies +=
+        "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
+
