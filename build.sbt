@@ -1,8 +1,8 @@
-organization := "com.phasmidsoftware"
+ThisBuild / organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-version := "1.1.4-SNAPSHOT"
+ThisBuild / version := "1.1.4-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.14"
 
@@ -25,3 +25,4 @@ scalacOptions += "-deprecation"
 //Test / unmanagedResourceDirectories += baseDirectory.value / "src/it/resources"
 
 resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
+
