@@ -13,6 +13,7 @@ lazy val tsecVersion = "0.4.0"
 
 libraryDependencies ++= Seq(
 //  "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
+  "org.typelevel" %% "cats-effect" % "3.5.4",   // This is temporary
   "com.phasmidsoftware" %% "flog" % "1.0.8",
   "io.spray" %%  "spray-json" % "1.3.6",
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
