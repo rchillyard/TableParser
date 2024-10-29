@@ -47,12 +47,12 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
    *           If n == 0 == maybeFixedHeader.empty then there is a logic error.
    * @return an IO[Table]
    */
-  override def parse(xr: Iterator[String], n: Int): IO[Table[X]] = {
-    def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] = for (wt <- decryptTable(xt); xt <- phase2Parser.parseRows(wt.iterator, h)) yield xt
+  override def parseIO(xr: Iterator[String], n: Int): IO[Table[X]] = {
+    def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] = for (wt <- decryptTable(xt); xt <- phase2Parser.parseRowsIO(wt.iterator, h)) yield xt
 
     val sr: TeeIterator[String] = new TeeIterator(n)(xr)
-    val hi: IO[Header] = rowParser.parseHeader(sr.tee)
-    val xti: IO[RawTable] = createPhase1Parser.parse(sr)
+    val hi: IO[Header] = rowParser.parseHeaderIO(sr.tee)
+    val xti: IO[RawTable] = createPhase1Parser.parseIO(sr)
     for (h <- hi; xt1 <- xti; xt2 <- decryptAndParse(h, xt1)) yield xt2
   }
 

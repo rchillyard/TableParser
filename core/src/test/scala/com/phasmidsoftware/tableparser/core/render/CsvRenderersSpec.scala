@@ -1,6 +1,5 @@
 package com.phasmidsoftware.tableparser.core.render
 
-import cats.effect.IO
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateIO
@@ -35,7 +34,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      def parseHeader(w: Seq[String]): IO[Header] = ???
+      def parseHeader(w: Seq[String]): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -281,7 +280,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      def parseHeader(w: Seq[String]): IO[Header] = ???
+      def parseHeader(w: Seq[String]): Try[Header] = ???
     }
 
     implicit object HawksRowParser extends HawksRowParser

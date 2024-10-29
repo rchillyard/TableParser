@@ -377,7 +377,7 @@ object Table {
    * @return an IO[T]
    */
   def parse[T: TableParser](ws: Iterator[String]): IO[T] = implicitly[TableParser[T]] match {
-    case parser: StringTableParser[T] => parser.parse(ws, parser.headerRowsToRead)
+    case parser: StringTableParser[T] => parser.parseIO(ws, parser.headerRowsToRead)
     case x => IO.raiseError(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
 
@@ -555,7 +555,7 @@ object Table {
   def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): IO[T] = {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
-      case parser: StringsTableParser[T] => parser.parse(wss, 1)
+      case parser: StringsTableParser[T] => parser.parseIO(wss, 1)
       case _ => IO.raiseError(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
   }

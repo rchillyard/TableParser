@@ -37,7 +37,17 @@ trait RowParser[Row, Input] {
    * @param xs a sequence of Inputs to be parsed.
    * @return a IO[Header]
    */
-  def parseHeader(xs: Seq[Input]): IO[Header]
+  def parseHeader(xs: Seq[Input]): Try[Header]
+
+  /**
+   * Parse the Input, resulting in a IO[Header]
+   *
+   * CONSIDER making this share the same signature as parse but for different Row type.
+   *
+   * @param xs a sequence of Inputs to be parsed.
+   * @return a IO[Header]
+   */
+  def parseHeaderIO(xs: Seq[Input]): IO[Header] = IO.fromTry(parseHeader(xs))
 }
 
 /**
@@ -78,9 +88,9 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
    * @param xs the header row(s) as a String.
    * @return a IO[Header].
    */
-  def parseHeader(xs: Strings): IO[Header] = {
+  def parseHeader(xs: Strings): Try[Header] = {
     val wsys: Seq[Try[Strings]] = for (x <- xs.tail) yield parser.parseRow(x, -1)
-    IO.fromTry(for (w <- Try(xs.head); ws <- parser.parseRow((w, -1)); wss <- FP.sequence(wsys)) yield Header(ws, wss))
+    (for (w <- Try(xs.head); ws <- parser.parseRow((w, -1)); wss <- FP.sequence(wsys)) yield Header(ws, wss))
   }
 
   private def doConversion(indexedString: (String, Int), header: Header, ws: Strings) =
@@ -122,5 +132,5 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
    * @param ws the header row as a sequence of Strings.
    * @return a IO[Header].
    */
-  def parseHeader(ws: Seq[Strings]): IO[Header] = IO(Header(ws))
+  def parseHeader(ws: Seq[Strings]): Try[Header] = Try(Header(ws))
 }

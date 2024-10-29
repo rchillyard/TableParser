@@ -42,7 +42,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       }
 
       //noinspection NotImplementedCode
-      def parseHeader(w: Seq[String]): IO[Header] = ???
+      def parseHeader(w: Seq[String]): Try[Header] = ???
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
