@@ -1,4 +1,4 @@
-package com.phasmidsoftware.tableparser.core.crypto
+package com.phasmidsoftware.tableparser.cats.crypto
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global

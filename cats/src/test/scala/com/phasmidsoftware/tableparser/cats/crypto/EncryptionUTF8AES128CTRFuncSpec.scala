@@ -1,4 +1,4 @@
-package com.phasmidsoftware.tableparser.core.crypto
+package com.phasmidsoftware.tableparser.cats.crypto
 
 import cats.effect.unsafe.implicits.global
 import org.scalatest.flatspec.AnyFlatSpec

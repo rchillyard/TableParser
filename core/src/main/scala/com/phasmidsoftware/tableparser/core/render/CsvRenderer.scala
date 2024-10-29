@@ -1,7 +1,6 @@
 package com.phasmidsoftware.tableparser.core.render
 
 import cats.effect.IO
-import com.phasmidsoftware.tableparser.core.crypto.HexEncryption
 import com.phasmidsoftware.tableparser.core.parse.Strings
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.Writable
@@ -115,23 +114,3 @@ case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvA
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
 case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file))
-
-/**
- * Case class to help render a Table to a File in CSV format.
- *
- * TODO remove duplicate code
- *
- * TESTME
- *
- * @param file          the file to which the table will be written.
- * @param csvAttributes implicit instance of CsvAttributes.
- * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
- * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
- */
-case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey, A: HexEncryption](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file)) {
-  override protected def generateText(ow: Writable[FileWriter], tc: CsvRenderer[T], o: FileWriter, t: T): FileWriter = {
-    val key = implicitly[HasKey[T]].key(t)
-    val rendering = tc.render(t, Map())
-    ow.writeLineEncrypted(o)(key, rendering)
-  }
-}
