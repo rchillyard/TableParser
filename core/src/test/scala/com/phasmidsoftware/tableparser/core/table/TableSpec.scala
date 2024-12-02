@@ -101,7 +101,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import IntPair._
     val z1 = Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", "UTF-8")
     val z2 = Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv")
-    matchIO(z1 parProduct z2) {
+    matchIO(z1 product z2) {
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) => a.size shouldBe 2; b.size shouldBe 2
     }
   }
@@ -110,7 +110,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse table from raw file" in {
     val z1: IO[Table[RawRow]] = Table.parseFileRaw(new File("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b")))))
     val z2: IO[Table[RawRow]] = Table.parseFileRaw("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", TableParser.includeAll)
-    matchIO(z1 parProduct z2) {
+    matchIO(z1 product z2) {
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) =>
         a.size shouldBe 0; b.size shouldBe 1
     }
