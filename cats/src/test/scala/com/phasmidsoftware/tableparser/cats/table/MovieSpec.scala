@@ -2,10 +2,11 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.tableparser.core.table
+package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
 import com.phasmidsoftware.tableparser.core.parse.{CellParser, InvalidParseException, RowParser, StringTableParser}
+import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateIO.{check, checkFailure, matchIO}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -27,7 +28,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       "Color,James Cameron,723,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,237000000,2009,936,7.9,1.78,33000"
     )
 
-    val mty: IO[Table[Movie]] = Table.parse(movies)
+    val mty: IO[Table[Movie]] = IO.fromTry(Table.parse(movies))
     matchIO(mty) {
       case mt@HeadedTable(_, _) =>
         println(s"Movie: successfully parsed ${mt.size} rows")
@@ -45,7 +46,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
     )
 
-    matchIO(Table.parse(movies)) {
+    matchIO(IO.fromTry(Table.parse(movies))) {
       case mt@HeadedTable(_, _) =>
         mt.size shouldBe 1
     }
@@ -73,7 +74,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       movieHeader,
       "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-,,2009,936,7.9,1.78,33000"
     )
-    val x: IO[Table[Movie]] = Table.parse(movies)
+    val x: IO[Table[Movie]] = IO.fromTry(Table.parse(movies))
     import cats.effect.unsafe.implicits.global
     checkFailure(x)(classOf[InvalidParseException]).unsafeRunSync()
   }
@@ -100,7 +101,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    matchIO(Table.parse(movies)) {
+    matchIO(IO.fromTry(Table.parse(movies))) {
       case t@HeadedTable(_, _) => t.size shouldBe 1
     }
   }
@@ -128,7 +129,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     @unused
-    val mti: IO[Table[Movie]] = Table.parse(movies)
+    val mti: IO[Table[Movie]] = IO.fromTry(Table.parse(movies))
     check(mti) {
       case t@HeadedTable(_, _) =>
         t.size shouldBe 1

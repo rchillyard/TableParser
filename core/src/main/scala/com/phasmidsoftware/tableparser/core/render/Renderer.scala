@@ -18,7 +18,7 @@ import scala.reflect.ClassTag
  * @tparam T the (contravariant) type of object to be rendered.
  * @tparam O the type of the serialization result.
  */
-@implicitNotFound(msg = "Cannot find an implicit instance of Renderer[${T},{O}].")
+@implicitNotFound(msg = "Cannot find an implicit instance of Renderer[${T},${O}].")
 trait Renderer[-T, O] {
 
   /**
@@ -163,4 +163,15 @@ object HierarchicalRenderer {
 
   // TESTME
   implicit object LocalDateHierarchicalRenderer extends LocalDateHierarchicalRenderer
+
+//  implicit object RowStringRenderer extends Renderer[Row,String] {
+//    /**
+//     * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
+//     *
+//     * @param t     the input parameter, i.e. the T object to render.
+//     * @param attrs a map of attributes for this value of O.
+//     * @return an instance of type O.
+//     */
+//    def render(t: Row, attrs: Map[String, String]): String = t.toString()  // TESTME
+//  }
 }

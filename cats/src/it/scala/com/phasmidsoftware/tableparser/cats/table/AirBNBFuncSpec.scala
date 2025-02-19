@@ -1,4 +1,4 @@
-package com.phasmidsoftware.table
+package com.phasmidsoftware.tableparser.cats.table
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

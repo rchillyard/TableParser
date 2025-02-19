@@ -199,5 +199,4 @@ class FPSpec extends flatspec.AnyFlatSpec with should.Matchers {
     resourceForClass("testFile.txt") should matchPattern { case Success(_) => }
     resourceForClass(".txt", getClass) should matchPattern { case Failure(_) => }
   }
-
 }

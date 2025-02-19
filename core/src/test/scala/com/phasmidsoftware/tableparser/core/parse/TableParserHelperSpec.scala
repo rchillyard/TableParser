@@ -4,12 +4,12 @@
 
 package com.phasmidsoftware.tableparser.core.parse
 
-import cats.effect.IO
 import com.phasmidsoftware.tableparser.core.render.{JsonTableRenderer, Renderer}
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
+import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
+import scala.util.Try
 import spray.json.{DefaultJsonProtocol, RootJsonFormat, enrichAny}
 
 /**
@@ -75,8 +75,8 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "support fixed header" in {
     val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
-    val pty: IO[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
-    matchIO(pty) {
+    val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
+    matchTry(pty) {
       case pt@HeadedTable(_, _) =>
         val sht: Table[Partnership] = Player.convertTable(pt)
         val partnerships: Partnerships = Partnerships((for (t <- sht) yield t.asArray).toArray)
@@ -88,8 +88,8 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "support fixed header and write to Json" in {
     val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
-    val pty: IO[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
-    matchIO(pty) {
+    val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
+    matchTry(pty) {
       case pt@HeadedTable(_, _) =>
         val sht: Table[Partnership] = Player.convertTable(pt)
         implicit val r: Renderer[Table[Partnership], String] = new JsonTableRenderer[Partnership] {}

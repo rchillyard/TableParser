@@ -1,8 +1,9 @@
-package com.phasmidsoftware.tableparser.core.table
+package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.table.Column.make
+import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.core.util.FP.{resource, sequence}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -10,6 +11,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
 import scala.io.Source
+import scala.util.Try
 
 class AnalysisSpec extends AnyFlatSpec with Matchers {
 
@@ -24,8 +26,8 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
    * TableParser library itself.
    */
   it should "be correct for airbnb2.csv" in {
-    val sy: IO[Source] = IO.fromTry(resource[AnalysisSpec](airBNBFile) map Source.fromURL)
-    matchIO(parser parse sy, Timeout(Span(2, Seconds))) {
+    val sy: Try[Source] = (resource[AnalysisSpec](airBNBFile) map Source.fromURL)
+    matchIO(IO.fromTry(parser parse sy), Timeout(Span(2, Seconds))) {
       case t@HeadedTable(_, _) =>
         val analysis = Analysis(t)
         analysis.rows shouldBe 253
@@ -40,7 +42,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
   behavior of "Column"
 
   it should "make" in {
-    val ti: IO[RawTable] = Table.parseResource(airBNBFile)
+    val ti: IO[RawTable] = IO.fromTry(Table.parseResource(airBNBFile))
     matchIO(ti) {
       case t: RawTable =>
         val z: Iterator[Option[String]] = t.column("accommodates")

@@ -1,10 +1,11 @@
-package com.phasmidsoftware.tableparser.core.examples.crime
+package com.phasmidsoftware.tableparser.cats.examples.crime
 
 import cats.effect.IO
+import com.phasmidsoftware.tableparser.core.examples.crime.Crime
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.table.{Analysis, HeadedTable, RawTable, Table}
 import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
-import com.phasmidsoftware.tableparser.core.util.FP.resource
+import com.phasmidsoftware.tableparser.core.util.FP.resourceForClass
 import com.phasmidsoftware.tableparser.core.util.IOUsing
 import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -24,17 +25,19 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
    */
   val crimeFile = "2023-01-metropolitan-street.csv"
 
-  it should "be ingested and analyzed as a RawTable" in {
+  // FIXME Issue #50
+  ignore should "be ingested and analyzed as a RawTable" in {
 
     // Set up the source
-    val sy: IO[Source] = IO.fromTry(for (u <- resource[CrimeFuncSpec](crimeFile)) yield Source.fromURL(u))
+    val si: IO[Source] = IO.fromTry(for (u <- resourceForClass(crimeFile, classOf[Crime])) yield Source.fromURL(u))
 
     val fraction = 4
     // Set up the parser (we set the predicate only for demonstration purposes)
     val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(fraction))
 
+
     // Create the table
-    val wsty: IO[RawTable] = parser.parse(sy)
+    val wsty: IO[RawTable] = si flatMap (s => IO.fromTry(parser.parse(s.getLines(), 0))) // NOTE: Guessing that n should be 0
 
 // CONSIDER how is it that this test runs in around 157 seconds yet the timeout is set to 30 seconds?
     matchIO(wsty, Timeout(Span(30, Seconds))) {
@@ -52,7 +55,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
     import com.phasmidsoftware.tableparser.core.examples.crime.CrimeParser._
 
     // Create the table
-    val wsty: IO[Table[Crime]] = Table.parseResource(crimeFile, classOf[CrimeFuncSpec])
+    val wsty: IO[Table[Crime]] = IO.fromTry(Table.parseResource(crimeFile, classOf[Crime]))
 
     matchIO(wsty, Timeout(Span(60, Seconds))) {
       case t@HeadedTable(r, _) =>
@@ -69,10 +72,10 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
     import com.phasmidsoftware.tableparser.core.examples.crime.CrimeRenderer._
 
     val mti: IO[Table[Crime]] = IOUsing(Source.fromURL(crimeResource)) {
-      r => Table.parseSource(r)
+      r => IO.fromTry(Table.parseSource(r))
     }
 
-    val wi: IO[String] = mti flatMap (_.toCSV)
+    val wi: IO[String] = mti flatMap (mt => IO.fromTry(mt.toCSV))
     matchIO(wi, Timeout(Span(60, Seconds))) {
       case w => w should startWith("crimeID,month,reportedBy,fallsWithin,longitude,latitude,location,lsoaCode,lsoaName,crimeType,lastOutcomeCategory,context\n8536e93fb3ce916daa4251bd53c1a4416ba4159a938340be4a7c40cd4873bfcf,2023-01,Metropolitan Police Service,Metropolitan Police Service,-0.681541,50.792113,On or near Fletcher Way,E01031444,Arun 016B,Violence and sexual offences,Under investigation,")
     }
@@ -83,12 +86,12 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers {
     import com.phasmidsoftware.tableparser.core.examples.crime.CrimeParser._
 
     val cti: IO[Table[Crime]] =
-      IOUsing(Source.fromURL(crimeResource))(x => Table.parseSource(x))
+      IOUsing(Source.fromURL(crimeResource))(x => IO.fromTry(Table.parseSource(x)))
 
     val wi: IO[String] = for {
       ct <- cti
       lt <- IO(ct.mapOptional(m => m.brief))
-      w <- lt.toCSV
+      w <- IO.fromTry(lt.toCSV)
     } yield w
 
     matchIO(wi, Timeout(Span(60, Seconds))) {

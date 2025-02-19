@@ -9,7 +9,7 @@ import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.util.FP._
-import com.phasmidsoftware.tableparser.core.util.{IOUsing, Reflection}
+import com.phasmidsoftware.tableparser.core.util.{Reflection, TryUsing}
 import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
 import java.io.{File, FileWriter, InputStream}
 import java.net.{URI, URL}
@@ -309,8 +309,11 @@ trait Table[Row] extends Iterable[Row] {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return a String.
    */
-  def toCSV(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[String] =
-    CsvTableStringRenderer[Row]().render(this) map (_.toString)
+  def toCSV(implicit rcr: CsvRenderer[Row], rgr: CsvGenerator[Row], csvAttributes: CsvAttributes): Try[String] = {
+    val renderer: CsvTableStringRenderer[Row] = CsvTableStringRenderer[Row]()(rcr, rgr, csvAttributes)
+    val output: Try[StringBuilder] = renderer.render(this)
+    output map (_.toString)
+  }
 
   /**
    * Method to render this Table[T] as a CSV file with (maybe) header.
@@ -334,7 +337,7 @@ trait Table[Row] extends Iterable[Row] {
    * @param csvAttributes implicit value of CsvAttributes.
    */
   def writeCSVFileIO(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
-    CsvTableFileRenderer[Row](file).render(this) map { f => f.flush(); f }
+    IO.fromTry(CsvTableFileRenderer[Row](file).render(this) map { f => f.flush(); f })
 
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
 
@@ -376,9 +379,9 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterator[String]): IO[T] = implicitly[TableParser[T]] match {
-    case parser: StringTableParser[T] => parser.parseIO(ws, parser.headerRowsToRead)
-    case x => IO.raiseError(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
+  def parse[T: TableParser](ws: Iterator[String]): Try[T] = implicitly[TableParser[T]] match {
+    case parser: StringTableParser[T] => parser.parse(ws, parser.headerRowsToRead)
+    case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
 
   /**
@@ -388,7 +391,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterable[String]): IO[T] = parse(ws.iterator)
+  def parse[T: TableParser](ws: Iterable[String]): Try[T] = parse(ws.iterator)
 
   /**
    * Method to parse a table from a Source.
@@ -399,7 +402,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseSource[T: TableParser](x: => Source): IO[T] = for (y <- parse(x.getLines())) yield y
+  def parseSource[T: TableParser](x: => Source): Try[T] = for (y <- parse(x.getLines())) yield y
 
   /**
    * Method to parse a table from a Source (with proper resource management of the source).
@@ -408,7 +411,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](si: => IO[Source]): IO[T] = IOUsing(si)(parseSource(_))
+  def parse[T: TableParser](si: => Try[Source]): Try[T] = TryUsing(si)(parseSource(_))
 
   /**
    * Method to parse a table from a URI with an implicit encoding.
@@ -418,7 +421,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): IO[T] = parse(sourceFromURI(u))
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = parse(sourceFromURI(u))
 
   /**
    * Method to parse a table from a URI with an explicit encoding.
@@ -428,7 +431,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](u: => URI, enc: String): IO[T] = {
+  def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     parse(u)
   }
@@ -441,7 +444,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): IO[T] = parse(sourceFromInputStream(i))
+  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = parse(sourceFromInputStream(i))
 
   /**
    * Method to parse a table from an InputStream with an explicit encoding.
@@ -451,7 +454,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseInputStream[T: TableParser](si: IO[InputStream], enc: String): IO[T] = {
+  def parseInputStream[T: TableParser](si: Try[InputStream], enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     for (s <- si; t <- parseInputStream(s)) yield t
   }
@@ -468,7 +471,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseFile[T: TableParser](f: => File, enc: String): IO[T] = {
+  def parseFile[T: TableParser](f: => File, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     parseFile(f)
   }
@@ -485,7 +488,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): IO[T] = parse(sourceFromFile(f))
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = parse(sourceFromFile(f))
 
   /**
    * Method to parse a table from a File.
@@ -495,7 +498,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseFile[T: TableParser](pathname: String, enc: String): IO[T] = {
+  def parseFile[T: TableParser](pathname: String, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     parseFile(pathname)
   }
@@ -508,7 +511,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return a IO[T]
    */
-  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): IO[T] = parse(sourceFromFilename(pathname))
+  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] = parse(sourceFromFilename(pathname))
 
   /**
    * Method to parse a table from an File.
@@ -519,7 +522,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): IO[T] = parse(sourceFromClassResource(w, clazz))
+  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] = parse(sourceFromClassResource(w, clazz))
 
   /**
    * Method to parse a table from a URL.
@@ -528,7 +531,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): IO[T] = parse(u.toURI)
+  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] = parse(u.toURI)
 
   /**
    * Method to parse a table from a URL with an explicit encoding.
@@ -540,7 +543,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseResource[T: TableParser](u: => URL, enc: String): IO[T] = {
+  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
     parseResource(u)
   }
@@ -552,11 +555,11 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): IO[T] = {
+  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] = {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
-      case parser: StringsTableParser[T] => parser.parseIO(wss, 1)
-      case _ => IO.raiseError(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
+      case parser: StringsTableParser[T] => parser.parse(wss, 1)
+      case _ => Failure(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
   }
 
@@ -567,9 +570,9 @@ object Table {
    * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
    * @param codec            (implicit) the encoding.
-   * @return an IO of Table[RawRow] where RawRow is a Seq[String].
+   * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): IO[Table[RawRow]] = {
+  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](f)
   }
@@ -579,9 +582,9 @@ object Table {
    *
    * @param pathname the path name.
    * @param codec    (implicit) the encoding.
-   * @return an IO of Table[RawRow] where RawRow is a Seq[String].
+   * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): IO[Table[RawRow]] = {
+  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
     parseFile[Table[RawRow]](pathname)
   }
@@ -594,9 +597,9 @@ object Table {
    * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
    * @param clazz            the class for which the resource should be sought (defaults to the calling class).
    * @param codec            (implicit) the encoding.
-   * @return an IO of Table[RawRow] where RawRow is a Seq[String].
+   * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): IO[Table[RawRow]] = {
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
@@ -605,9 +608,9 @@ object Table {
    * Method to parse a table of raw rows from an Iterable of String.
    *
    * @param ws the Strings.
-   * @return an IO of Table of RawRow
+   * @return an Try of Table of RawRow
    */
-  def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): IO[RawTable] = {
+  def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[RawTable] = {
     implicit val z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
   }
@@ -632,7 +635,7 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): IO[String] = {
+  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): Try[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
@@ -649,13 +652,12 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def writeCSVFileRow(t: Table[Row], file: File)(implicit csvAttributes: CsvAttributes): IO[FileWriter] =
+  def writeCSVFileRow(t: Table[Row], file: File)(implicit csvAttributes: CsvAttributes): Unit =
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         // CONSIDER this is a bit ugly
-        val q: IO[FileWriter] = t.writeCSVFileIO(file)
-        q map { f => f.close(); f }
+        t.writeCSVFile(file)
       case _ => throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
     }
 
@@ -663,44 +665,44 @@ object Table {
    * Method to open source defined by an InputStream.
    *
    * @param s an InputStream.
-   * @return an IO[Source].
+   * @return an Try[Source].
    */
-  private def sourceFromInputStream(s: => InputStream): IO[Source] = IO(Source.fromInputStream(s))
+  private def sourceFromInputStream(s: => InputStream): Try[Source] = Try(Source.fromInputStream(s))
 
   /**
    * Method to open source defined by a URI.
    *
    * @param u a URI.
-   * @return an IO[Source].
+   * @return an Try[Source].
    */
-  private def sourceFromURI(u: => URI): IO[Source] = IO(Source.fromURI(u))
+  private def sourceFromURI(u: => URI): Try[Source] = Try(Source.fromURI(u))
 
   /**
    * Method to open source defined by a File.
    *
    * @param f a File.
-   * @return an IO[Source].
+   * @return an Try[Source].
    */
-  private def sourceFromFile(f: => File)(implicit codec: Codec): IO[Source] = IO(Source.fromFile(f))
+  private def sourceFromFile(f: => File)(implicit codec: Codec): Try[Source] = Try(Source.fromFile(f))
 
   /**
    * Method to open source defined by a File.
    *
    * @param filename a File.
-   * @return an IO[Source].
+   * @return an Try[Source].
    */
-  private def sourceFromFilename(filename: => String)(implicit codec: Codec): IO[Source] = IO(Source.fromFile(filename))
+  private def sourceFromFilename(filename: => String)(implicit codec: Codec): Try[Source] = Try(Source.fromFile(filename))
 
   /**
    * Method to open a source defined by a Class and a resource name.
    *
    * @param w     the resource name.
    * @param clazz the class.
-   * @return an IO[Source].
+   * @return an Try[Source].
    */
-  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): IO[Source] = IO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
+  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Try[Source] = Try(Source.fromURL(clazz.getResource(w))).recoverWith {
     case _: java.lang.NullPointerException => Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
-  })
+  }
 }
 
 /**

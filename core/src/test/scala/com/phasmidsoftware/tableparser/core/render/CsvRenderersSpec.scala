@@ -2,8 +2,7 @@ package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
+import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import java.net.URL
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
@@ -256,11 +255,14 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val intPairCsvRenderer: CsvRenderer[IntPair] = csvRenderers.renderer2(IntPair.apply)
     implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = csvGenerators.generator2(IntPair.apply)
     import IntPair._
-    val tableIO = Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv")
-    val resultIO = tableIO flatMap {
+    val ity = Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv")
+    val sby = ity flatMap {
       case iIt@HeadedTable(_, _) => CsvTableStringRenderer[IntPair]().render(iIt)
     }
-    EvaluateIO(resultIO).toString shouldBe "a, b\n1, 2\n42, 99\n"
+    matchTry(sby map (_.toString())) {
+      case "a, b\n1, 2\n42, 99\n" => succeed
+      case _ => fail("didn't match")
+    }
   }
 
   case class Hawks(bw: Int, rt: Int) {
@@ -344,8 +346,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   it should "parse and output raptors from raptors.csv" in {
     import DailyRaptorReport._
 
-    val xio = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
-    val resultIO = xio flatMap {
+    val xy = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
+    val resultTry = xy flatMap {
       case rt@HeadedTable(_, _) =>
         rt.content.size shouldBe 13
         import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
@@ -379,7 +381,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         |2018-09-23, Overcast, 470, 2
         |2018-09-24, Overcast/Mostly cloudy, 292, 2
         |""".stripMargin
-    matchIO(resultIO) {
+    matchTry(resultTry) {
       case `expected` => succeed
     }
 
@@ -433,7 +435,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import NestedRaptorReport._
 
     val xio = for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r
-    val resultIO = xio flatMap {
+    val wy = xio flatMap {
       case rt@HeadedTable(_, _) =>
         rt.content.size shouldBe 13
         import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
@@ -453,6 +455,9 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = new CsvGenerators {}.generator2(NestedRaptorReport.apply)
         rt.take(1).toCSV
     }
-    EvaluateIO(resultIO) shouldBe "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n"
+    matchTry(wy) {
+      case "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n" => succeed
+      case _ => fail("didn't match")
+    }
   }
 }

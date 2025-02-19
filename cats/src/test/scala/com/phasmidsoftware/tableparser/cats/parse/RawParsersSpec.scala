@@ -2,8 +2,9 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.tableparser.core.parse
+package com.phasmidsoftware.tableparser.cats.parse
 
+import cats.effect.IO
 import com.phasmidsoftware.tableparser.core.table.{HeadedTable, RawTable, Table}
 import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
 import org.scalatest.flatspec
@@ -21,7 +22,7 @@ class RawParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    matchIO(Table.parse(rows)) {
+    matchIO(IO.fromTry(Table.parse(rows))) {
       case t@HeadedTable(_, _) =>
         val stringSeqTable: RawTable = t
         stringSeqTable.size shouldBe 1

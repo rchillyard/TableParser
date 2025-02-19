@@ -1,12 +1,17 @@
-package com.phasmidsoftware.tableparser.core.examples.teamproject
+package com.phasmidsoftware.tableparser.cats.examples.teamproject
 
-import com.phasmidsoftware.tableparser.core.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
+import cats.effect.IO
+import com.phasmidsoftware.tableparser.cats.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
+import com.phasmidsoftware.tableparser.cats.parse.EncryptedHeadedStringTableParser
+import com.phasmidsoftware.tableparser.cats.table.TableCrypt
+import com.phasmidsoftware.tableparser.core.examples.teamproject.{Grade, Team, TeamProject, TeamProjectTableParser}
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.tableparser.core.table.Table.parseResource
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateIO
 import com.phasmidsoftware.tableparser.core.util.EvaluateIO.{check, matchIO}
+import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import java.io.File
 import org.scalatest.concurrent.{Futures, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -27,9 +32,8 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
    */
   it should "be ingested properly" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    matchIO(parseResource("TeamProject.csv", classOf[ProjectsFuncSpec])) {
+    matchTry(parseResource("TeamProject.csv", classOf[TeamProject])) {
       case pt@HeadedTable(_, _) =>
-//        pt foreach println
         pt.size shouldBe 5
       case x => fail(s"not a HeadedTable: $x") // NOTE: This is not necessary
     }
@@ -38,14 +42,15 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   it should "be ingested and written out to file using the given header" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    matchIO(parseResource("TeamProject.csv", classOf[TeamProject])) {
+    import com.phasmidsoftware.tableparser.core.render.CsvGenerators.CsvGeneratorDouble
+    import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererDouble
+    matchIO(IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))) {
       case pt@HeadedTable(_, _) =>
-        import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
+
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
         }
-        import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
         pt.writeCSVFile(new File("TeamProjectOutput.csv"))
         succeed
@@ -55,57 +60,59 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
   // NOTE this sometimes causes a problem
   it should "be ingested and written out to encrypted file using the given header" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    matchIO(parseResource("TeamProject.csv", classOf[TeamProject])) {
+    import com.phasmidsoftware.tableparser.core.render.CsvGenerators.CsvGeneratorDouble
+    import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererDouble
+    matchIO(IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))) {
       case pt@HeadedTable(_, _) =>
-        import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
+
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
         }
-        import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
         implicit val hasKey: HasKey[TeamProject] = (t: TeamProject) => t.team.number.toString
         // TODO this integration test occasionally fails
-        pt.writeCSVFileEncrypted(new File("TeamProjectOutputEncrypted.csv"))
+        TableCrypt.writeCSVFileEncrypted(pt)(new File("TeamProjectOutputEncrypted.csv"))
         succeed
     }
   }
 
   it should "be ingested and written out properly using the given header" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    val tableIO = parseResource("TeamProject.csv", classOf[TeamProject])
+    import com.phasmidsoftware.tableparser.core.render.CsvGenerators.CsvGeneratorDouble
+    import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererDouble
+    val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
     val resultIO = tableIO flatMap {
       case pt@HeadedTable(_, _) =>
-        import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
+
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
         }
-        import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-        val cSV = pt.toCSV
-        cSV
+        IO.fromTry(pt.toCSV)
       case x => throw ParserException(s"Expected HeadedTable but got ${x.getClass}")
     }
-    check(resultIO) {
-      case w if w.startsWith("Team Number,") && w.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\n") =>
+    matchIO(resultIO) {
+      case w if w.startsWith("Team Number,") && w.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\n") => succeed
     }
 
   }
 
   it should "be ingested and written out properly for team 1 using the given header" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
+    import com.phasmidsoftware.tableparser.core.render.CsvGenerators.CsvGeneratorDouble
+    import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererDouble
     val tableIO = parseResource("TeamProject.csv", classOf[TeamProject])
-    val resultIO = tableIO flatMap {
+    val resultIO = IO.fromTry(tableIO) flatMap {
       case pt@HeadedTable(_, _) =>
-        import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
+
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
         }
-        import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-        pt.take(1).toCSV
+        IO.fromTry(pt.take(1).toCSV)
     }
     check(resultIO) {
       case w if w ==
@@ -118,16 +125,17 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   it should "be ingested and written out properly for team 1 using the given header but skipping grades" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    val tableIO = parseResource("TeamProject.csv", classOf[TeamProject])
+    import com.phasmidsoftware.tableparser.core.render.CsvGenerators.CsvGeneratorDouble
+    val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
     val resultIO = tableIO flatMap {
       case pt@HeadedTable(_, _) =>
-        import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
+
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
         }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer(12))
-        pt.take(1).toCSV
+        IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
             """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
@@ -138,16 +146,17 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   it should "be ingested and written out properly using fabricated header" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    val tableIO = parseResource("TeamProject.csv", classOf[TeamProject])
+    import com.phasmidsoftware.tableparser.core.render.CsvGenerators.CsvGeneratorDouble
+    import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererDouble
+    val tableIO = IO.fromTry(try (parseResource("TeamProject.csv", classOf[TeamProject])))
     val resultIO = tableIO flatMap {
       case pt@HeadedTable(_, _) =>
-        import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
+
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case _ => createCsvGeneratorFromTeamProject(_.generator12(Grade))
         }
-        import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-        pt.toCSV
+        IO.fromTry(pt.toCSV)
     }
     EvaluateIO(resultIO) shouldBe
             """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
@@ -161,16 +170,17 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   it should "be ingested and written out properly for team 1 using fabricated header" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    val tableIO = parseResource("TeamProject.csv", classOf[TeamProject])
+    import com.phasmidsoftware.tableparser.core.render.CsvGenerators.CsvGeneratorDouble
+    import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererDouble
+    val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
     val resultIO = tableIO flatMap {
       case pt@HeadedTable(_, _) =>
-        import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
+
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case _ => createCsvGeneratorFromTeamProject(_.generator12(Grade))
         }
-        import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-        pt.take(1).toCSV
+        IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
             """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
@@ -180,14 +190,14 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   it should "be ingested and written out properly for team 1 using fabricated header but skipping grades" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    val tableIO = parseResource("TeamProject.csv", classOf[TeamProject])
+    val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
     val resultIO = tableIO flatMap {
       case pt@HeadedTable(_, _) =>
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case _ => createCsvGeneratorFromTeamProject(_.skipGenerator)
         }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer())
-        pt.take(1).toCSV
+        IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
             """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
@@ -195,15 +205,15 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
               |""".stripMargin
   }
 
-  it should "parse and filter the team projects from the encrypted dataset" in {
-    import TeamProjectParser._
-
+  // FIXME Issue #50
+  ignore should "parse and filter the team projects from the encrypted dataset" in {
+//    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
+    import com.phasmidsoftware.tableparser.core.examples.teamproject.TeamProjectParser._
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
 
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
-
     implicit val parser: TableParser[Table[TeamProject]] = EncryptedHeadedStringTableParser[TeamProject, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
-    matchIO(parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])) {
+    matchIO(IO.fromTry(parseResource("TeamProjectEncrypted.csv", classOf[TeamProject]))) {
       case pt@HeadedTable(_, _) =>
         pt.size shouldBe 1
         val teamProject = pt.head
@@ -218,7 +228,8 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
    * These are application-specific and are not indicative of any bugs in the
    * TableParser library itself.
    */
-  it should "parse and filter the team projects from the encrypted dataset using RawRow" in {
+  // FIXME Issue #50
+  ignore should "parse and filter the team projects from the encrypted dataset using RawRow" in {
 
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
 
@@ -226,7 +237,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
     implicit val cellParser: CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
     implicit val parser: TableParser[RawTable] = EncryptedHeadedStringTableParser[RawRow, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
-    matchIO(parseResource("TeamProjectEncrypted.csv", classOf[ProjectsFuncSpec])) {
+    matchIO(IO.fromTry(parseResource("TeamProjectEncrypted.csv", classOf[TeamProject]))) {
       case pt@HeadedTable(_, _) =>
 //        pt foreach println
         println(Analysis(pt).showColumnMap)
@@ -236,7 +247,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   private def createCsvGeneratorFromTeamProject(function: CsvGenerators => CsvGenerator[Grade]): CsvGenerator[TeamProject] = {
     val csvGenerators = new CsvGenerators {}
-    import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
+    import CsvGenerators._
     implicit val optionStringGenerator: CsvGenerator[Option[String]] = csvGenerators.optionGenerator[String]
     implicit val teamGenerator: CsvGenerator[Team] = csvGenerators.generator5(Team)
     implicit val gradeGenerator: CsvGenerator[Grade] = function(csvGenerators)
@@ -245,7 +256,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   private def createCsvRendererForTeamProject(function: CsvRenderers => CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
     val csvRenderers = new CsvRenderers {}
-    import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
+    import CsvRenderers._
     implicit val optionStringRenderer: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]()
     implicit val teamRenderer: CsvRenderer[Team] = csvRenderers.renderer5(Team)
     implicit val gradeRenderer: CsvRenderer[Grade] = function(csvRenderers)

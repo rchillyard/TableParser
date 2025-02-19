@@ -1,7 +1,8 @@
-package com.phasmidsoftware.tableparser.core.table
+package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
+import com.phasmidsoftware.tableparser.core.table.{Analysis, HeadedTable, RawTable}
 import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.core.util.FP.resource
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -9,6 +10,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
 import scala.io.Source
+import scala.util.Try
 
 class AirBNBSpec extends AnyFlatSpec with Matchers {
 
@@ -19,13 +21,13 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
       """"name"
         |"Robin
         |Hillyard"""".stripMargin
-    val sy = IO(Source.fromString(text))
+    val sy = Try(Source.fromString(text))
 
     // Set up the parser (we set the predicate only for demonstration purposes)
     val parser: RawTableParser = RawTableParser().setMultiline(true)
 
     // Create the table
-    val wsty: IO[RawTable] = parser.parse(sy)
+    val wsty: IO[RawTable] = IO.fromTry(parser.parse(sy))
 
     matchIO(wsty, Timeout(Span(4000, Seconds))) {
       case t@HeadedTable(_, _) =>
@@ -47,13 +49,13 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
         |“We are all travelers in this world. From the sweet grass to the packing house, birth till death, we travel between the eternities.”","within an hour","100%",NA,"0","https://a0.muscache.com/im/pictures/user/3bbc5f44-5fab-42c9-8cbf-88cbd8c28340.jpg?aki_policy=profile_small","https://a0.muscache.com/im/pictures/user/3bbc5f44-5fab-42c9-8cbf-88cbd8c28340.jpg?aki_policy=profile_x_medium",60,"['email', 'phone', 'reviews', 'jumio', 'selfie', 'government_id', 'identity_manual', 'work_email']","1","1",24,1,21,2,0,0,0,"","",NA,NA,NA,NA,NA,NA,NA,42.39408839,-71.06429301,"Everett, MA, United States",0,"Boston",2.50173e+14,25017342400,"Everett","Middlesex County"
         |
         |""".stripMargin
-    val sy = IO(Source.fromString(text))
+    val sy = Try(Source.fromString(text))
 
     // Set up the parser (we set the predicate only for demonstration purposes)
     val parser: RawTableParser = RawTableParser().setMultiline(true)
 
     // Create the table
-    val wsty: IO[RawTable] = parser.parse(sy)
+    val wsty: IO[RawTable] = IO.fromTry(parser.parse(sy))
 
     matchIO(wsty, Timeout(Span(4000, Seconds))) {
       case t@HeadedTable(_, _) =>
@@ -69,13 +71,13 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
     val airBNBFile = "/airbnb2.csv"
 
     // Set up the source
-    val sy: IO[Source] = IO.fromTry(for (u <- resource[AirBNBSpec](airBNBFile)) yield Source.fromURL(u))
+    val sy: Try[Source] = for (u <- resource[AirBNBSpec](airBNBFile)) yield Source.fromURL(u)
 
     // Set up the parser (we set the predicate only for demonstration purposes)
     val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
 
     // Create the table
-    val wsty: IO[RawTable] = parser.parse(sy)
+    val wsty: IO[RawTable] = IO.fromTry(parser.parse(sy))
 
     matchIO(wsty, Timeout(Span(4, Seconds))) {
       case t@HeadedTable(r, _) =>

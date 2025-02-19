@@ -24,7 +24,7 @@ case class Row(ws: Seq[String], hdr: Header, index: Int) extends BaseRow(ws, hdr
  * @param ws  the (raw) Strings that make up the row.
  * @param hdr is the Header containing the column names.
  */
-abstract class BaseRow(ws: Seq[String], hdr: Header) extends (String => Try[String]) {
+abstract class BaseRow(ws: Seq[String], hdr: Header) extends (String => Try[String]) with Product {
 
   /**
    * Method to yield the value for a given column name
@@ -54,6 +54,7 @@ abstract class BaseRow(ws: Seq[String], hdr: Header) extends (String => Try[Stri
    * @return the index, which might be -1
    */
   def getIndex(column: String): Int = hdr.getIndex(column).getOrElse(-1)
+
 
   override def toString(): String = s"""Row: ${ws.mkString("[", ",", "]")} with header=$hdr"""
 }

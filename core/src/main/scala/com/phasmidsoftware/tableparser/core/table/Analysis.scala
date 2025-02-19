@@ -1,11 +1,10 @@
 package com.phasmidsoftware.tableparser.core.table
 
-import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.util.FP
 import com.phasmidsoftware.tableparser.core.util.FP.sequence
 import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 /**
  * Class to represent the analysis of a table.
@@ -124,16 +123,17 @@ object Main extends App {
   val crimeFile = "2023-01-metropolitan-street-sample.csv"
 
   // Set up the source
-  val sy: IO[Source] = IO.fromTry(for (u <- FP.resource[Analysis](crimeFile)) yield Source.fromURL(u))
+  val sy: Try[Source] = for (u <- FP.resource[Analysis](crimeFile)) yield Source.fromURL(u)
 
   val fraction = 1
   // Set up the parser (we set the predicate only for demonstration purposes)
   val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(fraction))
 
-  parser.parse(sy).unsafeRunSync() match {
-    case t@HeadedTable(r, _) =>
+  parser.parse(sy) match {
+    case Success(t@HeadedTable(r, _)) =>
       val analysis = Analysis(t)
       println(s"Crime: $analysis")
       r take 10 foreach println
+    case Failure(x) => throw x
   }
 }
