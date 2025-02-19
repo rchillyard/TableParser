@@ -121,6 +121,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     lazy val si: IO[InputStream] = IO(classOf[TableSpec].getResourceAsStream(null))
     val iIty = for (s <- si) yield Table.parseInputStream(s)
     import cats.effect.unsafe.implicits.global
+    // TODO eliminate use of unsafe methods
     EvaluateIO.checkFailure(iIty)(classOf[NullPointerException]).unsafeRunSync()
   }
 

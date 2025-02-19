@@ -41,4 +41,5 @@ val zi: IO[Unit] = rti map {
 
 import cats.effect.unsafe.implicits.global
 
+// TODO eliminate use of unsafe methods
 zi.unsafeRunSync()

@@ -12,7 +12,7 @@ import scala.util.{Failure, Success}
 
 /**
  * Interim utilities for checking IO.
- *
+ * TODO eliminate use of unsafe methods.
  * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
  */
 object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
@@ -26,7 +26,9 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
    * @tparam X the underlying type of xio and the type of the result.
    * @return an X.
    */
-  def apply[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second))): X = whenReady(xio.unsafeToFuture(), timeout)(identity)
+  def apply[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second))): X =
+    // TODO eliminate use of unsafe methods
+    whenReady(xio.unsafeToFuture(), timeout)(identity)
 
   /**
    * Method to evaluate an IO[X] as an Assertion.
@@ -42,6 +44,7 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
    * @return an Assertion.
    */
   def matchIO[X](xio: => IO[X], timeout: Timeout = Timeout(Span(10, Seconds)))(partialFunction: PartialFunction[X, Assertion]): Assertion =
+    // TODO eliminate use of unsafe methods
     whenReady(xio.unsafeToFuture(), timeout)(partialFunction)
 
   /**
@@ -55,6 +58,7 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
    * @tparam X the underlying type of the result.
    */
   def check[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(check: PartialFunction[X, Unit]): Unit = {
+    // TODO eliminate use of unsafe methods
     whenReady(xio.unsafeToFuture(), timeout)(check(_))
   }
 
@@ -71,6 +75,7 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
    */
   def checkFailure[X](xio: => IO[X])(expected: Class[_]): IO[Assertion] = {
     implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+    // TODO eliminate use of unsafe methods
     val af: Future[Assertion] = xio.unsafeToFuture().transform(xy => xy match {
       case Success(_) => Success(fail("should fail"))
       case Failure(x) => if (expected.isAssignableFrom(x.getClass)) Success(succeed) else Success(fail(s"$x is not a $expected"))
