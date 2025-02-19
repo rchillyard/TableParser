@@ -4,13 +4,13 @@ import cats.effect.IO
 import com.phasmidsoftware.tableparser.cats.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
 import com.phasmidsoftware.tableparser.cats.parse.EncryptedHeadedStringTableParser
 import com.phasmidsoftware.tableparser.cats.table.TableCrypt
+import com.phasmidsoftware.tableparser.cats.util.EvaluateIO
+import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.{check, matchIO}
 import com.phasmidsoftware.tableparser.core.examples.teamproject.{Grade, Team, TeamProject, TeamProjectTableParser}
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.tableparser.core.table.Table.parseResource
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO.{check, matchIO}
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import java.io.File
 import org.scalatest.concurrent.{Futures, ScalaFutures}

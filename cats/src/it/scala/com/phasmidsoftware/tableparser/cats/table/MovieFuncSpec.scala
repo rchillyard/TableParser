@@ -2,11 +2,14 @@ package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
+import com.phasmidsoftware.tableparser.cats.util.IOUsing
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.IOUsing
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{Seconds, Span}
 import scala.io.Source
 
 class MovieFuncSpec extends AnyFlatSpec with Matchers {
@@ -28,6 +31,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
         println(s"Movie: successfully read ${mt.size} rows")
         mt.size shouldBe 1567
         mt take 10 foreach println
+        succeed
     }
   }
   

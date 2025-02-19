@@ -1,12 +1,12 @@
 package com.phasmidsoftware.tableparser.cats.examples.crime
 
 import cats.effect.IO
+import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
+import com.phasmidsoftware.tableparser.cats.util.IOUsing
 import com.phasmidsoftware.tableparser.core.examples.crime.Crime
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.table.{Analysis, HeadedTable, RawTable, Table}
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.core.util.FP.resourceForClass
-import com.phasmidsoftware.tableparser.core.util.IOUsing
 import java.net.URL
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
