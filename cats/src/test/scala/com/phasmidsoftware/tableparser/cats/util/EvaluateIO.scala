@@ -1,4 +1,4 @@
-package com.phasmidsoftware.tableparser.core.util
+package com.phasmidsoftware.tableparser.cats.util
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global

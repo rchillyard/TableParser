@@ -181,7 +181,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
 
   it should "return failure(2)" in {
-    // NOTE this uses Try (as it always did) and not IO.
     lazy val si: InputStream = getClass.getResourceAsStream("emptyResource.txt")
     val wy: Try[String] = TryUsing(Source.fromInputStream(si))(s => Try(s.getLines().toList.head))
     wy should matchPattern { case Failure(_) => }

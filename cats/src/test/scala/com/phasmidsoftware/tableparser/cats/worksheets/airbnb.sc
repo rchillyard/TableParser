@@ -1,4 +1,5 @@
 import cats.effect.IO
+import com.phasmidsoftware.tableparser.cats.table.AirBNBSpec
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.FP.resource

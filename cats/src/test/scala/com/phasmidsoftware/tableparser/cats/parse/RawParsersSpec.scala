@@ -5,8 +5,8 @@
 package com.phasmidsoftware.tableparser.cats.parse
 
 import cats.effect.IO
+import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.core.table.{HeadedTable, RawTable, Table}
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 

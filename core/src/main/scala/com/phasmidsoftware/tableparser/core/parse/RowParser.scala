@@ -4,7 +4,6 @@
 
 package com.phasmidsoftware.tableparser.core.parse
 
-import cats.effect.IO
 import com.phasmidsoftware.flog.Flog
 import com.phasmidsoftware.tableparser.core.table.{Header, Row}
 import com.phasmidsoftware.tableparser.core.util.FP
@@ -30,24 +29,14 @@ trait RowParser[Row, Input] {
   def parse(indexedRow: (Input, Int))(header: Header): Try[Row]
 
   /**
-   * Parse the Input, resulting in a IO[Header]
+   * Parse the Input, resulting in a Try[Header]
    *
    * CONSIDER making this share the same signature as parse but for different Row type.
    *
    * @param xs a sequence of Inputs to be parsed.
-   * @return a IO[Header]
+   * @return a Try[Header]
    */
   def parseHeader(xs: Seq[Input]): Try[Header]
-
-  /**
-   * Parse the Input, resulting in a IO[Header]
-   *
-   * CONSIDER making this share the same signature as parse but for different Row type.
-   *
-   * @param xs a sequence of Inputs to be parsed.
-   * @return a IO[Header]
-   */
-  def parseHeaderIO(xs: Seq[Input]): IO[Header] = IO.fromTry(parseHeader(xs))
 }
 
 /**
@@ -83,10 +72,10 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
     } yield r
 
   /**
-   * Method to parse a String as a IO[Header].
+   * Method to parse a String as a Try[Header].
    *
    * @param xs the header row(s) as a String.
-   * @return a IO[Header].
+   * @return a Try[Header].
    */
   def parseHeader(xs: Strings): Try[Header] = {
     val wsys: Seq[Try[Strings]] = for (x <- xs.tail) yield parser.parseRow(x, -1)
@@ -127,10 +116,10 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
     RowValues(Row(indexedString._1, header, indexedString._2)).convertTo[Row]
 
   /**
-   * Method to parse a sequence of Strings as a IO[Header].
+   * Method to parse a sequence of Strings as a Try[Header].
    *
    * @param ws the header row as a sequence of Strings.
-   * @return a IO[Header].
+   * @return a Try[Header].
    */
   def parseHeader(ws: Seq[Strings]): Try[Header] = Try(Header(ws))
 }

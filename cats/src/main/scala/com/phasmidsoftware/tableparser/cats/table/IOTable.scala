@@ -5,11 +5,11 @@
 package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
+import com.phasmidsoftware.tableparser.cats.util.IOUsing
 import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.IOUsing
 import java.io.{File, FileWriter, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -20,6 +20,17 @@ import scala.util.{Failure, Try}
  * The methods here are basically copies of the same methods in Table, but resulting in IO rather than Try.
  */
 object IOTable {
+
+  /**
+   * Method to render this Table[T] as a CSV file with (maybe) header.
+   *
+   * @param file          instance of File where the output should be stored.
+   * @param renderer      implicit value of CsvRenderer[Row].
+   * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param csvAttributes implicit value of CsvAttributes.
+   */
+  def writeCSVFileIO(table: Table[Row])(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
+    IO.fromTry(CsvTableFileRenderer[Row](file).render(table) map { f => f.flush(); f })
 
   /**
    * Method to render this Table[T] as a CSV String with (maybe) header.
@@ -319,7 +330,7 @@ object IOTable {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         // CONSIDER this is a bit ugly
-        val q: IO[FileWriter] = t.writeCSVFileIO(file)
+        val q: IO[FileWriter] = IOTable.writeCSVFileIO(t)(file)
         q map { f => f.close(); f }
       case _ => throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
     }

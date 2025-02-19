@@ -5,9 +5,9 @@
 package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
+import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.{check, checkFailure, matchIO}
 import com.phasmidsoftware.tableparser.core.parse.{CellParser, InvalidParseException, RowParser, StringTableParser}
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO.{check, checkFailure, matchIO}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.annotation.unused

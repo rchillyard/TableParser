@@ -6,11 +6,11 @@ package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxParallelAp
+import com.phasmidsoftware.tableparser.cats.util.EvaluateIO
+import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.core.util.FP.resourceForClass
 import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
 import java.io.{File, FileWriter, InputStream}

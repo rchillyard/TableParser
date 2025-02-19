@@ -1,8 +1,8 @@
-package com.phasmidsoftware.tableparser.core.util
+package com.phasmidsoftware.tableparser.cats.util
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO.{check, checkFailure, matchIO}
+import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.{check, checkFailure, matchIO}
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should

@@ -4,14 +4,13 @@
 
 package com.phasmidsoftware.tableparser.core.table
 
-import cats.effect.IO
 import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.util.FP._
 import com.phasmidsoftware.tableparser.core.util.{Reflection, TryUsing}
 import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
-import java.io.{File, FileWriter, InputStream}
+import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import scala.annotation.unused
 import scala.io.{Codec, Source}
@@ -328,17 +327,6 @@ trait Table[Row] extends Iterable[Row] {
   def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableFileRenderer[Row](file).render(this)
 
-  /**
-   * Method to render this Table[T] as a CSV file with (maybe) header.
-   *
-   * @param file          instance of File where the output should be stored.
-   * @param renderer      implicit value of CsvRenderer[Row].
-   * @param generator     implicit value of CsvProductGenerator[Row].
-   * @param csvAttributes implicit value of CsvAttributes.
-   */
-  def writeCSVFileIO(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
-    IO.fromTry(CsvTableFileRenderer[Row](file).render(this) map { f => f.flush(); f })
-
   def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
 
   /**
@@ -377,7 +365,7 @@ object Table {
    *
    * @param ws the Strings.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parse[T: TableParser](ws: Iterator[String]): Try[T] = implicitly[TableParser[T]] match {
     case parser: StringTableParser[T] => parser.parse(ws, parser.headerRowsToRead)
@@ -389,7 +377,7 @@ object Table {
    *
    * @param ws the Strings.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parse[T: TableParser](ws: Iterable[String]): Try[T] = parse(ws.iterator)
 
@@ -400,7 +388,7 @@ object Table {
    *
    * @param x the Source.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseSource[T: TableParser](x: => Source): Try[T] = for (y <- parse(x.getLines())) yield y
 
@@ -409,7 +397,7 @@ object Table {
    *
    * @param si the Source.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parse[T: TableParser](si: => Try[Source]): Try[T] = TryUsing(si)(parseSource(_))
 
@@ -419,7 +407,7 @@ object Table {
    * @param u     the URI.
    * @param codec (implicit) the encoding.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = parse(sourceFromURI(u))
 
@@ -429,7 +417,7 @@ object Table {
    * @param u   the URI.
    * @param enc the encoding.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
@@ -442,17 +430,17 @@ object Table {
    * @param i     the InputStream (call-by-name).
    * @param codec (implicit) the encoding.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = parse(sourceFromInputStream(i))
 
   /**
    * Method to parse a table from an InputStream with an explicit encoding.
    *
-   * @param si  the InputStream, wrapped in IO.
+   * @param si the InputStream, wrapped in Try.
    * @param enc the encoding.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseInputStream[T: TableParser](si: Try[InputStream], enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
@@ -469,7 +457,7 @@ object Table {
    * @param f   the File (call by name in case there is an exception thrown while constructing the file).
    * @param enc the explicit encoding.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseFile[T: TableParser](f: => File, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
@@ -486,7 +474,7 @@ object Table {
    * @param f     the File (call by name in case there is an exception thrown while constructing the file).
    * @param codec (implicit) the encoding.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = parse(sourceFromFile(f))
 
@@ -496,7 +484,7 @@ object Table {
    * @param pathname the file pathname.
    * @param enc      the explicit encoding.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseFile[T: TableParser](pathname: String, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
@@ -509,7 +497,7 @@ object Table {
    * @param pathname the file pathname.
    * @param codec    (implicit) the encoding.
    * @tparam T the type of the resulting table.
-   * @return a IO[T]
+   * @return a Try[T]
    */
   def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] = parse(sourceFromFilename(pathname))
 
@@ -520,7 +508,7 @@ object Table {
    * @param clazz the class for which the resource should be sought (should default to the calling class but doesn't).
    * @param codec (implicit) the encoding.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] = parse(sourceFromClassResource(w, clazz))
 
@@ -529,7 +517,7 @@ object Table {
    *
    * @param u the URI.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] = parse(u.toURI)
 
@@ -541,7 +529,7 @@ object Table {
    * @param u   the URL.
    * @param enc the encoding.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
@@ -553,7 +541,7 @@ object Table {
    *
    * @param wss the Sequence of Strings.
    * @tparam T the type of the resulting table.
-   * @return an IO[T]
+   * @return an Try[T]
    */
   def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] = {
     val tableParser = implicitly[TableParser[T]]

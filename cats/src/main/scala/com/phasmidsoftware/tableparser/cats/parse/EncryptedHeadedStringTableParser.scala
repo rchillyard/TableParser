@@ -6,6 +6,7 @@ package com.phasmidsoftware.tableparser.cats.parse
 
 import cats.effect.IO
 import com.phasmidsoftware.tableparser.cats.crypto.HexEncryption
+import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.parser.parseHeader
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.TeeIterator
@@ -56,8 +57,20 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
 
     }
 
+
+    /**
+     * Parse the Input, resulting in a IO[Header]
+     *
+     * CONSIDER making this share the same signature as parse but for different Row type.
+     *
+     * @param xs a sequence of Inputs to be parsed.
+     * @return a IO[Header]
+     */
+    def parseHeaderIO(xs: Seq[Input]): IO[Header] = IO.fromTry(parseHeader(xs))
+
+
     val sr: TeeIterator[String] = new TeeIterator(n)(xr)
-    val hi: IO[Header] = rowParser.parseHeaderIO(sr.tee)
+    val hi: IO[Header] = IO.fromTry(parseHeader(sr.tee))
     val xti: IO[RawTable] = IO.fromTry(createPhase1Parser.parse(sr, 1)) // NOTE n=1 is a guess
     for (h <- hi; xt1 <- xti; xt2 <- decryptAndParse(h, xt1)) yield xt2
   }

@@ -98,9 +98,9 @@ trait TableParser[Table] {
 //   * Method to parse a table based on a sequence of Inputs.
 //   *
 //   * @param xs the sequence of Inputs, one for each row
-//   * @return an IO[Table]
+//   * @return an Try[Table]
 //   */
-//  def parseIO(xs: Iterator[Input], n: Int): IO[Table]
+//  def parseIO(xs: Iterator[Input], n: Int): Try[Table]
 }
 
 object TableParser {
@@ -126,7 +126,7 @@ object TableParser {
      * Method to parse an iterator of String.
      *
      * @param xs an Iterator[String].
-     * @return an IO[T].
+     * @return an Try[T].
      */
     private def doParse(xs: Iterator[String]): Try[T] = p.parse(xs, 1)
 
@@ -135,7 +135,7 @@ object TableParser {
      * NOTE the source s will be closed after parsing has been completed (no resource leaks).
      *
      * @param s a Source.
-     * @return an IO[T].
+     * @return an Try[T].
      */
     private def doParse(s: Source): Try[T] = TryUsing(s)(x => doParse(x.getLines()))
   }
@@ -310,7 +310,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    *
    * @param xs     the sequence of Inputs, one for each row
    * @param header the header to be used.
-   * @return an IO[Table]
+   * @return an Try[Table]
    */
   def parseRows(xs: Iterator[Input], header: Header): Try[Table]
 
@@ -332,20 +332,20 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 //   * Method to parse a table based on a sequence of Inputs.
 //   *
 //   * NOTE: this is invoked implicitly by:
-//   * def parse[T: TableParser](ws: Iterator[String]): IO[T]
+//   * def parse[T: TableParser](ws: Iterator[String]): Try[T]
 //   * in Table object.
 //   *
 //   * @param xr the sequence of Inputs, one for each row
 //   * @param n  the number of lines that should be used as a Header.
 //   *           If n == 0 == maybeFixedHeader.empty then there is a logic error.
-//   * @return an IO[Table]
+//   * @return an Try[Table]
 //   */
-//  def parseIO(xr: Iterator[Input], n: Int = 0): IO[Table] = maybeFixedHeader match {
+//  def parseIO(xr: Iterator[Input], n: Int = 0): Try[Table] = maybeFixedHeader match {
 //    case Some(h) => parseRowsIO(xr drop n, h) // CONSIDER reverting to check that n = 0
 //    case None if n > 0 =>
 //      val yr: TeeIterator[Input] = new TeeIterator(n)(xr)
 //      for (h <- rowParser.parseHeaderIO(yr.tee); t <- parseRowsIO(yr, h)) yield t
-//    case _ => IO.raiseError(TableParserException("parse: logic error"))
+//    case _ => Try.raiseError(TableParserException("parse: logic error"))
 //  }
 
   /**
