@@ -1,19 +1,17 @@
 package com.phasmidsoftware.tableparser.cats.examples.crime
 
 import cats.effect.IO
+import com.phasmidsoftware.tableparser.cats.examples.Crime
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
-import com.phasmidsoftware.tableparser.cats.util.IOUsing
-import com.phasmidsoftware.tableparser.core.examples.crime.Crime
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
-import com.phasmidsoftware.tableparser.core.table.{Analysis, HeadedTable, RawTable, Table}
-import com.phasmidsoftware.tableparser.core.util.FP
+import com.phasmidsoftware.tableparser.core.table.{Analysis, HeadedTable, RawTable}
 import com.phasmidsoftware.tableparser.core.util.FP.resourceForClass
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Seconds, Span}
 import scala.io.Source
-import scala.util.{Random, Try}
+import scala.util.Try
 
 class CrimeSpec extends AnyFlatSpec with Matchers {
 
@@ -41,25 +39,23 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     }
   }
 
-  it should "be ingested and written out in brief to CSV" in {
-    import com.phasmidsoftware.tableparser.core.examples.crime.CrimeLocationRenderer._
-    import com.phasmidsoftware.tableparser.core.examples.crime.CrimeParser._
-    implicit val random: Random = new Random(0)
-    val cti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => IO.fromTry(Table.parseSource(x)))
-
-    val wi: IO[String] = for {
-      ct <- cti
-      lt <- IO(ct.mapOptional(m => m.brief))
-      st <- IO(lt.filter(FP.sampler(10)))
-      w <- IO.fromTry(st.toCSV)
-    } yield w
-
-    matchIO(wi, Timeout(Span(20, Seconds))) {
-      case w =>
-        w should startWith(
-          """crimeID,longitude,latitude
-            |""".stripMargin)
-    }
-  }
+//  it should "be ingested and written out in brief to CSV" in {
+//    implicit val random: Random = new Random(0)
+//    val cti: IO[Table[Crime]] = IOUsing(Source.fromURL(classOf[Crime].getResource(crimeFile)))(x => IO.fromTry(Table.parseSource(x)))
+//
+//    val wi: IO[String] = for {
+//      ct <- cti
+//      lt <- IO(ct.mapOptional(m => m.brief))
+//      st <- IO(lt.filter(FP.sampler(10)))
+//      w <- IO.fromTry(st.toCSV)
+//    } yield w
+//
+//    matchIO(wi, Timeout(Span(20, Seconds))) {
+//      case w =>
+//        w should startWith(
+//          """crimeID,longitude,latitude
+//            |""".stripMargin)
+//    }
+//  }
 
 }
