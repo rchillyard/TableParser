@@ -250,7 +250,7 @@ object HierarchicalRenderer {
    *
    * Usage:
    * By being an implicit object, `IntHierarchicalRenderer` is automatically available wherever an `IntHierarchicalRenderer` instance
-   * is required implicitly. Users can override this behavior by creating their own instances if a customized implementation is needed.
+   * is required implicitly. Users can  this behavior by creating their own instances if a customized implementation is needed.
    *
    * Example:
    * {{{

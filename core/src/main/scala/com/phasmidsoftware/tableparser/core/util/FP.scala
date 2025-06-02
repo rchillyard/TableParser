@@ -21,7 +21,7 @@ object FP {
    * @param n this is the sample factor: approximately one in every n successful results will form part of the result.
    * @param r (implicit) Random source of entropy.
    * @tparam X the underlying type of the sampler.
-   * @return a X => Boolean function which is always yields false if its input is a failure, otherwise,
+   * @return an `X => Boolean` function which is always yields false if its input is a failure, otherwise,
    *         it chooses every nth value (approximately).
    */
   def sampler[X](n: Int)(implicit r: Random): X => Boolean =
@@ -151,7 +151,6 @@ object FP {
   def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
     xos.foldLeft(Option(Seq[X]())) { // TODO merge code with duplicate
       (xso, xo) =>
-
         for (xs <- xso; x <- xo) yield x +: xs
     }
 
@@ -169,11 +168,12 @@ object FP {
    */
   def sequence[X](xos: Iterator[Option[X]]): Option[Seq[X]] =
     xos.foldLeft(Option(Seq[X]())) { // TODO merge code with duplicate
-      (xso, xo) => for (xs <- xso; x <- xo) yield x +: xs
+      (xso, xo) =>
+        for (xs <- xso; x <- xo) yield x +: xs
     }
 
   /**
-   * Method to partition an  method to combine elements of Try as an Iterator.
+   * Method to partition an Iterator.
    *
    * @param xys an Iterator of Try[X].
    * @tparam X the underlying type.
@@ -196,7 +196,7 @@ object FP {
    *
    * @param resourceName the name of the resourceForClass.
    * @tparam C a class of the package containing the resourceForClass.
-   * @return a Try[URL].
+   * @return a `Try[URL]`.
    */
   def resource[C: ClassTag](resourceName: String): Try[URL] =
     resourceForClass(resourceName, implicitly[ClassTag[C]].runtimeClass)
@@ -205,7 +205,7 @@ object FP {
    * Method to yield a Try[URL] for a resource name and a given class.
    *
    * @param resourceName the name of the resource.
-   * @param clazz        the class, relative to which, the resource can be found (defaults to the caller's class).
+   * @param clazz        the class, relative to which the resource can be found (defaults to the caller's class).
    * @return a Try[URL]
    */
   def resourceForClass(resourceName: String, clazz: Class[_] = getClass): Try[URL] =
@@ -231,11 +231,11 @@ object FP {
   }
 
   /**
-   * Method to transform a a Try[X] into an Option[X].
+   * Method to transform a Try[X] into an Option[X].
    * But, unlike "toOption," a Failure can be logged.
    *
    * @param f  a function to process any Exception (typically a logging function).
-   * @param xy the input Try[X}.
+   * @param xy the input Try[X].
    * @tparam X the underlying type.
    * @return an Option[X].
    */
@@ -251,10 +251,10 @@ object FP {
 
 object TryUsing {
   /**
-   * This method is to Using.apply as flatMap is to Map.
+   * This method is to `Using.apply` as `flatMap` is to `Map`.
    *
-   * @param resource a resource which is used by f and will be managed via Using.apply
-   * @param f        a function of R => Try[A].
+   * @param resource a resource which is used by f and will be managed via `Using.apply`
+   * @param f        a function of `R => Try[A]`.
    * @tparam R the resource type.
    * @tparam A the underlying type of the result.
    * @return a Try[A]

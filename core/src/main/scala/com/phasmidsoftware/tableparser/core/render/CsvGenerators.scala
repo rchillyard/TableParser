@@ -10,8 +10,6 @@ import scala.reflect.ClassTag
  *
  * The class includes methods to handle sequences, options, individual types, and products (case classes with varying numbers of fields).
  * It supports up to 6-ary product types, allowing for type inference and customization of CSV behavior.
- *
- * @tparam T The type parameter representing the underlying data type for which the CSV generator is created.
  */
 trait CsvGenerators {
 
@@ -250,7 +248,7 @@ trait CsvGenerators {
   }
 
   /**
-   * Method to return a CsvGenerator[T] where T is a 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
+   * Method to return a CsvGenerator[T] where T is an 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.
@@ -358,7 +356,7 @@ trait CsvGenerators {
   }
 
   /**
-   * Method to return a CsvGenerator[T] where T is a 11-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) into a T.
+   * Method to return a CsvGenerator[T] where T is an 11-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) into a T.
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
    *                  The sole purpose of this function is for type inference--it is never actually invoked.

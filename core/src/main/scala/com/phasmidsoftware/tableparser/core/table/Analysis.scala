@@ -112,7 +112,7 @@ object Column {
    *
    * Complexity: O(N) where N is the length of xs.
    *
-   * @param xs an sequence of String values, each corresponding to the column value of a row of the table.
+   * @param xs a sequence of String values, each corresponding to the column value of a row of the table.
    * @return an optional Column.
    */
   def make(xs: Seq[String]): Option[Column] = {

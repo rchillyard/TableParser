@@ -131,8 +131,6 @@ trait CsvRenderers {
      * This method utilizes an implicit `CsvRenderer` to render the first product element.
      *
      * @param t The input of type `T` whose first product element will be rendered.
-     * @tparam T  The type of the input, which must be a tuple or product type.
-     * @tparam P1 The type of the first product element in `T`.
      * @return A sequence of strings containing the rendered first product element.
      */
     def elements(t: T): Strings = Seq(
@@ -211,7 +209,7 @@ trait CsvRenderers {
 
   /**
    * Generates a CSV renderer and generator for a product type with two parameters.
-   * This method creates an instance of `ProductCsvRenderer` for handling CSV functionality
+   * This method creates an instance of `ProductCsvRenderer` for handling CSV functionality,
    * such as rendering elements and generating column names based on the provided
    * constructor function and implicit attributes.
    *
@@ -966,34 +964,25 @@ object CsvRenderers {
   }
 
   /**
-   * An implicit object that provides a default implementation of `StandardCsvRenderer`
-   * specifically for the `Boolean` type. This renderer is used to serialize `Boolean`
-   * values into CSV (Comma-Separated Values) format.
+   * An implicit object for rendering `Boolean` values into CSV (Comma-Separated Values) format.
    *
-   * The `CsvRendererBoolean` object extends the `StandardCsvRenderer` abstract class,
-   * leveraging its default behavior of converting the `Boolean` value to a string representation.
-   * In this case, it uses the `toString` method of `Boolean`, which produces "true" or "false".
+   * `CsvRendererBoolean` extends the `StandardCsvRenderer` abstraction, which provides
+   * a base implementation for converting objects into their CSV string representation.
    *
-   * ## Usage
-   * This implicit object can be brought into scope to automatically handle the rendering
-   * of `Boolean` values into CSV format without requiring any additional configuration.
+   * This implicit object handles the rendering of `Boolean` values by converting them
+   * to their string representation, typically as `"true"` or `"false"`.
+   *
+   * Usage:
+   * The `CsvRendererBoolean` can be implicitly used wherever a `StandardCsvRenderer[Boolean]`
+   * is required, enabling seamless conversion of `Boolean` values to CSV-compatible strings.
    *
    * Example:
-   * ```scala
-   * import CsvRenderers.CsvRendererBoolean
-   *
-   * val renderedCsv: String = CsvRendererBoolean.render(true)
-   * println(renderedCsv) // Outputs: true
-   * ```
-   *
-   * ## Notes
-   * - This renderer does not apply any additional transformations or formatting beyond the
-   * default string conversion for the `Boolean` type.
-   * - Attributes passed to the `render` method (if any) are ignored in this implementation.
-   *
-   * This implementation is designed to serve as part of the `CsvRenderers` class and works
-   * seamlessly with a larger CSV rendering system that might involve other types and their
-   * corresponding renderers.
+   * {{{
+   * // Assuming an implicit `CsvAttributes` in scope
+   * val renderer = implicitly[StandardCsvRenderer[Boolean]]
+   * val csvValue = renderer.render(true, Map.empty)
+   * println(csvValue) // Output: "true"
+   * }}}
    */
   implicit object CsvRendererBoolean extends StandardCsvRenderer[Boolean]
 

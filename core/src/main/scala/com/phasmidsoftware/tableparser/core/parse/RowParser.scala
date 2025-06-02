@@ -4,7 +4,6 @@
 
 package com.phasmidsoftware.tableparser.core.parse
 
-import com.phasmidsoftware.flog.Flog
 import com.phasmidsoftware.tableparser.core.table.{Header, Row}
 import com.phasmidsoftware.tableparser.core.util.FP
 import scala.annotation.implicitNotFound
@@ -54,9 +53,9 @@ trait StringParser[Row] extends RowParser[Row, String]
  */
 case class StandardRowParser[Row: CellParser](parser: LineParser) extends StringParser[Row] {
 
-  val flog = Flog[StandardRowParser[_]]
-
-  import flog._
+//  private val flog = Flog[StandardRowParser[_]]
+//
+//  import flog._
 
   /**
    * Method to parse a String and return a Try[Row].
@@ -67,8 +66,8 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
    */
   def parse(indexedString: (String, Int))(header: Header): Try[Row] =
     for {
-      ws <- s"parsed row from $indexedString" |! parser.parseRow(indexedString)
-      r <- s"after conversion" |! doConversion(indexedString, header, ws)
+      ws <- parser.parseRow(indexedString)
+      r <- doConversion(indexedString, header, ws)
     } yield r
 
   /**
@@ -79,7 +78,7 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
    */
   def parseHeader(xs: Strings): Try[Header] = {
     val wsys: Seq[Try[Strings]] = for (x <- xs.tail) yield parser.parseRow(x, -1)
-    (for (w <- Try(xs.head); ws <- parser.parseRow((w, -1)); wss <- FP.sequence(wsys)) yield Header(ws, wss))
+    for (w <- Try(xs.head); ws <- parser.parseRow((w, -1)); wss <- FP.sequence(wsys)) yield Header(ws, wss)
   }
 
   private def doConversion(indexedString: (String, Int), header: Header, ws: Strings) =

@@ -34,7 +34,7 @@ trait Table[Row] extends Iterable[Row] {
    * Method to clone this Table but with a different Header.
    *
    * @param ho an optional Header.
-   * @return a Table[Row] with the same rows as this, but with ho as its maybeHeader.
+   * @return a Table[Row] with the same rows as this, but with `ho` as its `maybeHeader`.
    */
   def replaceHeader(ho: Option[Header]): Table[Row] =
     unit(content, ho)
@@ -324,8 +324,8 @@ trait Table[Row] extends Iterable[Row] {
   /**
    * Method to render this Table[T] as a CSV String with (maybe) header.
    *
-   * @param renderer      implicit value of CsvRenderer[Row].
-   * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param rcr implicit value of CsvRenderer[Row].
+   * @param rgr implicit value of CsvProductGenerator[Row].
    * @param csvAttributes implicit value of CsvAttributes.
    * @return a String.
    */
@@ -656,7 +656,7 @@ object Table {
   }
 
   /**
-   * Method to render the given Table[Row] as a CSV String with header.
+   * Method to render the given Table[Row] as a CSV String with `header`.
    *
    * @param t             the Table[Row] to be rendered.
    * @param csvAttributes implicit value of CsvAttributes.
@@ -758,7 +758,7 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  override def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+  def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
     case Some(h) =>
       HeadedTable(sr, h)
     case None =>
@@ -874,7 +874,7 @@ case class UnheadedTable[Row](content: Content[Row]) extends RenderableTable[Row
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  override def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+  def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
     case Some(h) =>
       HeadedTable(Content(ss), h)
     case None =>
@@ -916,7 +916,7 @@ case class HeadedTable[Row](content: Content[Row], header: Header) extends Rende
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  override def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
+  def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
     case Some(h) =>
       HeadedTable(Content(ss), h)
     case None =>

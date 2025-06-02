@@ -74,7 +74,7 @@ trait CsvProductGenerator[T] extends CsvGenerator[T] {
  * for generating standardized CSV output. It utilizes implicit `CsvAttributes` for configuring
  * the delimiter and quote character used in the CSV representation.
  *
- * @param T the type of the objects for which this generator creates column names.
+ * @tparam T the type of the objects for which this generator creates column names.
  * @constructor
  * Creates a new `StandardCsvGenerator` instance with implicit `CsvAttributes` providing
  * the configuration for CSV generation.

@@ -287,7 +287,7 @@ abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeade
 
 object HeadedStringTableParser {
   /**
-   * This create method constructs a HeadedStringTableParser with header based simply on the type X.
+   * This `create` method constructs a HeadedStringTableParser with header based simply on the type X.
    * In this case, the source data must have the same number of columns as X has parameters, and they must be in the
    * same order. Additionally, there should not be a header row in the source data.
    *

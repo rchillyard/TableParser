@@ -50,21 +50,14 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
 object RawParsers {
 
   /**
-   * `WithHeaderRow` is an object extending `RawParsers` with a predefined configuration
-   * where no specific header is provided (`None`). This parser assumes that the data contains
-   * a header row, which is treated as part of the parsing logic.
+   * Companion object `WithHeaderRow` provides a specific instance of the `RawParsers` abstraction,
+   * pre-configured to parse raw data with an assumed header row.
    *
-   * This utility is useful for scenarios where raw data includes a header row and the parser
-   * should utilize it for parsing or processing the rows that follow. The header parsing itself
-   * adheres to the default configurations defined in the base `RawParsers` class.
+   * It serves as a convenient entry point for scenarios where the first row of data serves as the table header.
+   * The header row can be used to align the data with specific column names.
    *
-   * It inherits all functionality from `RawParsers` and encapsulates the behavior of handling
-   * raw data with an assumed header row.
-   *
-   * Example:
-   * ```
-   * val rawDataParser = WithHeaderRow
-   * ```
+   * Extending `RawParsers` with a `None` header definition implies that the header is dynamically
+   * determined from the first row of the input data.
    */
   object WithHeaderRow extends RawParsers(None)
 

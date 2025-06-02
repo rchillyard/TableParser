@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 object EvaluateTry extends Futures with ScalaFutures with should.Matchers {
 
   /**
-   * Method to evaluate an Try[X] as an Assertion.
+   * Method to evaluate a Try[X] as an Assertion.
    * It does this by converting to a Future,
    * waiting for that Future to finish and
    * then passing the result to the given partialFunction.

@@ -31,7 +31,7 @@ trait CellParsers {
     }
 
   /**
-   * Method to return a CellParser[Seq[P] from a potentially unlimited set of P objects.
+   * Method to return a `CellParser[Seq[P]]` from a potentially unlimited set of P objects.
    * The counting of the elements starts at start (defaults to 1).
    *
    * @tparam P the underlying type of the result
@@ -67,12 +67,12 @@ trait CellParsers {
   }
 
   /**
-   * Method to return a CellParser[Option[P].
+   * Method to return a `CellParser[Option[P]]`.
    *
-   * This class is used for optional types which are non-scalar, i.e. there are no implicitly-defined parsers for the Option[P].
+   * This class is used for optional types which are non-scalar, i.e., there are no implicitly defined parsers for the Option[P].
    *
    * @tparam P the underlying type of the result
-   * @return a SingleCellParser[Option[P]
+   * @return a `SingleCellParser[Option[P]]`
    */
   def cellParserOption[P: CellParser]: CellParser[Option[P]] = 
     new SingleCellParser[Option[P]] {
@@ -201,18 +201,18 @@ trait CellParsers {
     }
 
   /**
-   * Method to return a CellParser[T] where T is a 2-ary Product and which is based on a function to convert a (K,P) into a T.
-   * This method differs from cellParser2 in that the parser of P (a CellParser[P]) is not found implicitly, but rather is looked up
-   * dynamically depending on the value of the first parameter (of type K).
+   * Method to return a `CellParser[T]` where `T` is a 2-ary `Product` and which is based on a function to convert a `(K,P)` into a `T`.
+   * This method differs from `cellParser2` in that the parser of `P` (a `CellParser[P]`) is not found implicitly, but rather is looked up
+   * dynamically depending on the value of the first parameter (of type `K`).
    *
-   * @param construct a function (K,P) => T, usually the apply method of a case class.
-   * @param parsers   a Map[K, CellParser[P] ] which determines which particular parser of P will be used.
-   *                  The key value looked up is the value of the first (K) field.
-   * @tparam K the type of the conditional lookup key, which is also the type of the first field of T.
-   *           Typically, this will be a String, but it could also be an Int or something more exotic.
-   * @tparam P the type of the second field of the Product type T.
-   * @tparam T the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types K and P and thence into a T.
+   * @param construct a function `(K,P) => T`, usually the apply method of a case class.
+   * @param parsers   a `Map[K, CellParser[P]]` which determines which particular parser of `P` will be used.
+   *                  The key value looked up is the value of the first (`K`) field.
+   * @tparam K the type of the conditional lookup key, which is also the type of the first field of `T`.
+   *           Typically, this will be a `String`, but it could also be an Int or something more exotic.
+   * @tparam P the type of the second field of the Product type `T`.
+   * @tparam T the underlying type of the result, a `Product`.
+   * @return a `MultiCellParser` which converts Strings from a Row into the field types `K` and `P` and thence into a `T`.
    */
   def cellParser2Conditional[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map[K, CellParser[P]], fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
@@ -380,7 +380,7 @@ trait CellParsers {
   }
 
   /**
-   * Method to return a CellParser[T] where T is a 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
+   * Method to return a CellParser[T] where T is an 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
    * @tparam P1 the type of the first field of the Product type T.
@@ -479,9 +479,9 @@ trait CellParsers {
     }
 
   /**
-   * Method to return a CellParser[T] where T is a 11-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) into a T.
+   * Method to return a `CellParser[T]` where `T` is an 11-ary `Product` and which is based on a function to convert a `(P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11)` into a `T`.
    *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
+   * @param construct a function `(P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T`, usually the apply method of a case class.
    * @tparam P1  the type of the first field of the Product type T.
    * @tparam P2  the type of the second field of the Product type T.
    * @tparam P3  the type of the third field of the Product type T.
@@ -628,7 +628,7 @@ trait CellParsers {
   }
 
   /**
-   * Method to yield a ColumnHelper[T] based on  some number of explicit aliases,
+   * Method to yield a ColumnHelper[T] based on some number of explicit aliases,
    *
    * @param aliases a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
    * @tparam T the underlying type of the resulting ColumnHelper
@@ -639,7 +639,7 @@ trait CellParsers {
 
   /**
    * A default column mapper which will work for any underlying type T and which provides no column name mapping at all.
-   * This is suitable for the usual case where the names of the, e.g., CSV columns are the same as the names of the case class parameters.
+   * This is suitable for the usual case where the names of, e.g., CSV columns, are the same as the names of the case class parameters.
    *
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
@@ -652,8 +652,8 @@ trait CellParsers {
     readCellWithHeader(wo, row, columns, p)
 
   /**
-   * Return the field names as Seq[String], from either the fields parameter or by reflection into T.
-   * Note that fields takes precedence and ClassTag[T] is ignored if fields is used.
+   * Return the field names as `Seq[String]`, from either the `fields` parameter or by reflection into `T`.
+   * Note that fields takes precedence and `ClassTag[T]` is ignored if `fields` is used.
    *
    * @param fields a list of field names to be used instead of the reflected fields of T.
    * @tparam T the type (typically a case class) from which we will use reflection to get the field names (referred to only if fields is Nil)

@@ -53,7 +53,7 @@ object CsvRenderer {
 trait CsvProduct[-T] extends CsvRenderer[T] with CsvGenerator[T]
 
 /**
- * Abstract class ProductCsvRenderer which extends CsvRenderer AND CsvGenerator to render, as CSV, an instance of Product (typically a case class).
+ * Trait `BaseCsvRenderer[-T]` which extends CsvRenderer[T]  to render, as CSV, an instance of Product (typically a case class).
  *
  * @tparam T the contravariant type of object to be rendered.
  */
@@ -69,7 +69,7 @@ trait BaseCsvRenderer[-T] extends CsvRenderer[T] {
   /**
    * Concrete method to render t as a single String, where the columns are delimited according to <code>csvAttributes.delimiter</code>.
    *
-   * @param t     the input parameter, i.e. the T object to render.
+   * @param t the input parameter, i.e., the T object to render.
    * @param attrs a map of attributes for this value of O.
    * @return an instance of type String.
    */
@@ -78,7 +78,7 @@ trait BaseCsvRenderer[-T] extends CsvRenderer[T] {
 }
 
 /**
- * Abstract class ProductCsvRenderer which extends CsvRenderer AND CsvGenerator to render, as CSV, an instance of Product (typically a case class).
+ * Abstract class `ProductCsvRenderer[T]` which extends `BaseCsvRenderer[T]` and `CsvGenerator[T]` and `CsvProduct[T]` to render, as CSV, an instance of Product (typically a case class).
  *
  * @param c (implicit) CsvAttributes
  * @tparam T the contravariant type of object to be rendered.
@@ -100,7 +100,7 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable] exte
   /**
    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
    *
-   * @param t     the input parameter, i.e. the Table[T] instance to render.
+   * @param t the input parameter, i.e., the Table[T] instance to render.
    * @param attrs a map of attributes for this value of O.
    * @return an instance of type O.
    */
@@ -142,7 +142,7 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable] exte
  * Case class to help render a Table to a StringBuilder in CSV format.
  *
  * @param csvAttributes implicit instance of CsvAttributes.
- * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
+ * @tparam T the type of object to be rendered; must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
 case class CsvTableStringRenderer[T]()(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, StringBuilder]()(z1, z2, Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote))
 

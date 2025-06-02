@@ -11,11 +11,11 @@ import scala.util.matching.Regex
  */
 trait RowConfig {
   /**
-   * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
+   * the delimiter Regex (see LineParser). defaults to ", *".r, i.e., a comma followed by any n=umber of spaces.*
    */
   val delimiter: Regex
   /**
-   * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
+   * the "string" Regex (see LineParser). defaults to "\w+".r, i.e., at least one word character.
    */
   val string: Regex
   /**
@@ -47,11 +47,11 @@ trait DefaultRowConfig extends RowConfig {
    */
   val listEnclosure: String = "{}"
   /**
-   * the delimiter Regex (see LineParser). defaults to ", *".r, i.e. a comma followed by any n=umber of spaces.*
+   * the delimiter Regex (see LineParser). defaults to ", *".r, i.e., a comma followed by any n=umber of spaces.*
    */
   val delimiter: Regex = """\s*,\s*""".r
   /**
-   * the "string" Regex (see LineParser). defaults to "\w+".r, i.e. at least one word character.
+   * the "string" Regex (see LineParser). defaults to "\w+".r, i.e., at least one word character.
    * CONSIDER making the string regex derive from the delimiter
    */
   val string: Regex = """[^,"]*""".r
@@ -70,9 +70,13 @@ object RowConfig {
   implicit object defaultRowConfig extends DefaultRowConfig
 
   object defaultEncryptedRowConfig extends DefaultRowConfig {
-    override val delimiter: Regex = """\|""".r
-    override val listSep: Char = '&'
-    override val string: Regex = """[0123456789ABCDEF]+""".r
-    override val quote: Char = '\''
+    override val delimiter: Regex =
+      """\|""".r
+    override val listSep: Char =
+      '&'
+    override val string: Regex =
+      """[0123456789ABCDEF]+""".r
+    override val quote: Char =
+      '\''
   }
 }
