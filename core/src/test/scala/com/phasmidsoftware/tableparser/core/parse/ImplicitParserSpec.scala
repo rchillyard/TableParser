@@ -16,7 +16,7 @@ class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "implicit class"
 
   it should "properly parse movie data" in {
-    val si = Try(Source.fromURL(classOf[Table[_]].getResource("movie_metadata.csv")))
+    val si = Try(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))
     val parser = MovieTableParser
     val parsed: Try[Table[Movie]] = parser.parse(si)
     matchTry(parsed) {
