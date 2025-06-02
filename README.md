@@ -616,10 +616,13 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.1.4 -> V1.1.5
+* Work on spark module.
+
 V1.1.3 -> V1.1.4
 * Split into three modules: core, cats and spark.
 * Minor changes functionally speaking.
-* 
+
 V1.1.2 -> V1.1.3
 * Use of Cats IO
   [![CircleCI](https://circleci.com/gh/rchillyard/TableParser.svg?style=svg)](https://circleci.com/gh/rchillyard/TableParser)

@@ -2,7 +2,7 @@ ThisBuild / organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-ThisBuild / version := "1.1.4"
+ThisBuild / version := "1.1.5-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.16"
 
