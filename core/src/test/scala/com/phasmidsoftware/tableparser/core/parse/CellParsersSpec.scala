@@ -352,6 +352,18 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
     badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
   }
 
+  it should "parse with cellParser13" in {
+    case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Int, j: Char, k: Double, l: Boolean, m: Int)
+    implicit val columnHelper: ColumnHelper[T] = StdCellParsers.columnHelper()
+    val parser: CellParser[T] = StdCellParsers.cellParser13(T)
+    parser.toString shouldBe s"MultiCellParser: cellParser13 for ${classOf[T].getName}"
+    val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m")
+    val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "99", "a", "3.1415927", "true", "42"), header, 0)
+    parser.parse(None, row, header) shouldBe Success(T(1, 2.0, "x", 128, 7, 3.14f, BigInt(1000000), BigDecimal(3.1415927), 99, 'a', 3.1415927, l = true, 42))
+    val badParser: CellParser[T] = StdCellParsers.cellParser13(T, Seq("a", "b", "c"))
+    badParser.parse(None, row, header) should matchPattern { case Failure(_) => }
+  }
+
   behavior of "AttributeSet"
   it should "behave" in {
     AttributeSet.parse("{x}").get.xs shouldBe List("x")

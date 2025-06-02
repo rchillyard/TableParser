@@ -7,12 +7,13 @@ lazy val scalaTestVersion = "3.2.19"
 
 lazy val nScalaTimeVersion = "2.32.0"
 lazy val tsecVersion = "0.5.0"
+lazy val catsVersion = "3.6.1"
 
 libraryDependencies ++= Seq(
   "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
   "com.phasmidsoftware" %% "tableparser-core" % version.value,
-  "org.typelevel" %% "cats-effect" % "3.5.7",   // This is temporary
-  "org.slf4j" % "slf4j-simple" % "2.0.16" % "test",
+  "org.typelevel" %% "cats-effect" % catsVersion,
+  "org.slf4j" % "slf4j-simple" % "2.0.17" % "test",
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 
