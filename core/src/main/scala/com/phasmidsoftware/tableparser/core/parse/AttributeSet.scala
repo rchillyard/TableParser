@@ -11,6 +11,12 @@ import scala.util.{Failure, Success, Try}
  */
 case class AttributeSet(xs: StringList)
 
+/**
+ * The `AttributeSet` object provides utility methods for constructing and parsing instances
+ * of the `AttributeSet` class. This is primarily used for handling a column in a table that
+ * represents a set of attributes, typically formatted as a comma-separated list, and
+ * potentially enclosed in brackets or other separators.
+ */
 object AttributeSet {
 
   /**
@@ -23,8 +29,10 @@ object AttributeSet {
    * @return an AttributeSet.
    */
   def apply(w: String): AttributeSet = parse(w) match {
-    case Success(a) => a
-    case Failure(x) => throw x
+    case Success(a) =>
+      a
+    case Failure(x) =>
+      throw x
   }
 
   /**
@@ -33,6 +41,7 @@ object AttributeSet {
    * @param w the String to be parsed as an AttributeSet.
    * @return a Try[AttributeSet]
    */
-  def parse(w: String): Try[AttributeSet] = Parseable.split(w).map(apply)
+  def parse(w: String): Try[AttributeSet] =
+    Parseable.split(w).map(apply)
 }
 

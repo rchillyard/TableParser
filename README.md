@@ -31,6 +31,15 @@ XML or HTML).
 An output structure which is itself tabular or sequence-oriented can be generated quite easily using the rows of the table,
 together with something like, for instance, a Json writer.
 
+Package Structure
+===========
+
+As of version 1.1.4, the code has been split into three packages: _core_, _cats_, and _spark_.
+The remainder of this README refers to the _core_ package.
+Use of _cats-effect IO_ and encryption have been moved into the _cats_ package.
+The _spark_ package is intended for use with Apache Spark. 
+As of 1.1.4, this is not yet implemented. 
+
 Quick Intro
 ===========
 

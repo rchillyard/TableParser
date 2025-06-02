@@ -3,23 +3,17 @@ name := "tableparser-cats"
 //Compile / doc / scalacOptions ++= Seq("-Vimplicits", "-deprecation", "-Ywarn-dead-code", "-Ywarn-value-discard", "-Ywarn-unused")
 
 lazy val scalaModules = "org.scala-lang.modules"
-lazy val scalaTestVersion = "3.2.15"
+lazy val scalaTestVersion = "3.2.19"
 
-// NOTE: Issue #44: this library is not currently compatible with version 2.x.x of the parser-combinators library
-lazy val scalaParserCombinatorsVersion = "1.1.2"
 lazy val nScalaTimeVersion = "2.32.0"
-lazy val tsecVersion = "0.4.0"
+lazy val tsecVersion = "0.5.0"
+lazy val catsVersion = "3.6.1"
 
 libraryDependencies ++= Seq(
   "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
   "com.phasmidsoftware" %% "tableparser-core" % version.value,
-//  "io.spray" %%  "spray-json" % "1.3.6",
-//  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
-//noinspection SbtDependencyVersionInspection
-//  scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
-//  "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
-//  "ch.qos.logback" % "logback-classic" % "1.4.5" % "runtime",
-//  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+  "org.typelevel" %% "cats-effect" % catsVersion,
+  "org.slf4j" % "slf4j-simple" % "2.0.17" % "test",
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 

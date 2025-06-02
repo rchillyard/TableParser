@@ -41,8 +41,24 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
 
 }
 
+/**
+ * Object `RawParsers` provides utility instances for parsing raw data represented as sequences of strings.
+ * Specifically, it provides pre-configured parsers for handling different use cases.
+ *
+ * Example use cases include parsing data with a pre-defined header row.
+ */
 object RawParsers {
 
+  /**
+   * Companion object `WithHeaderRow` provides a specific instance of the `RawParsers` abstraction,
+   * pre-configured to parse raw data with an assumed header row.
+   *
+   * It serves as a convenient entry point for scenarios where the first row of data serves as the table header.
+   * The header row can be used to align the data with specific column names.
+   *
+   * Extending `RawParsers` with a `None` header definition implies that the header is dynamically
+   * determined from the first row of the input data.
+   */
   object WithHeaderRow extends RawParsers(None)
 
 }

@@ -1,14 +1,13 @@
 package com.phasmidsoftware.tableparser.core.parse
 
-import cats.effect.IO
-import com.phasmidsoftware.tableparser.core.table.MovieParser.MovieTableParser
-import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Movie, Table}
-import com.phasmidsoftware.tableparser.core.util.EvaluateIO.matchIO
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import com.phasmidsoftware.tableparser.core.examples.Movie
+import com.phasmidsoftware.tableparser.core.examples.MovieParser.MovieTableParser
+import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Table}
+import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-import org.scalatest.time.{Seconds, Span}
 import scala.io.BufferedSource
+import scala.util.Try
 
 class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
@@ -17,10 +16,10 @@ class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "implicit class"
 
   it should "properly parse movie data" in {
-    val si = IO(Source.fromURL(classOf[Table[_]].getResource("movie_metadata.csv")))
+    val si = Try(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))
     val parser = MovieTableParser
-    val parsed: IO[Table[Movie]] = parser.parse(si)
-    matchIO(parsed, Timeout(Span(5, Seconds))) {
+    val parsed: Try[Table[Movie]] = parser.parse(si)
+    matchTry(parsed) {
       case tm@HeadedTable(_, _) =>
         println(s"Table read with ${tm.content} rows")
         succeed

@@ -48,12 +48,15 @@ case class Node(style: String, content: Option[String], attributes: Map[String, 
    * @return a subtree rooted at this, but with nodes trimmed.
    */
   lazy val trim: Node = this match {
-    case Node(s, wo, kVm, ns) => Node(s, wo, kVm, for (n <- ns; x <- doTrim(n)) yield x)
+    case Node(s, wo, kVm, ns) =>
+      Node(s, wo, kVm, for (n <- ns; x <- doTrim(n)) yield x)
   }
 
   private def doTrim(n: Node): Seq[Node] = n match {
-    case Node("", None, kVm, ns) if kVm.isEmpty => ns map (_.trim)
-    case _ => Seq(n.trim)
+    case Node("", None, kVm, ns) if kVm.isEmpty =>
+      ns map (_.trim)
+    case _ =>
+      Seq(n.trim)
   }
 }
 
@@ -71,7 +74,8 @@ object Node {
    * @param attributes the attributes of this Node (may be empty).
    * @return a new Node.
    */
-  def apply(style: String, attributes: Map[String, String]): Node = apply(style, None, attributes)
+  def apply(style: String, attributes: Map[String, String]): Node =
+    apply(style, None, attributes)
 
   /**
    * Create a leaf Node (with no children).
@@ -82,7 +86,8 @@ object Node {
    * @param attributes the attributes of this Node (may be empty).
    * @return a new Node.
    */
-  def apply(style: String, content: Option[String], attributes: Map[String, String]): Node = apply(style, content, attributes, Nil)
+  def apply(style: String, content: Option[String], attributes: Map[String, String]): Node =
+    apply(style, content, attributes, Nil)
 
   /**
    * Create a content-less, no-attribute, leaf Node (with no children).
@@ -92,7 +97,8 @@ object Node {
    *              This will typically be translated directly into the "tag" parameter of the corresponding U type.
    * @return a new Node.
    */
-  def apply(style: String): Node = apply(style, Nil)
+  def apply(style: String): Node =
+    apply(style, Nil)
 
   /**
    * Create a Node with only style and children.
@@ -102,7 +108,8 @@ object Node {
    * @param children the children of this Node (may be empty).
    * @return a new Node.
    */
-  def apply(style: String, children: Seq[Node]): Node = apply(style, Map[String, String](), children)
+  def apply(style: String, children: Seq[Node]): Node =
+    apply(style, Map[String, String](), children)
 
   /**
    * Create a Node with no content.
@@ -113,7 +120,8 @@ object Node {
    * @param children   the children of this Node (may be empty).
    * @return a new Node.
    */
-  def apply(style: String, attributes: Map[String, String], children: Seq[Node]): Node = apply(style, None, attributes, children)
+  def apply(style: String, attributes: Map[String, String], children: Seq[Node]): Node =
+    apply(style, None, attributes, children)
 
   /**
    * TODO can eliminate
@@ -124,7 +132,8 @@ object Node {
    * @param right the right Node (its children will succeed the children of the left Node).
    * @return a new Node containing all the children of the left and right.
    */
-  def mergeLeft(left: Node, right: Node): Node = Node(left.style, left.content, left.attributes, left.children ++ right.children)
+  def mergeLeft(left: Node, right: Node): Node =
+    Node(left.style, left.content, left.attributes, left.children ++ right.children)
 
   /**
    * TODO can eliminate
@@ -135,7 +144,8 @@ object Node {
    * @param right the right Node (its children will succeed the children of the left Node).
    * @return a new Node containing all the children of the left and right.
    */
-  def mergeRight(left: Node, right: Node): Node = Node(right.style, right.content, right.attributes, left.children ++ right.children)
+  def mergeRight(left: Node, right: Node): Node =
+    Node(right.style, right.content, right.attributes, left.children ++ right.children)
 
 }
 

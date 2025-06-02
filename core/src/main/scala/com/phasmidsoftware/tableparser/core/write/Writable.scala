@@ -4,7 +4,6 @@
 
 package com.phasmidsoftware.tableparser.core.write
 
-import cats.effect.IO
 import java.io.{File, FileWriter}
 
 /**
@@ -45,7 +44,8 @@ trait Writable[O] {
    * @param x the character sequence to be written.
    * @return an instance of O which represents the updated output structure.
    */
-  def writeRawLine(o: O)(x: CharSequence): O = writeRaw(writeRaw(o)(x))(newline)
+  def writeRawLine(o: O)(x: CharSequence): O =
+    writeRaw(writeRaw(o)(x))(newline)
 
   /**
    * Method to write a value of type Any to the given instance o, possibly quoted.
@@ -54,7 +54,8 @@ trait Writable[O] {
    * @param x the row instance to be written.
    * @return an instance of O which represents the updated output structure.
    */
-  def writeRow[Row <: Product](o: O)(x: Row): O = writeRaw(writeRowElements(o)(x.productIterator.toSeq))(newline)
+  def writeRow[Row <: Product](o: O)(x: Row): O =
+    writeRaw(writeRowElements(o)(x.productIterator.toSeq))(newline)
 
   /**
    * Method to write a value of type Any to the given instance o, possibly quoted.
@@ -72,7 +73,6 @@ trait Writable[O] {
     o
   }
 
-
   private val sQuote: String = quote.toString
 
   /**
@@ -82,7 +82,8 @@ trait Writable[O] {
    * @param x the character sequence to be written.
    * @return an instance of O which represents the updated output structure.
    */
-  def writeValue(o: O)(x: Any): O = if (x.toString.contains(delimiter.toString) || x.toString.contains(sQuote))
+  def writeValue(o: O)(x: Any): O =
+    if (x.toString.contains(delimiter.toString) || x.toString.contains(sQuote))
     writeQuoted(o)(x.toString)
   else
     writeRaw(o)(x.toString)
@@ -122,31 +123,52 @@ trait Writable[O] {
   def newline: CharSequence = "\n"
 }
 
+/**
+ * The `Writable` object provides factory methods for creating instances of the `Writable` type
+ * that operate with different types of output structures. It encapsulates reusable logic
+ * to handle writing character sequences, rows, or other data in a structured manner.
+ */
 object Writable {
-  def stringBuilderWritable(delim: CharSequence = ",", quoteChar: CharSequence = """""""): Writable[StringBuilder] = new Writable[StringBuilder] {
-    def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x)
+  /**
+   * Creates a `Writable` instance for `StringBuilder` that allows writing character sequences
+   * with configurable delimiters and quote characters.
+   *
+   * @param delim     the delimiter character sequence used to separate elements, defaulting to ",".
+   * @param quoteChar the quote character sequence used to quote elements if necessary, defaulting to "\"".
+   * @return a `Writable[StringBuilder]` instance for writing character sequences to a `StringBuilder`.
+   */
+  def stringBuilderWritable(delim: CharSequence = ",", quoteChar: CharSequence = """""""): Writable[StringBuilder] =
+    new Writable[StringBuilder] {
+      def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder =
+        o.append(x)
 
-    def unit: StringBuilder = new StringBuilder
+      def unit: StringBuilder =
+        new StringBuilder
 
-    override def delimiter: CharSequence = delim
+      override def delimiter: CharSequence =
+        delim
 
-    override def quote: CharSequence = quoteChar
+      override def quote: CharSequence =
+        quoteChar
   }
 
-  def fileWritable(file: File): Writable[FileWriter] = new Writable[FileWriter] {
-    def unit: FileWriter = new FileWriter(file)
+  /**
+   * Creates a `Writable` instance for handling `FileWriter` objects, enabling the writing of character sequences
+   * to a specified file. This `Writable` instance allows for creating a new `FileWriter`, appending raw character
+   * sequences to the file, and safely closing the `FileWriter`.
+   *
+   * @param file the `File` object representing the target file where data will be written.
+   * @return a `Writable[FileWriter]` instance for operating with `FileWriter`.
+   */
+  def fileWritable(file: File): Writable[FileWriter] =
+    new Writable[FileWriter] {
+      def unit: FileWriter =
+        new FileWriter(file)
 
-    def writeRaw(o: FileWriter)(x: CharSequence): FileWriter = o.append(x).asInstanceOf[FileWriter]
+      def writeRaw(o: FileWriter)(x: CharSequence): FileWriter =
+        o.append(x).asInstanceOf[FileWriter]
 
-    override def close(o: FileWriter): Unit = o.close()
-  }
-
-  // TESTME (why isn't this used? it should be)
-  def fileWritableIO(file: File): Writable[IO[FileWriter]] = new Writable[IO[FileWriter]] {
-    def unit: IO[FileWriter] = IO(new FileWriter(file))
-
-    def writeRaw(fi: IO[FileWriter])(x: CharSequence): IO[FileWriter] = for (f <- fi) yield f.append(x).asInstanceOf[FileWriter]
-
-    override def close(fi: IO[FileWriter]): Unit = for (f <- fi) yield f.close()
+      override def close(o: FileWriter): Unit =
+        o.close()
   }
 }

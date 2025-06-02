@@ -26,17 +26,19 @@ trait CellParsers {
    */
   def rawRowCellParser: CellParser[RawRow] =
     new MultiCellParser[RawRow] {
-      def parse(wo: Option[String], row: Row, columns: Header): Try[RawRow] = Success(RawRow(row.ws, columns))
+      def parse(wo: Option[String], row: Row, columns: Header): Try[RawRow] = 
+        Success(RawRow(row.ws, columns))
     }
 
   /**
-   * Method to return a CellParser[Seq[P] from a potentially unlimited set of P objects.
+   * Method to return a `CellParser[Seq[P]]` from a potentially unlimited set of P objects.
    * The counting of the elements starts at start (defaults to 1).
    *
    * @tparam P the underlying type of the result
    * @return a MultiCellParser[Seq[P]
    */
-  def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
+  def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]] = 
+    new MultiCellParser[Seq[P]] {
     // XXX used only for debugging
     override def toString: String = "MultiCellParser: cellParserRepetition"
 
@@ -55,33 +57,40 @@ trait CellParsers {
    * @tparam P the underlying type of the result
    * @return a MultiCellParser[Seq[P]
    */
-  def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = new MultiCellParser[Seq[P]] {
+  def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = 
+    new MultiCellParser[Seq[P]] {
     // XXX used only for debugging
     override def toString: String = "MultiCellParser: cellParserSeq"
 
-    def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = FP.sequence(for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w)))
+    def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = 
+      FP.sequence(for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w)))
   }
 
   /**
-   * Method to return a CellParser[Option[P].
+   * Method to return a `CellParser[Option[P]]`.
    *
-   * This class is used for optional types which are non-scalar, i.e. there are no implicitly-defined parsers for the Option[P].
+   * This class is used for optional types which are non-scalar, i.e., there are no implicitly defined parsers for the Option[P].
    *
    * @tparam P the underlying type of the result
-   * @return a SingleCellParser[Option[P]
+   * @return a `SingleCellParser[Option[P]]`
    */
-  def cellParserOption[P: CellParser]: CellParser[Option[P]] = new SingleCellParser[Option[P]] {
+  def cellParserOption[P: CellParser]: CellParser[Option[P]] = 
+    new SingleCellParser[Option[P]] {
     // XXX used only for debugging
     override def toString: String = s"cellParserOption with $cp"
 
     private val cp: CellParser[P] = implicitly[CellParser[P]]
 
-    def convertString(w: String): Try[Option[P]] = convertToOptionP(cp.parse(CellValue(w)))
+    def convertString(w: String): Try[Option[P]] = 
+      convertToOptionP(cp.parse(CellValue(w)))
 
-    override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[P]] = convertToOptionP(cp.parse(wo, row, columns))
+    override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[P]] = 
+      convertToOptionP(cp.parse(wo, row, columns))
 
-    private def convertToOptionP(py: Try[P]) = py.map(Some(_)).recoverWith {
-      case _: ParseableException => Success(None)
+    private def convertToOptionP(py: Try[P]) = 
+      py.map(Some(_)).recoverWith {
+      case _: ParseableException => 
+        Success(None)
     }
   }
 
@@ -94,21 +103,27 @@ trait CellParsers {
    *
    * @return a SingleCellParser[Option[String]
    */
-  lazy val cellParserOptionNonEmptyString: CellParser[Option[String]] = new SingleCellParser[Option[String]] {
+  lazy val cellParserOptionNonEmptyString: CellParser[Option[String]] = 
+    new SingleCellParser[Option[String]] {
     // NOTE used only for debugging
     override def toString: String = s"cellParserOptionNonEmptyString"
 
-    private val cp: CellParser[String] = new CellParser[String]() {
-      def convertString(w: String): Try[String] = Success(if (w.isEmpty) null else w)
+    private val cp: CellParser[String] = 
+      new CellParser[String]() {
+      def convertString(w: String): Try[String] = 
+        Success(if (w.isEmpty) null else w)
 
       // NOTE not used
-      def parse(wo: Option[String], row: Row, columns: Header): Try[String] = Failure(new UnsupportedOperationException)
+      def parse(wo: Option[String], row: Row, columns: Header): Try[String] = 
+        Failure(new UnsupportedOperationException)
     }
 
-    def convertString(w: String): Try[Option[String]] = cp.convertString(w).map(Option(_))
+    def convertString(w: String): Try[Option[String]] = 
+      cp.convertString(w).map(Option(_))
 
     // NOTE not used
-    override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[String]] = cp.parse(wo, row, columns).map(Option(_))
+    override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[String]] = 
+      cp.parse(wo, row, columns).map(Option(_))
   }
 
   /**
@@ -119,11 +134,13 @@ trait CellParsers {
    * @tparam T the underlying type of the result.
    * @return a SingleCellParser which converts a String into the intermediate type P and thence into a T
    */
-  def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = new SingleCellParser[T] {
+  def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = 
+    new SingleCellParser[T] {
     // NOTE used only for debugging
     override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
 
-    def convertString(w: String): Try[T] = implicitly[CellParser[P]].parse(CellValue(w)).map(construct)
+    def convertString(w: String): Try[T] = 
+      implicitly[CellParser[P]].parse(CellValue(w)).map(construct)
   }
 
   /**
@@ -141,16 +158,20 @@ trait CellParsers {
   def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T, fields: Strings = Nil): CellParser[T] = {
 
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser1 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser1 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
           // CONSIDER renaming f1 as f0 in all of theses cellParserN methods.
-          case f1 :: Nil => readCell[T, P1](wo, row, columns)(f1).map(construct)
-          case _ => Failure(ParseLogicException("non-unique field name"))
+          case f1 :: Nil => 
+            readCell[T, P1](wo, row, columns)(f1).map(construct)
+          case _ => 
+            Failure(ParseLogicException("non-unique field name"))
         }
 
-      override def convertString(w: String): Try[T] = implicitly[CellParser[P1]].convertString(w).map(construct)
+      override def convertString(w: String): Try[T] = 
+        implicitly[CellParser[P1]].convertString(w).map(construct)
     }
   }
 
@@ -174,28 +195,30 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser1(construct.curried(p1), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
 
   /**
-   * Method to return a CellParser[T] where T is a 2-ary Product and which is based on a function to convert a (K,P) into a T.
-   * This method differs from cellParser2 in that the parser of P (a CellParser[P]) is not found implicitly, but rather is looked up
-   * dynamically depending on the value of the first parameter (of type K).
+   * Method to return a `CellParser[T]` where `T` is a 2-ary `Product` and which is based on a function to convert a `(K,P)` into a `T`.
+   * This method differs from `cellParser2` in that the parser of `P` (a `CellParser[P]`) is not found implicitly, but rather is looked up
+   * dynamically depending on the value of the first parameter (of type `K`).
    *
-   * @param construct a function (K,P) => T, usually the apply method of a case class.
-   * @param parsers   a Map[K, CellParser[P] ] which determines which particular parser of P will be used.
-   *                  The key value looked up is the value of the first (K) field.
-   * @tparam K the type of the conditional lookup key, which is also the type of the first field of T.
-   *           Typically, this will be a String, but it could also be an Int or something more exotic.
-   * @tparam P the type of the second field of the Product type T.
-   * @tparam T the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types K and P and thence into a T.
+   * @param construct a function `(K,P) => T`, usually the apply method of a case class.
+   * @param parsers   a `Map[K, CellParser[P]]` which determines which particular parser of `P` will be used.
+   *                  The key value looked up is the value of the first (`K`) field.
+   * @tparam K the type of the conditional lookup key, which is also the type of the first field of `T`.
+   *           Typically, this will be a `String`, but it could also be an Int or something more exotic.
+   * @tparam P the type of the second field of the Product type `T`.
+   * @tparam T the underlying type of the result, a `Product`.
+   * @return a `MultiCellParser` which converts Strings from a Row into the field types `K` and `P` and thence into a `T`.
    */
   def cellParser2Conditional[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map[K, CellParser[P]], fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
       // NOTE used only for debugging
-      override def toString: String = s"MultiCellParser: cellParser2 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser2 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -204,7 +227,8 @@ trait CellParsers {
               k <- readCell[T, K](wo, row, columns)(f1)
               p <- readCell[T, P](wo, row, columns)(f2)(implicitly[ClassTag[T]], implicitly[ColumnHelper[T]], parsers(k))
             } yield construct(k, p)
-          case _ => Failure(ParseLogicException("incorrect number of field names (should be 2)"))
+          case _ => 
+            Failure(ParseLogicException("incorrect number of field names (should be 2)"))
         }
     }
 
@@ -220,7 +244,8 @@ trait CellParsers {
    */
   def cellParser3[P1: CellParser, P2: CellParser, P3: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3) => T, fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser3 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser3 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -229,7 +254,8 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser2[P2, P3, T](construct(p1, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
 
@@ -246,7 +272,8 @@ trait CellParsers {
    */
   def cellParser4[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4) => T, fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser4 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser4 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -255,7 +282,8 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser3[P2, P3, P4, T](construct(p1, _, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
 
@@ -273,7 +301,8 @@ trait CellParsers {
    */
   def cellParser5[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5) => T, fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser5 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser5 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -282,7 +311,8 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser4[P2, P3, P4, P5, T](construct(p1, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
 
@@ -301,7 +331,8 @@ trait CellParsers {
    */
   def cellParser6[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6) => T, fields: Strings = Nil): CellParser[T] = {
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser6 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser6 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -310,7 +341,8 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser5[P2, P3, P4, P5, P6, T](construct(p1, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
   }
@@ -331,7 +363,8 @@ trait CellParsers {
    */
   def cellParser7[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7) => T, fields: Strings = Nil): CellParser[T] = {
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser7 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser7 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -340,13 +373,14 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser6[P2, P3, P4, P5, P6, P7, T](construct(p1, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
   }
 
   /**
-   * Method to return a CellParser[T] where T is a 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
+   * Method to return a CellParser[T] where T is an 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
    *
    * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
    * @tparam P1 the type of the first field of the Product type T.
@@ -362,7 +396,8 @@ trait CellParsers {
    */
   def cellParser8[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T, fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser8 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser8 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -371,7 +406,8 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser7[P2, P3, P4, P5, P6, P7, P8, T](construct(p1, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
 
@@ -393,7 +429,8 @@ trait CellParsers {
    */
   def cellParser9[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T, fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser9 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser9 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -402,7 +439,8 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser8[P2, P3, P4, P5, P6, P7, P8, P9, T](construct(p1, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
 
@@ -425,7 +463,8 @@ trait CellParsers {
    */
   def cellParser10[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T, fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser10 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser10 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -434,14 +473,15 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser9[P2, P3, P4, P5, P6, P7, P8, P9, P10, T](construct(p1, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
 
   /**
-   * Method to return a CellParser[T] where T is a 11-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) into a T.
+   * Method to return a `CellParser[T]` where `T` is an 11-ary `Product` and which is based on a function to convert a `(P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11)` into a `T`.
    *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T, usually the apply method of a case class.
+   * @param construct a function `(P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T`, usually the apply method of a case class.
    * @tparam P1  the type of the first field of the Product type T.
    * @tparam P2  the type of the second field of the Product type T.
    * @tparam P3  the type of the third field of the Product type T.
@@ -458,7 +498,8 @@ trait CellParsers {
    */
   def cellParser11[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T, fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser11 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser11 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -467,7 +508,8 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser10[P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, T](construct(p1, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
         }
     }
 
@@ -492,7 +534,8 @@ trait CellParsers {
    */
   def cellParser12[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, P12: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T, fields: Strings = Nil): CellParser[T] =
     new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser12 for ${implicitly[ClassTag[T]]}"
+      override def toString: String = 
+        s"MultiCellParser: cellParser12 for ${implicitly[ClassTag[T]]}"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
         fieldNames(fields) match {
@@ -501,7 +544,48 @@ trait CellParsers {
               p1 <- readCell[T, P1](wo, row, columns)(f1)
               t <- cellParser11[P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, T](construct(p1, _, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
             } yield t
-          case _ => Failure(ParseLogicException("no field names"))
+          case _ => 
+            Failure(ParseLogicException("no field names"))
+        }
+    }
+
+  /**
+   * Method to return a CellParser[T] where T is a 13-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13) into a T.
+   * If only I'd had the AI Assistant when I was first writing these ;)
+   *
+   * @author IntelliJ AI Assistant
+   *
+   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13) => T, usually the apply method of a case class.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam T   the underlying type of the result, a Product.
+   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12 and P13 and thence into a T
+   */
+  def cellParser13[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, P12: CellParser, P13: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13) => T, fields: Strings = Nil): CellParser[T] =
+    new MultiCellParser[T] {
+      override def toString: String =
+        s"MultiCellParser: cellParser13 for ${implicitly[ClassTag[T]]}"
+
+      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+        fieldNames(fields) match {
+          case f1 :: fs =>
+            for {
+              p1 <- readCell[T, P1](wo, row, columns)(f1)
+              t <- cellParser12[P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, T](construct(p1, _, _, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
+            } yield t
+          case _ =>
+            Failure(ParseLogicException("no field names"))
         }
     }
 
@@ -513,7 +597,8 @@ trait CellParsers {
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
    */
-  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = columnHelper(identityMapper, maybePrefix, aliases: _*)
+  def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = 
+    columnHelper(identityMapper, maybePrefix, aliases: _*)
 
   /**
    * Method to yield a ColumnHelper[T] based on a column name mapper, and some number of explicit aliases,
@@ -523,7 +608,8 @@ trait CellParsers {
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
    */
-  def columnHelper[T](columnNameMapper: String => String, aliases: (String, String)*): ColumnHelper[T] = columnHelper(columnNameMapper, None, aliases: _*)
+  def columnHelper[T](columnNameMapper: String => String, aliases: (String, String)*): ColumnHelper[T] = 
+    columnHelper(columnNameMapper, None, aliases: _*)
 
   /**
    * Method to yield a ColumnHelper[T] based on a column name mapper, an optional prefix, and some number of explicit aliases,
@@ -534,45 +620,50 @@ trait CellParsers {
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
    */
-  def columnHelper[T](columnNameMapper: String => String, maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = new ColumnHelper[T] {
+  def columnHelper[T](columnNameMapper: String => String, maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = 
+    new ColumnHelper[T] {
     val _maybePrefix: Option[String] = maybePrefix
     val _aliases: Seq[(String, String)] = aliases
     val _columnNameMapper: String => String = columnNameMapper
   }
 
   /**
-   * Method to yield a ColumnHelper[T] based on  some number of explicit aliases,
+   * Method to yield a ColumnHelper[T] based on some number of explicit aliases,
    *
    * @param aliases a variable number of explicit aliases to translate specific case class parameter names into their column name equivalents.
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
    */
-  def columnHelper[T](aliases: (String, String)*): ColumnHelper[T] = columnHelper(identityMapper, aliases: _*)
+  def columnHelper[T](aliases: (String, String)*): ColumnHelper[T] = 
+    columnHelper(identityMapper, aliases: _*)
 
   /**
    * A default column mapper which will work for any underlying type T and which provides no column name mapping at all.
-   * This is suitable for the usual case where the names of the, e.g., CSV columns are the same as the names of the case class parameters.
+   * This is suitable for the usual case where the names of, e.g., CSV columns, are the same as the names of the case class parameters.
    *
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
    */
-  implicit def defaultColumnHelper[T]: ColumnHelper[T] = columnHelper()
+  implicit def defaultColumnHelper[T]: ColumnHelper[T] = 
+    columnHelper()
 
   // CONSIDER inlining readCellWithHeader
   private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): Try[P] = // if (columns.exists)
     readCellWithHeader(wo, row, columns, p)
 
   /**
-   * Return the field names as Seq[String], from either the fields parameter or by reflection into T.
-   * Note that fields takes precedence and ClassTag[T] is ignored if fields is used.
+   * Return the field names as `Seq[String]`, from either the `fields` parameter or by reflection into `T`.
+   * Note that fields takes precedence and `ClassTag[T]` is ignored if `fields` is used.
    *
    * @param fields a list of field names to be used instead of the reflected fields of T.
    * @tparam T the type (typically a case class) from which we will use reflection to get the field names (referred to only if fields is Nil)
    * @return the field names to be used.
    */
   private def fieldNames[T: ClassTag](fields: Strings) = fields match {
-    case Nil => Reflection.extractFieldNames(implicitly[ClassTag[T]]).toList
-    case ps => ps
+    case Nil => 
+      Reflection.extractFieldNames(implicitly[ClassTag[T]]).toList
+    case ps => 
+      ps
   }
 
   private def readCellWithHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, header: Header, p: String) = {
@@ -581,7 +672,8 @@ trait CellParsers {
     val cellParser = implicitly[CellParser[P]]
     val idx = row.getIndex(columnName)
     if (idx >= 0) for (w <- row(idx); z <- cellParser.parse(CellValue(w)).recoverWith {
-      case NonFatal(e) => Failure(InvalidParseException(s"Problem parsing '$w' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e))
+      case NonFatal(e) => 
+        Failure(InvalidParseException(s"Problem parsing '$w' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e))
     }) yield z
     else cellParser.parse(Some(columnName), row, header).recoverWith {
       case _: UnsupportedOperationException =>

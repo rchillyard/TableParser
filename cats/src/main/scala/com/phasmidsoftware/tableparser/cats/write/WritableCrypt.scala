@@ -31,6 +31,7 @@ trait WritableCrypt[O] extends Writable[O] {
     val wBi: IO[(String, String, Boolean)] = encryption.encryptWithRandomKey(plaintext)
 
     // TODO use IO for O
+    // TODO eliminate use of unsafe methods
     wBi.unsafeRunSync() match {
       case (k, w, true) =>
         println(s"$key: $k") // CONSIDER writing these key/password pairs to the log file.

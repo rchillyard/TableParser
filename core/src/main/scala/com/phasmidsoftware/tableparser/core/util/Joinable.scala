@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.util
 
 /**
- * Type class to define behavior of a type which can be joined.
+ * Type class to define behavior of a type that can be joined.
  *
  * @tparam T the joinable type.
  */
@@ -33,20 +33,78 @@ trait Joinable[T] {
   def valid(t: T): Boolean
 }
 
+/**
+ * Companion object for the `Joinable` type class, providing default implementations
+ * of the `Joinable` behavior for specific types.
+ */
 object Joinable {
+  /**
+   * Provides an implicit implementation of the `Joinable` type class for the `String` type.
+   * This enables strings to be combined using the `join` method, defines a zero value for
+   * strings, and validates non-empty strings.
+   */
   implicit object JoinableString extends Joinable[String] {
-    def join(t1: String, t2: String): String = t1 + t2
+    /**
+     * Concatenates two strings into a single string.
+     *
+     * @param t1 The first string to be joined.
+     * @param t2 The second string to be joined.
+     * @return A single string resulting from the concatenation of `t1` and `t2`.
+     */
+    def join(t1: String, t2: String): String =
+      t1 + t2
 
-    val zero: String = ""
+    /**
+     * Represents the zero (identity) value for the `String` type in the context of
+     * the `Joinable` type class. In this case, the zero value is an empty string (`""`),
+     * which acts as the neutral element in string concatenation operations.
+     */
+    val zero: String =
+      ""
 
-    def valid(t: String): Boolean = t.nonEmpty
+    /**
+     * Validates whether the given string is non-empty.
+     *
+     * @param t The string to validate.
+     * @return `true` if the string is non-empty, `false` otherwise.
+     */
+    def valid(t: String): Boolean =
+      t.nonEmpty
   }
 
+  /**
+   * Provides an implicit implementation of the `Joinable` type class for sequences of strings (`Seq[String]`).
+   * This enables sequences of strings to be combined, defines a zero value for sequences, and validates
+   * non-empty sequences.
+   */
   implicit object JoinableStrings extends Joinable[Seq[String]] {
-    def join(t1: Seq[String], t2: Seq[String]): Seq[String] = t1 ++ t2 // TESTME
+    /**
+     * Combines two sequences of strings into a single sequence by appending the elements of the second sequence
+     * to the elements of the first sequence.
+     *
+     * @param t1 The first sequence of strings.
+     * @param t2 The second sequence of strings to be appended to the first sequence.
+     * @return A new sequence of strings containing all the elements of `t1`, followed by all the elements of `t2`.
+     */
+    def join(t1: Seq[String], t2: Seq[String]): Seq[String] =
+      t1 ++ t2 // TESTME
 
-    val zero: Seq[String] = Nil
+    /**
+     * Defines the zero value for sequences of strings (`Seq[String]`).
+     * The zero value is represented by an empty sequence (`Nil`) and serves as the identity element
+     * for the `join` operation in the `Joinable` type class, allowing seamless combination of string
+     * sequences while preserving the associative and identity properties.
+     */
+    val zero: Seq[String] =
+      Nil
 
-    def valid(t: Seq[String]): Boolean = t.nonEmpty // TESTME
+    /**
+     * Validates if the provided sequence of strings is non-empty.
+     *
+     * @param t The sequence of strings to validate.
+     * @return `true` if the sequence is non-empty, otherwise `false`.
+     */
+    def valid(t: Seq[String]): Boolean =
+      t.nonEmpty // TESTME
   }
 }

@@ -11,12 +11,7 @@ import com.phasmidsoftware.tableparser.core.table.{CsvAttributes, HasKey, Table}
 import java.io.File
 import scala.language.postfixOps
 
-/**
- * A Table of Content.
- *
- * @tparam Row the type of each row.
- */
-trait TableCrypt[Row] extends Table[Row] {
+object TableCrypt {
 
   /**
    * Method to render this Table[T] as a CSV file with (maybe) header.
@@ -30,6 +25,6 @@ trait TableCrypt[Row] extends Table[Row] {
    * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
    * @param csvAttributes implicit value of CsvAttributes.
    */
-  def writeCSVFileEncrypted[A: HexEncryption](file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
-    CsvTableEncryptedFileRenderer[Row, A](file).render(this)
+  def writeCSVFileEncrypted[A: HexEncryption, Row](table: Table[Row])(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
+    CsvTableEncryptedFileRenderer[Row, A](file).render(table)
 }
