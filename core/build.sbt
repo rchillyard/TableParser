@@ -6,7 +6,7 @@ lazy val scalaModules = "org.scala-lang.modules"
 lazy val scalaTestVersion = "3.2.19"
 
 // NOTE: Issue #44: this library is not currently compatible with version 2.x.x of the parser-combinators library
-lazy val scalaParserCombinatorsVersion = "1.1.2"
+lazy val scalaParserCombinatorsVersion = "2.4.0"
 lazy val nScalaTimeVersion = "2.32.0"
 lazy val tsecVersion = "0.4.0"
 
