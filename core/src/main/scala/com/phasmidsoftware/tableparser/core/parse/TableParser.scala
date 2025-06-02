@@ -155,8 +155,10 @@ object TableParser {
    *         it chooses every nth value (approximately).
    */
   def sampler[X](n: Int): Try[X] => Boolean = {
-    case Success(_) => r.nextInt(n) == 0
-    case _ => false
+    case Success(_) =>
+      r.nextInt(n) == 0
+    case _ =>
+      false
   }
 
   /**
@@ -322,31 +324,14 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    * @return a Try[Table].
    */
   def parse(xs: Iterator[Input], n: Int): Try[Table] = maybeFixedHeader match {
-    case Some(h) => parseRows(xs drop n, h) // CONSIDER reverting to check that n = 0
+    case Some(h) =>
+      parseRows(xs drop n, h) // CONSIDER reverting to check that n = 0
     case None if n > 0 =>
       val yr: TeeIterator[Input] = new TeeIterator(n)(xs)
       for (h <- rowParser.parseHeader(yr.tee); t <- parseRows(yr, h)) yield t
-    case _ => Failure(TableParserException("parse: logic error"))
+    case _ =>
+      Failure(TableParserException("parse: logic error"))
   }
-//  /**
-//   * Method to parse a table based on a sequence of Inputs.
-//   *
-//   * NOTE: this is invoked implicitly by:
-//   * def parse[T: TableParser](ws: Iterator[String]): Try[T]
-//   * in Table object.
-//   *
-//   * @param xr the sequence of Inputs, one for each row
-//   * @param n  the number of lines that should be used as a Header.
-//   *           If n == 0 == maybeFixedHeader.empty then there is a logic error.
-//   * @return an Try[Table]
-//   */
-//  def parseIO(xr: Iterator[Input], n: Int = 0): Try[Table] = maybeFixedHeader match {
-//    case Some(h) => parseRowsIO(xr drop n, h) // CONSIDER reverting to check that n = 0
-//    case None if n > 0 =>
-//      val yr: TeeIterator[Input] = new TeeIterator(n)(xr)
-//      for (h <- rowParser.parseHeaderIO(yr.tee); t <- parseRowsIO(yr, h)) yield t
-//    case _ => Try.raiseError(TableParserException("parse: logic error"))
-//  }
 
   /**
    * Common code for parsing rows.
@@ -363,13 +348,17 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    */
   protected def doParseRows[T: Joinable](ts: Iterator[T], header: Header, f: ((T, Int)) => Header => Try[Row]): Try[Table] = {
     implicit object Z extends Joinable[(T, Int)] {
-      private val tj: Joinable[T] = implicitly[Joinable[T]]
+      private val tj: Joinable[T] =
+        implicitly[Joinable[T]]
 
-      def join(t1: (T, Int), t2: (T, Int)): (T, Int) = tj.join(t1._1, t2._1) -> (if (t1._2 >= 0) t1._2 else t2._2)
+      def join(t1: (T, Int), t2: (T, Int)): (T, Int) =
+        tj.join(t1._1, t2._1) -> (if (t1._2 >= 0) t1._2 else t2._2)
 
-      val zero: (T, Int) = tj.zero -> -1
+      val zero: (T, Int) =
+        tj.zero -> -1
 
-      def valid(t: (T, Int)): Boolean = tj.valid(t._1)
+      def valid(t: (T, Int)): Boolean =
+        tj.valid(t._1)
     }
 
     def mapTsToRows = if (multiline)
@@ -390,10 +379,23 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     for (rs <- processTriedRows(q.iterator)) yield builder(rs.toList, header)
   }
 
-  private def failureHandler(ry: Try[Row]): Unit = logException[Row](ry)
+  private def failureHandler(ry: Try[Row]): Unit =
+    logException[Row](ry)
 }
 
+/**
+ * The `AbstractTableParser` companion object provides utility methods for logging exceptions during the table parsing process.
+ *
+ * This object includes methods to log exceptions, whether they are directly provided as a `Throwable` or wrapped inside a `Try` result.
+ */
 object AbstractTableParser {
+  /**
+   * Logs an exception by generating a warning message that includes the localized message of the exception
+   * and, if present, the message from the exception's cause.
+   *
+   * @param e the `Throwable` exception to be logged. This might include a cause that provides additional context.
+   * @return `Unit`. The method does not produce a result; it logs the warning message using the `TableParser.logger`.
+   */
   def logException(e: Throwable): Unit = {
     val string = s"${e.getLocalizedMessage}${
       if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
@@ -401,9 +403,18 @@ object AbstractTableParser {
     TableParser.logger.warn(string)
   }
 
+  /**
+   * Logs an exception contained within a `Try` result. If the `Try` is a `Failure`, the enclosed exception is logged.
+   * If it is a `Success`, no action is taken.
+   *
+   * @param xy a `Try` instance, which may either encapsulate a successful computation (`Success`) or an exception (`Failure`).
+   * @return `Unit`. This method does not return a value; it is used only for logging purposes.
+   */
   def logException[X](xy: Try[X]): Unit = xy match {
     case Success(_) =>
-    case Failure(exception) => logException(exception)
+    // XXX do nothing
+    case Failure(exception) =>
+      logException(exception)
   }
 }
 
@@ -423,9 +434,23 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
    * @param n  the number of rows to drop (length of the header).
    * @return a Try[Table].
    */
-  override def parse(xs: Iterator[String], n: Int): Try[Table] = super.parse(xs, n)
+  override def parse(xs: Iterator[String], n: Int): Try[Table] =
+    super.parse(xs, n)
 
-  def parseRows(wr: Iterator[String], header: Header): Try[Table] = doParseRows(wr, header, rowParser.parse)
+  /**
+   * Parses rows from an iterator of input strings (`wr`) using the provided header and row parsing logic.
+   *
+   * This method utilizes the `doParseRows` function to process each row in the input iterator, applying the
+   * provided `rowParser.parse` function to convert input strings into logical rows, while using
+   * the header to guide parsing and interpretation of the input.
+   *
+   * @param wr     an iterator over the input strings, where each string represents a row in the table.
+   * @param header the `Header` object that describes the expected structure of the table (e.g., column names).
+   * @return a `Try` of the parsed `Table` object. On success, it contains the resulting table; on failure,
+   *         it contains the parsing error.
+   */
+  def parseRows(wr: Iterator[String], header: Header): Try[Table] =
+    doParseRows(wr, header, rowParser.parse)
 }
 
 /**
@@ -437,7 +462,18 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
 abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
   type Input = Strings
 
-  def parseRows(wsr: Iterator[Strings], header: Header): Try[Table] = doParseRows(wsr, header, rowParser.parse)
+  /**
+   * Parses the rows of a table using the given header and returns the parsed table wrapped in a `Try`.
+   *
+   * This method processes a sequence of rows (each represented as a `Strings`), leveraging the provided header
+   * and a row parser to translate these rows into a structured table of type `Table`.
+   *
+   * @param wsr    an `Iterator` of `Strings` where each element represents a row (sequence of cell values).
+   * @param header the `Header` object containing metadata about the structure of the table, such as column names.
+   * @return a `Try[Table]` containing the parsed table on success or an exception on failure.
+   */
+  def parseRows(wsr: Iterator[Strings], header: Header): Try[Table] =
+    doParseRows(wsr, header, rowParser.parse)
 }
 
 /**
@@ -471,7 +507,8 @@ abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true
 
   implicit val xp: CellParser[X] = cellParser
 
-  implicit val ptp: TableParser[Table[X]] = if (sourceHasHeaderRow) PlainTextHeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)
+  implicit val ptp: TableParser[Table[X]] =
+    if (sourceHasHeaderRow) PlainTextHeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)
 }
 
 // NOTE: not currently instantiated

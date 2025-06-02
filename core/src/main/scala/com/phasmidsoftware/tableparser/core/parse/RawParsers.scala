@@ -41,8 +41,31 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
 
 }
 
+/**
+ * Object `RawParsers` provides utility instances for parsing raw data represented as sequences of strings.
+ * Specifically, it provides pre-configured parsers for handling different use cases.
+ *
+ * Example use cases include parsing data with a pre-defined header row.
+ */
 object RawParsers {
 
+  /**
+   * `WithHeaderRow` is an object extending `RawParsers` with a predefined configuration
+   * where no specific header is provided (`None`). This parser assumes that the data contains
+   * a header row, which is treated as part of the parsing logic.
+   *
+   * This utility is useful for scenarios where raw data includes a header row and the parser
+   * should utilize it for parsing or processing the rows that follow. The header parsing itself
+   * adheres to the default configurations defined in the base `RawParsers` class.
+   *
+   * It inherits all functionality from `RawParsers` and encapsulates the behavior of handling
+   * raw data with an assumed header row.
+   *
+   * Example:
+   * ```
+   * val rawDataParser = WithHeaderRow
+   * ```
+   */
   object WithHeaderRow extends RawParsers(None)
 
 }
