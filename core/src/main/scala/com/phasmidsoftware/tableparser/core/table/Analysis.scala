@@ -1,8 +1,10 @@
 package com.phasmidsoftware.tableparser.core.table
 
+import com.phasmidsoftware.tableparser.core.examples.crime.Crime
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.util.FP
 import com.phasmidsoftware.tableparser.core.util.FP.sequence
+import java.net.URL
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -14,17 +16,36 @@ import scala.util.{Failure, Success, Try}
  * @param columnMap a map of column names to Column objects (the statistics of a column).
  */
 case class Analysis(rows: Int, columns: Int, columnMap: Map[String, Column]) {
+  /**
+   * Returns a string representation of the `Analysis` object, including its row count,
+   * column count, and a formatted view of the column map.
+   *
+   * @return a string in the format "Analysis: rows: <row count>, columns: <column count>, <column map details>".
+   */
   override def toString: String = s"Analysis: rows: $rows, columns: $columns, $showColumnMap"
 
-  def showColumnMap: String = {
+  private def showColumnMap: String = {
     val sb = new StringBuilder("\ncolumns:\n")
     columnMap.toSeq.foreach(t => sb.append(s"${t._1}: ${t._2}\n"))
     sb.toString()
   }
 }
 
+/**
+ * The `Analysis` object provides functionality to analyze a given raw table and produce an `Analysis`
+ * instance, representing statistical insights such as the number of rows, number of columns, and detailed
+ * metadata for each column (if analysable).
+ */
 object Analysis {
 
+  /**
+   * Applies analysis on the given raw table to generate an Analysis object. The analysis includes deriving
+   * metrics such as the number of rows, columns, and a column map that represents the relationship between
+   * column names and their respective analyzed `Column` objects.
+   *
+   * @param table the raw table to be analyzed, providing data and metadata required for column insights.
+   * @return an Analysis object containing rows, columns, and a map of column names to corresponding `Column` objects.
+   */
   def apply(table: RawTable): Analysis = {
     /**
      * Method to create a column map, i.e. a sequence of String->Column pairs.
@@ -49,6 +70,17 @@ object Analysis {
  * @param maybeStatistics an optional set of statistics but only if the column represents numbers.
  */
 case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[Statistics]) {
+  /**
+   * Converts the current `Column` instance into a descriptive string representation.
+   *
+   * The output string is generated based on the following rules:
+   * - If the `optional` field is true, the string starts with "optional ".
+   * - Appends the `clazz` value.
+   * - If `maybeStatistics` contains a value, appends the string representation of the statistics.
+   *
+   * @return a string representation of the `Column` instance. This includes the class type, optionality,
+   *         and any associated statistics (if present).
+   */
   override def toString: String = {
     val sb = new StringBuilder
     if (optional) sb.append("optional ")
@@ -101,14 +133,37 @@ object Column {
  * @param max   the largest value.
  */
 case class Statistics(mu: Double, sigma: Double, min: Double, max: Double) {
+  /**
+   * Returns a string representation of the `Statistics` object, including the range, mean,
+   * and standard deviation of the data.
+   *
+   * @return a string in the format "(range: min-max, mean: mu, stdDev: sigma)"
+   *         where `min`, `max`, `mu`, and `sigma` are the respective values of the `Statistics` object.
+   */
   override def toString: String = s"(range: $min-$max, mean: $mu, stdDev: $sigma)"
 }
 
+/**
+ * Companion object for the Statistics case class.
+ * Provides methods to create a `Statistics` instance from a sequence of doubles.
+ */
 object Statistics {
+  /**
+   * Creates an `Option[Statistics]` from a sequence of `Double` values.
+   * If the sequence is empty, returns `None`.
+   * If the sequence contains one value, returns a `Statistics` instance with zero standard deviation and the same value for min and max.
+   * If the sequence contains more than one value, delegates to a private method to calculate the statistics.
+   *
+   * @param xs a sequence of `Double` values from which to compute statistics.
+   * @return an `Option[Statistics]` containing the computed statistics if the sequence is non-empty, or `None` if the sequence is empty.
+   */
   def make(xs: Seq[Double]): Option[Statistics] = xs match {
-    case Nil => None
-    case h :: Nil => Some(Statistics(h, 0, h, h))
-    case _ => doMake(xs)
+    case Nil =>
+      None
+    case h :: Nil =>
+      Some(Statistics(h, 0, h, h))
+    case _ =>
+      doMake(xs)
   }
 
   private def doMake(xs: Seq[Double]): Option[Statistics] = {
@@ -118,22 +173,61 @@ object Statistics {
   }
 }
 
+/**
+ * The Main object serves as the entry point of the application and provides functionality
+ * to parse and analyze a specified dataset of crime information.
+ *
+ * This object:
+ * - Loads a given CSV file containing crime data.
+ * - Sets up a source for reading the data.
+ * - Configures a `RawTableParser` instance to parse the table data with specified predicates.
+ * - Analyzes the parsed data and prints relevant results to the console.
+ * - Demonstrates how to handle the parsing process using Scala's Try-Success-Failure mechanism.
+ *
+ * The application expects the file to be properly located in the resources directory.
+ *
+ * Members:
+ * - `crimeFile`: Specifies the file name of the dataset (located in the resources directory).
+ * - `sy`: Sets up a data source using the provided file.
+ * - `fraction`: Defines a fraction value for sampling the data when parsing.
+ * - `parser`: Configures and prepares the table parser with a predicate for data sampling.
+ *
+ * Main functionalities:
+ * - Parses the source using the configured `RawTableParser`.
+ * - On success: Performs analysis on the parsed data and logs the first 10 rows and summary information.
+ * - On failure: Throws an exception indicating the failure reason.
+ *
+ * Example Usage:
+ * To analyze a specific dataset, update the `crimeFile` variable with the correct
+ * resource file path before running the application.
+ */
 object Main extends App {
-  // TODO merge the two copies of this file into one (it needs to be at the root level of resources)
-  val crimeFile = "2023-01-metropolitan-street-sample.csv"
+  doMain(FP.resource[Crime]("2023-01-metropolitan-street-sample.csv"))
 
-  // Set up the source
-  val sy: Try[Source] = for (u <- FP.resource[Analysis](crimeFile)) yield Source.fromURL(u)
+  /**
+   * Executes the main logic of the program, which includes reading a crime data file,
+   * setting up a table parser with a specific sampling fraction, and performing
+   * data analysis on the parsed table. The results of the analysis and a subset
+   * of the data rows are printed to the console.
+   *
+   * @return Unit - This method performs side effects (e.g., file IO, data analysis, and printing)
+   *         and does not return a value.
+   */
+  def doMain(triedUrl: Try[URL]): Unit = {
+    // Set up the source
+    val sy: Try[Source] = for (u <- triedUrl) yield Source.fromURL(u)
 
-  val fraction = 1
-  // Set up the parser (we set the predicate only for demonstration purposes)
-  val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(fraction))
+    val fraction = 1
+    // Set up the parser (we set the predicate only for demonstration purposes)
+    val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(fraction))
 
-  parser.parse(sy) match {
-    case Success(t@HeadedTable(r, _)) =>
-      val analysis = Analysis(t)
-      println(s"Crime: $analysis")
-      r take 10 foreach println
-    case Failure(x) => throw x
+    parser.parse(sy) match {
+      case Success(t@HeadedTable(r, _)) =>
+        val analysis = Analysis(t)
+        println(s"Crime: $analysis")
+        r take 10 foreach println
+      case Failure(x) =>
+        throw x
+    }
   }
 }

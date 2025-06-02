@@ -2,9 +2,11 @@ package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
+import com.phasmidsoftware.tableparser.core.examples.crime.Crime
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.table.Column.make
 import com.phasmidsoftware.tableparser.core.table._
+import com.phasmidsoftware.tableparser.core.util.FP
 import com.phasmidsoftware.tableparser.core.util.FP.{resource, sequence}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec
@@ -54,5 +56,11 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
           case x => fail(x.toString)
         }
     }
+  }
+
+  behavior of "Main"
+
+  it should "doMain" in {
+    Main.doMain(FP.resource[Crime]("2023-01-metropolitan-street-sample.csv"))
   }
 }

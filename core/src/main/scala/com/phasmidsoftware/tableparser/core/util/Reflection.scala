@@ -8,6 +8,14 @@ import java.lang.reflect.Modifier
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
+/**
+ * The `Reflection` object provides utilities for introspecting case classes using Scala reflection.
+ * It is specifically designed to handle field extraction while ensuring compliance with Scala's
+ * case class conventions.
+ *
+ * This functionality is particularly useful for libraries or tools that need metadata or introspection
+ * of case class fields, like serializers or mappers.
+ */
 object Reflection {
 
   /**
@@ -38,7 +46,8 @@ object Reflection {
         sys.error("Cannot determine field order of case class " + clazz.getName + ": Did you use val instead of def for a method in this case class?")
       fields.map(f => f.getName)
     } catch {
-      case NonFatal(ex) => throw new RuntimeException("Cannot automatically determine case class field names and order " +
+      case NonFatal(ex) =>
+        throw new RuntimeException("Cannot automatically determine case class field names and order " +
               "for '" + clazz.getName + "' (Did you use val instead of def for a method in this case class?), please use the 'cellParser'N signature with explicit field name specification", ex)
     }
   }

@@ -24,7 +24,8 @@ object FP {
    * @return a X => Boolean function which is always yields false if its input is a failure, otherwise,
    *         it chooses every nth value (approximately).
    */
-  def sampler[X](n: Int)(implicit r: Random): X => Boolean = _ => r.nextInt(n) == 0
+  def sampler[X](n: Int)(implicit r: Random): X => Boolean =
+    _ => r.nextInt(n) == 0
 
   /**
    * Sequence method to combine elements of Try.
@@ -35,7 +36,8 @@ object FP {
    * @tparam X the underlying type
    * @return a Try of Iterator[X]
    */
-  def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] = sequence(xys.to(List)).map(_.iterator)
+  def sequence[X](xys: Iterator[Try[X]]): Try[Iterator[X]] =
+    sequence(xys.to(List)).map(_.iterator)
 
   /**
    * Sequence method to combine elements of Try while retaining their original order.
@@ -73,8 +75,10 @@ object FP {
    */
   def sequenceForgiving[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
     sequenceForgivingWith[X](xys) {
-      case NonFatal(x) => System.err.println(s"forgiving: $x"); Success(None)
-      case x => Failure(x)
+      case NonFatal(x) =>
+        System.err.println(s"forgiving: $x"); Success(None)
+      case x =>
+        Failure(x)
     }
 
   /**
@@ -122,11 +126,14 @@ object FP {
         for {
           xs <- xso
         } yield xo match {
-          case Some(x) => x +: xs
-          case None => xs
+          case Some(x) =>
+            x +: xs
+          case None =>
+            xs
         }
     }.collect {
-      case list@_ :: _ => list
+      case list@_ :: _ =>
+        list
     }
 
   /**
@@ -143,7 +150,9 @@ object FP {
    */
   def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
     xos.foldLeft(Option(Seq[X]())) { // TODO merge code with duplicate
-      (xso, xo) => for (xs <- xso; x <- xo) yield x +: xs
+      (xso, xo) =>
+
+        for (xs <- xso; x <- xo) yield x +: xs
     }
 
   /**
@@ -179,7 +188,8 @@ object FP {
    * @tparam X the underlying type.
    * @return a tuple of two Seqs of Try[X], the first one being successes, the second one being failures.
    */
-  def partition[X](xys: Iterable[Try[X]]): (Iterable[Try[X]], Iterable[Try[X]]) = xys.partition(_.isSuccess)
+  def partition[X](xys: Iterable[Try[X]]): (Iterable[Try[X]], Iterable[Try[X]]) =
+    xys.partition(_.isSuccess)
 
   /**
    * Method to yield a URL for a given resourceForClass in the classpath for C.
@@ -188,7 +198,8 @@ object FP {
    * @tparam C a class of the package containing the resourceForClass.
    * @return a Try[URL].
    */
-  def resource[C: ClassTag](resourceName: String): Try[URL] = resourceForClass(resourceName, implicitly[ClassTag[C]].runtimeClass)
+  def resource[C: ClassTag](resourceName: String): Try[URL] =
+    resourceForClass(resourceName, implicitly[ClassTag[C]].runtimeClass)
 
   /**
    * Method to yield a Try[URL] for a resource name and a given class.
@@ -197,9 +208,12 @@ object FP {
    * @param clazz        the class, relative to which, the resource can be found (defaults to the caller's class).
    * @return a Try[URL]
    */
-  def resourceForClass(resourceName: String, clazz: Class[_] = getClass): Try[URL] = Option(clazz.getResource(resourceName)) match {
-    case Some(u) => Success(u)
-    case None => Failure(FPException(s"$resourceName is not a valid resource for $clazz"))
+  def resourceForClass(resourceName: String, clazz: Class[_] = getClass): Try[URL] =
+    Option(clazz.getResource(resourceName)) match {
+      case Some(u) =>
+        Success(u)
+      case None =>
+        Failure(FPException(s"$resourceName is not a valid resource for $clazz"))
   }
 
   /**
@@ -210,8 +224,10 @@ object FP {
    * @return Success(i) if all well, else Failure(exception).
    */
   def indexFound(w: String, i: Int): Try[Int] = i match {
-    case x if x >= 0 => Success(x)
-    case _ => Failure(FPException(s"Header column '$w' not found"))
+    case x if x >= 0 =>
+      Success(x)
+    case _ =>
+      Failure(FPException(s"Header column '$w' not found"))
   }
 
   /**
@@ -224,9 +240,12 @@ object FP {
    * @return an Option[X].
    */
   def tryToOption[X](f: Throwable => Unit)(xy: Try[X]): Option[X] = xy match {
-    case Success(x) => Some(x)
-    case Failure(NonFatal(x)) => f(x); None
-    case Failure(x) => throw x
+    case Success(x) =>
+      Some(x)
+    case Failure(NonFatal(x)) =>
+      f(x); None
+    case Failure(x) =>
+      throw x
   }
 }
 
@@ -240,7 +259,8 @@ object TryUsing {
    * @tparam A the underlying type of the result.
    * @return a Try[A]
    */
-  def apply[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] = Using(resource)(f).flatten
+  def apply[R: Releasable, A](resource: => R)(f: R => Try[A]): Try[A] =
+    Using(resource)(f).flatten
 
   /**
    * This method is similar to apply(r) but it takes a Try[R] as its parameter.
@@ -254,7 +274,18 @@ object TryUsing {
    * @tparam A the underlying type of the result.
    * @return a Try[A]
    */
-  def apply[R: Releasable, A](ry: Try[R])(f: R => Try[A]): Try[A] = for (r <- ry; a <- apply(r)(f)) yield a
+  def apply[R: Releasable, A](ry: Try[R])(f: R => Try[A]): Try[A] =
+    for (r <- ry; a <- apply(r)(f)) yield a
 }
 
+/**
+ * A simple case class representing a custom exception for functional programming-related errors.
+ *
+ * @param msg a descriptive error message providing details about the exception.
+ * @param eo  an optional underlying Throwable that might have caused this exception.
+ *            Defaults to None if not provided.
+ *
+ *            This class extends `Exception`, taking advantage of its constructor to include a message (`msg`)
+ *            and optionally a cause (`eo.orNull` will pass `null` to Scala's base exception when `eo` is None).
+ */
 case class FPException(msg: String, eo: Option[Throwable] = None) extends Exception(msg, eo.orNull)

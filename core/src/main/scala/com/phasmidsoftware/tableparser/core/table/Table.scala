@@ -36,7 +36,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param ho an optional Header.
    * @return a Table[Row] with the same rows as this, but with ho as its maybeHeader.
    */
-  def replaceHeader(ho: Option[Header]): Table[Row] = unit(content, ho)
+  def replaceHeader(ho: Option[Header]): Table[Row] =
+    unit(content, ho)
 
   /**
    * Transform (map) this Table[Row] into a Table[S].
@@ -45,7 +46,8 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the type of the rows of the result.
    * @return a Table[S] where each row has value f(x) where x is the value of the corresponding row in this.
    */
-  override def map[S](f: Row => S): Table[S] = unit[S](content map f, maybeHeader)
+  override def map[S](f: Row => S): Table[S] =
+    unit[S](content map f, maybeHeader)
 
   /**
    * Transform (flatMap) this Table[Row] into a Table[S].
@@ -57,7 +59,8 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the type of the rows of the result.
    * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
    */
-  def flatMap[S](f: Row => Iterable[S]): Table[S] = (content map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
+  def flatMap[S](f: Row => Iterable[S]): Table[S] =
+    (content map f).foldLeft(unit[S](Nil))((a, e) => a ++ unit(e))
 
   /**
    * Transform (flatMap) this Table[Row] into a Table[S].
@@ -66,7 +69,8 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the type of the rows of the result.
    * @return a Table[S] which is made up of a concatenation of the results of invoking f on each row this
    */
-  def mapOptional[S](f: Row => Option[S]): Table[S] = unit[S](content.mapOptional(f), maybeHeader)
+  def mapOptional[S](f: Row => Option[S]): Table[S] =
+    unit[S](content.mapOptional(f), maybeHeader)
 
   /**
    * Method to zip two Tables together such that the rows of the resulting table are tuples of the rows of the input tables.
@@ -75,7 +79,8 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam R the underlying type of the other Table.
    * @return a Table of (Row, R).
    */
-  def zip[R](rt: Table[R]): Table[(Row, R)] = doZip[R, (Row, R)]((rs1, rs2) => rs1.toSeq zip rs2.toSeq)(rt)
+  def zip[R](rt: Table[R]): Table[(Row, R)] =
+    doZip[R, (Row, R)]((rs1, rs2) => rs1.toSeq zip rs2.toSeq)(rt)
 
   /**
    * Method to concatenate two Content
@@ -84,7 +89,8 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the type of the rows of the result.
    * @return a new table, which is concatenated to this table, by rows.
    */
-  def ++[S >: Row](table: Table[S]): Table[S] = unit[S](content ++ table.content, maybeHeader)
+  def ++[S >: Row](table: Table[S]): Table[S] =
+    unit[S](content ++ table.content, maybeHeader)
 
   /**
    * Method to generate a Table[S] for a set of rows.
@@ -116,7 +122,8 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  def unit[S](ss: Iterable[S]): Table[S] = unit(ss, maybeHeader)
+  def unit[S](ss: Iterable[S]): Table[S] =
+    unit(ss, maybeHeader)
 
   /**
    * Method to access the individual rows of this table.
@@ -144,7 +151,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param n the desired row.
    * @return a new Table[Row] consisting only the row requested.
    */
-  def select(n: Int): Table[Row] = processRows(_.slice(n - 1, n))
+  def select(n: Int): Table[Row] =
+    processRows(_.slice(n - 1, n))
 
   /**
    * Method to yield a Seq of the rows of this Table.
@@ -174,7 +182,8 @@ trait Table[Row] extends Iterable[Row] {
    *
    * @return the rows in the form of Iterator[Row]
    */
-  def iterator: Iterator[Row] = content.iterator
+  def iterator: Iterator[Row] =
+    content.iterator
 
   /**
    * Method to process the rows as an Iterable into an Iterable which will make up the resulting Table.
@@ -184,7 +193,8 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the underlying type of the result.
    * @return a table[S]
    */
-  def processRows[S](f: Content[Row] => Content[S]): Table[S] = unit(f(content), maybeHeader)
+  def processRows[S](f: Content[Row] => Content[S]): Table[S] =
+    unit(f(content), maybeHeader)
 
   /**
    * Method to process the rows as an Iterable into an Iterable which will make up the resulting Table.
@@ -196,7 +206,8 @@ trait Table[Row] extends Iterable[Row] {
    * @return a table[S]
    */
   @unused
-  def processRowsMap[S](f: Row => S): Table[S] = unit(content.map(f), maybeHeader)
+  def processRowsMap[S](f: Row => S): Table[S] =
+    unit(content.map(f), maybeHeader)
 
   /**
    * Method to transform this Table[Row] into a sorted Table[S] where S is a super-class of Row and for which there is
@@ -205,14 +216,16 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the underlying type of the resulting Table (a super-type of Row and for which there is evidence of Ordering[S]).
    * @return a Table[S].
    */
-  def sort[S >: Row : Ordering]: Table[S] = unit[S](content.sorted[S], maybeHeader)
+  def sort[S >: Row : Ordering]: Table[S] =
+    unit[S](content.sorted[S], maybeHeader)
 
   /**
    * Method to shuffle this Table[Row].
    *
    * @return a Table[Row].
    */
-  lazy val shuffle: Table[Row] = processRows(rs => Content(Random.shuffle(rs.toSeq)))
+  lazy val shuffle: Table[Row] =
+    processRows(rs => Content(Random.shuffle(rs.toSeq)))
 
   /**
    * drop (as defined by Iterable).
@@ -220,7 +233,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param n the number of rows to drop.
    * @return a Table like this Table but without its first n rows.
    */
-  override def drop(n: Int): Table[Row] = processRows(_.drop(n))
+  override def drop(n: Int): Table[Row] =
+    processRows(_.drop(n))
 
   /**
    * dropWhile (as defined by Iterable).
@@ -228,14 +242,16 @@ trait Table[Row] extends Iterable[Row] {
    * @param p the predicate.
    * @return a Table like this Table but with dropWhile(p) rows.
    */
-  override def dropWhile(p: Row => Boolean): Table[Row] = processRows(_.dropWhile(p))
+  override def dropWhile(p: Row => Boolean): Table[Row] =
+    processRows(_.dropWhile(p))
 
   /**
    * Method to return an empty Table of type Row.
    *
    * @return a Table[Row] without any rows.
    */
-  override def empty: Table[Row] = unit(Seq.empty)
+  override def empty: Table[Row] =
+    unit(Seq.empty)
 
   /**
    * Method to filter the rows of a table (as defined by Iterable).
@@ -243,7 +259,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param p a predicate to be applied to each row.
    * @return a Table[Row] consisting only of rows which satisfy the predicate p.
    */
-  override def filter(p: Row => Boolean): Table[Row] = processRows(_.filter(p))
+  override def filter(p: Row => Boolean): Table[Row] =
+    processRows(_.filter(p))
 
   /**
    * Method to filter out the rows of a table (as defined by Iterable).
@@ -251,7 +268,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param p a predicate to be applied to each row.
    * @return a Table[Row] consisting only of rows which do not satisfy the predicate p.
    */
-  override def filterNot(p: Row => Boolean): Table[Row] = processRows(_.filterNot(p))
+  override def filterNot(p: Row => Boolean): Table[Row] =
+    processRows(_.filterNot(p))
 
   /**
    * slice (as defined by Iterable).
@@ -260,7 +278,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param until the index at which to end the slice (1-based counting).
    * @return a Table like this Table but with slice(from, until) rows.
    */
-  override def slice(from: Int, until: Int): Table[Row] = processRows(_.slice(from, until))
+  override def slice(from: Int, until: Int): Table[Row] =
+    processRows(_.slice(from, until))
 
   /**
    * take (as defined by Iterable).
@@ -268,7 +287,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param n the number of rows to take.
    * @return a Table like this Table but with only its first n rows.
    */
-  override def take(n: Int): Table[Row] = processRows(_.take(n))
+  override def take(n: Int): Table[Row] =
+    processRows(_.take(n))
 
   /**
    * takeWhile (as defined by Iterable).
@@ -276,7 +296,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param p the predicate.
    * @return a Table like this Table but with takeWhile(p) rows.
    */
-  override def takeWhile(p: Row => Boolean): Table[Row] = processRows(_.takeWhile(p))
+  override def takeWhile(p: Row => Boolean): Table[Row] =
+    processRows(_.takeWhile(p))
 
   /**
    * Filter method which operates on the (primary) key of each row.
@@ -327,7 +348,8 @@ trait Table[Row] extends Iterable[Row] {
   def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableFileRenderer[Row](file).render(this)
 
-  def maybeColumnNames: Option[Seq[String]] = maybeHeader map (_.xs)
+  def maybeColumnNames: Option[Seq[String]] =
+    maybeHeader map (_.xs)
 
   /**
    * Method to get all the elements of a particular column.
@@ -348,7 +370,8 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam S the underlying type of the result.
    * @return a table[S]
    */
-  private def doZip[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(other: Table[R]): Table[S] = unit(f(content.toSeq, other.content.toSeq))
+  private def doZip[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(other: Table[R]): Table[S] =
+    unit(f(content.toSeq, other.content.toSeq))
 
   private lazy val asOneBasedIndexedSequence = new IndexedSeq[Row]() {
     def apply(i: Int): Row = content.toIndexedSeq(i - 1)
@@ -367,10 +390,13 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parse[T: TableParser](ws: Iterator[String]): Try[T] = implicitly[TableParser[T]] match {
-    case parser: StringTableParser[T] => parser.parse(ws, parser.headerRowsToRead)
-    case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
-  }
+  def parse[T: TableParser](ws: Iterator[String]): Try[T] =
+    implicitly[TableParser[T]] match {
+      case parser: StringTableParser[T] =>
+        parser.parse(ws, parser.headerRowsToRead)
+      case x =>
+        Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
+    }
 
   /**
    * Method to parse a table from an Iterable of String.
@@ -379,7 +405,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parse[T: TableParser](ws: Iterable[String]): Try[T] = parse(ws.iterator)
+  def parse[T: TableParser](ws: Iterable[String]): Try[T] =
+    parse(ws.iterator)
 
   /**
    * Method to parse a table from a Source.
@@ -390,7 +417,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseSource[T: TableParser](x: => Source): Try[T] = for (y <- parse(x.getLines())) yield y
+  def parseSource[T: TableParser](x: => Source): Try[T] =
+    for (y <- parse(x.getLines())) yield y
 
   /**
    * Method to parse a table from a Source (with proper resource management of the source).
@@ -399,7 +427,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parse[T: TableParser](si: => Try[Source]): Try[T] = TryUsing(si)(parseSource(_))
+  def parse[T: TableParser](si: => Try[Source]): Try[T] =
+    TryUsing(si)(parseSource(_))
 
   /**
    * Method to parse a table from a URI with an implicit encoding.
@@ -409,7 +438,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] = parse(sourceFromURI(u))
+  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] =
+    parse(sourceFromURI(u))
 
   /**
    * Method to parse a table from a URI with an explicit encoding.
@@ -432,7 +462,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] = parse(sourceFromInputStream(i))
+  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] =
+    parse(sourceFromInputStream(i))
 
   /**
    * Method to parse a table from an InputStream with an explicit encoding.
@@ -476,7 +507,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] = parse(sourceFromFile(f))
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] =
+    parse(sourceFromFile(f))
 
   /**
    * Method to parse a table from a File.
@@ -499,7 +531,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return a Try[T]
    */
-  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] = parse(sourceFromFilename(pathname))
+  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] =
+    parse(sourceFromFilename(pathname))
 
   /**
    * Method to parse a table from an File.
@@ -510,7 +543,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] = parse(sourceFromClassResource(w, clazz))
+  def parseResource[T: TableParser](w: String, clazz: Class[_] =
+  getClass)(implicit codec: Codec): Try[T] = parse(sourceFromClassResource(w, clazz))
 
   /**
    * Method to parse a table from a URL.
@@ -519,7 +553,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] = parse(u.toURI)
+  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] =
+    parse(u.toURI)
 
   /**
    * Method to parse a table from a URL with an explicit encoding.
@@ -546,8 +581,10 @@ object Table {
   def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] = {
     val tableParser = implicitly[TableParser[T]]
     tableParser match {
-      case parser: StringsTableParser[T] => parser.parse(wss, 1)
-      case _ => Failure(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
+      case parser: StringsTableParser[T] =>
+        parser.parse(wss, 1)
+      case _ =>
+        Failure(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
     }
   }
 
@@ -612,8 +649,10 @@ object Table {
    * @return a Table[X] which is either a HeadedTable or an UnheadedTable, as appropriate.
    */
   def apply[X](xs: Iterable[X], maybeHeader: Option[Header]): Table[X] = maybeHeader match {
-    case Some(h) => HeadedTable(Content(xs), h)
-    case None => UnheadedTable(Content(xs))
+    case Some(h) =>
+      HeadedTable(Content(xs), h)
+    case None =>
+      UnheadedTable(Content(xs))
   }
 
   /**
@@ -628,7 +667,8 @@ object Table {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         t.toCSV
-      case _ => throw TableException("toCSVRow: cannot write this Table to CSV (no header)")
+      case _ =>
+        throw TableException("toCSVRow: cannot write this Table to CSV (no header)")
     }
   }
 
@@ -646,7 +686,8 @@ object Table {
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         // CONSIDER this is a bit ugly
         t.writeCSVFile(file)
-      case _ => throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
+      case _ =>
+        throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
     }
 
   /**
@@ -655,7 +696,8 @@ object Table {
    * @param s an InputStream.
    * @return an Try[Source].
    */
-  private def sourceFromInputStream(s: => InputStream): Try[Source] = Try(Source.fromInputStream(s))
+  private def sourceFromInputStream(s: => InputStream): Try[Source] =
+    Try(Source.fromInputStream(s))
 
   /**
    * Method to open source defined by a URI.
@@ -663,7 +705,8 @@ object Table {
    * @param u a URI.
    * @return an Try[Source].
    */
-  private def sourceFromURI(u: => URI): Try[Source] = Try(Source.fromURI(u))
+  private def sourceFromURI(u: => URI): Try[Source] =
+    Try(Source.fromURI(u))
 
   /**
    * Method to open source defined by a File.
@@ -671,7 +714,8 @@ object Table {
    * @param f a File.
    * @return an Try[Source].
    */
-  private def sourceFromFile(f: => File)(implicit codec: Codec): Try[Source] = Try(Source.fromFile(f))
+  private def sourceFromFile(f: => File)(implicit codec: Codec): Try[Source] =
+    Try(Source.fromFile(f))
 
   /**
    * Method to open source defined by a File.
@@ -679,7 +723,8 @@ object Table {
    * @param filename a File.
    * @return an Try[Source].
    */
-  private def sourceFromFilename(filename: => String)(implicit codec: Codec): Try[Source] = Try(Source.fromFile(filename))
+  private def sourceFromFilename(filename: => String)(implicit codec: Codec): Try[Source] =
+    Try(Source.fromFile(filename))
 
   /**
    * Method to open a source defined by a Class and a resource name.
@@ -688,9 +733,11 @@ object Table {
    * @param clazz the class.
    * @return an Try[Source].
    */
-  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Try[Source] = Try(Source.fromURL(clazz.getResource(w))).recoverWith {
-    case _: java.lang.NullPointerException => Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
-  }
+  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Try[Source] =
+    Try(Source.fromURL(clazz.getResource(w))).recoverWith {
+      case _: java.lang.NullPointerException =>
+        Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
+    }
 }
 
 /**
@@ -712,8 +759,10 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * @return a new instance of Table[S].
    */
   override def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(sr, h)
-    case None => UnheadedTable(sr)
+    case Some(h) =>
+      HeadedTable(sr, h)
+    case None =>
+      UnheadedTable(sr)
   }
 
   /**
@@ -722,7 +771,8 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * @tparam O the type of the result.
    * @return an instance of O.
    */
-  def render[O](implicit ev: Renderer[Table[Row], O]): O = ev.render(this)
+  def render[O](implicit ev: Renderer[Table[Row], O]): O =
+    ev.render(this)
 
   /**
    * CONSIDER redefining the definition of Renderer such that we can accommodate the various different types of output.
@@ -738,11 +788,16 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
     val knownSize1 = rows.knownSize
     // TODO this makes no sense now: the decision is taken inside Content.
-    (if (knownSize1 > -1) rows.toSeq else rows.toSeq) map {
-      case p: Product => ww.writeRow(o2)(p)
-      case xs: Seq[Row] => ww.writeRowElements(o2)(xs) // TESTME
-      case xs: Array[Row] => ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
-      case _ => throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
+    (if (knownSize1 > -1)
+      rows.toSeq else rows.toSeq) map {
+      case p: Product =>
+        ww.writeRow(o2)(p)
+      case xs: Seq[Row] =>
+        ww.writeRowElements(o2)(xs) // TESTME
+      case xs: Array[Row] =>
+        ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
+      case _ =>
+        throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     }
     o1
   }
@@ -795,7 +850,8 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
     implicitly[TreeWriter[U]].evaluate(trimmed)
   }
 
-  override def toString(): String = s"RenderableTable: header=$maybeHeader, with $size rows"
+  override def toString(): String =
+    s"RenderableTable: header=$maybeHeader, with $size rows"
 }
 
 /**
@@ -819,18 +875,23 @@ case class UnheadedTable[Row](content: Content[Row]) extends RenderableTable[Row
    * @return a new instance of Table[S].
    */
   override def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(Content(ss), h)
-    case None => UnheadedTable(Content(ss))
+    case Some(h) =>
+      HeadedTable(Content(ss), h)
+    case None =>
+      UnheadedTable(Content(ss))
   }
 
-  def column(name: String): Iterator[Option[String]] = Iterator.empty
+  def column(name: String): Iterator[Option[String]] =
+    Iterator.empty
 }
 
 object UnheadedTable {
 
-  def apply[Row: ClassTag](rows: Iterable[Row]): Table[Row] = new UnheadedTable(Content(rows))
+  def apply[Row: ClassTag](rows: Iterable[Row]): Table[Row] =
+    new UnheadedTable(Content(rows))
 
-  def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] = UnheadedTable(rows.to(List))
+  def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] =
+    UnheadedTable(rows.to(List))
 
 }
 
@@ -856,8 +917,10 @@ case class HeadedTable[Row](content: Content[Row], header: Header) extends Rende
    * @return a new instance of Table[S].
    */
   override def unit[S](ss: Iterable[S], maybeHeader: Option[Header]): Table[S] = maybeHeader match {
-    case Some(h) => HeadedTable(Content(ss), h)
-    case None => UnheadedTable(Content(ss))
+    case Some(h) =>
+      HeadedTable(Content(ss), h)
+    case None =>
+      UnheadedTable(Content(ss))
   }
 
   /**
@@ -871,13 +934,17 @@ case class HeadedTable[Row](content: Content[Row], header: Header) extends Rende
   def column(name: String): Iterator[Option[String]] = {
     val maybeIndex = maybeColumnNames map (_.indexOf(name))
     content.iterator map {
-      case row: RawRow => maybeIndex map (row.ws(_))
-      case ws: Seq[Any] => maybeIndex map (ws(_).toString)
-      case _ => None
+      case row: RawRow =>
+        maybeIndex map (row.ws(_))
+      case ws: Seq[Any] =>
+        maybeIndex map (ws(_).toString)
+      case _ =>
+        None
     }
   }
 
-  override def toString(): String = s"HeadedTable($header) with ${content.size} rows"
+  override def toString(): String =
+    s"HeadedTable($header) with ${content.size} rows"
 }
 
 /**
@@ -889,13 +956,17 @@ case class HeadedTable[Row](content: Content[Row], header: Header) extends Rende
  */
 object HeadedTable {
 
-  def apply[Row: ClassTag](rows: Iterable[Row], header: Header): RenderableTable[Row] = new HeadedTable(Content(rows), header)
+  def apply[Row: ClassTag](rows: Iterable[Row], header: Header): RenderableTable[Row] =
+    new HeadedTable(Content(rows), header)
 
-  def apply[Row: ClassTag](rows: Iterable[Row]): RenderableTable[Row] = HeadedTable(rows, Header[Row]())
+  def apply[Row: ClassTag](rows: Iterable[Row]): RenderableTable[Row] =
+    HeadedTable(rows, Header[Row]())
 
-  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): RenderableTable[Row] = HeadedTable(rows.to(List), header)
+  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): RenderableTable[Row] =
+    HeadedTable(rows.to(List), header)
 
-  def apply[Row: ClassTag](rows: Iterator[Row]): RenderableTable[Row] = HeadedTable(rows, Header[Row]())
+  def apply[Row: ClassTag](rows: Iterator[Row]): RenderableTable[Row] =
+    HeadedTable(rows, Header[Row]())
 
 }
 
@@ -911,7 +982,8 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
    *
    * @return the size of the header sequence.
    */
-  def size: Int = xs.length
+  def size: Int =
+    xs.length
 
   /**
    * Get the index of w in this Header, ignoring case.
@@ -919,7 +991,8 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
    * @param w the String to find, a column name.
    * @return the index wrapped in Try.
    */
-  def getIndex(w: String): Try[Int] = indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
+  def getIndex(w: String): Try[Int] =
+    indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
 
   /**
    * Concatenate this Header with other.
@@ -927,7 +1000,8 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
    * @param other the other Header.
    * @return a Header made up of these columns and those of other, in that order.
    */
-  def ++(other: Header): Header = Header(xs ++ other.xs, for (xs <- xss; ys <- other.xss) yield xs ++ ys)
+  def ++(other: Header): Header =
+    Header(xs ++ other.xs, for (xs <- xss; ys <- other.xss) yield xs ++ ys)
 }
 
 object Header {
@@ -942,11 +1016,14 @@ object Header {
   private def intToString(letters: Boolean)(n: Int): String = if (letters) {
     @scala.annotation.tailrec
     def inner(s: String, n: Int): String = {
-      if (n <= 0) s
+      if (n <= 0)
+        s
       else {
         val m = n % 26 match {
-          case 0 => 26
-          case other => other
+          case 0 =>
+            26
+          case other =>
+            other
         }
         inner(s"${(m + 64).toChar}$s", (n - m) / 26)
       }
@@ -960,13 +1037,15 @@ object Header {
 
   def multiply(prefixes: List[String], strings: LazyList[String]): LazyList[String] = {
     prefixes collect {
-      case "x" => "x"
+      case "x" =>
+        "x"
     }
     val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
     wss.foldLeft(LazyList.empty[String])(_ #::: _)
   }
 
-  def prepend(prefix: String, stream: LazyList[String]): LazyList[String] = stream map (prefix + _)
+  def prepend(prefix: String, stream: LazyList[String]): LazyList[String] =
+    stream map (prefix + _)
 
   /**
    * This method constructs a new Header based on a header spanning several lines.
@@ -975,7 +1054,8 @@ object Header {
    * @param wss a sequence of sequence of String.
    * @return a Header.
    */
-  def apply(wss: Seq[Seq[String]]): Header = apply(wss.head, wss.tail)
+  def apply(wss: Seq[Seq[String]]): Header =
+    apply(wss.head, wss.tail)
 
   /**
    * This method constructs a new Header based on Excel row/column names.
@@ -984,7 +1064,8 @@ object Header {
    *                false is we just want numbers.
    * @return a
    */
-  def apply(letters: Boolean, length: Int): Header = Header(numbers map intToString(letters) take length toList, Nil)
+  def apply(letters: Boolean, length: Int): Header =
+    Header(numbers map intToString(letters) take length toList, Nil)
 
   /**
    * This method constructs a new Header based on the fields of the class X.
@@ -996,7 +1077,8 @@ object Header {
    * @tparam X a class X which is not necessarily a Product.
    * @return a List of field names.
    */
-  def apply[X: ClassTag](): Header = Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList, Nil)
+  def apply[X: ClassTag](): Header =
+    Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList, Nil)
 
   /**
    * Create a Header from a variable list of parameters.
@@ -1004,7 +1086,8 @@ object Header {
    * @param ws a variable list of Strings.
    * @return a Header.
    */
-  def create(ws: String*): Header = apply(ws, Nil)
+  def create(ws: String*): Header =
+    apply(ws, Nil)
 }
 
 /**
