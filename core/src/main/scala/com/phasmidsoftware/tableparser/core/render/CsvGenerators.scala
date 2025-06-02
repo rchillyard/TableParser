@@ -4,6 +4,15 @@ import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import java.net.URL
 import scala.reflect.ClassTag
 
+/**
+ * The `CsvGenerators` class provides factory methods for creating `CsvGenerator` instances for different types of data structures.
+ * These generators can be used to serialize data into CSV (Comma-Separated Values) format.
+ *
+ * The class includes methods to handle sequences, options, individual types, and products (case classes with varying numbers of fields).
+ * It supports up to 6-ary product types, allowing for type inference and customization of CSV behavior.
+ *
+ * @tparam T The type parameter representing the underlying data type for which the CSV generator is created.
+ */
 trait CsvGenerators {
 
   /**
@@ -51,6 +60,13 @@ trait CsvGenerators {
   def generator1[P1: CsvGenerator, T <: Product : ClassTag](construct: P1 => T)(implicit c: CsvAttributes): CsvGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1) = fieldNames
 
+    /**
+     * Generates a single string representing column names by merging the specified prefixes and using a CSV generator.
+     *
+     * @param po An optional prefix string (e.g., for column names) to be used during the merge.
+     * @param no Another optional prefix string to be used during the merge together with `po`.
+     * @return A single string containing the generated column names, delimited by the specified delimiter.
+     */
     def toColumnNames(po: Option[String], no: Option[String]): String = Seq(
       implicitly[CsvGenerator[P1]].toColumnName(merge(po, no), p1)
     ) mkString c.delimiter
@@ -69,6 +85,14 @@ trait CsvGenerators {
   def generator2[P1: CsvGenerator, P2: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2) = fieldNames
 
+    /**
+     * Converts optional values into combined column names, utilizing CSV generators
+     * for predefined types, and joins them using a specified delimiter.
+     *
+     * @param po An optional string representing the first value.
+     * @param no An optional string representing the second value.
+     * @return A string containing the generated column names, concatenated with a delimiter.
+     */
     def toColumnNames(po: Option[String], no: Option[String]): String = {
       val wo = merge(po, no)
       Seq(
@@ -92,6 +116,13 @@ trait CsvGenerators {
   def generator3[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
     private val Array(p1, p2, p3) = fieldNames
 
+    /**
+     * Generates a delimited string of column names based on the provided optional parameters.
+     *
+     * @param po An optional string parameter which represents a partial value for generating column names.
+     * @param no An optional string parameter which represents another partial value to be merged for column name generation.
+     * @return A string containing the concatenated column names separated by a specified delimiter.
+     */
     def toColumnNames(po: Option[String], no: Option[String]): String = {
       val wo = merge(po, no)
       Seq(
@@ -404,6 +435,52 @@ trait CsvGenerators {
         , implicitly[CsvGenerator[P10]].toColumnName(wo, p10)
         , implicitly[CsvGenerator[P11]].toColumnName(wo, p11)
         , implicitly[CsvGenerator[P12]].toColumnName(wo, p12)
+      ) mkString c.delimiter
+    }
+  }
+
+  /**
+   * Method to return a CsvGenerator[T] where T is a 13-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13) into a T.
+   *
+   * @author IntelliJ AI Assistant
+   *
+   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvGenerator[T].
+   */
+  def generator13[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, P12: CsvGenerator, P13: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
+    private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13) = fieldNames
+
+    def toColumnNames(po: Option[String], no: Option[String]): String = {
+      val wo = merge(po, no)
+      Seq(
+        implicitly[CsvGenerator[P1]].toColumnName(wo, p1)
+        , implicitly[CsvGenerator[P2]].toColumnName(wo, p2)
+        , implicitly[CsvGenerator[P3]].toColumnName(wo, p3)
+        , implicitly[CsvGenerator[P4]].toColumnName(wo, p4)
+        , implicitly[CsvGenerator[P5]].toColumnName(wo, p5)
+        , implicitly[CsvGenerator[P6]].toColumnName(wo, p6)
+        , implicitly[CsvGenerator[P7]].toColumnName(wo, p7)
+        , implicitly[CsvGenerator[P8]].toColumnName(wo, p8)
+        , implicitly[CsvGenerator[P9]].toColumnName(wo, p9)
+        , implicitly[CsvGenerator[P10]].toColumnName(wo, p10)
+        , implicitly[CsvGenerator[P11]].toColumnName(wo, p11)
+        , implicitly[CsvGenerator[P12]].toColumnName(wo, p12)
+        , implicitly[CsvGenerator[P13]].toColumnName(wo, p13)
       ) mkString c.delimiter
     }
   }

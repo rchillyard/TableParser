@@ -17,6 +17,16 @@ trait CsvRenderer[-T] extends Renderer[T, String] {
   val csvAttributes: CsvAttributes
 }
 
+/**
+ * An object that provides type class support for rendering data as CSV (Comma-Separated Values).
+ *
+ * The `CsvRenderer` object is designed to define implicit instances of `CsvRenderer` for specific types,
+ * allowing those types to be rendered to a CSV format string. It relies on the `Renderer` type class,
+ * which generalizes rendering objects of type `T` into objects of type `O` (in this case, strings).
+ *
+ * This object can include predefined implicit renderers (e.g., `Row` renderer) that leverage attributes
+ * (`Map[String, String]`) to modify the output or handle special behaviors for CSV attributes.
+ */
 object CsvRenderer {
 //    implicit object RowStringRenderer extends CsvRenderer[Row] {
 //    /**
@@ -26,9 +36,11 @@ object CsvRenderer {
 //     * @param attrs a map of attributes for this value of O.
 //     * @return an instance of type O.
 //     */
-//    def render(t: Row, attrs: Map[String, String]): String = t.toString()  // TESTME
+//    def render(t: Row, attrs: Map[String, String]): String =
+//    t.toString()  // TESTME
 //
-//      val csvAttributes: CsvAttributes = CsvAttributes.defaultCsvAttributes // TESTME
+//      val csvAttributes: CsvAttributes =
+//      CsvAttributes.defaultCsvAttributes // TESTME
 //    }
 
 }
@@ -61,7 +73,8 @@ trait BaseCsvRenderer[-T] extends CsvRenderer[T] {
    * @param attrs a map of attributes for this value of O.
    * @return an instance of type String.
    */
-  def render(t: T, attrs: Map[String, String]): String = elements(t) mkString csvAttributes.delimiter
+  def render(t: T, attrs: Map[String, String]): String =
+    elements(t) mkString csvAttributes.delimiter
 }
 
 /**
@@ -72,6 +85,16 @@ trait BaseCsvRenderer[-T] extends CsvRenderer[T] {
  */
 abstract class ProductCsvRenderer[T <: Product : ClassTag](implicit c: CsvAttributes) extends BaseCsvProductGenerator[T] with BaseCsvRenderer[T] with CsvProduct[T]
 
+/**
+ * Abstract class for rendering a tabular representation of type `Table[T]` to a sequentially writable format `O`,
+ * such as CSV, while utilizing implicit type classes for rendering cells and generating column names.
+ *
+ * This class simplifies the conversion of tabular data (`Table[T]`) into a structured format (`O`) with support for customization
+ * through attributes and allows seamless integration with CSV-specific typeclasses.
+ *
+ * @tparam T the type of elements contained within the table; must have implicit evidence for `CsvRenderer` and `CsvGenerator`.
+ * @tparam O the type of the writable output; must have implicit evidence for `Writable`.
+ */
 abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable] extends Renderer[Table[T], Try[O]] {
 
   /**
@@ -87,8 +110,10 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable] exte
       val tc = implicitly[CsvRenderer[T]]
       val tg = implicitly[CsvGenerator[T]]
       val hdr: String = tg match {
-        case _tg: CsvProductGenerator[_] => _tg.toColumnNames(None, None)
-        case _tg: CsvGenerator[_] => _tg.toColumnName(None, "")
+        case _tg: CsvProductGenerator[_] =>
+          _tg.toColumnNames(None, None)
+        case _tg: CsvGenerator[_] =>
+          _tg.toColumnName(None, "")
       }
       Try(sw.unit) map {
         o =>
@@ -109,7 +134,8 @@ abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable] exte
    * @param t  T.
    * @return O.
    */
-  protected def generateText(ow: Writable[O], tc: CsvRenderer[T], o: O, t: T): O = ow.writeRawLine(o)(tc.render(t, Map()))
+  protected def generateText(ow: Writable[O], tc: CsvRenderer[T], o: O, t: T): O =
+    ow.writeRawLine(o)(tc.render(t, Map()))
 }
 
 /**
