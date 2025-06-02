@@ -15,7 +15,7 @@ import scala.util.Try
 
 class AnalysisSpec extends AnyFlatSpec with Matchers {
 
-  val airBNBFile = "/airbnb2.csv"
+  val airBNBFile = "airbnb2.csv"
   implicit val parser: RawTableParser = RawTableParser(TableParser.includeAll, None, forgiving = true).setMultiline(true)
 
   behavior of "Analysis"
@@ -42,7 +42,7 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
   behavior of "Column"
 
   it should "make" in {
-    val ti: IO[RawTable] = IO.fromTry(Table.parseResource(airBNBFile))
+    val ti: IO[RawTable] = IO.fromTry(Table.parseResource(airBNBFile, classOf[AnalysisSpec]))
     matchIO(ti) {
       case t: RawTable =>
         val z: Iterator[Option[String]] = t.column("accommodates")

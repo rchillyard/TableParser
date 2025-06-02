@@ -5,19 +5,16 @@
 package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxParallelAp
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.FP.resourceForClass
 import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
 import java.io.{File, FileWriter, InputStream}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.annotation.unused
-import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
@@ -104,16 +101,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-
-  it should "parse raw resource using table parser " in {
-    matchIO(IO.fromTry(Table.parseResourceRaw("intPairs.csv", TableParser.includeAll))) {
-      case HeadedTable(_, _) => succeed
-    }
-  }
-
-
   behavior of "parse with safeResource"
-
 
   it should "return failure(1)" in {
     import IntPair._
@@ -125,9 +113,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     EvaluateIO.checkFailure(iIty)(classOf[NullPointerException]).unsafeRunSync()
   }
 
-
   behavior of "other"
-
 
   it should "map" in {
     val f: IntPair => IntPair = _ map (_ * 2)
@@ -173,14 +159,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-//  it should "dropRight" in {
-//    import IntPair._
-//    matchIO(Table.parse(Seq("1 2", "42 99"))) {
-//      case xt@HeadedTable(_, _) =>
-//        xt.dropRight(1).rows shouldBe Seq(IntPair(1, 2))
-//    }
-//  }
-
   it should "empty" in {
     import IntPair._
     matchIO(IOTable.parse(Seq("1 2", "42 99"))) {
@@ -220,14 +198,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
         xt.slice(0, 2).content.toSeq shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
     }
   }
-//
-//  it should "takeRight" in {
-//    import IntPair._
-//    matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
-//      case xt@HeadedTable(_, _) =>
-//        xt.takeRight(2).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
-//    }
-//  }
 
   it should "takeWhile" in {
     import IntPair._
@@ -409,22 +379,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
         val row1 = x.select(Range(2, 3))
         row1.size shouldBe 1
         row1.head shouldBe IntPair(1, 3)
-    }
-  }
-
-  behavior of "parseResourceRaw"
-  it should "parse quotes spanning newlines" in {
-    val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
-
-    val sy: Try[Source] = resourceForClass("multiline.csv", classOf[Table.type]) map Source.fromURL
-    matchIO(IO.fromTry(parser.parse(sy))) {
-      case HeadedTable(r, h) =>
-        println(s"parseResourceRaw: successfully read ${r.size} rows")
-        println(s"parseResourceRaw: successfully read ${h.size} columns")
-        r.size shouldBe 4
-        r take 4 foreach println
-        succeed
-      case _ => fail("should succeed")
     }
   }
 

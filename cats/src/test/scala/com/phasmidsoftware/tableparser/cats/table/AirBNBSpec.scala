@@ -68,7 +68,7 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "be ingested properly" in {
-    val airBNBFile = "/airbnb2.csv"
+    val airBNBFile = "airbnb2.csv"
 
     // Set up the source
     val sy: Try[Source] = for (u <- resource[AirBNBSpec](airBNBFile)) yield Source.fromURL(u)

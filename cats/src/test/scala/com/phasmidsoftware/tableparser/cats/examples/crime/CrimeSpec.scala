@@ -1,8 +1,8 @@
 package com.phasmidsoftware.tableparser.cats.examples.crime
 
 import cats.effect.IO
-import com.phasmidsoftware.tableparser.cats.examples.Crime
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
+import com.phasmidsoftware.tableparser.core.examples.crime.Crime
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.table.{Analysis, HeadedTable, RawTable}
 import com.phasmidsoftware.tableparser.core.util.FP.resourceForClass
