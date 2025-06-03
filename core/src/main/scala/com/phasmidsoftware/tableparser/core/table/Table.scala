@@ -423,12 +423,12 @@ object Table {
   /**
    * Method to parse a table from a Source (with proper resource management of the source).
    *
-   * @param si the Source.
+   * @param sy the Source.
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parse[T: TableParser](si: => Try[Source]): Try[T] =
-    TryUsing(si)(parseSource(_))
+  def parse[T: TableParser](sy: => Try[Source]): Try[T] =
+    TryUsing(sy)(parseSource(_))
 
   /**
    * Method to parse a table from a URI with an implicit encoding.
