@@ -370,8 +370,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     else
       sequence(rys filter predicate)
 
-    val rys: Seq[Try[Row]] = mapTsToRows.toSeq
-    for (rs <- processTriedRows(rys.iterator)) yield builder(rs.toList, header)
+    for (rs <- processTriedRows(mapTsToRows)) yield builder(rs.toList, header)
   }
 
   private def failureHandler(ry: Try[Row]): Unit =
