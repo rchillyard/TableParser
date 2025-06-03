@@ -149,7 +149,8 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
 
   /**
    * Method to concatenate two Contents.
-   * CONSIDER is this a source of inefficiency?
+   * CONSIDER perhaps we should use the combiner functionality more directly?
+   * (It's what the ++ method uses).
    *
    * @param other the other Content.
    * @tparam B the underlying type of the other Content and the result. Must be a super-type of Row.

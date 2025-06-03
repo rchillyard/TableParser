@@ -8,6 +8,7 @@ import com.phasmidsoftware.tableparser.core.parse.AbstractTableParser.logExcepti
 import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.FP.{partition, sequence}
+import com.phasmidsoftware.tableparser.core.util.Joinable.JoinableTInt
 import com.phasmidsoftware.tableparser.core.util.{FunctionIterator, Joinable, TeeIterator, TryUsing}
 import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.implicitNotFound
@@ -93,51 +94,43 @@ trait TableParser[Table] {
    * @return an Try[Table]
    */
   def parse(xs: Iterator[Input], n: Int): Try[Table]
-//
-//  /**
-//   * Method to parse a table based on a sequence of Inputs.
-//   *
-//   * @param xs the sequence of Inputs, one for each row
-//   * @return an Try[Table]
-//   */
-//  def parseIO(xs: Iterator[Input], n: Int): Try[Table]
 }
 
 object TableParser {
 
   /**
-   * Class to allow the simplification of an expression to parse a source, given a StringTableParser.
+   * Class to allow the simplification of an expression to parse a source, given a `StringTableParser`.
    *
    * @param p a StringTableParser.
-   * @tparam T the underlying type of p (T will be Table[_]).
+   * @tparam Table the (parametric) underlying type of `p` (`Table` will be `Table[_]`).
    */
-  implicit class ImplicitParser[T](p: StringTableParser[T]) {
+  implicit class ImplicitParser[Table](p: StringTableParser[Table]) {
 
     /**
-     * Method to parse a Try[Source].
-     * NOTE the underlying source of sy will be closed after parsing has been completed (no resource leaks).
+     * Method to parse a `Try[Source]` character-by-character.
+     * NOTE the underlying source of `sy` will be closed after parsing has been completed.
      *
-     * @param sy a Try[Source].
-     * @return an Try[T].
+     * @param sy a `Try[Source]`.
+     * @return a `Try[Table]`.
      */
-    def parse(sy: Try[Source]): Try[T] = sy flatMap doParse
+    def parse(sy: Try[Source]): Try[Table] = sy flatMap doParse
+
+    /**
+     * Method to parse a `Source`.
+     * NOTE the source `s` will be closed after parsing has been completed (no resource leaks).
+     *
+     * @param s a Source.
+     * @return a `Try[Table]`.
+     */
+    private def doParse(s: Source): Try[Table] = TryUsing(s)(x => doParse(x.getLines()))
 
     /**
      * Method to parse an iterator of String.
      *
-     * @param xs an Iterator[String].
-     * @return an Try[T].
+     * @param xs an `Iterator[String]`.
+     * @return a `Try[Table]`.
      */
-    private def doParse(xs: Iterator[String]): Try[T] = p.parse(xs, 1)
-
-    /**
-     * Method to parse a Source.
-     * NOTE the source s will be closed after parsing has been completed (no resource leaks).
-     *
-     * @param s a Source.
-     * @return an Try[T].
-     */
-    private def doParse(s: Source): Try[T] = TryUsing(s)(x => doParse(x.getLines()))
+    private def doParse(xs: Iterator[String]): Try[Table] = p.parse(xs, 1)
   }
 
   val r: Random = new Random()
@@ -334,39 +327,41 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   }
 
   /**
-   * Common code for parsing rows.
+   * Parses rows of data into a table based on the provided header and transformation function.
+   *
+   * This method processes an iterator of elements (`ts`), applies a transformation function (`f`)
+   * to each element along with its index, and attempts to construct a valid table (`Table`)
+   * from the resulting rows.
+   *
+   * Several options, such as multiline processing and forgiving error handling,
+   * influence how rows are processed and how errors are managed.
    *
    * CONSIDER convert T to Input
-   *
    * CONSIDER switch order of f
    *
-   * @param ts     a sequence of Ts.
-   * @param header the Header.
-   * @param f      a curried function which transforms a (T, Int) into a function which is of type Header => Try[Row].
-   * @tparam T the parametric type of the resulting Table. T corresponds to Input in the calling method, i.e. a Row. Must be Joinable.
-   * @return a Try of Table
+   * @param ts     an `Iterator` of elements of type `T` to be transformed into rows.
+   *               The type `T` must have an implicit `Joinable[T]` instance available.
+   * @param header the `Header` object representing the structure of the data.
+   *               It provides column names and additional metadata about rows.
+   * @param f      a transformation function that takes a tuple of an element `T` and its index (`Int`),
+   *               and returns a function from `Header` to `Try[Row]`. This function is applied to
+   *               each element to produce a `Try[Row]`.
+   * @tparam T the type of elements in the iterator, requiring an implicit `Joinable[T]` instance.
+   *           `Joinable` provides behavior for joining, validating, and defining defaults for type `T`.
+   * @return a `Try[Table]` which, if successful, contains the parsed table. Otherwise, it contains
+   *         the first encountered failure during row processing.
    */
   protected def doParseRows[T: Joinable](ts: Iterator[T], header: Header, f: ((T, Int)) => Header => Try[Row]): Try[Table] = {
-    implicit object Z extends Joinable[(T, Int)] {
-      private val tj: Joinable[T] =
-        implicitly[Joinable[T]]
-
-      def join(t1: (T, Int), t2: (T, Int)): (T, Int) =
-        tj.join(t1._1, t2._1) -> (if (t1._2 >= 0) t1._2 else t2._2)
-
-      val zero: (T, Int) =
-        tj.zero -> -1
-
-      def valid(t: (T, Int)): Boolean =
-        tj.valid(t._1)
+    implicit object JoinableTInt extends JoinableTInt[T] {
+      def tj: Joinable[T] = implicitly[Joinable[T]]
     }
 
-    def mapTsToRows = if (multiline)
-      for (z <- new FunctionIterator[(T, Int), Row](f(_)(header))(ts.zipWithIndex)) yield z
+    def mapTsToRows: Iterator[Try[Row]] = if (multiline)
+      for (ry <- new FunctionIterator[(T, Int), Row](f(_)(header))(ts.zipWithIndex)) yield ry
     else
-      for (z <- ts.zipWithIndex) yield f(z)(header)
+      for (ry <- ts.zipWithIndex) yield f(ry)(header)
 
-    def processTriedRows(rys: Iterator[Try[Row]]) = if (forgiving) {
+    def processTriedRows(rys: Iterator[Try[Row]]): Try[Iterator[Row]] = if (forgiving) {
       val (good, bad) = partition(rys)
       // CONSIDER using sequenceRev in order to save time
       bad foreach failureHandler //AbstractTableParser.logException[Row]
@@ -375,8 +370,8 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
     else
       sequence(rys filter predicate)
 
-    val q: Seq[Try[Row]] = mapTsToRows.toSeq
-    for (rs <- processTriedRows(q.iterator)) yield builder(rs.toList, header)
+    val rys: Seq[Try[Row]] = mapTsToRows.toSeq
+    for (rs <- processTriedRows(rys.iterator)) yield builder(rs.toList, header)
   }
 
   private def failureHandler(ry: Try[Row]): Unit =
