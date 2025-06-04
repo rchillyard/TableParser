@@ -27,7 +27,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     }
 
     trait IntPairRowParser extends StringParser[IntPair] {
-      def parse(indexedString: (String, Int))(header: Header): Try[IntPair] = IntPairParser.parseAll(IntPairParser.pair, indexedString._1) match {
+      def parse(header: Header)(indexedString: (String, Int)): Try[IntPair] = IntPairParser.parseAll(IntPairParser.pair, indexedString._1) match {
         case IntPairParser.Success((x, y), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
       }
@@ -276,7 +276,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     }
 
     trait HawksRowParser extends StringParser[Hawks] {
-      def parse(indexedString: (String, Int))(header: Header): Try[Hawks] = HawksParser.parseAll(HawksParser.pair, indexedString._1) match {
+      def parse(header: Header)(indexedString: (String, Int)): Try[Hawks] = HawksParser.parseAll(HawksParser.pair, indexedString._1) match {
         case HawksParser.Success((x, y), _) => Success(Hawks(x, y))
         case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
       }

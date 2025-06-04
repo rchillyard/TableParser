@@ -327,39 +327,34 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   }
 
   /**
-   * Parses rows of data into a table based on the provided header and transformation function.
+   * Parses rows of data from an iterator, utilizing a header and a row transformation function.
+   * This method provides functionality for both forgiving and strict parsing, as well as supporting
+   * multi-line input processing with configurable transformations.
    *
-   * This method processes an iterator of elements (`ts`), applies a transformation function (`f`)
-   * to each element along with its index, and attempts to construct a valid table (`Table`)
-   * from the resulting rows.
-   *
-   * Several options, such as multiline processing and forgiving error handling,
-   * influence how rows are processed and how errors are managed.
-   *
-   * CONSIDER convert T to Input
-   * CONSIDER switch order of f
-   *
-   * @param ts     an `Iterator` of elements of type `T` to be transformed into rows.
-   *               The type `T` must have an implicit `Joinable[T]` instance available.
-   * @param header the `Header` object representing the structure of the data.
-   *               It provides column names and additional metadata about rows.
-   * @param f      a transformation function that takes a tuple of an element `T` and its index (`Int`),
-   *               and returns a function from `Header` to `Try[Row]`. This function is applied to
-   *               each element to produce a `Try[Row]`.
-   * @tparam T the type of elements in the iterator, requiring an implicit `Joinable[T]` instance.
-   *           `Joinable` provides behavior for joining, validating, and defining defaults for type `T`.
-   * @return a `Try[Table]` which, if successful, contains the parsed table. Otherwise, it contains
-   *         the first encountered failure during row processing.
+   * @param ts     An iterator of type `T` representing input data rows to be parsed.
+   *               Each element of `ts` can optionally be joined with subsequent elements
+   *               if multi-line behavior is required.
+   * @param header A `Header` instance that provides column names and metadata required
+   *               for parsing the rows.
+   * @param f      A transformation function that takes a `Header` instance and
+   *               returns another function to process and transform input rows of type `((T, Int))`
+   *               into a `Try[Row]`. The outer function allows reevaluation of row transformations
+   *               using the header, while the inner function executes the parsing on each row.
+   * @tparam T A type parameter for the elements of the input iterator which extends behavior
+   *           defined by the `Joinable` type class.
+   * @return A `Try[Table]` representing the successfully parsed table if all rows pass the
+   *         transformation and validation process, or a failure if strict parsing is mandated
+   *         and a row fails validation/transformation.
    */
-  protected def doParseRows[T: Joinable](ts: Iterator[T], header: Header, f: ((T, Int)) => Header => Try[Row]): Try[Table] = {
+  protected def doParseRows[T: Joinable](ts: Iterator[T], header: Header, f: Header => ((T, Int)) => Try[Row]): Try[Table] = {
     implicit object JoinableTInt extends JoinableTInt[T] {
       def tj: Joinable[T] = implicitly[Joinable[T]]
     }
 
     def mapTsToRows: Iterator[Try[Row]] = if (multiline)
-      for (ry <- new FunctionIterator[(T, Int), Row](f(_)(header))(ts.zipWithIndex)) yield ry
+      for (ry <- new FunctionIterator[(T, Int), Row](f(header))(ts.zipWithIndex)) yield ry
     else
-      for (ry <- ts.zipWithIndex) yield f(ry)(header)
+      for (ry <- ts.zipWithIndex) yield f(header)(ry)
 
     def processTriedRows(rys: Iterator[Try[Row]]): Try[Iterator[Row]] = if (forgiving) {
       val (good, bad) = partition(rys)

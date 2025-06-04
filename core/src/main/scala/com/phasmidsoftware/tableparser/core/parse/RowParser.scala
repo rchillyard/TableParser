@@ -19,13 +19,13 @@ import scala.util.Try
 trait RowParser[Row, Input] {
 
   /**
-   * Parse the Input, resulting in a Try[Row]
+   * Parses a row of input data into a Row object, using a specified Header for context.
    *
-   * @param indexedRow the Input, and its index to be parsed.
-   * @param header     the header already parsed.
-   * @return a Try[Row].
+   * @param header     the Header object which provides metadata about the columns in the input.
+   * @param indexedRow a tuple consisting of the input data (of generic type Input) and the row index (Int).
+   * @return a Try that, on success, contains the parsed Row object. If parsing fails, the Try contains Failure with the appropriate exception.
    */
-  def parse(indexedRow: (Input, Int))(header: Header): Try[Row]
+  def parse(header: Header)(indexedRow: (Input, Int)): Try[Row]
 
   /**
    * Parse the Input, resulting in a Try[Header]
@@ -58,13 +58,14 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
 //  import flog._
 
   /**
-   * Method to parse a String and return a Try[Row].
+   * Parses a given indexed string (line and its index in a file) using a provided header and the internal row parser.
+   * This method converts the parsed row of data (as Strings) into a well-defined `Row` object according to the header.
    *
-   * @param indexedString the row and index as a (String., Int)
-   * @param header        the header already parsed.
-   * @return a Try[Row].
+   * @param header        the header object providing column information for the row.
+   * @param indexedString a tuple containing the string representation of the line and its index in the file.
+   * @return a `Try[Row]` representing the parsed and converted row, or a failure if the parsing or conversion fails.
    */
-  def parse(indexedString: (String, Int))(header: Header): Try[Row] =
+  def parse(header: Header)(indexedString: (String, Int)): Try[Row] =
     for {
       ws <- parser.parseRow(indexedString)
       r <- doConversion(indexedString, header, ws)
@@ -105,13 +106,14 @@ trait StringsParser[Row] extends RowParser[Row, Strings]
 case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
 
   /**
-   * Method to parse a sequence of String into a Try[Row].
+   * Parses a given indexed String (row data and its index) using the specified table header to produce a Try[Row].
    *
-   * @param indexedString the rows and index as a (Strings., Int)
-   * @param header        the header already parsed.
-   * @return a Try[Row].
+   * @param header        the table Header object providing metadata about the row's structure (e.g., column names).
+   * @param indexedString a tuple where the first element is the sequence of Strings representing the row data,
+   *                      and the second element is the index of the row in the table.
+   * @return a Try[Row], which is a Row object if parsing is successful, or a failure if parsing encounters an error.
    */
-  def parse(indexedString: (Strings, Int))(header: Header): Try[Row] =
+  def parse(header: Header)(indexedString: (Strings, Int)): Try[Row] =
     RowValues(Row(indexedString._1, header, indexedString._2)).convertTo[Row]
 
   /**

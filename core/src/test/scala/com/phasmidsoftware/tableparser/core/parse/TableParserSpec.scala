@@ -34,7 +34,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     trait IntPairRowParser extends StringParser[IntPair] {
-      def parse(indexedString: (String, Int))(header: Header): Try[IntPair] = IntPairParser.parseAll(IntPairParser.pair, indexedString._1) match {
+      def parse(header: Header)(indexedString: (String, Int)): Try[IntPair] = IntPairParser.parseAll(IntPairParser.pair, indexedString._1) match {
         case IntPairParser.Success((x: Int, y: Int), _) => Success(IntPair(x, y))
         case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
       }
@@ -130,7 +130,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val row = "09/16/2018\t" + partlyCloudy + "\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410"
     matchTry(rowParser.parseHeader(Seq(firstRow))) {
       case header@Header(_, _) =>
-        val hawkCount: Try[DailyRaptorReport] = parser.parse((row, 0))(header)
+        val hawkCount: Try[DailyRaptorReport] = parser.parse(header)((row, 0))
         hawkCount should matchPattern { case Success(DailyRaptorReport(_, `partlyCloudy`, 3308, 5)) => }
     }
   }
