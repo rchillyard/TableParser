@@ -4,12 +4,9 @@
 
 package com.phasmidsoftware.tableparser.core.parse
 
-import com.phasmidsoftware.tableparser.core.parse.AbstractTableParser.logException
 import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.FP.{partition, sequence}
-import com.phasmidsoftware.tableparser.core.util.Joinable.JoinableTInt
-import com.phasmidsoftware.tableparser.core.util.{FunctionIterator, Joinable, TeeIterator, TryUsing}
+import com.phasmidsoftware.tableparser.core.util.{Joinable, TeeIterator, TryUsing}
 import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.implicitNotFound
 import scala.io.Source
@@ -343,49 +340,11 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    */
   def doParseRows[Input: Joinable](ts: Iterator[Input], header: Header, f: Header => ((Input, Int)) => Try[Row]): Try[Table] = {
 
-    val inputTransformer = new InputTransformer[Input, Row](header, f) {
-
-      implicit object JoinableTInt extends JoinableTInt[Input] {
-        def tj: Joinable[Input] = implicitly[Joinable[Input]]
-      }
-
-      /**
-       * Maps an iterator of inputs of type `Input` to an iterator of `Try[Row]`,
-       * where each input is transformed into a `Try[Row]` by applying the defined transformation function.
-       *
-       * @param xs an iterator of inputs of type `Input` to be transformed.
-       * @return an iterator of `Try[Row]` where each element represents the result of the transformation
-       *         of the corresponding input, which may either succeed (resulting in `Row`) or fail (resulting in a `Failure`).
-       */
-      def mapTsToRows(xs: Iterator[Input]): Iterator[Try[Row]] = if (multiline)
-        for (ry <- new FunctionIterator[(Input, Int), Row](f(header))(ts.zipWithIndex)) yield ry
-      else
-        for (ry <- ts.zipWithIndex) yield f(header)(ry)
-
-      /**
-       * Processes an iterator of `Try` wrapped rows, transforming it into a single `Try` that contains an iterator of successfully processed rows.
-       *
-       * @param rys an iterator of `Try[Row]`, where each `Try` represents the result of processing a single row which may either succeed or fail
-       * @return a `Try[Iterator[Row]]` that encapsulates either:
-       *         - a success containing an iterator of all successfully processed rows, or
-       *         - a failure if any of the individual rows failed during processing
-       */
-      def processTriedRows(rys: Iterator[Try[Row]]): Try[Iterator[Row]] = if (forgiving) {
-        val (good, bad) = partition(rys)
-        // CONSIDER using sequenceRev in order to save time
-        bad foreach failureHandler //AbstractTableParser.logException[Row]
-        sequence(good filter predicate)
-      }
-      else
-        sequence(rys filter predicate)
-    }
+    val inputTransformer = new IndexedInputToTableTransformer(header, f, multiline, forgiving, predicate)
 
     // NOTE that here, we materialze the resulting iterator of rows into a list of rows.
     for (rs <- inputTransformer.processInput(ts)) yield builder(rs.toList, header)
   }
-
-  private def failureHandler(ry: Try[Row]): Unit =
-    logException[Row](ry)
 }
 
 /**
