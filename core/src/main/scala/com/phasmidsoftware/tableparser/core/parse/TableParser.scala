@@ -327,45 +327,61 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   }
 
   /**
-   * Parses rows of data from an iterator, utilizing a header and a row transformation function.
-   * This method provides functionality for both forgiving and strict parsing, as well as supporting
-   * multi-line input processing with configurable transformations.
+   * Protected method to parse rows from an iterator of input elements and construct a `Table`.
+   * This method applies a header processing function to each input, handles failures,
+   * and allows for different processing modes (e.g., forgiving vs strict, multiline inputs).
    *
-   * @param ts     An iterator of type `T` representing input data rows to be parsed.
-   *               Each element of `ts` can optionally be joined with subsequent elements
-   *               if multi-line behavior is required.
-   * @param header A `Header` instance that provides column names and metadata required
-   *               for parsing the rows.
-   * @param f      A transformation function that takes a `Header` instance and
-   *               returns another function to process and transform input rows of type `((T, Int))`
-   *               into a `Try[Row]`. The outer function allows reevaluation of row transformations
-   *               using the header, while the inner function executes the parsing on each row.
-   * @tparam T A type parameter for the elements of the input iterator which extends behavior
-   *           defined by the `Joinable` type class.
-   * @return A `Try[Table]` representing the successfully parsed table if all rows pass the
-   *         transformation and validation process, or a failure if strict parsing is mandated
-   *         and a row fails validation/transformation.
+   * @param ts     An iterator of input elements (`Input`) to be processed.
+   *               Input must have an implicit `Joinable` type class instance.
+   * @param header A `Header` object that provides column information for parsing.
+   * @param f      A function that takes a `Header` and returns another function, which maps
+   *               each `(Input, Int)` (input and its index) into a `Try[Row]`.
+   *               This encapsulates the logic to process each row and handle potential errors.
+   * @tparam Input The type of input elements, which must have an implicit `Joinable` instance.
+   * @return A `Try[Table]` representing the parsed table.
+   *         Returns a failure if any errors were encountered and the strict mode is enabled.
    */
-  protected def doParseRows[T: Joinable](ts: Iterator[T], header: Header, f: Header => ((T, Int)) => Try[Row]): Try[Table] = {
-    implicit object JoinableTInt extends JoinableTInt[T] {
-      def tj: Joinable[T] = implicitly[Joinable[T]]
+  def doParseRows[Input: Joinable](ts: Iterator[Input], header: Header, f: Header => ((Input, Int)) => Try[Row]): Try[Table] = {
+
+    val inputTransformer = new InputTransformer[Input, Row](header, f) {
+
+      implicit object JoinableTInt extends JoinableTInt[Input] {
+        def tj: Joinable[Input] = implicitly[Joinable[Input]]
+      }
+
+      /**
+       * Maps an iterator of inputs of type `Input` to an iterator of `Try[Row]`,
+       * where each input is transformed into a `Try[Row]` by applying the defined transformation function.
+       *
+       * @param xs an iterator of inputs of type `Input` to be transformed.
+       * @return an iterator of `Try[Row]` where each element represents the result of the transformation
+       *         of the corresponding input, which may either succeed (resulting in `Row`) or fail (resulting in a `Failure`).
+       */
+      def mapTsToRows(xs: Iterator[Input]): Iterator[Try[Row]] = if (multiline)
+        for (ry <- new FunctionIterator[(Input, Int), Row](f(header))(ts.zipWithIndex)) yield ry
+      else
+        for (ry <- ts.zipWithIndex) yield f(header)(ry)
+
+      /**
+       * Processes an iterator of `Try` wrapped rows, transforming it into a single `Try` that contains an iterator of successfully processed rows.
+       *
+       * @param rys an iterator of `Try[Row]`, where each `Try` represents the result of processing a single row which may either succeed or fail
+       * @return a `Try[Iterator[Row]]` that encapsulates either:
+       *         - a success containing an iterator of all successfully processed rows, or
+       *         - a failure if any of the individual rows failed during processing
+       */
+      def processTriedRows(rys: Iterator[Try[Row]]): Try[Iterator[Row]] = if (forgiving) {
+        val (good, bad) = partition(rys)
+        // CONSIDER using sequenceRev in order to save time
+        bad foreach failureHandler //AbstractTableParser.logException[Row]
+        sequence(good filter predicate)
+      }
+      else
+        sequence(rys filter predicate)
     }
 
-    def mapTsToRows: Iterator[Try[Row]] = if (multiline)
-      for (ry <- new FunctionIterator[(T, Int), Row](f(header))(ts.zipWithIndex)) yield ry
-    else
-      for (ry <- ts.zipWithIndex) yield f(header)(ry)
-
-    def processTriedRows(rys: Iterator[Try[Row]]): Try[Iterator[Row]] = if (forgiving) {
-      val (good, bad) = partition(rys)
-      // CONSIDER using sequenceRev in order to save time
-      bad foreach failureHandler //AbstractTableParser.logException[Row]
-      sequence(good filter predicate)
-    }
-    else
-      sequence(rys filter predicate)
-
-    for (rs <- processTriedRows(mapTsToRows)) yield builder(rs.toList, header)
+    // NOTE that here, we materialze the resulting iterator of rows into a list of rows.
+    for (rs <- inputTransformer.processInput(ts)) yield builder(rs.toList, header)
   }
 
   private def failureHandler(ry: Try[Row]): Unit =
@@ -427,19 +443,19 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
     super.parse(xs, n)
 
   /**
-   * Parses rows from an iterator of input strings (`wr`) using the provided header and row parsing logic.
+   * Parses rows from an iterator of input strings (`ws`) using the provided header and row parsing logic.
    *
    * This method utilizes the `doParseRows` function to process each row in the input iterator, applying the
    * provided `rowParser.parse` function to convert input strings into logical rows, while using
    * the header to guide parsing and interpretation of the input.
    *
-   * @param wr     an iterator over the input strings, where each string represents a row in the table.
+   * @param ws an iterator over the input strings, where each string represents a row in the table.
    * @param header the `Header` object that describes the expected structure of the table (e.g., column names).
    * @return a `Try` of the parsed `Table` object. On success, it contains the resulting table; on failure,
    *         it contains the parsing error.
    */
-  def parseRows(wr: Iterator[String], header: Header): Try[Table] =
-    doParseRows(wr, header, rowParser.parse)
+  def parseRows(ws: Iterator[String], header: Header): Try[Table] =
+    doParseRows(ws, header, rowParser.parse)
 }
 
 /**
@@ -457,12 +473,12 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
    * This method processes a sequence of rows (each represented as a `Strings`), leveraging the provided header
    * and a row parser to translate these rows into a structured table of type `Table`.
    *
-   * @param wsr    an `Iterator` of `Strings` where each element represents a row (sequence of cell values).
+   * @param wss an `Iterator` of `Strings` where each element represents a row (sequence of cell values).
    * @param header the `Header` object containing metadata about the structure of the table, such as column names.
    * @return a `Try[Table]` containing the parsed table on success or an exception on failure.
    */
-  def parseRows(wsr: Iterator[Strings], header: Header): Try[Table] =
-    doParseRows(wsr, header, rowParser.parse)
+  def parseRows(wss: Iterator[Strings], header: Header): Try[Table] =
+    doParseRows(wss, header, rowParser.parse)
 }
 
 /**
