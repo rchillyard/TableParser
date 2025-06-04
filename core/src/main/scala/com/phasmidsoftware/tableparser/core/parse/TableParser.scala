@@ -324,26 +324,84 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
   }
 
   /**
-   * Protected method to parse rows from an iterator of input elements and construct a `Table`.
-   * This method applies a header processing function to each input, handles failures,
-   * and allows for different processing modes (e.g., forgiving vs strict, multiline inputs).
+   * Processes an iterator of input rows with an optional header and parses them into rows.
    *
-   * @param ts     An iterator of input elements (`Input`) to be processed.
-   *               Input must have an implicit `Joinable` type class instance.
-   * @param header A `Header` object that provides column information for parsing.
-   * @param f      A function that takes a `Header` and returns another function, which maps
-   *               each `(Input, Int)` (input and its index) into a `Try[Row]`.
-   *               This encapsulates the logic to process each row and handle potential errors.
-   * @tparam Input The type of input elements, which must have an implicit `Joinable` instance.
-   * @return A `Try[Table]` representing the parsed table.
-   *         Returns a failure if any errors were encountered and the strict mode is enabled.
+   * NOTE this will not work as required because it will still have to collect all of the
+   * individual elements inside a Try at some point.
+   * That defeats the purpose of just being able to iterate.
+   *
+   * Depending on the presence of a fixed header and the number of rows to drop (`n`):
+   * - If a fixed header is available, the processing starts after dropping the first `n` rows.
+   * - If no fixed header is available but `n > 0`, the first `n` rows are extracted and used to
+   * parse the header, and subsequent rows are processed accordingly.
+   * - If no fixed header is available and `n <= 0`, an error is returned indicating a logic issue.
+   *
+   * This method heavily relies on implicit evidence (`Joinable[Input]`) to ensure the input type
+   * adheres to the necessary constraints for the transformation and joining of rows.
+   *
+   * @param xs an iterator of inputs, where each element corresponds to a row of input data.
+   * @param n  the number of initial rows to ignore (e.g., when rows are part of the header).
+   * @param ev an implicit evidence parameter ensuring the input type adheres to the `Joinable` type class,
+   *           which provides methods to combine or validate input elements during processing.
+   * @return a `Try` containing an iterator of parsed `Row` objects if the parsing succeeds,
+   *         or a failure if any step of the process encounters an error (e.g., invalid header or processing logic).
    */
-  def doParseRows[Input: Joinable](ts: Iterator[Input], header: Header, f: Header => ((Input, Int)) => Try[Row]): Try[Table] = {
+  def process(xs: Iterator[Input], n: Int)(implicit ev: Joinable[Input]): Try[Iterator[Row]] = maybeFixedHeader match {
+    case Some(h) =>
+      doProcessRows(xs drop n, h, rowParser.parse) // CONSIDER reverting to check that n = 0
+    case None if n > 0 =>
+      val yr: TeeIterator[Input] = new TeeIterator(n)(xs)
+      for (h <- rowParser.parseHeader(yr.tee); t <- doProcessRows(yr, h, rowParser.parse)) yield t
+    case _ =>
+      Failure(TableParserException("parse: logic error"))
+  }
 
-    val inputTransformer = new IndexedInputToTableTransformer(header, f, multiline, forgiving, predicate)
+  /**
+   * Parses rows of input data into a table representation.
+   *
+   * This method utilizes an `IndexedInputToRowsTransformer` to transform an iterator of inputs into
+   * rows using the provided header and transformation function. It processes the input, materializes
+   * the resulting rows into a list, and constructs a table representation from the processed rows and header.
+   *
+   * @param ts     an iterator of inputs to be parsed into rows.
+   * @param header the `Header` containing column metadata to guide the transformation process.
+   * @param f      a transformation function that maps the `Header` to a function capable of
+   *               transforming a tuple of input and its index into a `Try[Row]`. This function
+   *               encapsulates row processing logic and error handling for each input element.
+   * @param ev     an implicit evidence parameter ensuring the input type adheres to the `Joinable` type class,
+   *               which defines how input elements can be combined or validated during processing.
+   * @return a `Try` containing a `Table` if the parsing is successful, or an error in case of failure.
+   */
+  def doParseRows(ts: Iterator[Input], header: Header, f: Header => ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Try[Table] = {
+
+    val inputTransformer = new IndexedInputToRowsTransformer(header, f, multiline, forgiving, predicate)
 
     // NOTE that here, we materialze the resulting iterator of rows into a list of rows.
     for (rs <- inputTransformer.processInput(ts)) yield builder(rs.toList, header)
+  }
+
+  /**
+   * Processes rows of input data using a provided header and transformation function.
+   *
+   * This method uses an `IndexedInputToRowsTransformer` to transform an iterator of inputs into rows.
+   * It applies a transformation function to each element of the input, materializes the resulting
+   * iterator of rows into a list, and returns the processed rows in a `Try`.
+   *
+   * @param ts     an `Iterator` of `Input` representing rows to be processed.
+   * @param header the `Header` containing metadata to guide the transformation process (e.g., column structure).
+   * @param f      a function mapping the `Header` to a function that transforms a tuple of
+   *               `(Input, Int)` (input data with row index) into a `Try[Row]`. This encapsulates
+   *               the logic for processing and validating each row.
+   * @param ev     an implicit evidence parameter enforcing that the input type adheres to the `Joinable` type class,
+   *               which provides methods to combine or validate inputs during processing.
+   * @return a `Try` containing an `Iterator` of processed `Row` objects if the transformation is
+   *         successful, or a failure if any step encounters an error.
+   */
+  def doProcessRows(ts: Iterator[Input], header: Header, f: Header => ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Try[Iterator[Row]] = {
+
+    val inputTransformer = new IndexedInputToRowsTransformer(header, f, multiline, forgiving, predicate)
+
+    for (rs <- inputTransformer.processInput(ts)) yield rs
   }
 }
 

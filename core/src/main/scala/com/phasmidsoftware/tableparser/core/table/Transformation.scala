@@ -83,11 +83,14 @@ case class RawTableAggregation(aggregators: Map[String, Transformation[String, S
    *         The transformations are applied by mapping column names to their respective transformation logic,
    *         using the header to resolve column indices.
    */
-  def apply(t: RawTable): RawTable = {
-    val header = t.maybeHeader.get // there must be a header for a raw table.
-    // TODO avoid use of "get" (after we have created a unit test for this)
-    val xm: Map[Int, Transformation[String, String]] = for ((k, x) <- aggregators; index = header.getIndex(k).get) yield (index, x)
-    t.map(RawRowTransformation(xm))
+  def apply(t: RawTable): RawTable = t.maybeHeader match { // NOTE there will always be a header for a raw table.
+    case Some(header) =>
+      val wWtXm = for {
+        (k, x) <- aggregators
+      } yield (header.getIndex(k).get, x)
+      t.map(RawRowTransformation(wWtXm))
+    case None =>
+      throw TableException(s"RawTableAggregation.apply($t) is missing its header")
   }
 }
 

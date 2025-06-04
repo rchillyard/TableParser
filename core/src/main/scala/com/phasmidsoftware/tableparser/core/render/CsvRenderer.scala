@@ -28,21 +28,21 @@ trait CsvRenderer[-T] extends Renderer[T, String] {
  * (`Map[String, String]`) to modify the output or handle special behaviors for CSV attributes.
  */
 object CsvRenderer {
-//    implicit object RowStringRenderer extends CsvRenderer[Row] {
-//    /**
-//     * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
-//     *
-//     * @param t     the input parameter, i.e. the T object to render.
-//     * @param attrs a map of attributes for this value of O.
-//     * @return an instance of type O.
-//     */
-//    def render(t: Row, attrs: Map[String, String]): String =
-//    t.toString()  // TESTME
-//
-//      val csvAttributes: CsvAttributes =
-//      CsvAttributes.defaultCsvAttributes // TESTME
-//    }
+  /**
+   * Implicit object that provides a CSV rendering implementation for the `Row` class.
+   *
+   * This object extends the `CsvRenderer` type class for `Row`, enabling rows to be
+   * rendered as CSV strings. The default behavior concatenates the row elements (`ws`)
+   * into a single string, separated by the delimiter defined in the implicit `CsvAttributes`.
+   *
+   * @see CsvRenderer
+   * @see Row
+   */
+  implicit object CsvRendererRow extends CsvRenderer[Row] {
+    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
 
+    def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
+  }
 }
 
 /**

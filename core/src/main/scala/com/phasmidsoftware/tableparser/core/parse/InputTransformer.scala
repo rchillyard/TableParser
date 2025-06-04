@@ -58,7 +58,7 @@ abstract class InputTransformer[Input: Joinable, Row](header: Header, f: Header 
 }
 
 /**
- * The `IndexedInputToTableTransformer` class is a concrete implementation of the `InputTransformer` abstract class.
+ * The `IndexedInputToRowsTransformer` class is a concrete implementation of the `InputTransformer` abstract class.
  * It is used to transform an iterator of inputs into an iterator of rows, using a header and a transformation function.
  *
  * This class applies specific customization for handling indexed input data, where each input is paired with its index.
@@ -75,7 +75,7 @@ abstract class InputTransformer[Input: Joinable, Row](header: Header, f: Header 
  * @tparam Input the type of the input data, which must adhere to the `Joinable` type class.
  * @tparam Row   the type of the rows resulting from the transformation.
  */
-class IndexedInputToTableTransformer[Input: Joinable, Row](header: Header, f: Header => ((Input, Int)) => Try[Row], multiline: Boolean, forgiving: Boolean, predicate: Try[Row] => Boolean) extends InputTransformer[Input, Row](header, f) {
+class IndexedInputToRowsTransformer[Input: Joinable, Row](header: Header, f: Header => ((Input, Int)) => Try[Row], multiline: Boolean, forgiving: Boolean, predicate: Try[Row] => Boolean) extends InputTransformer[Input, Row](header, f) {
 
   implicit object JoinableTInt extends JoinableTInt[Input] {
     def tj: Joinable[Input] = implicitly[Joinable[Input]]
@@ -97,6 +97,8 @@ class IndexedInputToTableTransformer[Input: Joinable, Row](header: Header, f: He
   /**
    * Processes an iterator of `Try` wrapped rows, transforming it into a single `Try` that contains an iterator of successfully processed rows.
    *
+   * NOTE this is not a simple iterator to iterator pipeline. We have to sequence the input to get the output.
+   *
    * @param rys an iterator of `Try[Row]`, where each `Try` represents the result of processing a single row which may either succeed or fail
    * @return a `Try[Iterator[Row]]` that encapsulates either:
    *         - a success containing an iterator of all successfully processed rows, or
@@ -110,7 +112,6 @@ class IndexedInputToTableTransformer[Input: Joinable, Row](header: Header, f: He
   }
   else
     sequence(rys filter predicate)
-
 
   private def failureHandler(ry: Try[Row]): Unit =
     logException[Row](ry)

@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.table
 
 import com.phasmidsoftware.tableparser.core.parse.{ParserException, RowValues}
-import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvRenderer}
+import com.phasmidsoftware.tableparser.core.render.CsvGenerator
 import scala.util.{Failure, Try}
 
 /**
@@ -74,21 +74,6 @@ abstract class BaseRow(ws: Seq[String], hdr: Header) extends (String => Try[Stri
  * including CSV rendering and generation.
  */
 object Row {
-  /**
-   * Implicit object that provides a CSV rendering implementation for the `Row` class.
-   *
-   * This object extends the `CsvRenderer` type class for `Row`, enabling rows to be
-   * rendered as CSV strings. The default behavior concatenates the row elements (`ws`)
-   * into a single string, separated by the delimiter defined in the implicit `CsvAttributes`.
-   *
-   * @see CsvRenderer
-   * @see Row
-   */
-  implicit object CsvRendererRow extends CsvRenderer[Row] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
-
-    def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
-  }
 
   /**
    * Method to yield a CsvGenerator[T] from an instance of Header.
