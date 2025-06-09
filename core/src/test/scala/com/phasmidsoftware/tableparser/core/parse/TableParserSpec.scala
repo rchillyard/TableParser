@@ -4,6 +4,8 @@
 
 package com.phasmidsoftware.tableparser.core.parse
 
+import com.phasmidsoftware.tableparser.core.examples.Movie
+import com.phasmidsoftware.tableparser.core.table.Table.sourceFromClassResource
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import com.phasmidsoftware.tableparser.core.util.TryUsing
@@ -506,6 +508,22 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val rowConfig = RowConfig.defaultEncryptedRowConfig
     val lineParser: LineParser = LineParser.apply(rowConfig)
     parser.setRowParser(StandardRowParser[Int](lineParser)) shouldBe parser
+  }
+
+  behavior of "MovieRowProcessor"
+
+  it should "process the movies from the IMDB dataset" in {
+    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+    val movieRowProcessor: MovieRowProcessor = implicitly[RowProcessor[Movie]].asInstanceOf[MovieRowProcessor]
+    val z: Try[Source] = sourceFromClassResource("movie_metadata.csv", classOf[Movie])
+    matchTry(z) {
+      case source: Source =>
+        val iterator: Iterator[String] = source.getLines()
+        val ms: Iterator[Movie] = movieRowProcessor.process(iterator, movieRowProcessor.headerRowsToRead)
+        (ms to List).size shouldBe 1567
+      case _ =>
+        fail("unable to open \"movie_metadata.csv\"")
+    }
   }
 
 }

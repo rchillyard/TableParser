@@ -723,7 +723,7 @@ object Table {
    * @param filename a File.
    * @return an Try[Source].
    */
-  private def sourceFromFilename(filename: => String)(implicit codec: Codec): Try[Source] =
+  def sourceFromFilename(filename: => String)(implicit codec: Codec): Try[Source] =
     Try(Source.fromFile(filename))
 
   /**
@@ -733,7 +733,7 @@ object Table {
    * @param clazz the class.
    * @return an Try[Source].
    */
-  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Try[Source] =
+  def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Try[Source] =
     Try(Source.fromURL(clazz.getResource(w))).recoverWith {
       case _: java.lang.NullPointerException =>
         Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
