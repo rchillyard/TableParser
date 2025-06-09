@@ -47,8 +47,7 @@ abstract class InputTransformer[Input, Row](header: Header, f: Header => ((Input
    * @param xs An `Iterator` of input elements of type `Input`, representing the data to be transformed.
    * @return An `Iterator` of output rows of type `Row`, resulting from the transformation process.
    */
-  def processInput(xs: Iterator[Input]): Iterator[Row] =
-    processTriedRows(mapTsToRows(xs))
+  def processInput(xs: Iterator[Input]): Iterator[Row]
 }
 
 /**
@@ -88,7 +87,7 @@ abstract class InputAggregator[Input, Row, Wrapper[_]](header: Header, f: Header
    * @return a `Wrapper` containing an iterator of rows of type `Row`,
    *         where the transformation and processing operations have been applied to the inputs.
    */
-  def processInput(xs: Iterator[Input]): Wrapper[Iterator[Row]] = processTriedRows(mapTsToRows(xs))
+  def processInput(xs: Iterator[Input]): Wrapper[Iterator[Row]]
 }
 
 /**
@@ -118,7 +117,10 @@ trait InputPreprocessor[Input, Row] {
    * @return an iterator of `Try[Row]`, where each `Try` represents the success or failure
    *         of transforming an input element into a row.
    */
-  def mapTsToRows(xs: Iterator[Input]): Iterator[Try[Row]]
+  def mapTsToRows(xs: Iterator[Input])(multiline: Boolean)(g: ((Input, Int)) => Try[Row])(implicit ev: Joinable[(Input, Int)]): Iterator[Try[Row]] = if (multiline)
+    for (ry <- new FunctionIterator[(Input, Int), Row](g)(xs.zipWithIndex)) yield ry
+  else
+    for (ry <- xs.zipWithIndex) yield g(ry)
 }
 
 /**
@@ -164,19 +166,6 @@ class IndexedInputToRowsAggregator[Input: Joinable, Row](header: Header, f: Head
   }
 
   /**
-   * Maps an iterator of inputs of type `Input` to an iterator of `Try[Row]`,
-   * where each input is transformed into a `Try[Row]` by applying the defined transformation function.
-   *
-   * @param xs an iterator of inputs of type `Input` to be transformed.
-   * @return an iterator of `Try[Row]` where each element represents the result of the transformation
-   *         of the corresponding input, which may either succeed (resulting in `Row`) or fail (resulting in a `Failure`).
-   */
-  def mapTsToRows(xs: Iterator[Input]): Iterator[Try[Row]] = if (multiline)
-    for (ry <- new FunctionIterator[(Input, Int), Row](f(header))(xs.zipWithIndex)) yield ry
-  else
-    for (ry <- xs.zipWithIndex) yield f(header)(ry)
-
-  /**
    * Processes an iterator of `Try` wrapped rows, transforming it into a single `Try` that contains an iterator of successfully processed rows.
    *
    * NOTE this is not a simple iterator to iterator pipeline. We have to sequence the input to get the output.
@@ -194,6 +183,20 @@ class IndexedInputToRowsAggregator[Input: Joinable, Row](header: Header, f: Head
   }
   else
     sequence(rys filter predicate)
+
+  /**
+   * Processes an iterator of inputs and transforms them into a wrapped iterator of rows.
+   *
+   * This method combines the transformation of inputs into `Try[Row]` through `mapTsToRows`
+   * and the subsequent processing of these tried rows through `processTriedRows`.
+   *
+   * @param xs an iterator of inputs of type `Input` to be processed.
+   * @return a `Wrapper` containing an iterator of rows of type `Row`,
+   *         where the transformation and processing operations have been applied to the inputs.
+   */
+  def processInput(xs: Iterator[Input]): Try[Iterator[Row]] =
+    processTriedRows(mapTsToRows(xs)(multiline)(f(header)))
+
 }
 
 /**
@@ -239,19 +242,6 @@ class IndexedInputToRowsTransformer[Input: Joinable, Row](header: Header, f: Hea
   }
 
   /**
-   * Maps an iterator of inputs of type `Input` to an iterator of `Try[Row]`,
-   * where each input is transformed into a `Try[Row]` by applying the defined transformation function.
-   *
-   * @param xs an iterator of inputs of type `Input` to be transformed.
-   * @return an iterator of `Try[Row]` where each element represents the result of the transformation
-   *         of the corresponding input, which may either succeed (resulting in `Row`) or fail (resulting in a `Failure`).
-   */
-  def mapTsToRows(xs: Iterator[Input]): Iterator[Try[Row]] = if (multiline)
-    for (ry <- new FunctionIterator[(Input, Int), Row](f(header))(xs.zipWithIndex)) yield ry
-  else
-    for (ry <- xs.zipWithIndex) yield f(header)(ry)
-
-  /**
    * Processes an iterator of `Try` wrapped rows, transforming it into a single `Try` that contains an iterator of successfully processed rows.
    *
    * @param rys an iterator of `Try[Row]`, where each `Try` represents the result of processing a single row which may either succeed or fail
@@ -266,4 +256,16 @@ class IndexedInputToRowsTransformer[Input: Joinable, Row](header: Header, f: Hea
         logException[Row](f)
         false
     }) map (_.get)
+
+  /**
+   * Processes an iterator of input elements, transforming them into an iterator of output rows.
+   * This method applies a two-step transformation: first, it maps the input elements into `Try[Row]` instances
+   * using the `mapTsToRows` method, then it processes these `Try[Row]` instances with `processTriedRows` to
+   * produce valid rows or handle errors.
+   *
+   * @param xs An `Iterator` of input elements of type `Input`, representing the data to be transformed.
+   * @return An `Iterator` of output rows of type `Row`, resulting from the transformation process.
+   */
+  def processInput(xs: Iterator[Input]): Iterator[Row] =
+    processTriedRows(mapTsToRows(xs)(multiline)(f(header)))
 }
