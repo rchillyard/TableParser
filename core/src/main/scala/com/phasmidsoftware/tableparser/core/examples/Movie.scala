@@ -10,49 +10,92 @@ import com.phasmidsoftware.tableparser.core.table.{CsvAttributes, HeadedTable, H
 import scala.util.Try
 
 /**
- * This class represents a Movie from the IMDB data file on Kaggle.
- * Although the limitation on 22 fields in a case class has partially gone away, it's still convenient to group the different attributes together into logical classes.
+ * The `Movie` case class represents a comprehensive set of data about a movie, including its title, format, production details,
+ * reviews, cast information, genres, plot keywords, and IMDb identifier. It encapsulates essential and optional attributes
+ * about a movie in a structured format for easy parsing, manipulation, and serialization (e.g., CSV generation).
  *
- * Created by scalaprof on 9/12/16.
- *
- * Common questions in this assignment:
- * 1. Where is main method?
- * In most case, you don't need to run main method for assignments.
- * Unit tests are provided to test your implementation.
- * In this assignment, you will find the `object Movie extends App`,
- * the `App` trait can be used to quickly turn objects into executable programs.
- * You can read the official doc of Scala for more details.
- *
- * 2. How to understand the whole program in this assignment?
- * I won't suggest you to understand the whole program in this assignment,
- * there are some advanced features like `implicit` which hasn't been covered in class.
- * You should be able to understand it before midterm.
- * I will suggest you only focus on each TO BE IMPLEMENTED in the assignments.
- *
+ * @param title        The title of the movie, represented as a string.
+ * @param format       The format details of the movie, as a `Format` object. This includes information such as color, language, aspect ratio, and duration.
+ * @param production   The production details of the movie, as a `Production` object. This includes attributes such as country, budget, gross earnings, and title year.
+ * @param reviews      The reviews and aggregated feedback data for the movie, as a `Reviews` object. It includes IMDb score, social metrics, and review counts.
+ * @param director     The director of the movie, represented as a `Principal` object, which includes the director's name and Facebook likes.
+ * @param actor1       The first main actor in the movie, represented as a `Principal` object.
+ * @param actor2       The second main actor in the movie, represented as a `Principal` object.
+ * @param actor3       The third main actor in the movie, represented as an optional `Principal` object. If no third actor is present, this will be `None`.
+ * @param genres       The list of genres for the movie, represented as an `AttributeSet`. This may include genres like Action, Drama, Comedy, etc.
+ * @param plotKeywords The set of plot-related keywords for the movie, represented as an `AttributeSet`. Keywords provide insights into the movie's storyline.
+ * @param imdb         The unique IMDb identifier for the movie, represented as a string.
  */
 case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
 /**
- * The movie format (including language and duration).
+ * Represents the format attributes associated with a movie, such as its color, language, aspect ratio, and duration.
+ * This case class is immutable and provides a concise way to model format details.
  *
- * @param color       whether filmed in color
- * @param language    the native language of the characters
- * @param aspectRatio the aspect ratio of the film (optional)
- * @param duration    its length in minutes (optional)
+ * The `Format` case class includes the following fields:
+ * - `color` (String): The color scheme of the movie (e.g., "Color", "Black and White").
+ * - `language` (String): The language in which the movie is produced (e.g., "English", "French").
+ * - `aspectRatio` (Option[Double]): An optional field representing the aspect ratio of the movie's visuals,
+ * which is expressed as a decimal (e.g., `1.85`, `2.35`). If not provided, this field is `None`.
+ * - `duration` (Option[Int]): An optional field representing the length of the movie in minutes. If not provided, this field is `None`.
+ *
+ * The `toString` method of the `Format` class provides a comma-separated string representation of its field values,
+ * including `Option` fields, which are displayed as `None` when not defined.
+ *
+ * @param color       the color scheme of the movie's visuals.
+ * @param language    the primary language of the movie.
+ * @param aspectRatio an optional aspect ratio for the movie's visuals.
+ * @param duration    an optional runtime of the movie in minutes.
+ *
+ *                    Usage example:
+ * {{{
+ * val format = Format("Color", "English", Some(1.85), Some(120))
+ * println(format) // Outputs: Color,English,Some(1.85),Some(120)
+ *
+ * val defaultFormat = Format("", "", None, None)
+ * println(defaultFormat) // Outputs: ,,,None,None
+ * }}}
  */
 case class Format(color: String, language: String, aspectRatio: Option[Double], duration: Option[Int]) {
-  override def toString: String = {
+  override def toString: String =
     s"$color,$language,$aspectRatio,$duration"
-  }
 }
 
 /**
- * The production: its country, year, and financials
+ * The `Format` object provides a predefined constant for representing a default `Format` instance.
+ * It serves as a utility object for commonly used instances of the `Format` case class.
  *
- * @param country   country of origin
- * @param budget    (optional) production budget in US dollars
- * @param gross     (optional) gross earnings (?)
- * @param titleYear the year the title was registered (?)
+ * The default format instance (`none`) is initialized with empty or `None` values for fields,
+ * representing a situation where no specific format details are available.
+ *
+ * @see Format The case class representing the format attributes such as color, language, aspect ratio, and duration.
+ */
+object Format {
+  val none: Format = Format("", "", None, None)
+}
+
+/**
+ * The `Production` case class represents the metadata associated with a creative production,
+ * such as a film, including its country of origin, budget, gross revenue, and release year.
+ *
+ * ==Fields==
+ *
+ * @param country   the country where the production originated, as a non-null `String`.
+ * @param budget    an optional `Int` representing the production's budget. If unavailable, it is `None`.
+ * @param gross     an optional `Int` representing the total gross revenue of the production. If unavailable, it is `None`.
+ * @param titleYear an optional `Int` representing the year the production was released or titled. If unavailable, it is `None`.
+ *
+ *                  ==Methods==
+ *                  - `isKiwi`: Determines if the production originates from New Zealand.
+ *
+ *                  ==Usage Example==
+ * {{{
+ * val production1 = Production("New Zealand", Some(1500000), Some(5000000), Some(2022))
+ * val production2 = Production("USA", None, None, None)
+ *
+ * println(production1.isKiwi) // Output: true
+ * println(production2.isKiwi) // Output: false
+ * }}}
  */
 case class Production(country: String, budget: Option[Int], gross: Option[Int], titleYear: Option[Int]) {
   def isKiwi: Boolean = this match {
@@ -62,27 +105,115 @@ case class Production(country: String, budget: Option[Int], gross: Option[Int], 
 }
 
 /**
- * Information about various forms of review, including the content rating.
+ * The `Production` object serves as a companion object for the `Production` case class.
+ * It provides predefined constants and utility methods related to the concept of a production,
+ * such as a film or other creative work.
+ *
+ * ==Overview==
+ * - The `Production` object includes commonly used instances of the `Production` class.
+ * - It facilitates operations on and interactions with `Production` objects in a consistent manner.
+ *
+ * @see [[Production]] case class for the associated data structure and detailed behavior.
+ */
+object Production {
+  val none: Production = Production("", None, None, None)
+}
+
+/**
+ * The `Reviews` case class represents aggregated review and user feedback data for a movie,
+ * encapsulating information such as IMDb scores, social media metrics, content rating, and
+ * review counts.
+ *
+ * @param imdbScore          The IMDb score of the movie, typically ranging from 1 to 10 with up to one decimal place.
+ * @param facebookLikes      The number of likes the movie has on Facebook, used as a measure of its popularity on the platform.
+ * @param contentRating      The `Rating` object indicating the content rating of the movie (e.g., PG, R), which may also include age restrictions.
+ * @param numUsersReview     An `Option` representing the number of user reviews submitted for the movie. A value of `None` indicates an unknown or unavailable count.
+ * @param numUsersVoted      The total number of users who voted for the movie on IMDb.
+ * @param numCriticReviews   An `Option` representing the number of critic reviews submitted for the movie. A value of `None` indicates an unknown or unavailable count.
+ * @param totalFacebookLikes The total combined Facebook likes of the movie's cast and crew, providing a broader measure of social media presence.
  */
 case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating, numUsersReview: Option[Int], numUsersVoted: Int, numCriticReviews: Option[Int], totalFacebookLikes: Int)
 
 /**
- * A cast or crew principal
+ * The `Reviews` object contains utility members and predefined instances related to the `Reviews` case class.
  *
- * @param name          name
- * @param facebookLikes number of FaceBook likes
+ * This object is primarily used to define default or placeholder instances of `Reviews`, such as the `none` value,
+ * which represents a `Reviews` instance with default or empty data.
+ */
+object Reviews {
+  val none: Reviews = Reviews(0, 0, Rating(""), None, 0, None, 0)
+}
+/**
+ * Represents a principal entity involved in a production. This entity is characterized by its name
+ * and the number of Facebook likes it has received. Typically, the `Principal` class is used to model
+ * contributors such as actors, directors, or other individuals associated with a movie or production.
+ *
+ * @param name          the `Name` instance representing the principal's full name, which includes
+ *                      fields for the first name, middle name (optional), last name, and suffix (optional).
+ * @param facebookLikes the number of Facebook likes associated with the principal, which can serve
+ *                      as a measure of the individual's popularity or reach on social media.
+ * @example
+ * {{{
+ * val principal = Principal(Name("John", Some("A."), "Doe", None), 1200)
+ * println(principal) // Output: John A. Doe (1200 likes)
+ * }}}
+ * @note The `Principal` class is part of a broader model for describing movies or productions,
+ *       and may be used in conjunction with other classes such as `Movie` or `Production`.
+ *       Additionally, a default instance of `Principal` may be provided in an accompanying
+ *       companion object for known default values.
  */
 case class Principal(name: Name, facebookLikes: Int) {
   override def toString = s"$name ($facebookLikes likes)"
 }
 
 /**
- * A name of a contributor to the production
+ * Companion object for the `Principal` case class, providing default values and utility objects
+ * related to principal entities in a production context.
  *
- * @param first  first name
- * @param middle middle name or initial
- * @param last   last name
- * @param suffix suffix
+ * This object currently includes a predefined default instance:
+ *  - `nemo`: The default `Principal` instance with a default `Name` ("ne mo") and `facebookLikes` value of 0.
+ *
+ * ==Usage==
+ * The `Principal` object, along with its case class, is typically used to represent individuals such as actors,
+ * directors, or contributors in a production database system, with information about their name and popularity metrics.
+ *
+ * ==Predefined Instance==
+ *  - `nemo`: A convenient default `Principal` instance, used as a placeholder or fallback.
+ *
+ * @example Using the default `Principal`:
+ * {{{
+ * println(Principal.nemo) // Output: ne mo (0 likes)
+ * }}}
+ *
+ *          ==Relation==
+ *          Works in conjunction with the `Principal` case class and is associated with other models in parsing, processing,
+ *          and rendering movie-related data structures.
+ */
+object Principal {
+  val nemo: Principal = Principal(Name.nemo, 0)
+}
+
+/**
+ * A case class representing a person's name with optional middle name and suffix.
+ *
+ * @param first  The first name of the person (mandatory).
+ * @param middle An optional middle name of the person.
+ * @param last   The last name (or family name) of the person (mandatory).
+ * @param suffix An optional suffix, such as "Jr.", "Sr.", or other titles.
+ *
+ *               The `Name` class overrides the `toString` method to provide a concatenated
+ *               string representation of the full name. The full name includes the first name,
+ *               optionally followed by the middle name, then the last name, and finally an
+ *               optional suffix. Components are separated by a space.
+ *
+ *               Example usage:
+ * {{{
+ * val fullName = Name("John", Some("William"), "Doe", Some("Jr."))
+ * println(fullName.toString) // Output: "John William Doe Jr."
+ *
+ * val simpleName = Name("Jane", None, "Smith", None)
+ * println(simpleName.toString) // Output: "Jane Smith"
+ * }}}
  */
 case class Name(first: String, middle: Option[String], last: String, suffix: Option[String]) {
   override def toString: String = {
@@ -104,9 +235,13 @@ case class Name(first: String, middle: Option[String], last: String, suffix: Opt
 }
 
 /**
- * The US rating.
- * NOTE: this definition does not cover all of the ratings in the IMDB movie dataset.
- * That's OK--this is just an exemplar.
+ * Represents a content rating, typically used to signify the suitability of media content
+ * (e.g., movies, shows) for different audiences. The `Rating` class consists of a code
+ * (e.g., "PG", "R", "G") and an optional age specification (e.g., "PG-13").
+ *
+ * @param code The code representing the general content rating (e.g., "PG", "R").
+ * @param age  An optional integer specifying the age restriction for the content, if applicable
+ *             (e.g., a value of `13` for "PG-13").
  */
 case class Rating(code: String, age: Option[Int]) {
   override def toString: String = code + (age match {
@@ -362,6 +497,8 @@ object Name {
     case _ =>
       throw new Exception(s"""parse error in Name: '$name'""")
   }
+
+  val nemo: Name = Name("ne mo")
 }
 
 /**
@@ -441,6 +578,10 @@ object Rating {
  * }}}
  */
 object Movie {
+
+  val missing: Movie = apply("",Format.none,Production.none,Reviews.none,Principal.nemo,Principal.nemo,Principal.nemo,None,AttributeSet.none,AttributeSet.none,"")
+
+  val header = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
 
   import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
 

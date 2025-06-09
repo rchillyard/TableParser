@@ -43,5 +43,7 @@ object AttributeSet {
    */
   def parse(w: String): Try[AttributeSet] =
     Parseable.split(w).map(apply)
+
+  val none: AttributeSet = AttributeSet(Nil)
 }
 

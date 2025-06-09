@@ -5,6 +5,7 @@
 package com.phasmidsoftware.tableparser.core.table
 
 import com.phasmidsoftware.tableparser.core.examples.Movie
+import com.phasmidsoftware.tableparser.core.examples.Movie.header
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table.Table.parseResource
@@ -526,13 +527,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "transform"
 
-  private val movieHeader = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
-
   it should "parse and transform the following rows with pushdown function" in {
     import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
 
     val rows = Seq(
-      movieHeader,
+      header,
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
@@ -551,7 +550,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
 
     val rows = Seq(
-      movieHeader,
+      header,
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
@@ -572,7 +571,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
 
     val rows = Seq(
-      movieHeader,
+      header,
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
