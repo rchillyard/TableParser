@@ -409,9 +409,9 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    *               which defines how input elements can be combined or validated during processing.
    * @return a `Try` containing a `Table` if the parsing is successful, or an error in case of failure.
    */
-  def doParseRows(ts: Iterator[Input], header: Header, f: Header => ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Try[Table] = {
+  def doParseRows(ts: Iterator[Input], header: Header, f: ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Try[Table] = {
 
-    val inputTransformer = new IndexedInputToRowsAggregator(header, f, multiline, forgiving, predicate)
+    val inputTransformer = new IndexedInputToRowsAggregator(f, multiline, forgiving, predicate)
 
     // NOTE that here, we materialze the resulting iterator of rows into a list of rows.
     for (rs <- inputTransformer.processInput(ts)) yield builder(rs.toList, header)
@@ -485,7 +485,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
    *         it contains the parsing error.
    */
   def parseRows(ws: Iterator[String], header: Header): Try[Table] =
-    doParseRows(ws, header, rowParser.parse)
+    doParseRows(ws, header, rowParser.parse(header))
 }
 
 /**
@@ -508,7 +508,7 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
    * @return a `Try[Table]` containing the parsed table on success or an exception on failure.
    */
   def parseRows(wss: Iterator[Strings], header: Header): Try[Table] =
-    doParseRows(wss, header, rowParser.parse)
+    doParseRows(wss, header, rowParser.parse(header))
 }
 
 /**

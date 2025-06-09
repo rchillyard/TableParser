@@ -101,12 +101,12 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    */
   def process(xs: Iterator[Input], n: Int)(implicit ev: Joinable[Input]): Iterator[Row] = maybeFixedHeader match {
     case Some(h) =>
-      doProcessRows(xs drop n, h, rowParser.parse) // CONSIDER reverting to check that n = 0
+      doProcessRows(xs drop n, rowParser.parse(h)) // CONSIDER reverting to check that n = 0
     case None if n > 0 =>
       val yr: TeeIterator[Input] = new TeeIterator(n)(xs)
       rowParser.parseHeader(yr.tee) match {
         case Success(h) =>
-          doProcessRows(yr, h, rowParser.parse)
+          doProcessRows(yr, rowParser.parse(h))
         case Failure(exception) =>
           throw exception
       }
@@ -134,9 +134,9 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    *               `Joinable` type class, which provides methods to join or validate input elements.
    * @return an iterator of successfully processed rows of type `Row`.
    */
-  private def doProcessRows(ts: Iterator[Input], header: Header, f: Header => ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Iterator[Row] = {
+  private def doProcessRows(ts: Iterator[Input], f: ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Iterator[Row] = {
 
-    val inputTransformer = new IndexedInputToRowsTransformer(header, f, multiline)
+    val inputTransformer = new IndexedInputToRowsTransformer(f, multiline)
 
     for (rs <- inputTransformer.processInput(ts)) yield rs
   }
