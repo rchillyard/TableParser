@@ -8,23 +8,20 @@ import com.phasmidsoftware.tableparser.core.util.{FunctionIterator, Joinable}
 import scala.util.{Failure, Success, Try}
 
 /**
- * Abstract class `InputTransformer` provides a base for transforming input data of type `Input` into output rows of type `Row`.
+ * An abstract class `InputTransformer` that extends `InputPreprocessor` and defines methods for
+ * transforming input data into rows, including error handling and extracting valid data rows.
  *
- * The transformation is guided by a header (`Header`) that provides metadata about the input,
- * and a transformation function that maps input elements with corresponding indices into rows of type `Row`.
+ * This class provides a scaffold for implementing data preprocessing pipelines by utilizing
+ * input-to-row transformations (`mapTsToRows`) and processing the results to extract valid rows
+ * while disregarding or handling errors (`processTriedRows`). It facilitates robust and reusable
+ * approaches in data processing workflows, making it easier to define reusable transformation
+ * logic for specific input data types and row structures.
  *
- * This class extends from `InputPreprocessor`, inheriting utilities for mapping input data to rows while encapsulating
- * success or failure cases. Specific implementations are expected to define the behavior of inherited abstract methods.
- *
- * @param header the `Header` instance containing metadata (e.g., column names) about the input.
- * @param f      a transformation function that takes a `Header` and returns a function that maps tuples of
- *               `(Input, Int)` to `Try[Row]`. Each tuple represents an input element and its position (index),
- *               and is processed to construct a row or indicate failure.
- * @tparam Input the type of input element. The elements must satisfy the constraints imposed by the `Joinable` type class.
- * @tparam Row   the type of output row produced during the transformation process.
- * @constructor Generates an `InputTransformer` with the provided header and transformation function.
+ * @tparam Input the type of input elements to be processed, for example, raw data records or strings.
+ * @tparam Row   the type of rows to be produced after transformation, typically structured representations
+ *               like case classes or tuples.
  */
-abstract class InputTransformer[Input, Row](header: Header, f: Header => ((Input, Int)) => Try[Row]) extends InputPreprocessor[Input, Row] {
+abstract class InputTransformer[Input, Row]() extends InputPreprocessor[Input, Row] {
 
   /**
    * Processes an iterator of `Try[Row]` values, extracting successful rows while filtering out failed ones.
@@ -51,21 +48,20 @@ abstract class InputTransformer[Input, Row](header: Header, f: Header => ((Input
 }
 
 /**
- * Abstract class `InputAggregator` is responsible for aggregating input data and transforming it into a processed
- * format that can be further utilized. It extends the `InputPreprocessor` trait, enabling capabilities such as
- * transforming input elements into `Try`-wrapped Rows (`mapTsToRows`) and processing those rows (`processTriedRows`).
- * The primary purpose of this class is to provide a mechanism for integrating input preprocessing and processing
- * logic in a cohesive manner.
+ * The `InputAggregator` abstract class extends the `InputPreprocessor` trait to provide additional
+ * higher-level processing functionality for input data. It focuses on aggregating and processing
+ * transformed rows encapsulated in `Try`, with support for filtering invalid or failed transformations
+ * and wrapping the successfully processed rows in a desired container type `Wrapper[_]`.
  *
- * @tparam Input   the type of input data that will be provided for processing.
- * @tparam Row     the type of output rows that will be produced after processing the input.
- * @tparam Wrapper a higher-kinded type used to wrap the processed result, such as `Option`, `List`, or another container.
- * @param header a `Header` instance that represents the schema or structure of the input data.
- * @param f      a function taking a `Header` and returning a transformation function that maps
- *               an (Input, Int) pair to a `Try[Row]`. This function defines the logic for transforming input data
- *               into rows.
+ * This class serves as an abstraction for handling the pipeline of parsing, processing, and aggregating
+ * data within a flexible and reusable structure, designed to be used in applications that involve parsing
+ * and pre-processing input data into structured forms.
+ *
+ * @tparam Input   the type of input elements to be processed, such as raw data or records.
+ * @tparam Row     the type of rows that result from processing the inputs, typically structured representations.
+ * @tparam Wrapper the container type used to wrap the successfully processed rows, e.g., `Option`, `Either`, or `List`.
  */
-abstract class InputAggregator[Input, Row, Wrapper[_]](header: Header, f: Header => ((Input, Int)) => Try[Row]) extends InputPreprocessor[Input, Row] {
+abstract class InputAggregator[Input, Row, Wrapper[_]]() extends InputPreprocessor[Input, Row] {
 
   /**
    * Processes an iterator of `Try[Row]` elements, filtering out any failed attempts,
@@ -107,21 +103,44 @@ abstract class InputAggregator[Input, Row, Wrapper[_]](header: Header, f: Header
 trait InputPreprocessor[Input, Row] {
 
   /**
-   * Maps an iterator of input data elements into an iterator of `Try`-wrapped rows
-   * by applying the transformation function defined in the `InputTransformer`.
+   * Processes an input iterator of type `Input` and maps its elements into rows of type `Row` while handling potential errors
+   * using a specified transformation function. The function can operate in two modes:
+   * - Multiline mode: input data can span multiple lines and will be joined using the provided `Joinable` type class.
+   * - Single-line mode: each input element is processed independently.
    *
-   * Each transformation encapsulates a potential success or failure for converting an
-   * `Input` element into a `Row`, allowing downstream processing of results and errors.
-   *
-   * @param xs an iterator of input elements of type `Input` to be transformed.
-   * @return an iterator of `Try[Row]`, where each `Try` represents the success or failure
-   *         of transforming an input element into a row.
+   * @param xs        The input iterator containing elements of type `Input`.
+   * @param multiline A Boolean flag indicating whether to process input in multiline mode.
+   *                    - `true`: Enables multiline processing using the provided `Joinable` type class.
+   *                    - `false`: Processes each input independently.
+   * @param g         A transformation function that takes a tuple `(Input, Int)`, representing an input element and its index,
+   *                  and returns a `Try[Row]`. The function should encapsulate the logic for mapping input to a row, including error handling.
+   * @param ev        An implicit instance of the `Joinable[(Input, Int)]` type class,
+   *                  which handles joining and validating input tuples during multiline mode.
+   * @return An iterator of `Try[Row]`, where each element represents either a successfully processed row or a failure.
+   *         - In multiline mode, elements may span across multiple lines, joined using the logic provided by the `Joinable` type class.
+   *         - In single-line mode, each input element is processed individually.
    */
-  def mapTsToRows(xs: Iterator[Input])(multiline: Boolean)(g: ((Input, Int)) => Try[Row])(implicit ev: Joinable[(Input, Int)]): Iterator[Try[Row]] = if (multiline)
-    for (ry <- new FunctionIterator[(Input, Int), Row](g)(xs.zipWithIndex)) yield ry
-  else
-    for (ry <- xs.zipWithIndex) yield g(ry)
+  def mapTsToRows(xs: Iterator[Input])(multiline: Boolean)(g: ((Input, Int)) => Try[Row])(implicit ev: Joinable[(Input, Int)]): Iterator[Try[Row]] =
+    if (multiline)
+      for (ry <- new FunctionIterator[(Input, Int), Row](g)(xs.zipWithIndex)) yield ry
+    else
+      for (ry <- xs.zipWithIndex) yield g(ry)
 }
+
+/**
+ * A trait that defines a contract for mapping an input of type `Input` to a row of type `Row` as a computation
+ * that can either succeed or fail, represented by `Try[Row]`.
+ *
+ * InputMapper is designed to abstract the process of parsing or transforming an input into a structured
+ * row representation, where the input may come from any external or internal source and the row represents
+ * a meaningful structured output.
+ *
+ * NOTE this does not handle sequenced input. If you potentially need to handle sequenced input, use `InputPreprocessor` instead.
+ *
+ * @tparam Input the type of input that will be processed or parsed (e.g., raw data).
+ * @tparam Row   the type of the resulting row produced by the mapping (e.g., structured data).
+ */
+trait InputMapper[Input, Row] extends (Input => Try[Row])
 
 /**
  * The `IndexedInputToRowsAggregator` class is a concrete implementation of the `InputAggregator` abstract class.
@@ -143,7 +162,7 @@ trait InputPreprocessor[Input, Row] {
  * @tparam Input the type of the input data, which must adhere to the `Joinable` type class.
  * @tparam Row   the type of the rows resulting from the transformation.
  */
-class IndexedInputToRowsAggregator[Input: Joinable, Row](header: Header, f: Header => ((Input, Int)) => Try[Row], multiline: Boolean, forgiving: Boolean, predicate: Try[Row] => Boolean) extends InputAggregator[Input, Row, Try](header, f) {
+class IndexedInputToRowsAggregator[Input: Joinable, Row](header: Header, f: Header => ((Input, Int)) => Try[Row], multiline: Boolean, forgiving: Boolean, predicate: Try[Row] => Boolean) extends InputAggregator[Input, Row, Try]() {
 
   /**
    * Implicit object that provides a `JoinableTInt` instance for the type `Input`.
@@ -216,7 +235,7 @@ class IndexedInputToRowsAggregator[Input: Joinable, Row](header: Header, f: Head
  * @tparam Input the type of input data, which must conform to the `Joinable` type class.
  * @tparam Row   the type of output rows produced by the transformation.
  */
-class IndexedInputToRowsTransformer[Input: Joinable, Row](header: Header, f: Header => ((Input, Int)) => Try[Row], multiline: Boolean) extends InputTransformer[Input, Row](header, f) {
+class IndexedInputToRowsTransformer[Input: Joinable, Row](header: Header, f: Header => ((Input, Int)) => Try[Row], multiline: Boolean) extends InputTransformer[Input, Row]() {
 
   /**
    * Implicit object representing a `JoinableTInt` instance for the type `Input`.
@@ -242,12 +261,12 @@ class IndexedInputToRowsTransformer[Input: Joinable, Row](header: Header, f: Hea
   }
 
   /**
-   * Processes an iterator of `Try` wrapped rows, transforming it into a single `Try` that contains an iterator of successfully processed rows.
+   * Processes an iterator of `Try[Row]` instances, filtering out any failures and retaining only successful results.
+   * For each `Failure` encountered, the exception is logged using the `logException` method.
+   * The successful `Row` objects are then extracted and returned as an iterator.
    *
-   * @param rys an iterator of `Try[Row]`, where each `Try` represents the result of processing a single row which may either succeed or fail
-   * @return a `Try[Iterator[Row]]` that encapsulates either:
-   *         - a success containing an iterator of all successfully processed rows, or
-   *         - a failure if any of the individual rows failed during processing
+   * @param rys An `Iterator` of `Try[Row]` instances to be processed, where each element represents a possible row or an error.
+   * @return An `Iterator` of `Row` objects, containing only the successful results from the input.
    */
   def processTriedRows(rys: Iterator[Try[Row]]): Iterator[Row] =
     (rys filter {
