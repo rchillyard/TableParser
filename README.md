@@ -601,7 +601,7 @@ Apart from CSV, there is currently only one implementation of _String_ rendering
 Although Json is indeed a hierarchical serialization format, the manner of creating a Json string masks the hierarchical aspects.
 The implemented Json reader/writer is Spray Json but that could easily be changed in the future.
 
-Although this section is concerned with rendering, it is also true of course to say that tables can be read from Json strings.
+Although this section is concerned with rendering, it is also true, of course, to say that tables can be read from Json strings.
 
 The following example from _JsonRendererSpec.scala_ shows how we can take the following steps
 (for the definitions of _Player_, _Partnership_, please see the spec file itself):
