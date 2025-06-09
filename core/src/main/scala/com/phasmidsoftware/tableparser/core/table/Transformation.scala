@@ -69,9 +69,13 @@ case class RawTableTransformation(transformers: Map[String, Transformation[Strin
 }
 
 /**
- * TESTME
+ * This case class represents a transformation that performs column-wise aggregation on a `RawTable`.
+ * Each aggregator specifies a mapping between a column name and its corresponding transformation function.
  *
- * @param aggregators a Map of Transformations indexed by String.
+ * @param aggregators A map where keys are column names (as `String`) and values are transformations
+ *                    (subclasses of `Transformation`) applied to the data in those columns. The transformation
+ *                    process is string-based (`Transformation[String, String]`), meaning that it takes string
+ *                    input from a column and produces a transformed string output.
  */
 @unused
 case class RawTableAggregation(aggregators: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable] {
@@ -86,8 +90,8 @@ case class RawTableAggregation(aggregators: Map[String, Transformation[String, S
   def apply(t: RawTable): RawTable = t.maybeHeader match { // NOTE there will always be a header for a raw table.
     case Some(header) =>
       val wWtXm = for {
-        (k, x) <- aggregators
-      } yield (header.getIndex(k).get, x)
+        (column, wWt) <- aggregators
+      } yield (header.getIndex(column).get, wWt) // NOTE that this use of get is perfectly safe.
       t.map(RawRowTransformation(wWtXm))
     case None =>
       throw TableException(s"RawTableAggregation.apply($t) is missing its header")

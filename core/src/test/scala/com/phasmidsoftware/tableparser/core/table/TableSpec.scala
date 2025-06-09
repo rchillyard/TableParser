@@ -543,6 +543,25 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   }
 
+  it should "parse and aggregate the following rows with pushdown function" in {
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
+
+    val rows = Seq(
+      movieHeader,
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+    )
+
+    matchTry(Table.parse(rows)) {
+      case mt@HeadedTable(_, _) =>
+        mt.size shouldBe 1
+        mt.head(1).get shouldBe "Doug Walker"
+
+        val f = RawTableAggregation(Map("MOVIE_TITLE" -> CellTransformation(_.toLowerCase)))
+        f.apply(mt).head(11).get shouldBe "star wars: episode vii - the force awakens             "
+    }
+
+  }
+
   behavior of "projection"
 
   it should "parse and project the following rows" in {
