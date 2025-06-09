@@ -37,8 +37,7 @@ Package Structure
 As of version 1.1.4, the code has been split into three packages: _core_, _cats_, and _spark_.
 The remainder of this README refers to the _core_ package.
 Use of _cats-effect IO_ and encryption have been moved into the _cats_ package.
-The _spark_ package is intended for use with Apache Spark. 
-As of 1.1.4, this is not yet implemented. 
+The _spark_ package is for use with Apache Spark (beginning with 1.1.5).
 
 Quick Intro
 ===========
@@ -249,16 +248,21 @@ The constructor for _TableParserHelper_ takes two parameters, both of which can 
 
 ## RowParser
 
-_RowParser_ is a trait which defines how a line of text is to be parsed as a _Row_.
-_Row_ is a parametric type which, in subtypes of _RowParser_, is context-bound to _CellParser_.
+_RowParser_ is a trait that defines how a line of text is to be parsed as a _Row_.
+_Row_ is a parametric type that, in subtypes of _RowParser_, is context-bound to _CellParser_.
 A second parametric type _Input_ is defined: this will take on values of _String_ or _Seq\[String]_, according to the form of input.
 Typically, the _StandardRowParser_ is used, which takes as its constructor parameter a _LineParser_.
 
 The methods of _RowParser_ are:
 
-    def parse(w: String)(header: Header): Try[Row]
+    def parse(header: Header)(w: String): Try[Row]
+
+    def parseIndexed(header: Header)(indexedRow: (Input, Int)): Try[Row]
 
     def parseHeader(w: String): Try[Header]
+
+The parseIndexed method is useful when we care about the sequential aspect of the input.
+This is particularly important if strings are allowed to spread over newlines (as in the AirBnb dataset).
 
 ## LineParser
 
@@ -618,6 +622,7 @@ Release Notes
 =============
 V1.1.4 -> V1.1.5
 * Work on spark module.
+* Now supports _Iterator_ to _Iterator_ processing.
 
 V1.1.3 -> V1.1.4
 * Split into three modules: core, cats and spark.
