@@ -101,12 +101,12 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    */
   def process(xs: Iterator[Input], n: Int)(implicit ev: Joinable[Input]): Iterator[Row] = maybeFixedHeader match {
     case Some(h) =>
-      doProcessRows(xs drop n, rowParser.parse(h)) // CONSIDER reverting to check that n = 0
+      doProcessRows(xs drop n, rowParser.parseIndexed(h)) // CONSIDER reverting to check that n = 0
     case None if n > 0 =>
       val yr: TeeIterator[Input] = new TeeIterator(n)(xs)
       rowParser.parseHeader(yr.tee) match {
         case Success(h) =>
-          doProcessRows(yr, rowParser.parse(h))
+          doProcessRows(yr, rowParser.parseIndexed(h))
         case Failure(exception) =>
           throw exception
       }

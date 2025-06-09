@@ -39,6 +39,9 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
    * def acceptIf...
    * It's a shame that they didn't make it a constant in Parsers!
    *
+   * CONSIDER checking that sequential lines really are sequential.
+   * Currently, no use is made of `indexedString._2`
+   *
    * @param indexedString a tuple of String and Int denoting the line and its index in the file.
    * @return a Try[Strings].
    */

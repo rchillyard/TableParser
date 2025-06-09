@@ -19,13 +19,24 @@ import scala.util.Try
 trait RowParser[Row, Input] {
 
   /**
-   * Parses a row of input data into a Row object, using a specified Header for context.
+   * Parses the given input using the provided header and produces a result wrapped in a Try.
    *
-   * @param header     the Header object which provides metadata about the columns in the input.
-   * @param indexedRow a tuple consisting of the input data (of generic type Input) and the row index (Int).
-   * @return a Try that, on success, contains the parsed Row object. If parsing fails, the Try contains Failure with the appropriate exception.
+   * @param header the header object that defines the schema or metadata for parsing the row.
+   * @param input  the input of type Input to be parsed into a row of type Row.
+   * @return a Try[Row], where Success contains the parsed row if parsing succeeds,
+   *         or Failure contains an exception if parsing fails.
    */
-  def parse(header: Header)(indexedRow: (Input, Int)): Try[Row]
+  def parse(header: Header)(input: Input): Try[Row]
+
+  /**
+   * Parses an indexed row, using the given header, into a Try[Row].
+   *
+   * @param header     the header which defines the schema or metadata for parsing the row.
+   * @param indexedRow a tuple containing the input row (of type Input) and its index (of type Int).
+   * @return a Try[Row] which will be a Success containing the parsed row if parsing is successful,
+   *         or a Failure with an exception if parsing fails.
+   */
+  def parseIndexed(header: Header)(indexedRow: (Input, Int)): Try[Row]
 
   /**
    * Parse the Input, resulting in a Try[Header]
@@ -65,11 +76,22 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
    * @param indexedString a tuple containing the string representation of the line and its index in the file.
    * @return a `Try[Row]` representing the parsed and converted row, or a failure if the parsing or conversion fails.
    */
-  def parse(header: Header)(indexedString: (String, Int)): Try[Row] =
+  def parseIndexed(header: Header)(indexedString: (String, Int)): Try[Row] =
     for {
       ws <- parser.parseRow(indexedString)
       r <- doConversion(indexedString, header, ws)
     } yield r
+
+  /**
+   * Parses the given input using the provided header and produces a result wrapped in a Try.
+   *
+   * @param header the header object that defines the schema or metadata for parsing the row.
+   * @param input  the input of type Input to be parsed into a row of type Row.
+   * @return a Try[Row], where Success contains the parsed row if parsing succeeds,
+   *         or Failure contains an exception if parsing fails.
+   */
+  def parse(header: Header)(input: String): Try[Row] =
+    parseIndexed(header)(input -> 0) // NOTE this is a kluge in that we don't have a line sequence number so we just use 0 instead.
 
   /**
    * Method to parse a String as a Try[Header].
@@ -113,8 +135,19 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
    *                      and the second element is the index of the row in the table.
    * @return a Try[Row], which is a Row object if parsing is successful, or a failure if parsing encounters an error.
    */
-  def parse(header: Header)(indexedString: (Strings, Int)): Try[Row] =
+  def parseIndexed(header: Header)(indexedString: (Strings, Int)): Try[Row] =
     RowValues(Row(indexedString._1, header, indexedString._2)).convertTo[Row]
+
+  /**
+   * Parses the given input using the provided header and produces a result wrapped in a Try.
+   *
+   * @param header the header object that defines the schema or metadata for parsing the row.
+   * @param input  the input of type Input to be parsed into a row of type Row.
+   * @return a Try[Row], where Success contains the parsed row if parsing succeeds,
+   *         or Failure contains an exception if parsing fails.
+   */
+  def parse(header: Header)(input: Strings): Try[Row] =
+    parseIndexed(header)(input -> 0) // NOTE this is a kluge in that we don't have a line sequence number so we just use 0 instead.
 
   /**
    * Method to parse a sequence of Strings as a Try[Header].

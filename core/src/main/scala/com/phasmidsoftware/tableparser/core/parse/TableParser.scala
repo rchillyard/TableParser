@@ -485,7 +485,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
    *         it contains the parsing error.
    */
   def parseRows(ws: Iterator[String], header: Header): Try[Table] =
-    doParseRows(ws, header, rowParser.parse(header))
+    doParseRows(ws, header, rowParser.parseIndexed(header))
 }
 
 /**
@@ -508,7 +508,7 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
    * @return a `Try[Table]` containing the parsed table on success or an exception on failure.
    */
   def parseRows(wss: Iterator[Strings], header: Header): Try[Table] =
-    doParseRows(wss, header, rowParser.parse(header))
+    doParseRows(wss, header, rowParser.parseIndexed(header))
 }
 
 /**

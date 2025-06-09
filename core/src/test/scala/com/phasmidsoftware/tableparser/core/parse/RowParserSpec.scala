@@ -30,14 +30,14 @@ class RowParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object HawkCountRowConfig extends HawkCountRowConfig
 
     val parser = StandardRowParser[HawkCount](LineParser.apply)
-    val hawkCount: Try[HawkCount] = parser.parse(header)(("""Red-tailed Hawk,1027""", 0))
+    val hawkCount: Try[HawkCount] = parser.parseIndexed(header)(("""Red-tailed Hawk,1027""", 0))
     hawkCount shouldBe Success(HawkCount("Red-tailed Hawk", 1027))
   }
 
   it should "parse quoted string" in {
     import HawkCountParser._
     val parser = StandardRowParser[HawkCount](LineParser.apply)
-    val hawkCount: Try[HawkCount] = parser.parse(header)((""""Red-tailed Hawk",1027""", 0))
+    val hawkCount: Try[HawkCount] = parser.parseIndexed(header)((""""Red-tailed Hawk",1027""", 0))
     hawkCount shouldBe Success(HawkCount("Red-tailed Hawk", 1027))
   }
 
