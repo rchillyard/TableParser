@@ -6,29 +6,21 @@ package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.{Joinable, TeeIterator, TryUsing}
-import org.slf4j.{Logger, LoggerFactory}
+import com.phasmidsoftware.tableparser.core.util.{Joinable, TeeIterator}
 import scala.annotation.implicitNotFound
-import scala.io.Source
-import scala.util.{Failure, Random, Success, Try}
+import scala.util.{Failure, Success, Try}
 
 /**
- * Type class to parse a set of rows as a Table.
+ * Typeclass trait representing a row processor that defines how rows of input data can be parsed into specific types,
+ * typically useful for parsing and processing tabular data with headers.
  *
- * CONSIDER removing Table parameter: it isn't used.
- *
- * @tparam Table the Table type.
+ * @tparam Row the type that each row will be processed into.
  */
-@implicitNotFound(msg = "Cannot find an implicit instance of RowProcessor[${Table}]. Typically, you should define an instance of StringRowProcessor or, for example, MovieRowProcessor.")
-trait RowProcessor[Table] {
+@implicitNotFound(msg = "Cannot find an implicit instance of RowProcessor[${Row}]. Typically, you should define an instance of StringRowProcessor or, for example, MovieRowProcessor.")
+trait RowProcessor[Row] {
 
   /**
-   * The row type.
-   */
-  type Row
-
-  /**
-   * The input type.
+   * The input type, typically `String`.
    */
   type Input
 
@@ -74,77 +66,14 @@ trait RowProcessor[Table] {
 }
 
 /**
- * The `RowProcessor` object provides utility functions and implicit classes to facilitate
- * parsing of tabular data from various input sources (e.g., files, strings). It defines
- * methods and constructs to assist in processing tabular rows into structured data.
+ * Abstract class representing a row processor for handling input rows and parsing them into a specified row type.
+ *
+ * This class extends the `RowProcessor` type class and provides additional methods for processing iterators of input rows
+ * based on headers and transformation functions. It relies on the implicit evidence of the `Joinable` type class to define
+ * behavior for handling the input type.
+ *
+ * @tparam Row the type of rows output by this processor.
  */
-object RowProcessor {
-
-  /**
-   * Class to allow the simplification of an expression to parse a source, given a `StringTableParser`.
-   *
-   * @param p a StringTableParser.
-   * @tparam Table the (parametric) underlying type of `p` (`Table` will be `Table[_]`).
-   */
-  implicit class ImplicitParser[Table](p: StringTableParser[Table]) {
-
-    /**
-     * Method to parse a `Try[Source]` character-by-character.
-     * NOTE the underlying source of `sy` will be closed after parsing has been completed.
-     *
-     * @param sy a `Try[Source]`.
-     * @return a `Try[Table]`.
-     */
-    def parse(sy: Try[Source]): Try[Table] =
-      sy flatMap doParse
-
-    /**
-     * Method to parse a `Source`.
-     * NOTE the source `s` will be closed after parsing has been completed (no resource leaks).
-     *
-     * @param s a Source.
-     * @return a `Try[Table]`.
-     */
-    private def doParse(s: Source): Try[Table] =
-      TryUsing(s)(x => doParse(x.getLines()))
-
-    /**
-     * Method to parse an iterator of String.
-     *
-     * @param xs an `Iterator[String]`.
-     * @return a `Try[Table]`.
-     */
-    private def doParse(xs: Iterator[String]): Try[Table] =
-      p.parse(xs, 1)
-  }
-
-  val r: Random = new Random()
-
-  val logger: Logger = LoggerFactory.getLogger(TableParser.getClass)
-
-  /**
-   * Method to return a random sampling function.
-   *
-   * CONSIDER using FP.sampler
-   *
-   * @param n this is the sample factor: approximately one in every n successful results will form part of the result.
-   * @tparam X the underlying type of the sampler.
-   * @return a Try[X] => Boolean function which is always yields false if its input is a failure, otherwise,
-   *         it chooses every nth value (approximately).
-   */
-  def sampler[X](n: Int): Try[X] => Boolean = {
-    case Success(_) =>
-      r.nextInt(n) == 0
-    case _ =>
-      false
-  }
-
-  /**
-   * a function which always evaluates as true, regardless of the successfulness of the input.
-   */
-  val includeAll: Try[Any] => Boolean = _ => true
-}
-
 abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
 
   /**
@@ -205,7 +134,7 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    *               `Joinable` type class, which provides methods to join or validate input elements.
    * @return an iterator of successfully processed rows of type `Row`.
    */
-  def doProcessRows(ts: Iterator[Input], header: Header, f: Header => ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Iterator[Row] = {
+  private def doProcessRows(ts: Iterator[Input], header: Header, f: Header => ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Iterator[Row] = {
 
     val inputTransformer = new IndexedInputToRowsTransformer(header, f, multiline)
 
