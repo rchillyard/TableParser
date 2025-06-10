@@ -107,7 +107,7 @@ object Hawks extends CsvRenderers with CellParsers with CsvGenerators {
       parse(header)(indexedString._1)
 
     //noinspection NotImplementedCode
-    def parseHeader(w: Seq[String]): Try[Header] = ???
+    def parseHeader(w: Seq[String]): Try[Header] = Failure(new NotImplementedError("HawksRowParser.parseHeader"))
   }
 
   implicit object HawksRowParser extends HawksRowParser

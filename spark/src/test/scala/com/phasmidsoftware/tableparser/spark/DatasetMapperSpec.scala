@@ -1,4 +1,2 @@
 package com.phasmidsoftware.tableparser.spark
-class DatasetMapperSpec {
-
-}
+class DatasetMapperSpec

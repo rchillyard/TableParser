@@ -269,7 +269,7 @@ class IndexedInputToRowsTransformer[Input: Joinable, Row](f: ((Input, Int)) => T
       case f@Failure(_) =>
         logException[Row](f)
         false
-    }) map (_.get)
+    }) map (_.get) // NOTE This cannot fail because we filtered out any failures.
 
   /**
    * Processes an iterator of input elements, transforming them into an iterator of output rows.
