@@ -280,12 +280,16 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     }
 
     trait HawksRowParser extends StringParser[Hawks] {
-      def parse(header: Header)(input: String): Try[Hawks] = HawksParser.parseAll(HawksParser.pair, input) match {
-        case HawksParser.Success((x, y), _) => Success(Hawks(x, y))
-        case _ => Failure(TableException(s"unable to parse $input"))
+      def parse(header: Header)(input: String): Try[Hawks] =
+        HawksParser.parseAll(HawksParser.pair, input) match {
+          case HawksParser.Success((x, y), _) =>
+            Success(Hawks(x, y))
+          case _ =>
+            Failure(TableException(s"unable to parse $input"))
       }
 
-      def parseIndexed(header: Header)(indexedString: (String, Int)): Try[Hawks] = parse(header)(indexedString._1)
+      def parseIndexed(header: Header)(indexedString: (String, Int)): Try[Hawks] =
+        parse(header)(indexedString._1)
 
       //noinspection NotImplementedCode
       def parseHeader(w: Seq[String]): Try[Header] = ???

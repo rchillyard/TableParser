@@ -122,12 +122,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  // TODO not sure if this is a problem
-  ignore should "parse from null File" in {
+  it should "parse from null File" in {
     import IntPair._
 
     val f: String = null
-    a[NullPointerException] should be thrownBy Table.parseFile(new File(f))
+    Table.parseFile(new File(f)) should matchPattern { case Failure(_) => }
   }
 
   it should "parse from Resource" in {
@@ -178,13 +177,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "parse with safeResource"
 
-  // TODO Not sure if this is a problem
-  ignore should "return failure(0)" in {
+  it should "return failure(0)" in {
     import IntPair._
-
-    a[NullPointerException] should be thrownBy Table.parse(Try(Source.fromResource(null)))
+    Table.parse(Try(Source.fromResource(null))) should matchPattern { case Failure(_) => }
   }
-
 
   it should "return failure(2)" in {
     lazy val si: InputStream = getClass.getResourceAsStream("emptyResource.txt")

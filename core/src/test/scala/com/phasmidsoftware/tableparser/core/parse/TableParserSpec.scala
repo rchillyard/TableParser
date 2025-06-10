@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.examples.Movie
-import com.phasmidsoftware.tableparser.core.table.Table.sourceFromClassResource
+import com.phasmidsoftware.tableparser.core.table.Table.{parseSequence, sourceFromClassResource}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import com.phasmidsoftware.tableparser.core.util.TryUsing
@@ -169,11 +169,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  // TODO check to see if this is a problem or not.
-  ignore should "fail empty sequence" in {
+  it should "fail empty sequence" in {
     import DailyRaptorReport._
 
-    a[ParserException] should be thrownBy Table.parse(Seq(headerRaptors, ""))
+    Table.parse(Seq(headerRaptors, "")) should matchPattern { case Failure(e: ParserException) => }
   }
 
   it should "parse empty sequence" in {
@@ -350,18 +349,17 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  // TODO not sure if this is a problem
-  ignore should "fail on incompatible parser" in {
+  it should "fail on incompatible parser" in {
     import Submissions._
     val strings: Seq[String] = Nil
-    a[ParserException] should be thrownBy Table.parse(strings)
+    Table.parse(strings) should matchPattern { case Failure(e: ParserException) => }
   }
 
-//  it should "fail on empty rows" in {
-//    import Submissions._
-//    val rows: Seq[Seq[String]] = Nil
-//    a[NoSuchElementException] shouldBe thrownBy Table.parseSequence(rows.iterator)
-//  }
+  it should "fail on empty rows" in {
+    import Submissions._
+    val rows: Seq[Seq[String]] = Nil
+    parseSequence(rows.iterator) should matchPattern { case Failure(e: NoSuchElementException) => }
+  }
 
 
   behavior of "submissions from file"

@@ -116,7 +116,8 @@ object TableParser {
      * @param sy a `Try[Source]`.
      * @return a `Try[Table]`.
      */
-    def parse(sy: Try[Source]): Try[Table] = sy flatMap doParse
+    def parse(sy: Try[Source]): Try[Table] =
+      sy flatMap doParse
 
     /**
      * Method to parse a `Source`.
@@ -125,7 +126,8 @@ object TableParser {
      * @param s a Source.
      * @return a `Try[Table]`.
      */
-    private def doParse(s: Source): Try[Table] = TryUsing(s)(x => doParse(x.getLines()))
+    private def doParse(s: Source): Try[Table] =
+      TryUsing(s)(x => doParse(x.getLines()))
 
     /**
      * Method to parse an iterator of String.
@@ -133,7 +135,8 @@ object TableParser {
      * @param xs an `Iterator[String]`.
      * @return a `Try[Table]`.
      */
-    private def doParse(xs: Iterator[String]): Try[Table] = p.parse(xs, 1)
+    private def doParse(xs: Iterator[String]): Try[Table] =
+      p.parse(xs, 1)
   }
 
   val r: Random = new Random()
@@ -255,22 +258,27 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
   implicit val stringSeqParser: CellParser[Strings] = StdCellParsers.cellParserSeq
   implicit val rowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
 
-
   val rowParser: RowParser[Row, String] = StandardRowParser.create[Row]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
-  protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(Content(rows), header)
+  protected def builder(rows: Iterable[Row], header: Header): Table[Row] =
+    HeadedTable(Content(rows), header)
 
-  def setHeader(header: Header): RawTableParser = copy(maybeFixedHeader = Some(header))
+  def setHeader(header: Header): RawTableParser =
+    copy(maybeFixedHeader = Some(header))
 
-  def setForgiving(b: Boolean): RawTableParser = copy(forgiving = b)
+  def setForgiving(b: Boolean): RawTableParser =
+    copy(forgiving = b)
 
-  def setMultiline(b: Boolean): RawTableParser = copy(multiline = b)
+  def setMultiline(b: Boolean): RawTableParser =
+    copy(multiline = b)
 
-  def setPredicate(p: Try[Row] => Boolean): RawTableParser = copy(predicate = p)
+  def setPredicate(p: Try[Row] => Boolean): RawTableParser =
+    copy(predicate = p)
 
-  def setRowParser(rp: RowParser[Row, String]): RawTableParser = new RawTableParser(predicate, maybeFixedHeader, forgiving, multiline) {
-    override val rowParser: RowParser[Row, String] = rp
+  def setRowParser(rp: RowParser[Row, String]): RawTableParser =
+    new RawTableParser(predicate, maybeFixedHeader, forgiving, multiline) {
+      override val rowParser: RowParser[Row, String] = rp
   }
 }
 
@@ -297,19 +305,24 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
 case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
         extends HeadedStringTableParser[X](maybeFixedHeader, forgiving, headerRowsToRead) {
 
-  def setHeader(header: Header): PlainTextHeadedStringTableParser[X] = copy(maybeFixedHeader = Some(header))
+  def setHeader(header: Header): PlainTextHeadedStringTableParser[X] =
+    copy(maybeFixedHeader = Some(header))
 
-  def setForgiving(b: Boolean): PlainTextHeadedStringTableParser[X] = copy(forgiving = b)
+  def setForgiving(b: Boolean): PlainTextHeadedStringTableParser[X] =
+    copy(forgiving = b)
 
-  def setMultiline(b: Boolean): PlainTextHeadedStringTableParser[X] = new PlainTextHeadedStringTableParser[X](maybeFixedHeader, forgiving) {
-    override val multiline: Boolean = b
+  def setMultiline(b: Boolean): PlainTextHeadedStringTableParser[X] =
+    new PlainTextHeadedStringTableParser[X](maybeFixedHeader, forgiving) {
+      override val multiline: Boolean = b
   }
 
-  def setPredicate(p: Try[X] => Boolean): PlainTextHeadedStringTableParser[X] = new PlainTextHeadedStringTableParser[X](maybeFixedHeader, forgiving) {
+  def setPredicate(p: Try[X] => Boolean): PlainTextHeadedStringTableParser[X] =
+    new PlainTextHeadedStringTableParser[X](maybeFixedHeader, forgiving) {
     override val predicate: Try[X] => Boolean = p
   }
 
-  def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] = new PlainTextHeadedStringTableParser[X] {
+  def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] =
+    new PlainTextHeadedStringTableParser[X] {
     override protected val rowParser: RowParser[X, String] = rp
   }
 }
@@ -340,9 +353,11 @@ abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeade
 
   type Row = X
 
-  protected def builder(rows: Iterable[X], header: Header): Table[Row] = HeadedTable(Content(rows), header)
+  protected def builder(rows: Iterable[X], header: Header): Table[Row] =
+    HeadedTable(Content(rows), header)
 
-  protected val rowParser: RowParser[X, String] = StandardRowParser.create[X]
+  protected val rowParser: RowParser[X, String] =
+    StandardRowParser.create[X]
 }
 
 object HeadedStringTableParser {
@@ -354,7 +369,8 @@ object HeadedStringTableParser {
    * @tparam X the underlying type. There must be evidence of CellParser[X] and ClassTag[X].
    * @return a HeadedStringTableParser[X].
    */
-  def create[X: CellParser : ClassTag](forgiving: Boolean): HeadedStringTableParser[X] = PlainTextHeadedStringTableParser[X](Some(Header.apply[X]()), forgiving, 0)
+  def create[X: CellParser : ClassTag](forgiving: Boolean): HeadedStringTableParser[X] =
+    PlainTextHeadedStringTableParser[X](Some(Header.apply[X]()), forgiving, 0)
 }
 
 /**
@@ -461,16 +477,6 @@ object AbstractTableParser {
  */
 abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
   type Input = String
-
-  /**
-   * Method to parse a table based on a sequence of Inputs.
-   *
-   * @param xs the sequence of Inputs, one for each row
-   * @param n  the number of rows to drop (length of the header).
-   * @return a Try[Table].
-   */
-  override def parse(xs: Iterator[String], n: Int): Try[Table] =
-    super.parse(xs, n)
 
   /**
    * Parses rows from an iterator of input strings (`ws`) using the provided header and row parsing logic.
