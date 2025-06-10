@@ -5,6 +5,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.examples.Movie
+import com.phasmidsoftware.tableparser.core.examples.Movie.MovieRowProcessor
 import com.phasmidsoftware.tableparser.core.table.Table.{parseSequence, sourceFromClassResource}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
@@ -20,8 +21,6 @@ import scala.util.{Failure, Success, Try}
 
 //noinspection SpellCheckingInspection
 class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
-
-  behavior of "TableParser"
 
   case class IntPair(a: Int, b: Int)
 
@@ -65,6 +64,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   }
 
+  behavior of "IntPair TableParser"
+
   it should "parse int pair" in {
 
     import IntPair._
@@ -78,6 +79,9 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "TableParser with StandardRowParser"
 
+  /**
+   * CONSIDER using the DailyRaptorReport defined in its own module.
+   */
   case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
 
   object DailyRaptorReport {
@@ -295,28 +299,14 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-
-  behavior of "StringsParser"
-
-  behavior of "Table"
-
-  case class Question(questionId: String, question: String, answer: Option[String], possiblePoints: Int, autoScore: Option[Double], manualScore: Option[Double])
-
   case class Submission(username: String, lastName: String, firstName: String, questions: Seq[Question])
 
-  object Submissions extends CellParsers {
-
-    private val baseColumnNameMapper: String => String = _.replaceAll("(_)", " ")
-
+  object Submission extends CellParsers {
     implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, Some("$c $x"))
-    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper, Some("$c $x"), "questionId" -> "question_ID")
-    implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
-    implicit val questionParser: CellParser[Question] = cellParser6(Question)
-    implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
-    implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
+    implicit val submissionParser: CellParser[Submission] = cellParser4(apply)
     implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
 
-    implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
+    implicit object TableParser extends StringsTableParser[Table[Submission]] {
       type Row = Submission
 
       val maybeFixedHeader: Option[Header] = None // Some(header)
@@ -329,8 +319,19 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
     }
-
   }
+
+  case class Question(questionId: String, question: String, answer: Option[String], possiblePoints: Int, autoScore: Option[Double], manualScore: Option[Double])
+
+  object Question extends CellParsers {
+    private val mapper: String => String = _.replaceAll("(_)", " ")
+    implicit val helper: ColumnHelper[Question] = columnHelper(mapper, Some("$c $x"), "questionId" -> "question_ID")
+    implicit val optParserString: CellParser[Option[String]] = cellParserOption
+    implicit val parser: CellParser[Question] = cellParser6(apply)
+    implicit val seqParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
+  }
+
+  behavior of "TableParser"
 
   it should "parse Submission" in {
 
@@ -339,9 +340,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
     )
 
-    import Submissions._
     // TODO note that the column lookup isn't correct for Question ID 1
-
+    import Submission.TableParser
     matchTry(Table.parseSequence(rows.iterator)) {
       case rt@HeadedTable(_, _) =>
         println(rt.head)
@@ -350,30 +350,26 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "fail on incompatible parser" in {
-    import Submissions._
+    import Submission.TableParser
     val strings: Seq[String] = Nil
     Table.parse(strings) should matchPattern { case Failure(e: ParserException) => }
   }
 
   it should "fail on empty rows" in {
-    import Submissions._
+    import Submission.TableParser
     val rows: Seq[Seq[String]] = Nil
     parseSequence(rows.iterator) should matchPattern { case Failure(e: NoSuchElementException) => }
   }
 
-
   behavior of "submissions from file"
 
-  object Submissions1 extends CellParsers {
+  object SubmissionAlt extends CellParsers {
 
     private val baseColumnNameMapper: String => String = _.replaceAll("(_)", " ")
 
     implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace)
-    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper)
     implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
-    implicit val questionParser: CellParser[Question] = cellParser6(Question)
-    implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
-    implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
+    implicit val submissionParser: CellParser[Submission] = cellParser4(Submission.apply)
 
     implicit object SubmissionConfig extends DefaultRowConfig {
       override val string: Regex = """[^\t]*""".r
@@ -399,7 +395,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse sample.csv with Submission1" in {
-    import Submissions1._
+    import SubmissionAlt._
     implicit val codec: Codec = Codec("UTF-16") // Not sure why it is in UTF-16 but it is.
     val sy: Try[Source] = Try(Source.fromURL(classOf[TableParserSpec].getResource("submissions.csv")))
     val sti: Try[Table[Submission]] = TryUsing(sy)(s => Table.parseSource(s))
@@ -409,7 +405,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse sample.csv with Submission1 Alt" in {
-    import Submissions1._
+    import SubmissionAlt._
     implicit val codec: Codec = Codec("UTF-16") // Not sure why it is in UTF-16 but it is.
     matchTry(Table.parseResource("submissions.csv", classOf[TableParserSpec])) {
       case rt@HeadedTable(_, _) => rt.size shouldBe 1
@@ -513,7 +509,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "MovieRowProcessor"
 
   it should "process the movies from the IMDB dataset" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
     val movieRowProcessor: MovieRowProcessor = implicitly[RowProcessor[Movie]].asInstanceOf[MovieRowProcessor]
     val z: Try[Source] = sourceFromClassResource("movie_metadata.csv", classOf[Movie])
     matchTry(z) {

@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.tableparser.core.examples
 
-import com.phasmidsoftware.tableparser.core.examples.MovieParser.camelToSnakeCaseColumnNameMapper
+import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapper
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Header, Table}
@@ -81,14 +81,164 @@ case class Movie(title: String, format: Format, production: Production, reviews:
  *   val csvRepresentation = movieCsvGenerator.generate(movie)
  * }}}
  */
-object Movie extends CellParsers with CsvGenerators {
+object Movie extends CellParsers with CsvGenerators with CsvRenderers {
   val missing: Movie = apply("", Format.none, Production.none, Reviews.none, Principal.nemo, Principal.nemo, Principal.nemo, None, AttributeSet.none, AttributeSet.none, "")
   val header = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
   implicit val helper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper,
     "title" -> "movie_title",
     "imdb" -> "movie_imdb_link")
   implicit val parser: CellParser[Movie] = cellParser11(apply)
+  implicit val renderer: CsvRenderer[Movie] = renderer11(apply)
   implicit val generator: CsvGenerator[Movie] = generator11(apply)
+
+  /**
+   * An implicit object extending `DefaultRowConfig`, used for customizing the configuration settings
+   * for parsing rows in the context of the `MovieParser` class.
+   *
+   * The `MovieConfig` object overrides the default `listEnclosure` property to use an empty string (`""`)
+   * instead of the default `{}`. This customization may imply that no special characters are used to
+   * enclose lists in this parsing configuration.
+   *
+   * @see DefaultRowConfig
+   */
+  implicit object MovieConfig extends DefaultRowConfig {
+    override val listEnclosure: String = ""
+  }
+
+  implicit val stringParser: StringParser[Movie] = StandardRowParser.create[Movie]
+
+  /**
+   * The `MovieTableParser` trait provides functionality for parsing movie information from a string-based table representation
+   * into a structured `Table` of `Movie` rows. It is a specialized parser built on top of the `StringTableParser` abstraction.
+   *
+   * Key Features:
+   * - **Row Type (`Row`)**: Defines the row type as `Movie`, indicating that each parsed row corresponds to a `Movie` entity.
+   * - **Forgiving Parsing**: Operates in a forgiving mode (`forgiving = true`), allowing certain non-critical parsing errors to be bypassed.
+   * - **Header Handling**:
+   *   - Supports an optional fixed header (`maybeFixedHeader`), which is `None` by default, indicating that headers are dynamically parsed.
+   *   - Configures parsing to read `headerRowsToRead = 1` row for table headers by default.
+   *     - **Row Parsing**: Utilizes an implicit `RowParser` to transform string data into `Movie` instances, enabling flexible and type-safe parsing.
+   *     - **Table Construction**: Uses the `builder` method to combine rows and a parsed header into a `Table`. The resulting table is typically a `HeadedTable`
+   *       type containing the parsed rows and associated header metadata.
+   *
+   * ## Fields:
+   * - `maybeFixedHeader`: An optional value representing a fixed header. If `None`, the header is inferred from the input table.
+   * - `headerRowsToRead`: The number of rows to read from the input as the header. Defaults to `1`.
+   * - `forgiving`: A flag indicating whether to allow lenient parsing. Defaults to `true`.
+   * - `rowParser`: An implicit `RowParser` instance responsible for converting string data into `Movie` objects.
+   *
+   * ## Key Methods:
+   * - `builder`: Combines parsed rows and an inferred or fixed header to produce a `Table[Movie]`.
+   *
+   * ## Usage:
+   * This trait is typically mixed into concrete implementations or utilized via an implicit object to parse tables of movie
+   * information. It is used in scenarios where a string-based representation of a table needs to be parsed into a structured
+   * representation of `Movie` rows along with header metadata.
+   *
+   * Example:
+   * ```
+   * val tableString: Iterator[String] = Iterator(
+   * "Title,Director,Year,Genre",
+   * "Inception,Christopher Nolan,2010,Sci-Fi",
+   * "The Godfather,Francis Ford Coppola,1972,Crime"
+   * )
+   * val parsedTable: Try[Table[Movie]] = implicitly[MovieTableParser].parse(tableString, 1)
+   * ```
+   *
+   * In this example, the `MovieTableParser` is implicitly used to parse a table of movies into
+   * a structured `Table[Movie]` containing row and header information.
+   *
+   * ## Notes:
+   * - The `MovieTableParser` works seamlessly with other parsing utilities provided by the `StringTableParser` framework.
+   * - The `builder` method can be overridden in custom implementations for advanced use cases or alternate table construction logic.
+   *
+   * @see `StringTableParser`
+   * @tparam Table the resulting table type, which in this case is `Table[Movie]`.
+   */
+  trait MovieTableParser extends StringTableParser[Table[Movie]] {
+    type Row = Movie
+
+    val maybeFixedHeader: Option[Header] = None
+    val headerRowsToRead: Int = 1
+    override val forgiving: Boolean = true
+    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+
+    protected def builder(rows: Iterable[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
+  }
+
+  /**
+   * Companion object `MovieTableParser` acts as an implicit implementation of `MovieTableParser` trait.
+   *
+   * The `MovieTableParser` is responsible for parsing a string representation of a table
+   * to produce a structured `Table` of `Movie` rows. It extends the `StringTableParser` trait
+   * with type `Table[Movie]`, leveraging predefined parsing rules and configurations.
+   *
+   * Key Characteristics:
+   * - Defines `Row` as `Movie` type, signifying that each parsed row corresponds to a `Movie` entity.
+   * - Supports an optional fixed header via `maybeFixedHeader`, which is set to `None` by default.
+   * - Reads and interprets a single header row (`headerRowsToRead = 1`) unless overridden.
+   * - Operates in a `forgiving` mode (`forgiving = true`), allowing certain parsing errors to be bypassed gracefully.
+   * - Uses an implicit `RowParser` to transform individual row data into `Movie` objects.
+   * - Combines rows and headers into a `Table` using the method `builder`, which constructs a `HeadedTable` containing rows and the header.
+   *
+   * This object is typically utilized in contexts where implicit resolution is required to enable
+   * seamless parsing of movie-related tables using compatible APIs or libraries.
+   */
+  implicit object MovieTableParser extends MovieTableParser
+
+  /**
+   * The `MovieRowProcessor` trait provides a concrete implementation for processing rows of
+   * raw input (as Strings) representing `Movie` objects. This trait extends the `StringRowProcessor`
+   * tailored for `Movie` rows, deducing `String` as the input type and `Movie` as the row type.
+   *
+   * Specifically, this trait:
+   * - Adopts a fault-tolerant approach to parsing by setting `forgiving = true`, enabling the
+   * processor to recover from minor parsing errors where possible.
+   * - Utilizes an implicit `RowParser[Movie, String]` to handle the actual parsing logic for individual rows.
+   * - Optionally relies on a `Header` for structured row processing. If a fixed header is not provided
+   * via `maybeFixedHeader`, additional rows can be consumed to dynamically determine the header.
+   * - Sets the default number of header rows to read as 1 (`headerRowsToRead`).
+   *
+   * This processor is an integral part of the parsing workflow for `Movie` data parsed from
+   * input sources such as files or streams.
+   *
+   * Key Type Members and Fields:
+   * - `Row`: Alias for `Movie` as the row type this processor handles.
+   * - `maybeFixedHeader`: Optionally allows for a pre-determined table header for consistent column names.
+   * - `headerRowsToRead`: Specifies the number of rows to consume when detecting a dynamic header.
+   * - `forgiving`: Configures fault-tolerance for processing, set to `true` by default.
+   * - `rowParser`: An implicit instance of `RowParser */
+  trait MovieRowProcessor extends StringRowProcessor[Movie] {
+    type Row = Movie
+    val maybeFixedHeader: Option[Header] = None
+    val headerRowsToRead: Int = 1
+    override val forgiving: Boolean = true
+    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+  }
+
+  /**
+   * `MovieRowProcessor` is an implicit object that extends the `MovieRowProcessor` trait, providing
+   * a concrete implementation for parsing and processing rows of input data (as Strings) into
+   * `Movie` objects. It leverages the functionality defined in the `StringRowProcessor` for
+   * handling string-input row processing with specific configurations tailored for movie data.
+   *
+   * Key Features:
+   * - Parses rows of input data into `Movie` objects using an implicit `RowParser[Movie, String]`.
+   * - Supports fault-tolerant parsing through the `forgiving` attribute, allowing recovery from
+   * minor errors during row processing.
+   * - Can work with both fixed headers and dynamically detected headers from the input data. The
+   * number of rows to read for the dynamic header is set to 1 by default (`headerRowsToRead`).
+   *
+   * Use Case:
+   * This processor is commonly used in workflows for parsing and transforming movie data from
+   * input formats such as CSV files or text streams into structured `Movie` objects, allowing
+   * further processing or analysis.
+   *
+   * @see `StringRowProcessor` for base processing functionality.
+   * @see `RowParser` for parsing logic details.
+   * @see `Movie` for the detailed representation of the processed row data.
+   */
+  implicit object MovieRowProcessor extends MovieRowProcessor
 }
 
 /**
@@ -427,166 +577,4 @@ object Rating extends CellParsers with CsvGenerators with CsvRenderers {
   implicit val renderer: CsvRenderer[Rating] = renderer2(apply)
   implicit val generator: CsvGenerator[Rating] = generator2(apply)
   private val rRating = """^(\w*)(-(\d\d))?$""".r
-}
-
-/**
- * Object `MovieParser` provides utility functions and implicits for parsing movie-related data.
- * It extends the `CellParsers` trait and defines parsing configurations, helpers, and processors
- * for handling various components such as movies, reviews, production details, and more.
- */
-object MovieParser extends CellParsers {
-
-  /**
-   * Precede each upper case letter (or digit) with _.
-   */
-  val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", "_$1")
-
-  /**
-   * An implicit object extending `DefaultRowConfig`, used for customizing the configuration settings
-   * for parsing rows in the context of the `MovieParser` class.
-   *
-   * The `MovieConfig` object overrides the default `listEnclosure` property to use an empty string (`""`)
-   * instead of the default `{}`. This customization may imply that no special characters are used to
-   * enclose lists in this parsing configuration.
-   *
-   * @see DefaultRowConfig
-   */
-  implicit object MovieConfig extends DefaultRowConfig {
-    override val listEnclosure: String = ""
-  }
-
-  implicit val parser: StandardRowParser[Movie] = StandardRowParser.create[Movie]
-
-  /**
-   * The `MovieTableParser` trait provides functionality for parsing movie information from a string-based table representation
-   * into a structured `Table` of `Movie` rows. It is a specialized parser built on top of the `StringTableParser` abstraction.
-   *
-   * Key Features:
-   * - **Row Type (`Row`)**: Defines the row type as `Movie`, indicating that each parsed row corresponds to a `Movie` entity.
-   * - **Forgiving Parsing**: Operates in a forgiving mode (`forgiving = true`), allowing certain non-critical parsing errors to be bypassed.
-   * - **Header Handling**:
-   *   - Supports an optional fixed header (`maybeFixedHeader`), which is `None` by default, indicating that headers are dynamically parsed.
-   *   - Configures parsing to read `headerRowsToRead = 1` row for table headers by default.
-   *     - **Row Parsing**: Utilizes an implicit `RowParser` to transform string data into `Movie` instances, enabling flexible and type-safe parsing.
-   *     - **Table Construction**: Uses the `builder` method to combine rows and a parsed header into a `Table`. The resulting table is typically a `HeadedTable`
-   *       type containing the parsed rows and associated header metadata.
-   *
-   * ## Fields:
-   * - `maybeFixedHeader`: An optional value representing a fixed header. If `None`, the header is inferred from the input table.
-   * - `headerRowsToRead`: The number of rows to read from the input as the header. Defaults to `1`.
-   * - `forgiving`: A flag indicating whether to allow lenient parsing. Defaults to `true`.
-   * - `rowParser`: An implicit `RowParser` instance responsible for converting string data into `Movie` objects.
-   *
-   * ## Key Methods:
-   * - `builder`: Combines parsed rows and an inferred or fixed header to produce a `Table[Movie]`.
-   *
-   * ## Usage:
-   * This trait is typically mixed into concrete implementations or utilized via an implicit object to parse tables of movie
-   * information. It is used in scenarios where a string-based representation of a table needs to be parsed into a structured
-   * representation of `Movie` rows along with header metadata.
-   *
-   * Example:
-   * ```
-   * val tableString: Iterator[String] = Iterator(
-   * "Title,Director,Year,Genre",
-   * "Inception,Christopher Nolan,2010,Sci-Fi",
-   * "The Godfather,Francis Ford Coppola,1972,Crime"
-   * )
-   * val parsedTable: Try[Table[Movie]] = implicitly[MovieTableParser].parse(tableString, 1)
-   * ```
-   *
-   * In this example, the `MovieTableParser` is implicitly used to parse a table of movies into
-   * a structured `Table[Movie]` containing row and header information.
-   *
-   * ## Notes:
-   * - The `MovieTableParser` works seamlessly with other parsing utilities provided by the `StringTableParser` framework.
-   * - The `builder` method can be overridden in custom implementations for advanced use cases or alternate table construction logic.
-   *
-   * @see `StringTableParser`
-   * @tparam Table the resulting table type, which in this case is `Table[Movie]`.
-   */
-  trait MovieTableParser extends StringTableParser[Table[Movie]] {
-    type Row = Movie
-
-    val maybeFixedHeader: Option[Header] = None
-    val headerRowsToRead: Int = 1
-    override val forgiving: Boolean = true
-    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-    protected def builder(rows: Iterable[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
-  }
-
-  /**
-   * Companion object `MovieTableParser` acts as an implicit implementation of `MovieTableParser` trait.
-   *
-   * The `MovieTableParser` is responsible for parsing a string representation of a table
-   * to produce a structured `Table` of `Movie` rows. It extends the `StringTableParser` trait
-   * with type `Table[Movie]`, leveraging predefined parsing rules and configurations.
-   *
-   * Key Characteristics:
-   * - Defines `Row` as `Movie` type, signifying that each parsed row corresponds to a `Movie` entity.
-   * - Supports an optional fixed header via `maybeFixedHeader`, which is set to `None` by default.
-   * - Reads and interprets a single header row (`headerRowsToRead = 1`) unless overridden.
-   * - Operates in a `forgiving` mode (`forgiving = true`), allowing certain parsing errors to be bypassed gracefully.
-   * - Uses an implicit `RowParser` to transform individual row data into `Movie` objects.
-   * - Combines rows and headers into a `Table` using the method `builder`, which constructs a `HeadedTable` containing rows and the header.
-   *
-   * This object is typically utilized in contexts where implicit resolution is required to enable
-   * seamless parsing of movie-related tables using compatible APIs or libraries.
-   */
-  implicit object MovieTableParser extends MovieTableParser
-
-  /**
-   * The `MovieRowProcessor` trait provides a concrete implementation for processing rows of
-   * raw input (as Strings) representing `Movie` objects. This trait extends the `StringRowProcessor`
-   * tailored for `Movie` rows, deducing `String` as the input type and `Movie` as the row type.
-   *
-   * Specifically, this trait:
-   * - Adopts a fault-tolerant approach to parsing by setting `forgiving = true`, enabling the
-   * processor to recover from minor parsing errors where possible.
-   * - Utilizes an implicit `RowParser[Movie, String]` to handle the actual parsing logic for individual rows.
-   * - Optionally relies on a `Header` for structured row processing. If a fixed header is not provided
-   * via `maybeFixedHeader`, additional rows can be consumed to dynamically determine the header.
-   * - Sets the default number of header rows to read as 1 (`headerRowsToRead`).
-   *
-   * This processor is an integral part of the parsing workflow for `Movie` data parsed from
-   * input sources such as files or streams.
-   *
-   * Key Type Members and Fields:
-   * - `Row`: Alias for `Movie` as the row type this processor handles.
-   * - `maybeFixedHeader`: Optionally allows for a pre-determined table header for consistent column names.
-   * - `headerRowsToRead`: Specifies the number of rows to consume when detecting a dynamic header.
-   * - `forgiving`: Configures fault-tolerance for processing, set to `true` by default.
-   * - `rowParser`: An implicit instance of `RowParser */
-  trait MovieRowProcessor extends StringRowProcessor[Movie] {
-    type Row = Movie
-    val maybeFixedHeader: Option[Header] = None
-    val headerRowsToRead: Int = 1
-    override val forgiving: Boolean = true
-    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-  }
-
-  /**
-   * `MovieRowProcessor` is an implicit object that extends the `MovieRowProcessor` trait, providing
-   * a concrete implementation for parsing and processing rows of input data (as Strings) into
-   * `Movie` objects. It leverages the functionality defined in the `StringRowProcessor` for
-   * handling string-input row processing with specific configurations tailored for movie data.
-   *
-   * Key Features:
-   * - Parses rows of input data into `Movie` objects using an implicit `RowParser[Movie, String]`.
-   * - Supports fault-tolerant parsing through the `forgiving` attribute, allowing recovery from
-   * minor errors during row processing.
-   * - Can work with both fixed headers and dynamically detected headers from the input data. The
-   * number of rows to read for the dynamic header is set to 1 by default (`headerRowsToRead`).
-   *
-   * Use Case:
-   * This processor is commonly used in workflows for parsing and transforming movie data from
-   * input formats such as CSV files or text streams into structured `Movie` objects, allowing
-   * further processing or analysis.
-   *
-   * @see `StringRowProcessor` for base processing functionality.
-   * @see `RowParser` for parsing logic details.
-   * @see `Movie` for the detailed representation of the processed row data.
-   */
-  implicit object MovieRowProcessor extends MovieRowProcessor
 }

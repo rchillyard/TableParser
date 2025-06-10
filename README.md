@@ -57,7 +57,7 @@ The minimum code necessary to read parse the CSV file as a table of "Player"s, u
       def cellParser: CellParser[Player] = cellParser2(apply)
     }
 
-    val pty: Try[Table[Player]] = Table.parseFile[Table[Player]]("players.csv")
+    val pty: Try[Table[Player]] = Table.parseFile("players.csv")
 
 This assumes that the source input file ("players.csv") contains a header row which includes column names corresponding to the parameters
 of the case class _Player_ (in this case "first" and "last").
@@ -338,64 +338,101 @@ The _Movie_ class looks like this:
     case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
 Note that we make _actor3_ optional because some movies don't specify an "actor3".
-Unlike with ordinary values such as _Int_, _Double_, we do have to add an additional
-_implicit_ definition to accomplish this (see in example code below):
- 
-    implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
+
+In order to parse a _Movie_, we will need to declare some implicit values in the companion object.
+The following is the required code:
+
+    object Movie extends CellParsers with CsvGenerators with CsvRenderers {
+        val missing: Movie = apply("", Format.none, Production.none, Reviews.none, Principal.nemo, Principal.nemo, Principal.nemo, None, AttributeSet.none, AttributeSet.none, "")
+        val header = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
+        implicit val helper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper,
+            "title" -> "movie_title",
+            "imdb" -> "movie_imdb_link")
+        implicit val parser: CellParser[Movie] = cellParser11(apply)
+        implicit val renderer: CsvRenderer[Movie] = renderer11(apply)
+        implicit val generator: CsvGenerator[Movie] = generator11(apply)
+
+        // Additional code shown below for parsing tables or processing rows.
+    }
+
+We define a missing object because that is sometimes convenient to use with Spark.
+Similarly, the header object is the standard header strings which can be used when reading a CSV file without a header.
+The (implicit) _helper_ is used to map the names of columns appropriately.
+The (implicit) _parser_ is the required _CellParser_ for _Movie_.
+The (implicit) _renderer_ is used to render a _Movie_ as a CSV file.
+The (implicit) _generator_ is used for outputting a _Movie_ in other format(s).
+
+Each of the case classes referenced in the delcaration of _Movie_ will also need a similar companion object.
+For example, the _Principal_, whose case class is defined thus:
+
+    case class Principal(name: Name, facebookLikes: Int)
+
+requires a companion object that looks like this:
+
+    object Principal extends CellParsers with CsvGenerators with CsvRenderers {
+        val nemo: Principal = Principal(Name.nemo, 0)
+        implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
+        implicit val parser: CellParser[Principal] = cellParser2(apply)
+        implicit val parserOpt: CellParser[Option[Principal]] = cellParserOption
+        implicit val renderer: CsvRenderer[Principal] = renderer2(apply)
+        implicit val rendererOpt: CsvRenderer[Option[Principal]] = optionRenderer()
+        implicit val generator: CsvGenerator[Principal] = generator2(apply)
+        implicit val generatorOpt: CsvGenerator[Option[Principal]] = optionGenerator
+    }
+
+Like _Movie_, it has a default value (_nemo_), as well as a _helper_ to get the column names correct.
+We need to define parsers, renderers, etc. for optional *Principal*s.
+Unlike with primitive values such as _Int_, _Double_, we do have to add additional
+_implicit_ definitions to accomplish this.
+Note that _optionRenderer_ takes an optional parameter that defines a _String_ to be used when the object
+is missing.
  
 The other case classes look like this:
 
     case class Format(color: String, language: String, aspectRatio: Double, duration: Int)
     case class Production(country: String, budget: Option[Int], gross: Int, titleYear: Int)
     case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating, numUsersReview: Int, numUsersVoted: Int, numCriticReviews: Int, totalFacebookLikes: Int)
-    case class Principal(name: Name, facebookLikes: Int)
     case class Name(first: String, middle: Option[String], last: String, suffix: Option[String])
     case class Rating(code: String, age: Option[Int])
 
-The _MovieParser_ object looks like this:
+Consult the actual code in _Movie.scala_ for the details of what is required in the corresponding companion objects.
 
-    object MovieParser extends CellParsers {
-        def camelToSnakeCaseColumnNameMapper(w: String): String = w.replaceAll("([A-Z0-9])", "_$1")
-        implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper _,
-            "title" -> "movie_title",
-            "imdb" -> "movie_imdb_link")
-        implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapper _,
-            "facebookLikes" -> "movie_facebook_likes",
-            "numUsersReview" -> "num_user_for_reviews",
-            "numUsersVoted" -> "num_voted_users",
-            "numCriticReviews" -> "num_critic_for_reviews",
-            "totalFacebookLikes" -> "cast_total_facebook_likes")
-        implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper _)
-        implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper _)
-        implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper _, Some("$x_$c"))
-        implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
-        implicit val formatParser: CellParser[Format] = cellParser4(Format)
-        implicit val productionParser: CellParser[Production] = cellParser4(Production)
-        implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
-        implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
-        implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
-        implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
-        implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
-        implicit val movieParser: CellParser[Movie] = cellParser11(Movie)
+The _Movie_ object has additional code like this:
+
+    object Movie ... {
+        // Required code as shown above
+
+        // First, we need a StringParser[Movie]...
         implicit object MovieConfig extends DefaultRowConfig {
-            override val string: Regex = """[^,]*""".r
-            override val delimiter: Regex = """,""".r
             override val listEnclosure: String = ""
         }
-        implicit val parser: StandardRowParser[Movie] = StandardRowParser[Movie]
-        implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+        implicit val stringParser: StringParser[Movie] = StandardRowParser.create[Movie]
+
+        // Next, if we want to be able to parse rows into a Table[Movie], we will need a TableParser[Movie]...
+        trait MovieTableParser extends StringTableParser[Table[Movie]] {
             type Row = Movie
             val maybeFixedHeader: Option[Header] = None
+            val headerRowsToRead: Int = 1
             override val forgiving: Boolean = true
             val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-            protected def builder(rows: Iterator[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
+
+            protected def builder(rows: Iterable[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
         }
+        implicit object MovieTableParser extends MovieTableParser
+
+        // Finally, an optional row processor--this is useful when you simply want to end up with an _Iterator[Movie]_.
+        trait MovieRowProcessor extends StringRowProcessor[Movie] {
+            type Row = Movie
+            val maybeFixedHeader: Option[Header] = None
+            val headerRowsToRead: Int = 1
+            override val forgiving: Boolean = true
+            val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+        }
+        implicit object MovieRowProcessor extends MovieRowProcessor
     }
 
-In this code,
-_movieColumnHelper_, and the other columnHelpers, specify parameter-column mappings.
-
-Note that _principalColumnHelper_ has an extra parameter at the start of the parameter list:
+In this code, _helper_, and the other columnHelpers, specify parameter-column mappings.
+Note that _helper_ for _Principal_ has an extra parameter at the start of the parameter list:
     
     Some("$x_$c")
     
@@ -404,12 +441,8 @@ That's because there are several "Principal" parameters in a _Movie_, and each o
 In this format parameter, "$x" is substituted by the prefix (the optional value passed into the lookup method)
 while $c represents the translated column name.
 
-Even when there is no name translation necessary, we still have to provide a columnHelper, as in:
-
-    implicit val ratingColumnHelper: ColumnHelper[Rating] = columnHelper()
-
 A couple of parameters of _Movie_ are actually attribute sets (_AttributeSet_).
-These are basically lists of String within one column value.
+These are basically lists of _String_ within one column value.
 Such lists are parsed as lists as they are parsed from the original strings and then returned as strings
 in the form "{" element "," element ... "}"
 The parsing from the original string obeys the _RowConfig_ parameters of _listSep_ and _listEnclosure_.

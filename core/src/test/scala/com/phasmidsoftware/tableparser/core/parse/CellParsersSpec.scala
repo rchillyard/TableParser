@@ -44,6 +44,15 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit val parser: CellParser[FourTuple] = cellParser4(apply)
   }
 
+  /**
+   * Case class representing a daily report for raptors at a specific date.
+   * CONSIDER using the `DailyRaptorReport` defined in its own module.
+   *
+   * @param date    the date of the report as a LocalDate
+   * @param weather the weather condition reported on that date
+   * @param bw      the count of Broad-winged Hawks observed
+   * @param rt      the count of Red-tailed Hawks observed
+   */
   case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
 
   object DailyRaptorReport extends CellParsers {

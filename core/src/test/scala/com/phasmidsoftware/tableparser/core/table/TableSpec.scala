@@ -82,7 +82,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse and not filter the movies from the IMDB dataset" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
     implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
     matchTry(parseResource("movie_metadata.csv", classOf[Movie])) {
       case mt@HeadedTable(_, _) =>

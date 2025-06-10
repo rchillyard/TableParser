@@ -44,12 +44,34 @@ trait ColumnHelper[T] {
   }
 }
 
+/**
+ * Object containing utility functions for mapping and transforming column names,
+ * providing multiple default strategies for common transformations.
+ */
 object ColumnHelper {
+
+  /**
+   * A mapping function that applies the identity function to a string input.
+   * This mapper returns the input string unchanged.
+   */
+  val identityMapper: String => String = identity
+
+  /**
+   * A mapping function to transform camelCase column names into an underscore-separated format.
+   * For every uppercase letter (or digit) in the original string, a preceding underscore is added.
+   */
   val camelCaseColumnNameMapper: String => String =
     _.replaceAll("([A-Z0-9])", "_$1")
 
+  /**
+   * A mapping function to transform camelCase or PascalCase column names into a space-separated format.
+   * For every uppercase letter (or digit) in the original string, a preceding space is added.
+   */
   val camelCaseColumnNameMapperSpace: String => String =
     _.replaceAll("([A-Z0-9])", " $1")
 
-  val identityMapper: String => String = identity
+  /**
+   * Precede each upper case letter (or digit) with _.
+   */
+  val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", "_$1")
 }

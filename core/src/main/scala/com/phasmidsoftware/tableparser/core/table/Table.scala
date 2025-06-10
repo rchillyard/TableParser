@@ -792,9 +792,9 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
       rows.toSeq else rows.toSeq) map {
       case p: Product =>
         ww.writeRow(o2)(p)
-      case xs: Seq[Row] =>
+      case xs: Seq[_] =>
         ww.writeRowElements(o2)(xs) // TESTME
-      case xs: Array[Row] =>
+      case xs: Array[_] =>
         ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
       case _ =>
         throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
@@ -1004,6 +1004,10 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
     Header(xs ++ other.xs, for (xs <- xss; ys <- other.xss) yield xs ++ ys)
 }
 
+/**
+ * This companion object contains utility methods and constants
+ * for creating and manipulating instances of the Header class.
+ */
 object Header {
 
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.

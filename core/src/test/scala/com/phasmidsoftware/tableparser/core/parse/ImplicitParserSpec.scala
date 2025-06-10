@@ -1,7 +1,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.examples.Movie
-import com.phasmidsoftware.tableparser.core.examples.MovieParser.MovieTableParser
+import com.phasmidsoftware.tableparser.core.examples.Movie.MovieTableParser
 import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Table}
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import org.scalatest.flatspec
