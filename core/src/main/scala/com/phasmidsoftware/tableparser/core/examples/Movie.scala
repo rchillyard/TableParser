@@ -4,6 +4,7 @@
 
 package com.phasmidsoftware.tableparser.core.examples
 
+import com.phasmidsoftware.tableparser.core.examples.MovieParser.camelToSnakeCaseColumnNameMapper
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table.{CsvAttributes, HeadedTable, Header, Table}
@@ -70,8 +71,10 @@ case class Format(color: String, language: String, aspectRatio: Option[Double], 
  *
  * @see Format The case class representing the format attributes such as color, language, aspect ratio, and duration.
  */
-object Format {
+object Format extends CellParsers {
   val none: Format = Format("", "", None, None)
+  implicit val helper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper)
+  implicit val parser: CellParser[Format] = cellParser4(Format.apply)
 }
 
 /**
@@ -115,8 +118,10 @@ case class Production(country: String, budget: Option[Int], gross: Option[Int], 
  *
  * @see [[Production]] case class for the associated data structure and detailed behavior.
  */
-object Production {
+object Production extends CellParsers {
   val none: Production = Production("", None, None, None)
+  implicit val helper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper)
+  implicit val parser: CellParser[Production] = cellParser4(apply)
 }
 
 /**
@@ -140,8 +145,16 @@ case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating,
  * This object is primarily used to define default or placeholder instances of `Reviews`, such as the `none` value,
  * which represents a `Reviews` instance with default or empty data.
  */
-object Reviews {
+object Reviews extends CellParsers {
   val none: Reviews = Reviews(0, 0, Rating(""), None, 0, None, 0)
+  implicit val helper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapper,
+    "facebookLikes" -> "movie_facebook_likes",
+    "numUsersReview" -> "num_user_for_reviews",
+    "numUsersVoted" -> "num_voted_users",
+    "numCriticReviews" -> "num_critic_for_reviews",
+    "totalFacebookLikes" -> "cast_total_facebook_likes")
+  implicit val parser: CellParser[Reviews] = cellParser7(Reviews.apply)
+
 }
 /**
  * Represents a principal entity involved in a production. This entity is characterized by its name
@@ -189,8 +202,11 @@ case class Principal(name: Name, facebookLikes: Int) {
  *          Works in conjunction with the `Principal` case class and is associated with other models in parsing, processing,
  *          and rendering movie-related data structures.
  */
-object Principal {
+object Principal extends CellParsers {
   val nemo: Principal = Principal(Name.nemo, 0)
+  implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
+  implicit val parser: CellParser[Principal] = cellParser2(apply)
+  implicit val optionalParser: CellParser[Option[Principal]] = cellParserOption
 }
 
 /**
@@ -261,28 +277,6 @@ object MovieParser extends CellParsers {
    * Precede each upper case letter (or digit) with _.
    */
   val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", "_$1")
-
-  implicit val movieColumnHelper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper,
-    "title" -> "movie_title",
-    "imdb" -> "movie_imdb_link")
-  implicit val reviewsColumnHelper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapper,
-    "facebookLikes" -> "movie_facebook_likes",
-    "numUsersReview" -> "num_user_for_reviews",
-    "numUsersVoted" -> "num_voted_users",
-    "numCriticReviews" -> "num_critic_for_reviews",
-    "totalFacebookLikes" -> "cast_total_facebook_likes")
-  implicit val formatColumnHelper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper)
-  implicit val productionColumnHelper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper)
-  implicit val principalColumnHelper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
-  implicit val ratingParser: CellParser[Rating] = cellParser(Rating.apply: String => Rating)
-  implicit val formatParser: CellParser[Format] = cellParser4(Format)
-  implicit val productionParser: CellParser[Production] = cellParser4(Production)
-  implicit val nameParser: CellParser[Name] = cellParser(Name.apply)
-  implicit val principalParser: CellParser[Principal] = cellParser2(Principal)
-  implicit val reviewsParser: CellParser[Reviews] = cellParser7(Reviews)
-  implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
-  implicit val optionalPrincipalParser: CellParser[Option[Principal]] = cellParserOption
-  implicit val movieParser: CellParser[Movie] = cellParser11(Movie.apply)
 
   /**
    * An implicit object extending `DefaultRowConfig`, used for customizing the configuration settings
@@ -480,7 +474,7 @@ object MovieParser extends CellParsers {
  *  - Rendering movie-related data via `CsvRendererMovie` involves the `rendererName` generator, built around `Name`.
  * @note The `Name` case class has a corresponding custom `toString` implementation for formatted string representation.
  */
-object Name {
+object Name extends CellParsers {
   // NOTE: this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
   private val rName =
     """^([\p{L}\-']+\.?)\s*(([\p{L}\-]+\.?)\s)?([\p{L}\-']+\.?)(\s([\p{L}\-]+\.?))?$""".r
@@ -499,13 +493,15 @@ object Name {
   }
 
   val nemo: Name = Name("ne mo")
+  implicit val parser: CellParser[Name] = cellParser(apply)
+
 }
 
 /**
  * Companion object for the `Rating` case class.
  * This object provides utility methods to construct `Rating` instances and to parse rating strings into `Rating`.
  */
-object Rating {
+object Rating extends CellParsers {
   /**
    * Alternative apply method for the Rating class such that a single String is decoded
    *
@@ -521,7 +517,7 @@ object Rating {
       case _ =>
         throw new Exception(s"""parse error in Rating: '$s'""")
     }
-
+  implicit val parser: CellParser[Rating] = cellParser(apply)
   private val rRating = """^(\w*)(-(\d\d))?$""".r
 }
 
@@ -577,7 +573,7 @@ object Rating {
  *   val csvRepresentation = movieCsvGenerator.generate(movie)
  * }}}
  */
-object Movie {
+object Movie extends CellParsers {
 
   val missing: Movie = apply("",Format.none,Production.none,Reviews.none,Principal.nemo,Principal.nemo,Principal.nemo,None,AttributeSet.none,AttributeSet.none,"")
 
@@ -608,17 +604,23 @@ object Movie {
     implicit val generatorOptionDouble: CsvGenerator[Option[Double]] = csvGenerators.optionGenerator
     implicit val generatorOptionInt: CsvGenerator[Option[Int]] = csvGenerators.optionGenerator
     implicit val generatorOptionString: CsvGenerator[Option[String]] = csvGenerators.optionGenerator
-    implicit val generatorFormat: CsvGenerator[Format] = csvGenerators.generator4(Format)
-    implicit val generatorProduction: CsvGenerator[Production] = csvGenerators.generator4(Production)
+    implicit val generatorFormat: CsvGenerator[Format] = csvGenerators.generator4(Format.apply)
+    implicit val generatorProduction: CsvGenerator[Production] = csvGenerators.generator4(Production.apply)
     implicit val generatorRating: CsvGenerator[Rating] = csvGenerators.generator2(Rating.apply)
-    implicit val generatorReviews: CsvGenerator[Reviews] = csvGenerators.generator7(Reviews)
+    implicit val generatorReviews: CsvGenerator[Reviews] = csvGenerators.generator7(Reviews.apply)
     implicit val generatorName: CsvGenerator[Name] = csvGenerators.generator4(Name.apply)
-    implicit val generatorPrincipal: CsvGenerator[Principal] = csvGenerators.generator2(Principal)
+    implicit val generatorPrincipal: CsvGenerator[Principal] = csvGenerators.generator2(Principal.apply)
     implicit val generatorOptionPrincipal: CsvGenerator[Option[Principal]] = csvGenerators.optionGenerator
     val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
     implicit val generatorAttributeSet: CsvGenerator[AttributeSet] = csvGenerators.generator1(fAttributeSet)
     csvGenerators.generator11(Movie.apply)
   }
+
+  implicit val helper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper,
+    "title" -> "movie_title",
+    "imdb" -> "movie_imdb_link")
+  implicit val parser: CellParser[Movie] = cellParser11(Movie.apply)
+
 }
 
 /**

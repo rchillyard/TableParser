@@ -1,3 +1,4 @@
-package com.phasmidsoftware.tableparser.spark class DatasetMapperSpec {
+package com.phasmidsoftware.tableparser.spark
+class DatasetMapperSpec {
 
 }

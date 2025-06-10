@@ -17,7 +17,7 @@ case class AttributeSet(xs: StringList)
  * represents a set of attributes, typically formatted as a comma-separated list, and
  * potentially enclosed in brackets or other separators.
  */
-object AttributeSet {
+object AttributeSet extends CellParsers {
 
   /**
    * This method is required to be a String=>AttributeSet and is only invoked inside Try.
@@ -45,5 +45,8 @@ object AttributeSet {
     Parseable.split(w).map(apply)
 
   val none: AttributeSet = AttributeSet(Nil)
+
+  implicit val parser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
+
 }
 
