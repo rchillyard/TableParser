@@ -1,9 +1,11 @@
 package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.parse.Strings
+import com.phasmidsoftware.tableparser.core.render.CsvRenderers.StandardCsvRenderer
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.Writable
 import java.io.{File, FileWriter}
+import org.joda.time.LocalDate
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -43,6 +45,15 @@ object CsvRenderer {
 
     def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
   }
+
+  implicit val stringRenderer: CsvRenderer[String] = CsvRenderers.CsvRendererString
+
+  implicit val localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
+    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+    def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
+  }
+
 }
 
 /**

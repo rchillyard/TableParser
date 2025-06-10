@@ -143,7 +143,6 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Name"
   it should "parse Philip Michael Thomas" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
     implicitly[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", None, "Thomas", None))
     implicitly[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Michael Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", Some("Michael"), "Thomas", None))
 

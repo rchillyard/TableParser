@@ -33,9 +33,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait IntPairRowParser extends StringParser[IntPair] {
       def parse(header: Header)(input: String): Try[IntPair] =
         IntPairParser.parseAll(IntPairParser.pair, input) match {
-        case IntPairParser.Success((x, y), _) => Success(IntPair(x, y))
-        case _ => Failure(TableException(s"unable to parse ${input}"))
-      }
+          case IntPairParser.Success((x, y), _) => Success(IntPair(x, y))
+          case _ => Failure(TableException(s"unable to parse ${input}"))
+        }
 
       def parseIndexed(header: Header)(indexedString: (String, Int)): Try[IntPair] =
         parse(header)(indexedString._1)

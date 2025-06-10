@@ -184,10 +184,10 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   // FIXME Issue #50
   ignore should "parse and filter the team projects from the encrypted dataset" in {
-//    implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
 
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
+
     implicit val parser: TableParser[Table[TeamProject]] = EncryptedHeadedStringTableParser[TeamProject, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
     matchIO(IO.fromTry(parseResource("TeamProjectEncrypted.csv", classOf[TeamProject]))) {
       case pt@HeadedTable(_, _) =>

@@ -1,6 +1,5 @@
 import cats.effect.IO
 import com.phasmidsoftware.tableparser.core.parse.StringTableParser
-import com.phasmidsoftware.tableparser.core.table.MovieParser.MovieTableParser
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.FP.resource
 import scala.io.Source

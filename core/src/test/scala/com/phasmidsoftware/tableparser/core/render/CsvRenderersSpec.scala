@@ -1,6 +1,7 @@
 package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.parse._
+import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererInt
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import java.net.URL
@@ -197,27 +198,38 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Sixsy(a: Boolean, b: Boolean, c: Boolean, d: Boolean, e: Boolean, f: Boolean)
-    implicit val intPairCsvRenderer: CsvRenderer[Sixsy] = new CsvRenderers {}.renderer6(Sixsy)
-
-    intPairCsvRenderer.render(Sixsy(a = true, b = false, c = true, d = false, e = true, f = false)) shouldBe "true, false, true, false, true, false"
+    object Sixsy extends CsvRenderers {
+      implicit val renderer: CsvRenderer[Sixsy] = renderer6(Sixsy.apply)
+    }
+    import Sixsy._
+    val sixsy = Sixsy(a = true, b = false, c = true, d = false, e = true, f = false)
+    implicitly[CsvRenderer[Sixsy]].render(sixsy) shouldBe "true, false, true, false, true, false"
   }
 
   it should "render 7-tuple" in {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Sevensy(a: Double, b: Double, c: Double, d: Double, e: Double, f: Double, g: Double)
-    implicit val intPairCsvRenderer: CsvRenderer[Sevensy] = new CsvRenderers {}.renderer7(Sevensy)
+    object Sevensy extends CsvRenderers {
+      implicit val renderer: CsvRenderer[Sevensy] = renderer7(Sevensy.apply)
+    }
+    import Sevensy._
 
-    intPairCsvRenderer.render(Sevensy(1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2)) shouldBe "1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2"
+    val sevensy = Sevensy(1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2)
+    implicitly[CsvRenderer[Sevensy]].render(sevensy) shouldBe "1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2"
   }
 
   it should "render 8-tuple" in {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Eightsy(a: URL, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int)
-    implicit val intPairCsvRenderer: CsvRenderer[Eightsy] = new CsvRenderers {}.renderer8(Eightsy)
+    object Eightsy extends CsvRenderers {
+      implicit val renderer: CsvRenderer[Eightsy] = renderer8(Eightsy.apply)
+    }
+    import Eightsy._
 
-    intPairCsvRenderer.render(Eightsy(new URL("https://google.com"), 2, 3, 4, 5, 6, 7, 8)) shouldBe "https://google.com, 2, 3, 4, 5, 6, 7, 8"
+    val eightsy = Eightsy(new URL("https://google.com"), 2, 3, 4, 5, 6, 7, 8)
+    implicitly[CsvRenderer[Eightsy]].render(eightsy) shouldBe "https://google.com, 2, 3, 4, 5, 6, 7, 8"
   }
 
   it should "render 9-tuple" in {
@@ -273,8 +285,14 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     def map(f: Int => Int): Hawks = Hawks(f(bw), f(rt))
   }
 
-  object Hawks {
+  object Hawks extends CsvRenderers with CellParsers with CsvGenerators {
 
+    implicit val parser: CellParser[Hawks] = cellParser2(Hawks.apply)
+    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+    implicit val renderer: CsvRenderer[Hawks] =  renderer2(Hawks.apply)
+    implicit val csvGenerator: CsvProductGenerator[Hawks] = generator2(Hawks.apply)
+
+    // CONSIDER why do we need this when we have parser (above)
     object HawksParser extends JavaTokenParsers {
       lazy val pair: Parser[(Int, Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
     }
@@ -314,20 +332,19 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   case class DailyRaptorReport(date: LocalDate, weather: String, hawks: Hawks)
 
-  object DailyRaptorReport {
+  object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerators {
 
-    object DailyRaptorReportParser extends CellParsers {
-      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
-
-      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
-
-      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
-      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
-      implicit val hawksCellParser: CellParser[Hawks] = cellParser2(Hawks.apply)
-      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser3(DailyRaptorReport.apply)
+    object DailyRaptorReportParser extends CellParsers with CsvGenerators with CsvRenderers {
+      implicit val dateParser: CellParser[LocalDate] = cellParser(LocalDate.parse(_: String, DateTimeFormat.forPattern("MM/dd/yyyy")))
+      implicit val helper: ColumnHelper[DailyRaptorReport] = columnHelper()
     }
 
     import DailyRaptorReportParser._
+
+    implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+    implicit val cellParser: CellParser[DailyRaptorReport] = cellParser3(apply)
+    implicit val renderer: CsvRenderer[DailyRaptorReport] =  renderer3(apply)
+    implicit val csvGenerator: CsvProductGenerator[DailyRaptorReport] = generator3(apply)
 
     trait DailyRaptorReportConfig extends DefaultRowConfig {
       override val string: Regex = """[\w/\- ]+""".r
@@ -360,19 +377,6 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     val resultTry = xy flatMap {
       case rt@HeadedTable(_, _) =>
         rt.content.size shouldBe 13
-        import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
-        import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
-        implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
-        implicit val intPairCsvRenderer: CsvRenderer[Hawks] = new CsvRenderers {}.renderer2(Hawks.apply)
-        implicit val intPairCsvGenerator: CsvProductGenerator[Hawks] = new CsvGenerators {}.generator2(Hawks.apply)
-        implicit val dateCsvRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
-          val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
-
-          def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
-        }
-        implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new StandardCsvGenerator[LocalDate]
-        implicit val DRRCsvRenderer: CsvRenderer[DailyRaptorReport] = new CsvRenderers {}.renderer3(DailyRaptorReport.apply)
-        implicit val DRRCsvGenerator: CsvProductGenerator[DailyRaptorReport] = new CsvGenerators {}.generator3(DailyRaptorReport.apply)
         rt.toCSV
     }
     val expected =
@@ -392,7 +396,9 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         |2018-09-24, Overcast/Mostly cloudy, 292, 2
         |""".stripMargin
     matchTry(resultTry) {
-      case `expected` => succeed
+      case actual =>
+        println(actual)
+        actual shouldBe expected
     }
 
   }

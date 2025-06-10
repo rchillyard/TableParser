@@ -175,12 +175,12 @@ object CellParser {
     override def toString: String = "StringCellParser$"
   }
 
-  implicit object DateTimeParser$ extends SingleCellParser[LocalDate] {
+  implicit object LocalDateParser$ extends SingleCellParser[LocalDate] {
     def convertString(w: String): Try[LocalDate] =
       implicitly[Parseable[LocalDate]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "DateTimeParser$"
+    override def toString: String = "LocalDateParser$"
   }
 
   implicit object URLParser$ extends SingleCellParser[URL] {
