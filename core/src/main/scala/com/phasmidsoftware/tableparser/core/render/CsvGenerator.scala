@@ -1,5 +1,6 @@
 package com.phasmidsoftware.tableparser.core.render
 
+import com.phasmidsoftware.tableparser.core.parse.StringList
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import com.phasmidsoftware.tableparser.core.util.Reflection
 import org.joda.time.LocalDate
@@ -43,7 +44,7 @@ trait CsvGenerator[-T] {
  * - Long integer values (`Long`), using `CsvGenerators.CsvGeneratorLong`
  * - URL values from the `java.net` package (`java.net.URL`), using `CsvGenerators.CsvGeneratorURL`
  */
-object CsvGenerator {
+object CsvGenerator extends CsvGenerators {
   implicit val intGenerator: CsvGenerator[Int] = CsvGenerators.CsvGeneratorInt
   implicit val stringGenerator: CsvGenerator[String] = CsvGenerators.CsvGeneratorString
   implicit val booleanGenerator: CsvGenerator[Boolean] = CsvGenerators.CsvGeneratorBoolean
@@ -52,6 +53,9 @@ object CsvGenerator {
   implicit val longGenerator: CsvGenerator[Long] = CsvGenerators.CsvGeneratorLong
   implicit val urlGenerator: CsvGenerator[java.net.URL] = CsvGenerators.CsvGeneratorURL
   implicit val localDateGenerator: CsvGenerator[LocalDate] = CsvGenerators.CsvGeneratorLocalDate
+  implicit val generatorStringList: CsvGenerator[StringList] = sequenceGenerator[String]
+
+
 }
 
 /**

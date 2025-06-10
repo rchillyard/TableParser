@@ -30,6 +30,16 @@ trait CsvGenerators {
    */
   def optionGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Option[T]] = new StandardCsvGenerator[Option[T]]
 
+  implicit val optionIntGenerator: CsvGenerator[Option[Int]] = optionGenerator
+  implicit val optionDoubleGenerator: CsvGenerator[Option[Double]] = optionGenerator
+  implicit val optionStringGenerator: CsvGenerator[Option[String]] = optionGenerator
+  implicit val optionBooleanGenerator: CsvGenerator[Option[Boolean]] = optionGenerator
+  implicit val optionLocalDateGenerator: CsvGenerator[Option[LocalDate]] = optionGenerator
+  implicit val optionLongGenerator: CsvGenerator[Option[Long]] = optionGenerator
+  implicit val optionFloatGenerator: CsvGenerator[Option[Float]] = optionGenerator
+  implicit val optionShortGenerator: CsvGenerator[Option[Short]] = optionGenerator
+  implicit val optionByteGenerator: CsvGenerator[Option[Byte]] = optionGenerator
+
   /**
    * Method to return a CsvGenerator[T] which does not output a column header for at all.
    *

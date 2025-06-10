@@ -30,6 +30,68 @@ import scala.util.Try
 case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
 /**
+ * The `Movie` object provides functionality for generating CSV representations of `Movie` instances.
+ * It utilizes the `CsvGenerators` framework to define and create CSV generators for the various fields
+ * and nested components of the `Movie` class, as well as the `Movie` class itself.
+ *
+ * ==Overview==
+ * The `Movie` object contains the following key elements:
+ *
+ * - **csvGenerators**: An instance of `CsvGenerators` that provides predefined CSV generators for standard data types
+ * such as `Boolean`, `Int`, `Double`, and `String`. It serves as the foundation for custom CSV generators.
+ *
+ * - **createMovieCvsGenerator**: A method that constructs a `CsvGenerator` specific to the `Movie` class. This generator
+ * supports serialization of `Movie` instances into CSV format, accounting for nested data structures and optional values.
+ *
+ * ==Dependencies==
+ * This object imports the following from `com.phasmidsoftware.tableparser.core.render.CsvGenerators`:
+ * - Predefined implicit CSV generators for basic data types and utilities for creating additional generators.
+ *
+ * ==Key Method Descriptions==
+ *
+ * - `createMovieCvsGenerator`:
+ *   - Constructs and returns a `CsvGenerator[Movie]`, facilitating the generation of CSV rows for `Movie` objects.
+ *   - Custom generators are defined for various components of the `Movie` class, including:
+ *     - `StringList`: A sequence of strings.
+ *     - `Option[Double]`: Optional `Double` values.
+ *     - `Option[Int]`: Optional `Int` values.
+ *     - `Option[String]`: Optional `String` values.
+ *     - `Format`: A case class representing the format of a `Movie`.
+ *     - `Production`: A case class holding details about a `Movie`'s production.
+ *     - `Rating`: Represents a case class for the rating information of a `Movie`.
+ *     - `Reviews`: A case class containing detailed review information.
+ *     - `Name`: A case class for principal names.
+ *     - `Principal`: A case class for individuals associated with a `Movie`.
+ *     - `Option[Principal]`: An optional `Principal`.
+ *     - `AttributeSet`: A case class for sets of attributes such as genres or plot keywords.
+ *   - The resulting `CsvGenerator[Movie]` aggregates these component-level generators to enable CSV serialization of the entire `Movie` object.
+ *
+ * ==Usage==
+ * To generate a CSV representation of `Movie` objects:
+ * 1. Invoke the `createMovieCvsGenerator` method within this object to obtain the appropriate `CsvGenerator[Movie]`.
+ * 2. Use the generated `CsvGenerator` to serialize a `Movie` instance into a CSV format.
+ *
+ * This utility is especially useful for exporting `Movie` data into a structured format, such as for persistence
+ * or integration with external systems that require CSV data.
+ *
+ * ==Example==
+ * {{{
+ *   val movieCsvGenerator = Movie.createMovieCvsGenerator
+ *   val movie = Movie("Inception", Format(...), Production(...), Reviews(...), ...)
+ *   val csvRepresentation = movieCsvGenerator.generate(movie)
+ * }}}
+ */
+object Movie extends CellParsers with CsvGenerators {
+  val missing: Movie = apply("", Format.none, Production.none, Reviews.none, Principal.nemo, Principal.nemo, Principal.nemo, None, AttributeSet.none, AttributeSet.none, "")
+  val header = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
+  implicit val helper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper,
+    "title" -> "movie_title",
+    "imdb" -> "movie_imdb_link")
+  implicit val parser: CellParser[Movie] = cellParser11(apply)
+  implicit val generator: CsvGenerator[Movie] = generator11(apply)
+}
+
+/**
  * Represents the format attributes associated with a movie, such as its color, language, aspect ratio, and duration.
  * This case class is immutable and provides a concise way to model format details.
  *
@@ -71,10 +133,15 @@ case class Format(color: String, language: String, aspectRatio: Option[Double], 
  *
  * @see Format The case class representing the format attributes such as color, language, aspect ratio, and duration.
  */
-object Format extends CellParsers {
+object Format extends CellParsers with CsvGenerators {
   val none: Format = Format("", "", None, None)
   implicit val helper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper)
   implicit val parser: CellParser[Format] = cellParser4(Format.apply)
+  implicit val generatorOptInt: CsvGenerator[Option[Int]] = optionGenerator
+  implicit val generatorOptDouble: CsvGenerator[Option[Double]] = optionGenerator
+  implicit val generatorOptString: CsvGenerator[Option[String]] = optionGenerator
+  implicit val generator: CsvGenerator[Format] = generator4(apply)
+
 }
 
 /**
@@ -118,10 +185,12 @@ case class Production(country: String, budget: Option[Int], gross: Option[Int], 
  *
  * @see [[Production]] case class for the associated data structure and detailed behavior.
  */
-object Production extends CellParsers {
+object Production extends CellParsers with CsvGenerators {
   val none: Production = Production("", None, None, None)
   implicit val helper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper)
   implicit val parser: CellParser[Production] = cellParser4(apply)
+  implicit val generator: CsvGenerator[Production] = generator4(apply)
+
 }
 
 /**
@@ -145,7 +214,7 @@ case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating,
  * This object is primarily used to define default or placeholder instances of `Reviews`, such as the `none` value,
  * which represents a `Reviews` instance with default or empty data.
  */
-object Reviews extends CellParsers {
+object Reviews extends CellParsers with CsvGenerators {
   val none: Reviews = Reviews(0, 0, Rating(""), None, 0, None, 0)
   implicit val helper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapper,
     "facebookLikes" -> "movie_facebook_likes",
@@ -153,8 +222,8 @@ object Reviews extends CellParsers {
     "numUsersVoted" -> "num_voted_users",
     "numCriticReviews" -> "num_critic_for_reviews",
     "totalFacebookLikes" -> "cast_total_facebook_likes")
-  implicit val parser: CellParser[Reviews] = cellParser7(Reviews.apply)
-
+  implicit val parser: CellParser[Reviews] = cellParser7(apply)
+  implicit val generator: CsvGenerator[Reviews] = generator7(apply)
 }
 /**
  * Represents a principal entity involved in a production. This entity is characterized by its name
@@ -202,11 +271,15 @@ case class Principal(name: Name, facebookLikes: Int) {
  *          Works in conjunction with the `Principal` case class and is associated with other models in parsing, processing,
  *          and rendering movie-related data structures.
  */
-object Principal extends CellParsers {
+object Principal extends CellParsers with CsvGenerators {
   val nemo: Principal = Principal(Name.nemo, 0)
   implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
   implicit val parser: CellParser[Principal] = cellParser2(apply)
-  implicit val optionalParser: CellParser[Option[Principal]] = cellParserOption
+  implicit val parserOpt: CellParser[Option[Principal]] = cellParserOption
+  implicit val generator: CsvGenerator[Principal] = generator2(apply)
+  implicit val generatorOpt: CsvGenerator[Option[Principal]] = optionGenerator
+
+
 }
 
 /**
@@ -251,6 +324,68 @@ case class Name(first: String, middle: Option[String], last: String, suffix: Opt
 }
 
 /**
+ * Companion object for the `Name` case class, providing factory methods for parsing strings into `Name` instances.
+ *
+ * This object handles the parsing of a formatted name string (e.g., "John A. Smith Jr.") into its respective
+ * components: first name, middle name/initial, last name, and optional suffix. It uses a regular expression
+ * to perform this parsing and validates the input.
+ *
+ * ==Regex Pattern==
+ * The internal regular expression (`rName`) is designed to match and extract components of a name. While it
+ * works for most typical name formats, some complex or unconventional names in certain datasets (e.g., the Movie
+ * database) might not be parsed correctly. The components matched by the regex are:
+ *  - First Name (mandatory)
+ *  - Middle Name/Initial (optional)
+ *  - Last Name (mandatory)
+ *  - Suffix (optional)
+ *
+ * ==Factory Methods==
+ * The apply method is overloaded to:
+ *  - Parse a single string into a `Name` instance.
+ *  - Throw an exception if the input string does not conform to the expected format.
+ *
+ * @example
+ * {{{
+ * val name1 = Name("John Smith")             // Name("John", None, "Smith", None)
+ * val name2 = Name("John A. Smith")          // Name("John", Some("A."), "Smith", None)
+ * val name3 = Name("John Smith Jr.")         // Name("John", None, "Smith", Some("Jr."))
+ * val name4 = Name("John A. Smith Jr.")      // Name("John", Some("A."), "Smith", Some("Jr."))
+ *
+ * // An invalid name format will throw an exception
+ * val invalidName = Name("John")  // throws Exception: parse error in Name: 'John'
+ * }}}
+ *
+ * ==Usage in Context==
+ * The `Name` class and object are primarily used in parsing movie-related data structures and rendering them to/from CSVs:
+ *  - The `createMovieCvsGenerator` method uses `Name.apply` to generate CSV entries for `Name` instances.
+ *  - Rendering movie-related data via `CsvRendererMovie` involves the `rendererName` generator, built around `Name`.
+ * @note The `Name` case class has a corresponding custom `toString` implementation for formatted string representation.
+ */
+object Name extends CellParsers with CsvGenerators {
+  // NOTE: this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
+  private val rName =
+    """^([\p{L}\-']+\.?)\s*(([\p{L}\-]+\.?)\s)?([\p{L}\-']+\.?)(\s([\p{L}\-]+\.?))?$""".r
+
+  def apply(name: String): Name = name match {
+    case rName(first, _, null, last, _, null) =>
+      apply(first, None, last, None)
+    case rName(first, _, middle, last, _, null) =>
+      apply(first, Some(middle), last, None)
+    case rName(first, _, null, last, _, suffix) =>
+      apply(first, None, last, Some(suffix))
+    case rName(first, _, middle, last, _, suffix) =>
+      apply(first, Some(middle), last, Some(suffix))
+    case _ =>
+      throw new Exception(s"""parse error in Name: '$name'""")
+  }
+
+  val nemo: Name = Name("ne mo")
+  implicit val parser: CellParser[Name] = cellParser(apply)
+  implicit val generator: CsvGenerator[Name] = generator4(apply)
+
+}
+
+/**
  * Represents a content rating, typically used to signify the suitability of media content
  * (e.g., movies, shows) for different audiences. The `Rating` class consists of a code
  * (e.g., "PG", "R", "G") and an optional age specification (e.g., "PG-13").
@@ -264,6 +399,32 @@ case class Rating(code: String, age: Option[Int]) {
     case Some(x) => "-" + x
     case _ => ""
   })
+}
+
+/**
+ * Companion object for the `Rating` case class.
+ * This object provides utility methods to construct `Rating` instances and to parse rating strings into `Rating`.
+ */
+object Rating extends CellParsers with CsvGenerators {
+  /**
+   * Alternative apply method for the Rating class such that a single String is decoded
+   *
+   * @param s a String made up of a code, optionally followed by a dash and a number, e.g. "R" or "PG-13"
+   * @return a Rating
+   */
+  def apply(s: String): Rating =
+    s match {
+      case rRating(code, _, null) =>
+        apply(code, None)
+      case rRating(code, _, age) =>
+        apply(code, Try(age.toInt).toOption)
+      case _ =>
+        throw new Exception(s"""parse error in Rating: '$s'""")
+    }
+
+  implicit val parser: CellParser[Rating] = cellParser(apply)
+  implicit val generator: CsvGenerator[Rating] = generator2(apply)
+  private val rRating = """^(\w*)(-(\d\d))?$""".r
 }
 
 /**
@@ -437,193 +598,6 @@ object MovieParser extends CellParsers {
 }
 
 /**
- * Companion object for the `Name` case class, providing factory methods for parsing strings into `Name` instances.
- *
- * This object handles the parsing of a formatted name string (e.g., "John A. Smith Jr.") into its respective
- * components: first name, middle name/initial, last name, and optional suffix. It uses a regular expression
- * to perform this parsing and validates the input.
- *
- * ==Regex Pattern==
- * The internal regular expression (`rName`) is designed to match and extract components of a name. While it
- * works for most typical name formats, some complex or unconventional names in certain datasets (e.g., the Movie
- * database) might not be parsed correctly. The components matched by the regex are:
- *  - First Name (mandatory)
- *  - Middle Name/Initial (optional)
- *  - Last Name (mandatory)
- *  - Suffix (optional)
- *
- * ==Factory Methods==
- * The apply method is overloaded to:
- *  - Parse a single string into a `Name` instance.
- *  - Throw an exception if the input string does not conform to the expected format.
- *
- * @example
- * {{{
- * val name1 = Name("John Smith")             // Name("John", None, "Smith", None)
- * val name2 = Name("John A. Smith")          // Name("John", Some("A."), "Smith", None)
- * val name3 = Name("John Smith Jr.")         // Name("John", None, "Smith", Some("Jr."))
- * val name4 = Name("John A. Smith Jr.")      // Name("John", Some("A."), "Smith", Some("Jr."))
- *
- * // An invalid name format will throw an exception
- * val invalidName = Name("John")  // throws Exception: parse error in Name: 'John'
- * }}}
- *
- * ==Usage in Context==
- * The `Name` class and object are primarily used in parsing movie-related data structures and rendering them to/from CSVs:
- *  - The `createMovieCvsGenerator` method uses `Name.apply` to generate CSV entries for `Name` instances.
- *  - Rendering movie-related data via `CsvRendererMovie` involves the `rendererName` generator, built around `Name`.
- * @note The `Name` case class has a corresponding custom `toString` implementation for formatted string representation.
- */
-object Name extends CellParsers {
-  // NOTE: this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
-  private val rName =
-    """^([\p{L}\-']+\.?)\s*(([\p{L}\-]+\.?)\s)?([\p{L}\-']+\.?)(\s([\p{L}\-]+\.?))?$""".r
-
-  def apply(name: String): Name = name match {
-    case rName(first, _, null, last, _, null) =>
-      apply(first, None, last, None)
-    case rName(first, _, middle, last, _, null) =>
-      apply(first, Some(middle), last, None)
-    case rName(first, _, null, last, _, suffix) =>
-      apply(first, None, last, Some(suffix))
-    case rName(first, _, middle, last, _, suffix) =>
-      apply(first, Some(middle), last, Some(suffix))
-    case _ =>
-      throw new Exception(s"""parse error in Name: '$name'""")
-  }
-
-  val nemo: Name = Name("ne mo")
-  implicit val parser: CellParser[Name] = cellParser(apply)
-
-}
-
-/**
- * Companion object for the `Rating` case class.
- * This object provides utility methods to construct `Rating` instances and to parse rating strings into `Rating`.
- */
-object Rating extends CellParsers {
-  /**
-   * Alternative apply method for the Rating class such that a single String is decoded
-   *
-   * @param s a String made up of a code, optionally followed by a dash and a number, e.g. "R" or "PG-13"
-   * @return a Rating
-   */
-  def apply(s: String): Rating =
-    s match {
-      case rRating(code, _, null) =>
-        apply(code, None)
-      case rRating(code, _, age) =>
-        apply(code, Try(age.toInt).toOption)
-      case _ =>
-        throw new Exception(s"""parse error in Rating: '$s'""")
-    }
-  implicit val parser: CellParser[Rating] = cellParser(apply)
-  private val rRating = """^(\w*)(-(\d\d))?$""".r
-}
-
-/**
- * The `Movie` object provides functionality for generating CSV representations of `Movie` instances.
- * It utilizes the `CsvGenerators` framework to define and create CSV generators for the various fields
- * and nested components of the `Movie` class, as well as the `Movie` class itself.
- *
- * ==Overview==
- * The `Movie` object contains the following key elements:
- *
- * - **csvGenerators**: An instance of `CsvGenerators` that provides predefined CSV generators for standard data types
- * such as `Boolean`, `Int`, `Double`, and `String`. It serves as the foundation for custom CSV generators.
- *
- * - **createMovieCvsGenerator**: A method that constructs a `CsvGenerator` specific to the `Movie` class. This generator
- * supports serialization of `Movie` instances into CSV format, accounting for nested data structures and optional values.
- *
- * ==Dependencies==
- * This object imports the following from `com.phasmidsoftware.tableparser.core.render.CsvGenerators`:
- * - Predefined implicit CSV generators for basic data types and utilities for creating additional generators.
- *
- * ==Key Method Descriptions==
- *
- * - `createMovieCvsGenerator`:
- *   - Constructs and returns a `CsvGenerator[Movie]`, facilitating the generation of CSV rows for `Movie` objects.
- *   - Custom generators are defined for various components of the `Movie` class, including:
- *     - `StringList`: A sequence of strings.
- *     - `Option[Double]`: Optional `Double` values.
- *     - `Option[Int]`: Optional `Int` values.
- *     - `Option[String]`: Optional `String` values.
- *     - `Format`: A case class representing the format of a `Movie`.
- *     - `Production`: A case class holding details about a `Movie`'s production.
- *     - `Rating`: Represents a case class for the rating information of a `Movie`.
- *     - `Reviews`: A case class containing detailed review information.
- *     - `Name`: A case class for principal names.
- *     - `Principal`: A case class for individuals associated with a `Movie`.
- *     - `Option[Principal]`: An optional `Principal`.
- *     - `AttributeSet`: A case class for sets of attributes such as genres or plot keywords.
- *   - The resulting `CsvGenerator[Movie]` aggregates these component-level generators to enable CSV serialization of the entire `Movie` object.
- *
- * ==Usage==
- * To generate a CSV representation of `Movie` objects:
- * 1. Invoke the `createMovieCvsGenerator` method within this object to obtain the appropriate `CsvGenerator[Movie]`.
- * 2. Use the generated `CsvGenerator` to serialize a `Movie` instance into a CSV format.
- *
- * This utility is especially useful for exporting `Movie` data into a structured format, such as for persistence
- * or integration with external systems that require CSV data.
- *
- * ==Example==
- * {{{
- *   val movieCsvGenerator = Movie.createMovieCvsGenerator
- *   val movie = Movie("Inception", Format(...), Production(...), Reviews(...), ...)
- *   val csvRepresentation = movieCsvGenerator.generate(movie)
- * }}}
- */
-object Movie extends CellParsers {
-
-  val missing: Movie = apply("",Format.none,Production.none,Reviews.none,Principal.nemo,Principal.nemo,Principal.nemo,None,AttributeSet.none,AttributeSet.none,"")
-
-  val header = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
-
-  import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
-
-  val csvGenerators: CsvGenerators = new CsvGenerators {}
-
-  /**
-   * Creates an instance of `CsvGenerator` for the `Movie` type, enabling the generation of CSV headers for
-   * objects of type `Movie`. This method establishes implicit `CsvGenerator` instances for various supporting
-   * types, such as `StringList`, `Option[Double]`, and custom classes like `Format`, `Production`, and `Reviews`,
-   * as well as nested types like `Principal` and `AttributeSet`.
-   *
-   * TESTME it appears that this is never referenced
-   *
-   * These implicit instances are utilized to handle the fields of the `Movie` class, which include primitive fields,
-   * complex types, optional values, and sequences, constructing a generator for the composite `Movie` objects.
-   * It ensures that all necessary implicit generators are available for the `generator11` method, which can map
-   * a case class with eleven parameters (as in `Movie`), using a function corresponding to the apply method of
-   * the `Movie` case class.
-   *
-   * @return a `CsvGenerator[Movie]` capable of generating the column headers required to represent a `Movie` object in CSV format.
-   */
-  def createMovieCvsGenerator: CsvGenerator[Movie] = {
-    implicit val generatorStringList: CsvGenerator[StringList] = csvGenerators.sequenceGenerator[String]
-    implicit val generatorOptionDouble: CsvGenerator[Option[Double]] = csvGenerators.optionGenerator
-    implicit val generatorOptionInt: CsvGenerator[Option[Int]] = csvGenerators.optionGenerator
-    implicit val generatorOptionString: CsvGenerator[Option[String]] = csvGenerators.optionGenerator
-    implicit val generatorFormat: CsvGenerator[Format] = csvGenerators.generator4(Format.apply)
-    implicit val generatorProduction: CsvGenerator[Production] = csvGenerators.generator4(Production.apply)
-    implicit val generatorRating: CsvGenerator[Rating] = csvGenerators.generator2(Rating.apply)
-    implicit val generatorReviews: CsvGenerator[Reviews] = csvGenerators.generator7(Reviews.apply)
-    implicit val generatorName: CsvGenerator[Name] = csvGenerators.generator4(Name.apply)
-    implicit val generatorPrincipal: CsvGenerator[Principal] = csvGenerators.generator2(Principal.apply)
-    implicit val generatorOptionPrincipal: CsvGenerator[Option[Principal]] = csvGenerators.optionGenerator
-    val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
-    implicit val generatorAttributeSet: CsvGenerator[AttributeSet] = csvGenerators.generator1(fAttributeSet)
-    csvGenerators.generator11(Movie.apply)
-  }
-
-  implicit val helper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper,
-    "title" -> "movie_title",
-    "imdb" -> "movie_imdb_link")
-  implicit val parser: CellParser[Movie] = cellParser11(Movie.apply)
-
-}
-
-/**
  * A CSV renderer for the `Movie` class that provides functionality to convert `Movie` instances into CSV format
  * using configurable attributes such as delimiters and quotes.
  *
@@ -638,8 +612,6 @@ object Movie extends CellParsers {
  * @param csvAttributes Implicit instance of `CsvAttributes` providing delimiters and quote characters for CSV rendering.
  */
 class CsvRendererMovie(implicit val csvAttributes: CsvAttributes) extends CsvRenderers with CsvRenderer[Movie] {
-
-  import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
 
   private val csvGenerators = new CsvGenerators {}
   implicit val generatorStringList: CsvGenerator[StringList] = csvGenerators.sequenceGenerator[String]

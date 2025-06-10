@@ -1,5 +1,6 @@
 package com.phasmidsoftware.tableparser.core.parse
 
+import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators}
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -17,7 +18,7 @@ case class AttributeSet(xs: StringList)
  * represents a set of attributes, typically formatted as a comma-separated list, and
  * potentially enclosed in brackets or other separators.
  */
-object AttributeSet extends CellParsers {
+object AttributeSet extends CellParsers with CsvGenerators {
 
   /**
    * This method is required to be a String=>AttributeSet and is only invoked inside Try.
@@ -47,6 +48,7 @@ object AttributeSet extends CellParsers {
   val none: AttributeSet = AttributeSet(Nil)
 
   implicit val parser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
-
+  val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
+  implicit val generatorAttributeSet: CsvGenerator[AttributeSet] = generator1(fAttributeSet)
 }
 
