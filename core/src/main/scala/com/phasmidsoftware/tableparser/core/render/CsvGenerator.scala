@@ -54,8 +54,6 @@ object CsvGenerator extends CsvGenerators {
   implicit val urlGenerator: CsvGenerator[java.net.URL] = CsvGenerators.CsvGeneratorURL
   implicit val localDateGenerator: CsvGenerator[LocalDate] = CsvGenerators.CsvGeneratorLocalDate
   implicit val generatorStringList: CsvGenerator[StringList] = sequenceGenerator[String]
-
-
 }
 
 /**

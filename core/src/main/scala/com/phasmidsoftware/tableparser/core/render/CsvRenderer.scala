@@ -1,7 +1,6 @@
 package com.phasmidsoftware.tableparser.core.render
 
-import com.phasmidsoftware.tableparser.core.parse.Strings
-import com.phasmidsoftware.tableparser.core.render.CsvRenderers.StandardCsvRenderer
+import com.phasmidsoftware.tableparser.core.parse.{StringList, Strings}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.Writable
 import java.io.{File, FileWriter}
@@ -29,7 +28,7 @@ trait CsvRenderer[-T] extends Renderer[T, String] {
  * This object can include predefined implicit renderers (e.g., `Row` renderer) that leverage attributes
  * (`Map[String, String]`) to modify the output or handle special behaviors for CSV attributes.
  */
-object CsvRenderer {
+object CsvRenderer extends CsvRenderers {
   /**
    * Implicit object that provides a CSV rendering implementation for the `Row` class.
    *
@@ -46,7 +45,13 @@ object CsvRenderer {
     def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
   }
 
+  implicit val rendererInt: CsvRenderer[Int] = CsvRenderers.CsvRendererInt
+  implicit val rendererDouble: CsvRenderer[Double] = CsvRenderers.CsvRendererDouble
   implicit val stringRenderer: CsvRenderer[String] = CsvRenderers.CsvRendererString
+  implicit val rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
+  implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer("no double")
+  implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()
+  implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer()
 
   implicit val localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
     val csvAttributes: CsvAttributes = implicitly[CsvAttributes]

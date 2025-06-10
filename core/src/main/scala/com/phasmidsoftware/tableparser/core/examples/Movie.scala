@@ -7,7 +7,7 @@ package com.phasmidsoftware.tableparser.core.examples
 import com.phasmidsoftware.tableparser.core.examples.MovieParser.camelToSnakeCaseColumnNameMapper
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
-import com.phasmidsoftware.tableparser.core.table.{CsvAttributes, HeadedTable, Header, Table}
+import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Header, Table}
 import scala.util.Try
 
 /**
@@ -133,15 +133,15 @@ case class Format(color: String, language: String, aspectRatio: Option[Double], 
  *
  * @see Format The case class representing the format attributes such as color, language, aspect ratio, and duration.
  */
-object Format extends CellParsers with CsvGenerators {
+object Format extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Format = Format("", "", None, None)
   implicit val helper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper)
-  implicit val parser: CellParser[Format] = cellParser4(Format.apply)
+  implicit val parser: CellParser[Format] = cellParser4(apply)
+  implicit val renderer: CsvRenderer[Format] = renderer4(apply)
   implicit val generatorOptInt: CsvGenerator[Option[Int]] = optionGenerator
   implicit val generatorOptDouble: CsvGenerator[Option[Double]] = optionGenerator
   implicit val generatorOptString: CsvGenerator[Option[String]] = optionGenerator
   implicit val generator: CsvGenerator[Format] = generator4(apply)
-
 }
 
 /**
@@ -185,12 +185,12 @@ case class Production(country: String, budget: Option[Int], gross: Option[Int], 
  *
  * @see [[Production]] case class for the associated data structure and detailed behavior.
  */
-object Production extends CellParsers with CsvGenerators {
+object Production extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Production = Production("", None, None, None)
   implicit val helper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper)
   implicit val parser: CellParser[Production] = cellParser4(apply)
+  implicit val renderer: CsvRenderer[Production] = renderer4(apply)
   implicit val generator: CsvGenerator[Production] = generator4(apply)
-
 }
 
 /**
@@ -214,7 +214,7 @@ case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating,
  * This object is primarily used to define default or placeholder instances of `Reviews`, such as the `none` value,
  * which represents a `Reviews` instance with default or empty data.
  */
-object Reviews extends CellParsers with CsvGenerators {
+object Reviews extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Reviews = Reviews(0, 0, Rating(""), None, 0, None, 0)
   implicit val helper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapper,
     "facebookLikes" -> "movie_facebook_likes",
@@ -223,6 +223,7 @@ object Reviews extends CellParsers with CsvGenerators {
     "numCriticReviews" -> "num_critic_for_reviews",
     "totalFacebookLikes" -> "cast_total_facebook_likes")
   implicit val parser: CellParser[Reviews] = cellParser7(apply)
+  implicit val renderer: CsvRenderer[Reviews] = renderer7(apply)
   implicit val generator: CsvGenerator[Reviews] = generator7(apply)
 }
 /**
@@ -271,15 +272,15 @@ case class Principal(name: Name, facebookLikes: Int) {
  *          Works in conjunction with the `Principal` case class and is associated with other models in parsing, processing,
  *          and rendering movie-related data structures.
  */
-object Principal extends CellParsers with CsvGenerators {
+object Principal extends CellParsers with CsvGenerators with CsvRenderers {
   val nemo: Principal = Principal(Name.nemo, 0)
   implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
   implicit val parser: CellParser[Principal] = cellParser2(apply)
   implicit val parserOpt: CellParser[Option[Principal]] = cellParserOption
+  implicit val renderer: CsvRenderer[Principal] = renderer2(apply)
+  implicit val rendererOpt: CsvRenderer[Option[Principal]] = optionRenderer()
   implicit val generator: CsvGenerator[Principal] = generator2(apply)
   implicit val generatorOpt: CsvGenerator[Option[Principal]] = optionGenerator
-
-
 }
 
 /**
@@ -361,7 +362,7 @@ case class Name(first: String, middle: Option[String], last: String, suffix: Opt
  *  - Rendering movie-related data via `CsvRendererMovie` involves the `rendererName` generator, built around `Name`.
  * @note The `Name` case class has a corresponding custom `toString` implementation for formatted string representation.
  */
-object Name extends CellParsers with CsvGenerators {
+object Name extends CellParsers with CsvGenerators with CsvRenderers {
   // NOTE: this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
   private val rName =
     """^([\p{L}\-']+\.?)\s*(([\p{L}\-]+\.?)\s)?([\p{L}\-']+\.?)(\s([\p{L}\-]+\.?))?$""".r
@@ -381,8 +382,8 @@ object Name extends CellParsers with CsvGenerators {
 
   val nemo: Name = Name("ne mo")
   implicit val parser: CellParser[Name] = cellParser(apply)
+  implicit val renderer: CsvRenderer[Name] = renderer4(apply)
   implicit val generator: CsvGenerator[Name] = generator4(apply)
-
 }
 
 /**
@@ -405,7 +406,7 @@ case class Rating(code: String, age: Option[Int]) {
  * Companion object for the `Rating` case class.
  * This object provides utility methods to construct `Rating` instances and to parse rating strings into `Rating`.
  */
-object Rating extends CellParsers with CsvGenerators {
+object Rating extends CellParsers with CsvGenerators with CsvRenderers {
   /**
    * Alternative apply method for the Rating class such that a single String is decoded
    *
@@ -423,6 +424,7 @@ object Rating extends CellParsers with CsvGenerators {
     }
 
   implicit val parser: CellParser[Rating] = cellParser(apply)
+  implicit val renderer: CsvRenderer[Rating] = renderer2(apply)
   implicit val generator: CsvGenerator[Rating] = generator2(apply)
   private val rRating = """^(\w*)(-(\d\d))?$""".r
 }
@@ -507,11 +509,8 @@ object MovieParser extends CellParsers {
     type Row = Movie
 
     val maybeFixedHeader: Option[Header] = None
-
     val headerRowsToRead: Int = 1
-
     override val forgiving: Boolean = true
-
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
     protected def builder(rows: Iterable[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
@@ -561,15 +560,10 @@ object MovieParser extends CellParsers {
    * - `rowParser`: An implicit instance of `RowParser */
   trait MovieRowProcessor extends StringRowProcessor[Movie] {
     type Row = Movie
-
     val maybeFixedHeader: Option[Header] = None
-
     val headerRowsToRead: Int = 1
-
     override val forgiving: Boolean = true
-
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
   }
 
   /**
@@ -595,54 +589,4 @@ object MovieParser extends CellParsers {
    * @see `Movie` for the detailed representation of the processed row data.
    */
   implicit object MovieRowProcessor extends MovieRowProcessor
-}
-
-/**
- * A CSV renderer for the `Movie` class that provides functionality to convert `Movie` instances into CSV format
- * using configurable attributes such as delimiters and quotes.
- *
- * The `CsvRendererMovie` class leverages implicit instances of `CsvRenderer` and `CsvGenerator`
- * for various nested and auxiliary types within a `Movie`.
- * It serves as a specialized renderer for handling complex `Movie` objects with its associated subcomponents.
- *
- * Requires an implicit instance of `CsvAttributes` to define how the CSV output is formatted.
- * CONSIDER removing the csvAttributes parameter and making it an object.
- *
- * @constructor Initializes a `CsvRendererMovie` with the provided CSV attributes.
- * @param csvAttributes Implicit instance of `CsvAttributes` providing delimiters and quote characters for CSV rendering.
- */
-class CsvRendererMovie(implicit val csvAttributes: CsvAttributes) extends CsvRenderers with CsvRenderer[Movie] {
-
-  private val csvGenerators = new CsvGenerators {}
-  implicit val generatorStringList: CsvGenerator[StringList] = csvGenerators.sequenceGenerator[String]
-  implicit val generatorOptionDouble: CsvGenerator[Option[Double]] = csvGenerators.optionGenerator
-  implicit val generatorOptionInt: CsvGenerator[Option[Int]] = csvGenerators.optionGenerator
-  implicit val generatorOptionString: CsvGenerator[Option[String]] = csvGenerators.optionGenerator
-
-  import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
-
-  implicit val rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
-  implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer()
-  implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()
-  implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer()
-  implicit val rendererFormat: CsvProduct[Format] = rendererGenerator4(Format)
-  implicit val rendererProduction: CsvRenderer[Production] = renderer4(Production)
-  implicit val rendererRating: CsvRenderer[Rating] = renderer2(Rating.apply)
-  implicit val rendererReviews: CsvRenderer[Reviews] = renderer7(Reviews)
-  implicit val rendererName: CsvRenderer[Name] = renderer4(Name.apply)
-  implicit val rendererPrincipal: CsvRenderer[Principal] = renderer2(Principal)
-  implicit val rendererOptionPrincipal: CsvRenderer[Option[Principal]] = optionRenderer()
-  val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
-  implicit val rendererAttributeSet: CsvRenderer[AttributeSet] = renderer1(fAttributeSet)
-
-  /**
-   * Renders a given Movie instance into a CSV-compatible string representation, with optional attributes provided to customize the rendering process.
-   *
-   * @param t     the Movie instance to be rendered.
-   * @param attrs a map of attributes to customize the rendering of the Movie instance.
-   *              These attributes can define how certain fields of the Movie should be processed or formatted.
-   * @return a string representation of the Movie instance, formatted according to the provided attributes.
-   */
-  def render(t: Movie, attrs: Map[String, String]): String =
-    renderer11(Movie.apply).render(t, attrs)
 }
