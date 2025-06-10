@@ -86,7 +86,7 @@ object DatasetParser extends App {
    * @return Unit; this method performs side effects like displaying the dataset and does not return any value.
    */
   def doMain(implicit sparkSession: SparkSession): Unit = {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
     import spark.implicits._
 
     implicit val movieTableParser: TableParser[Table[Movie]] = implicitly[MovieTableParser]

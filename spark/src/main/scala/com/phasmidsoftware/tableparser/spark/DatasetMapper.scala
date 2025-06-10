@@ -14,7 +14,7 @@ object DatasetMapper extends App {
 
   val sd: Dataset[String] = spark.read.textFile("/Users/rhillyard/IdeaProjects/TableParser/spark/src/main/resources/com/phasmidsoftware/tableparser/spark/movie_metadata.csv")
 
-  import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+  import com.phasmidsoftware.tableparser.core.examples.Movie._
 
   val parser = MovieTableParser.rowParser
 
