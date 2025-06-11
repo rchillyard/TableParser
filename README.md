@@ -37,7 +37,7 @@ Package Structure
 As of version 1.1.4, the code has been split into three packages: _core_, _cats_, and _spark_.
 Most of the remainder of this README file refers to the _core_ package.
 Use of _cats-effect IO_ and encryption have been moved into the _cats_ package.
-The _spark_ package is for use with Apache Spark (beginning with 1.1.5).
+The _spark_ package is for use with Apache Spark (beginning with 1.2.0).
 
 Quick Intro
 ===========
@@ -83,7 +83,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-Current version: 1.1.5.
+Current version: 1.2.0.
 
 See release notes below for history.
 
@@ -301,14 +301,17 @@ The methods of _StringsParser_ are:
 
 There are a number of methods which return an instance of _CellParser_ for various situations:
 
+* def rawRowCellParser: CellParser\[RawRow]
 * def cellParserRepetition\[P: CellParser : ColumnHelper](start: Int = 1): CellParser\[Seq\[P]]
 * def cellParserSeq\[P: CellParser]: CellParser\[Seq\[P]]
 * def cellParserOption\[P: CellParser]: CellParser\[Option\[P]]
-* def cellParserOptionNonEmptyString: CellParser\[Option\[String]]
+* lazy val cellParserOptionNonEmptyString: CellParser\[Option\[String]]
 * def cellParser\[P: CellParser, T: ClassTag](construct: P => T): CellParser\[T]
 * def cellParser1\[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T, fields: Seq\[String] = Nil): CellParser\[T]
 * etc. through cellParser13...
 * def cellParser2Conditional\[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map\[K, CellParser\[P]], fields: Seq\[String] = Nil): CellParser\[T]
+* def columnHelper\[T](maybePrefix: Option\[String], aliases: (String, String)*): ColumnHelper\[T]
+* etc. including other ways to instantiate a ColumnHelper\[T].
 
 The methods of form _cellParserN_ are the parsers that are used to parse into case classes.
 Ensure that you have the correct number for N: the number of fields/parameters in the case class you are instantiating.
@@ -498,9 +501,9 @@ The example comes from a report on the submissions to a Scala exam. Only one que
     case class Submission(username: String, lastName: String, firstName: String, questions: Seq[Question])
 
     object Submission extends CellParsers {
-    implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, Some("$c $x"))
-    implicit val submissionParser: CellParser[Submission] = cellParser4(apply)
-    implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
+        implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, Some("$c $x"))
+        implicit val submissionParser: CellParser[Submission] = cellParser4(apply)
+        implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
 
         implicit object TableParser extends StringsTableParser[Table[Submission]] {
           type Row = Submission
@@ -516,11 +519,11 @@ The example comes from a report on the submissions to a Scala exam. Only one que
     case class Question(questionId: String, question: String, answer: Option[String], possiblePoints: Int, autoScore: Option[Double], manualScore: Option[Double])
 
     object Question extends CellParsers {
-    private val mapper: String => String = _.replaceAll("(_)", " ")
-    implicit val helper: ColumnHelper[Question] = columnHelper(mapper, Some("$c $x"), "questionId" -> "question_ID")
-    implicit val optParserString: CellParser[Option[String]] = cellParserOption
-    implicit val parser: CellParser[Question] = cellParser6(apply)
-    implicit val seqParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
+        private val mapper: String => String = _.replaceAll("(_)", " ")
+        implicit val helper: ColumnHelper[Question] = columnHelper(mapper, Some("$c $x"), "questionId" -> "question_ID")
+        implicit val optParserString: CellParser[Option[String]] = cellParserOption
+        implicit val parser: CellParser[Question] = cellParser6(apply)
+        implicit val seqParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
     }
 
 To test this example, we run a unit test as follows (using scalatest):
@@ -698,8 +701,9 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
-V1.1.4 -> V1.1.5
-* Work on spark module.
+V1.1.4 -> V1.2.0
+* Significant changes including the completion of the split into three packages with...
+* Functioning _spark_ package.
 * Now supports _Iterator_ to _Iterator_ processing.
 
 V1.1.3 -> V1.1.4
