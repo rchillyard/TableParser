@@ -53,7 +53,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       type Row = IntPair
 
-      val maybeHeader: Option[Header] = Some(Header.create("x", "y"))
+      override val maybeHeader: Option[Header] = Some(Header.create("x", "y"))
 
       override val headerRowsToRead: Int = 0
 
@@ -111,8 +111,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
-
-      val maybeHeader: Option[Header] = None
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
@@ -215,8 +213,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait DailyRaptorReportStringsTableParser extends StringsTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeHeader: Option[Header] = None
-
       val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
       protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
@@ -269,7 +265,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeHeader: Option[Header] = Some(Header.create(header: _*))
+      override val maybeHeader: Option[Header] = Some(Header.create(header: _*))
 
       override val headerRowsToRead: Int = 0
 
@@ -304,8 +300,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object TableParser extends StringsTableParser[Table[Submission]] {
       type Row = Submission
-
-      val maybeHeader: Option[Header] = None // Some(header)
 
       protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
@@ -376,8 +370,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       type Row = Submission
 
       protected def builder(rows: Iterable[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
-
-      val maybeHeader: Option[Header] = None // Some(header)
 
       override val forgiving: Boolean = true
 

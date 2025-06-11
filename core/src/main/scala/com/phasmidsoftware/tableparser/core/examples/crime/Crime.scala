@@ -70,8 +70,6 @@ object CrimeParser extends CellParsers {
   trait CrimeTableParser extends StringTableParser[Table[Crime]] {
     type Row = Crime
 
-    val maybeHeader: Option[Header] = None
-
     override val forgiving: Boolean = true
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]

@@ -45,7 +45,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
-      val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
+      override val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
 
       override val headerRowsToRead: Int = 0
 
@@ -334,8 +334,6 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
     trait NestedRaptorReportTableParser extends StringTableParser[Table[NestedRaptorReport]] {
       type Row = NestedRaptorReport
-
-      val maybeHeader: Option[Header] = None
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 

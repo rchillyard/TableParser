@@ -23,7 +23,7 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
   implicit object RawTableParser extends StringTableParser[RawTable] {
     type Row = RawRow
 
-    val maybeHeader: Option[Header] = optionalHeader
+    override val maybeHeader: Option[Header] = optionalHeader
 
     override val headerRowsToRead: Int = headerRows
 

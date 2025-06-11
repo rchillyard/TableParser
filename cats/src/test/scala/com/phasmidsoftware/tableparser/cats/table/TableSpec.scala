@@ -49,7 +49,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
-      val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
+      override val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
 
       override val headerRowsToRead: Int = 0
 

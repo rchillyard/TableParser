@@ -7,7 +7,6 @@ package com.phasmidsoftware.tableparser.core.examples
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapper
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
-import com.phasmidsoftware.tableparser.core.table.Header
 import scala.util.Try
 
 /**
@@ -158,11 +157,7 @@ object Movie extends CellParsers with CsvGenerators with CsvRenderers {
    * - `forgiving`: Configures fault-tolerance for processing, set to `true` by default.
    * - `rowParser`: An implicit instance of `RowParser */
   trait MovieRowProcessor extends StringRowProcessor[Movie] {
-    type Row = Movie
-    val maybeHeader: Option[Header] = None
-    val headerRowsToRead: Int = 1
     override val forgiving: Boolean = true
-    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
   }
 
   /**

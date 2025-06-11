@@ -36,7 +36,7 @@ trait TableParser[Table] {
    * If its value is None, it signifies that we must look to the first line(s) of data
    * for an appropriate header.
    */
-  protected val maybeHeader: Option[Header]
+  protected val maybeHeader: Option[Header] = None
 
   /**
    * This indicates the number of header rows which must be read from the input.
@@ -253,7 +253,7 @@ trait CopyableTableParser[Row, Input, Table] {
  * @param maybeHeader      an optional fixed header. If None, we expect to find the header defined in the first line of the file.
  * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
  */
-case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
+case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
         extends StringTableParser[RawTable] with CopyableTableParser[RawRow, String, RawTable] {
 
   type Row = RawRow
@@ -305,7 +305,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
  * @see HeadedStringTableParser#create
  * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
  */
-case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
         extends HeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead) {
 
   def setHeader(header: Header): PlainTextHeadedStringTableParser[X] =
@@ -404,7 +404,8 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    */
   def parse(xs: Iterator[Input], n: Int = headerRowsToRead): Try[Table] = maybeHeader match {
     case Some(h) =>
-      parseRows(xs drop n, h) // CONSIDER reverting to check that n = 0
+      // CONSIDER eliminating the drop here but there is one test in Cats Tests that will fail
+      parseRows(xs drop n, h)
     case None if n > 0 =>
       val yr: TeeIterator[Input] = new TeeIterator(n)(xs)
       for (h <- rowParser.parseHeader(yr.tee); t <- parseRows(yr, h)) yield t
@@ -516,13 +517,6 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
  */
 abstract class HeadedCSVTableParser[T: ClassTag](implicit rp: RowParser[T, String]) extends StringTableParser[Table[T]] {
   type Row = T
-
-  /**
-   * This variable determines if there is a programmed, i.e. fixed, header for the parser.
-   * If its value is None, it signifies that we must look to the first line of data
-   * for an appropriate header.
-   */
-  protected val maybeHeader: Option[Header] = None
 
   /**
    * Default method to create a new table.

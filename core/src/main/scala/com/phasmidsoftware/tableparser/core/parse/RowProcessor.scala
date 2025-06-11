@@ -30,13 +30,13 @@ trait RowProcessor[Row] {
    * If its value is None, it signifies that we must look to the first line(s) of data
    * for an appropriate header.
    */
-  protected val maybeHeader: Option[Header]
+  protected val maybeHeader: Option[Header] = None
 
   /**
    * This indicates the number of header rows which must be read from the input.
-   * If optionalHeader exists, then this number should be zero.
+   * If maybeHeader exists, then this property is ignored.
    */
-  val headerRowsToRead: Int
+  val headerRowsToRead: Int = 1
 
   /**
    * Method to determine how errors are handled.
@@ -95,6 +95,7 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    *
    * @param xs an iterator of inputs, where each element corresponds to a row of input data.
    * @param n  the number of initial rows to ignore (e.g., when rows are part of the header).
+   *           This parameter is ignored if `maybeHeader` is defined.
    * @param ev an implicit evidence parameter ensuring the input type adheres to the `Joinable` type class,
    *           which provides methods to combine or validate input elements during processing.
    * @return a `Try` containing an iterator of parsed `Row` objects if the parsing succeeds,
@@ -102,7 +103,7 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    */
   def process(xs: Iterator[Input], n: Int)(implicit ev: Joinable[Input]): Iterator[Row] = maybeHeader match {
     case Some(h) =>
-      doProcessRows(xs drop n, rowParser.parseIndexed(h)) // CONSIDER reverting to check that n = 0
+      doProcessRows(xs, rowParser.parseIndexed(h))
     case None if n > 0 =>
       val yr: TeeIterator[Input] = new TeeIterator(n)(xs)
       rowParser.parseHeader(yr.tee) match {
@@ -149,8 +150,10 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
  *
  * @tparam Row the row type.
  */
-abstract class StringRowProcessor[Row] extends AbstractRowProcessor[Row] {
+abstract class StringRowProcessor[Row](implicit rp: RowParser[Row, String]) extends AbstractRowProcessor[Row] {
   type Input = String
+
+  val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
   /**
    * Processes an iterator of input rows with an optional header and parses them into rows.

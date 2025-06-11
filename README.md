@@ -454,16 +454,12 @@ If, instead of building a _Table\[Movie]_, you prefer to process rows into an _I
 then you should define the following instead of the _MovieTableParser_:
 
     object Movie ... {
-        // Required code as shown above but 
+        // Required code as shown above...
 
         // Finally, an optional row processor--this is useful when you simply want to end up with an _Iterator[Movie]_
-        // rather than a Table[Movie]. Typically, we will either use this OR 
+        // rather than a Table[Movie]. Typically, we will either use this OR MovieTableParser.
         trait MovieRowProcessor extends StringRowProcessor[Movie] {
-            type Row = Movie
-            val maybeHeader: Option[Header] = None
-            val headerRowsToRead: Int = 1
             override val forgiving: Boolean = true
-            val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
         }
         implicit object MovieRowProcessor extends MovieRowProcessor
     }
