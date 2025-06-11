@@ -48,16 +48,13 @@ trait TableParser[Table] {
   val headerRowsToRead: Int = 1
 
   /**
-   * Default method to create a new table.
-   * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
+   * Method to construct a Table based on the provided rows and header.
    *
-   * CONSIDER changing Iterable back to Iterator as it was at V1.0.13.
-   *
-   * @param rows   the rows which will make up the table.
-   * @param header the Header, derived either from the program or the data.
-   * @return an instance of Table.
+   * @param rows   an iterator of Row objects representing the data rows.
+   * @param header a Header object representing the table's column headers.
+   * @return the constructed Table based on the input rows and header.
    */
-  protected def builder(rows: Iterable[Row], header: Header): Table
+  protected def builder(rows: Iterator[Row], header: Header): Table
 
   /**
    * Method to determine how errors are handled.
@@ -264,7 +261,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
   val rowParser: RowParser[Row, String] = StandardRowParser.create[Row]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
-  protected def builder(rows: Iterable[Row], header: Header): Table[Row] =
+  protected def builder(rows: Iterator[RawRow], header: Header): Table[Row] =
     HeadedTable(Content(rows), header)
 
   def setHeader(header: Header): RawTableParser =
@@ -359,7 +356,7 @@ abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeade
 
   type Row = X
 
-  protected def builder(rows: Iterable[X], header: Header): Table[Row] =
+  protected def builder(rows: Iterator[X], header: Header): Table[Row] =
     HeadedTable(Content(rows), header)
 
   val rowParser: RowParser[X, String] =
@@ -436,8 +433,9 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
 
     val inputTransformer = new IndexedInputToRowsAggregator(f, multiline, forgiving, predicate)
 
-    // NOTE that here, we materialze the resulting iterator of rows into a list of rows.
-    for (rs <- inputTransformer.processInput(ts)) yield builder(rs.toList, header)
+    // NOTE that here, although builder takes an Iterator, all builder implementations that currently exist
+    // wrap the rows into Content which forces a materialization of the rows into a list of rows.
+    for (rs <- inputTransformer.processInput(ts)) yield builder(rs, header)
   }
 }
 
@@ -531,7 +529,7 @@ abstract class HeadedCSVTableParser[T: ClassTag](implicit rp: RowParser[T, Strin
    * @param header the Header, derived either from the program or the data.
    * @return an instance of Table.
    */
-  protected def builder(rows: Iterable[T], header: Header): Table[T] = HeadedTable(rows, header)
+  protected def builder(rows: Iterator[T], header: Header): Table[T] = HeadedTable(rows, header)
 
   /**
    * Method to define a row parser.

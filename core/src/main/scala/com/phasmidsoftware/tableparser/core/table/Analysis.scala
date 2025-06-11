@@ -226,6 +226,8 @@ object Main extends App {
         val analysis = Analysis(t)
         println(s"Crime: $analysis")
         r take 10 foreach println
+      case Success(t) =>
+        System.err.println(s"Unexpected result: $t")
       case Failure(x) =>
         throw x
     }

@@ -49,7 +49,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object IntPairRowParser extends IntPairRowParser
 
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
-      protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, header)
 
       type Row = IntPair
 
@@ -88,14 +88,18 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     object DailyRaptorReportParser extends CellParsers {
 
+      private val raptorReportDateFormatter =
+        DateTimeFormat.forPattern("MM/dd/yyyy")
 
-      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+      def parseDate(w: String): LocalDate =
+        LocalDate.parse(w, raptorReportDateFormatter)
 
-      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
-
-      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
-      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
-      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser4(DailyRaptorReport.apply)
+      implicit val dateParser: CellParser[LocalDate] =
+        cellParser(parseDate)
+      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] =
+        columnHelper()
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] =
+        cellParser4(DailyRaptorReport.apply)
     }
 
     import DailyRaptorReportParser._
@@ -107,18 +111,20 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
 
-    implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
+    implicit val parser: StandardRowParser[DailyRaptorReport] =
+      StandardRowParser[DailyRaptorReport](LineParser.apply)
 
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] =
+        implicitly[RowParser[Row, String]]
 
-      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] =
+        HeadedTable(rows, header)
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
-
   }
 
   behavior of "RowParser.parse"
@@ -194,9 +200,12 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 
-      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
-      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
-      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser4(DailyRaptorReport.apply)
+      implicit val dateParser: CellParser[LocalDate] =
+        cellParser(parseDate)
+      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] =
+        columnHelper()
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] =
+        cellParser4(DailyRaptorReport.apply)
     }
 
     import DailyRaptorReportParser._
@@ -208,18 +217,20 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
 
-    implicit val parser: StandardStringsParser[DailyRaptorReport] = StandardStringsParser[DailyRaptorReport]()
+    implicit val parser: StandardStringsParser[DailyRaptorReport] =
+      StandardStringsParser[DailyRaptorReport]()
 
     trait DailyRaptorReportStringsTableParser extends StringsTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+      val rowParser: RowParser[Row, Seq[String]] =
+        implicitly[RowParser[Row, Seq[String]]]
 
-      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] =
+        HeadedTable(rows, header)
     }
 
     implicit object DailyRaptorReportStringsTableParser extends DailyRaptorReportStringsTableParser
-
   }
 
   it should "parse raptors from Seq[Seq[String]]" in {
@@ -241,10 +252,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val header: Seq[String] = Seq("Date", "Weather", "Wnd Dir", "Wnd Spd", "BV", "TV", "UV", "OS", "BE", "NH", "SS", "CH", "GO", "UA", "RS", "BW", "RT", "RL", "UB", "GE", "UE", "AK", "M", "P", "UF", "UR", "Oth", "Tot")
 
     object DailyRaptorReportParser extends CellParsers {
-
       private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
 
-      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
+      def parseDate(w: String): LocalDate =
+        LocalDate.parse(w, raptorReportDateFormatter)
 
       implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
       implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
@@ -269,7 +280,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override val headerRowsToRead: Int = 0
 
-      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[DailyRaptorReport] =
+        HeadedTable(rows, header)
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -301,7 +313,18 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object TableParser extends StringsTableParser[Table[Submission]] {
       type Row = Submission
 
-      protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+      /**
+       * Default method to create a new table.
+       * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
+       *
+       * CONSIDER changing Iterable back to Iterator as it was at V1.0.13.
+       *
+       * @param rows   the rows which will make up the table.
+       * @param header the Header, derived either from the program or the data.
+       * @return an instance of Table.
+       */
+
+      protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
@@ -369,13 +392,11 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object SubmissionTableParser extends StringTableParser[Table[Submission]] {
       type Row = Submission
 
-      protected def builder(rows: Iterable[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = true
-
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
-
   }
 
   it should "parse sample.csv with Submission1" in {

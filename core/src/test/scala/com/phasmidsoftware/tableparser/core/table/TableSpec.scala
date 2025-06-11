@@ -56,7 +56,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override val headerRowsToRead: Int = 0
 
-      protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
+      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }

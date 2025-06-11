@@ -49,7 +49,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       override val headerRowsToRead: Int = 0
 
-      protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
+      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -337,7 +337,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      protected def builder(rows: Iterable[NestedRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[NestedRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
     }
 
     implicit object NestedRaptorReportTableParser extends NestedRaptorReportTableParser

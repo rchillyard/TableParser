@@ -83,7 +83,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-Current version: 1.1.3.
+Current version: 1.1.5.
 
 See release notes below for history.
 
@@ -212,21 +212,25 @@ It also allows chaining of "lens" methods to configure the parser, for example:
 
 ## TableParser
 
-_TableParser_ is also the name of a trait which takes a parametric type called "Table" in its definition.
-It is defined thus:
+_TableParser_ is also the name of a trait that takes a parametric type called "Table" in its definition.
+This is NOT the same at the _Table_ type (described above).
+_TableParser_ is defined thus:
 
     trait TableParser[Table] {
       type Row
-      def hasHeader: Boolean
+      type Input
+      protected val maybeHeader: Option[Header] = None
+      val headerRowsToRead: Int = 1
       def forgiving: Boolean = false
       def multiline: Boolean = false
       val predicate: Try[Row] => Boolean = includeAll
-      def rowParser: RowParser[Row]
-      def builder(rows: Seq[Row]): Table
-      def parse(ws: Seq[String]): Try[Table] = ...
+      def rowParser: RowParser[Row, Input]
+      def builder(rows: Iterator[Row]): Table
+      def parse(xs: Iterator[Input], n: Int = headerRowsToRead): Try[Table]
 }
 
-The type _Row_ defines the specific row type (for example, _Movie_, in the example below).
+The type _Row_ defines the specific row type of the resulting _Table_ (for example, _Movie_, in the example below).
+The type _Input_ defines the input type, typically _String_, but there are also alternatives such as _Seq\[String]_.
 _hasHeader_ is used to define if there is a header row in the first line of the file (or sequence of strings) to be parsed.
 _forgiving_, which defaults to _false_, can be set to _true_ if you expect that some rows will not parse, but where this
 will not invalidate your dataset as a whole.
@@ -243,8 +247,9 @@ _TableParser_ also provides a method (_sampler_) to create a random sampling fun
 Note, however, that a significant part of the time for building a table from a large file is just reading and parsing the file.
 Sampling will not reduce this portion of the time.
 
-Associated with _TableParser_ is an abstract class called _TableParserHelper_ whose purpose is to make your coding job easier.
-_TableParserHelper_ is designed to be extended (i.e. sub-classed) by the companion object of the case class that you
+Associated with _TableParser_ is an abstract class called _TableParserHelper_, whose purpose is to make your coding job
+easier.
+_TableParserHelper_ is designed to be extended (i.e., subclassed) by the companion object of the case class that you
 wish to parse from a row of your input.
 Doing it this way makes it easier for the implicit TableParser instance to be found.
 You can also set up your application along the lines of the examples below, such as the Movie example.
@@ -269,7 +274,7 @@ The methods of _RowParser_ are:
     def parseHeader(w: String): Try[Header]
 
 The parseIndexed method is useful when we care about the sequential aspect of the input.
-This is particularly important if strings are allowed to spread over newlines (as in the AirBnb dataset).
+This is particularly important if strings are allowed to spread over newlines (as in the Airbnb dataset).
 
 ## LineParser
 

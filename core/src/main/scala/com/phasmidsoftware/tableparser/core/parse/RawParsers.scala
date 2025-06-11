@@ -29,7 +29,7 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
 
     override val forgiving: Boolean = self.forgiving
 
-    protected def builder(rows: Iterable[Row], header: Header): RawTable =
+    protected def builder(rows: Iterator[RawRow], header: Header): RawTable =
       new HeadedTable(Content(rows), header)
 
     val rowParser: RowParser[Row, Input] =

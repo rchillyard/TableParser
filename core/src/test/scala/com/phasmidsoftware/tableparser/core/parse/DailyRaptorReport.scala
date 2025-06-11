@@ -29,16 +29,22 @@ case class DailyRaptorReport(date: LocalDate, weather: String, hawks: Hawks)
 object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerators {
 
   object DailyRaptorReportParser extends CellParsers with CsvGenerators with CsvRenderers {
-    implicit val dateParser: CellParser[LocalDate] = cellParser(LocalDate.parse(_: String, DateTimeFormat.forPattern("MM/dd/yyyy")))
-    implicit val helper: ColumnHelper[DailyRaptorReport] = columnHelper()
+    implicit val dateParser: CellParser[LocalDate] =
+      cellParser(LocalDate.parse(_: String, DateTimeFormat.forPattern("MM/dd/yyyy")))
+    implicit val helper: ColumnHelper[DailyRaptorReport] =
+      columnHelper()
   }
 
   import DailyRaptorReportParser._
 
-  implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
-  implicit val cellParser: CellParser[DailyRaptorReport] = cellParser3(apply)
-  implicit val renderer: CsvRenderer[DailyRaptorReport] = renderer3(apply)
-  implicit val csvGenerator: CsvProductGenerator[DailyRaptorReport] = generator3(apply)
+  implicit val csvAttributes: CsvAttributes =
+    CsvAttributes(", ")
+  implicit val cellParser: CellParser[DailyRaptorReport] =
+    cellParser3(apply)
+  implicit val renderer: CsvRenderer[DailyRaptorReport] =
+    renderer3(apply)
+  implicit val csvGenerator: CsvProductGenerator[DailyRaptorReport] =
+    generator3(apply)
 
   trait DailyRaptorReportConfig extends DefaultRowConfig {
     override val string: Regex = """[\w/\- ]+""".r
@@ -47,14 +53,17 @@ object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerator
 
   implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
 
-  implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
+  implicit val parser: StandardRowParser[DailyRaptorReport] =
+    StandardRowParser[DailyRaptorReport](LineParser.apply)
 
   trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
     type Row = DailyRaptorReport
 
-    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    val rowParser: RowParser[Row, String] =
+      implicitly[RowParser[Row, String]]
 
-    protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+    protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] =
+      HeadedTable(rows, header)
   }
 
   implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
@@ -67,7 +76,8 @@ object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerator
  * @param rt Integer attribute representing sightings of the Red-tailed hawk.
  */
 case class Hawks(bw: Int, rt: Int) {
-  def map(f: Int => Int): Hawks = Hawks(f(bw), f(rt))
+  def map(f: Int => Int): Hawks =
+    Hawks(f(bw), f(rt))
 }
 
 /**
@@ -80,14 +90,19 @@ case class Hawks(bw: Int, rt: Int) {
  */
 object Hawks extends CsvRenderers with CellParsers with CsvGenerators {
 
-  implicit val parser: CellParser[Hawks] = cellParser2(Hawks.apply)
-  implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
-  implicit val renderer: CsvRenderer[Hawks] = renderer2(Hawks.apply)
-  implicit val csvGenerator: CsvProductGenerator[Hawks] = generator2(Hawks.apply)
+  implicit val parser: CellParser[Hawks] =
+    cellParser2(Hawks.apply)
+  implicit val csvAttributes: CsvAttributes =
+    CsvAttributes(", ")
+  implicit val renderer: CsvRenderer[Hawks] =
+    renderer2(Hawks.apply)
+  implicit val csvGenerator: CsvProductGenerator[Hawks] =
+    generator2(Hawks.apply)
 
   // CONSIDER why do we need this when we have parser (above)
   object HawksParser extends JavaTokenParsers {
-    lazy val pair: Parser[(Int, Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
+    lazy val pair: Parser[(Int, Int)] =
+      wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
   }
 
   trait HawksRowParser extends StringParser[Hawks] {
@@ -103,7 +118,8 @@ object Hawks extends CsvRenderers with CellParsers with CsvGenerators {
       parse(header)(indexedString._1)
 
     //noinspection NotImplementedCode
-    def parseHeader(w: Seq[String]): Try[Header] = Failure(new NotImplementedError("HawksRowParser.parseHeader"))
+    def parseHeader(w: Seq[String]): Try[Header] =
+      Failure(new NotImplementedError("HawksRowParser.parseHeader"))
   }
 
   implicit object HawksRowParser extends HawksRowParser
@@ -111,13 +127,15 @@ object Hawks extends CsvRenderers with CellParsers with CsvGenerators {
   trait HawksTableParser extends StringTableParser[Table[Hawks]] {
     type Row = Hawks
 
-    override val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
+    override val maybeHeader: Option[Header] =
+      Some(Header.create("a", "b"))
+    override val headerRowsToRead: Int =
+      0
+    val rowParser: RowParser[Row, String] =
+      implicitly[RowParser[Row, String]]
 
-    override val headerRowsToRead: Int = 0
-
-    protected def builder(rows: Iterable[Hawks], header: Header): Table[Hawks] = HeadedTable(rows, Header[Hawks]())
-
-    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    protected def builder(rows: Iterator[Hawks], header: Header): Table[Hawks] =
+      HeadedTable(rows, Header[Hawks]())
   }
 
   implicit object HawksTableParser extends HawksTableParser
