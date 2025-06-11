@@ -543,8 +543,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseResource[T: TableParser](w: String, clazz: Class[_] =
-  getClass)(implicit codec: Codec): Try[T] = parse(sourceFromClassResource(w, clazz))
+  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
+    parse(sourceFromClassResource(w, clazz))
 
   /**
    * Method to parse a table from a URL.

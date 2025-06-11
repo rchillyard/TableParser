@@ -8,41 +8,42 @@
 
 # Introduction to TableParser
 
-A functional parser of tables implemented in Scala.
+A functional parser of tables, implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.
 However, it is perfectly possible to parse other formats.
 
-_TableParser_ aims to make it as simple as possible to ingest a fully-typed tabular dataset.
+_TableParser_ aims to make it as simple as possible to ingest a fully typed tabular dataset.
 The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
 All conversions from strings to standard types are performed automatically.
 For non-standard types, it suffices simply to provide an implicit converter of the form _String=>T_.
 
-It is possible to parse sequences of _String_ (one per row)--the typical situation for a CSV file--or sequences of sequences of _String_
-(where the table corresponds to a matrix of cells).
+It is possible to parse sequences of _String_ (one per row)--the typical situation for a CSV file--or sequences of
+_String_ (where the table corresponds to a matrix of cells).
  
 This library makes extensive use of type classes and other implicit mechanisms.
 Indeed, it is implemented very similarly to JSON readers.
-There is a row-parser configuration mechanism which allows
+There is a row-parser configuration mechanism that allows
 the programmer to vary the regular expressions for recognizing
-strings and delimiters, also to vary the quote character.
+strings and delimiters and also to vary the quote character.
 
 In addition to parsing, _TableParser_ provides a mechanism for rendering a table in _hierarchical_ form (for example for
 XML or HTML).
 An output structure which is itself tabular or sequence-oriented can be generated quite easily using the rows of the table,
-together with something like, for instance, a Json writer.
+together with something like, for instance, a JSON writer.
 
 Package Structure
 ===========
 
 As of version 1.1.4, the code has been split into three packages: _core_, _cats_, and _spark_.
-The remainder of this README refers to the _core_ package.
+Most of the remainder of this README file refers to the _core_ package.
 Use of _cats-effect IO_ and encryption have been moved into the _cats_ package.
 The _spark_ package is for use with Apache Spark (beginning with 1.1.5).
 
 Quick Intro
 ===========
 
-The simplest way to get an introduction to TableParser is to consult the airbnb.sc and movie.sc worksheets.
+The simplest way to get an introduction to _TableParser_ is to consult the _movie.sc_
+and _airbnb.sc_ worksheets (the latter is in the _cats_ package).
 These give detailed descriptions of each stage of the process.
 
 Another way to see how it works is to look at this application Pairings which takes a CSV file, parses it, transforms the data,
@@ -59,6 +60,9 @@ The minimum code necessary to read parse the CSV file as a table of "Player"s, u
 
     val pty: Try[Table[Player]] = Table.parseFile("players.csv")
 
+The _TableParserHelper_ used here is an abstract subclass of _CellParsers_ and is customized for the row type (in this
+case, _Player_).
+In particular, it defines an implicit _TableParser\[Table\[X]]_ where _X_ is the row type (_Player_ in this example).
 This assumes that the source input file ("players.csv") contains a header row which includes column names corresponding to the parameters
 of the case class _Player_ (in this case "first" and "last").
 If, for example, your CSV file does not have a header row, then you make a minor change to the line _object Player..._
@@ -68,7 +72,7 @@ The input file looks something like this (the first and last columns are require
     Id,First,Last,
     1,Adam,Sullivan,
     2,Amy,Avagadro,
-    3,Annaa,Peterson,
+    3,Anna,Peterson,
 
 etc...
 
@@ -298,14 +302,15 @@ There are a number of methods which return an instance of _CellParser_ for vario
 * def cellParserOptionNonEmptyString: CellParser\[Option\[String]]
 * def cellParser\[P: CellParser, T: ClassTag](construct: P => T): CellParser\[T]
 * def cellParser1\[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T, fields: Seq\[String] = Nil): CellParser\[T]
-* etc. through cellParser12...
+* etc. through cellParser13...
 * def cellParser2Conditional\[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map\[K, CellParser\[P]], fields: Seq\[String] = Nil): CellParser\[T]
 
-The methods of form _cellParserN_ are the parsers which are used to parse into case classes.
+The methods of form _cellParserN_ are the parsers that are used to parse into case classes.
 Ensure that you have the correct number for N: the number of fields/parameters in the case class you are instantiating.
-In some situations, the reflection code is unable to get the field names in order (for example when there are public
+If you don't, the compiler, or your IDE, will warn you.
+In some situations, the reflection code is unable to get the field names in order (for example, when there are public
 lazy values).
-In such a case, add the second parameter to _explicitly_ give the field names in order.
+In such a case, add the second parameter to _explicitly_ define the order of the field names.
 Normally, of course, you can leave this parameter unset.
 
 There is one additional method to handle the situation where you want to vary the parser for a set of cells according
@@ -313,6 +318,19 @@ to the value in another (key) column: _cellParser2Conditional_.
 In this case, you must supply a _Map_ which specifies which parser is to be used for each possible value of the key column.
 If the value in that column is not one of the keys of the map, an exception will be thrown.
 For an example of this, please see the example in _CellParsersSpec_ ("conditionally parse").
+
+### Implicits
+
+Keep in mind when using implicit values that the best practice is to define an implicit involving a type T,
+for example, _CellParser\[T]_, in the companion object of _T_.
+This will tend to eliminate any amiguously defined implicits, and it also tends to avoid any problems with
+initialization.
+If you still run into initialization problems, try defining the troublemaker as lazy.
+It also relieves you from having to make up names for the implicit values (which the compiler more or less ignores,
+anyway).
+Just ensure that the name is valid, doesn't invoke a recursion, and is not in conflict with another name.
+If you look in the example of _Principal_ (below), you will see that this is also the place to define optional parsers,
+sequential parsers, etc.
 
 ## Caveats
 
@@ -472,35 +490,54 @@ This example has two variations on the earlier theme of the _Movies_ example:
 
 The example comes from a report on the submissions to a Scala exam. Only one question is included in this example.
 
-      case class Question(question_ID: String, question: String, answer: Option[String], possible_points: Int, auto_score: Option[Double], manual_score: Option[Double])
-      case class Submission(username: String, last_name: String, first_name: String, questions: Seq[Question])
-      object Submissions extends CellParsers {
-        def baseColumnNameMapper(w: String): String = w.replaceAll("(_)", " ")
-        implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace _, Some("$c $x"))
-        implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper _, Some("$c $x"), "questionId" -> "question_ID")
-        implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
-        implicit val questionParser: CellParser[Question] = cellParser6(Question)
-        implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
-        implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
-        implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
-        implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
-            type Row = Submission
-            val maybeHeader: Option[Header] = None
-            protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
-            override val forgiving: Boolean = false
-            val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+    case class Submission(username: String, lastName: String, firstName: String, questions: Seq[Question])
+
+    object Submission extends CellParsers {
+    implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, Some("$c $x"))
+    implicit val submissionParser: CellParser[Submission] = cellParser4(apply)
+    implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
+
+        implicit object TableParser extends StringsTableParser[Table[Submission]] {
+          type Row = Submission
+
+          protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+
+          override val forgiving: Boolean = false
+
+          val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
         }
-      val rows: Seq[Seq[String]] = Seq(
+    }
+
+    case class Question(questionId: String, question: String, answer: Option[String], possiblePoints: Int, autoScore: Option[Double], manualScore: Option[Double])
+
+    object Question extends CellParsers {
+    private val mapper: String => String = _.replaceAll("(_)", " ")
+    implicit val helper: ColumnHelper[Question] = columnHelper(mapper, Some("$c $x"), "questionId" -> "question_ID")
+    implicit val optParserString: CellParser[Option[String]] = cellParserOption
+    implicit val parser: CellParser[Question] = cellParser6(apply)
+    implicit val seqParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
+    }
+
+To test this example, we run a unit test as follows (using scalatest):
+
+    behavior of "TableParser"
+    it should "parse Submission" in {
+        val rows: Seq[Seq[String]] = Seq(
           Seq("Username", "Last Name", "First Name", "Question ID 1", "Question 1", "Answer 1", "Possible Points 1", "Auto Score 1", "Manual Score 1"),
           Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
         )
-
-      import Submissions._
-      val qty: Try[Table[Submission]] = Table.parseSequence(rows)
+        import Submission.TableParser
+        matchTry(Table.parseSequence(rows.iterator)) {
+          case rt@HeadedTable(_, _) =>
+            println(rt.head)
+            rt.size shouldBe 1
+        }
+    }
 
 Note the use of _cellParserRepetition_. The parameter allows the programmer to define the start value of the sequence number for the columns.
 In this case, we use the default value: 1 and so don't have to explicitly specify it.
-Also, note that the instance of _ColumnHelper_ defined here has the formatter defined as "$c $x" which is in the opposite order from the Movie example.
+Also, note that the instance of _ColumnHelper_ defined here has the formatter defined as "$c $x" which is in the
+opposite order from the _Movie_ example.
 
 Rendering
 =========
@@ -509,7 +546,7 @@ _TableParser_ provides a general mechanism for rendering (serializing to text) t
 Indeed, _Table\[Row]_ extends _Renderable\[Row]_ which supports the _render(implicit rs: StringRenderer\[Row])_ method. 
 two mechanisms for rendering a table:
 * one to a straight serialized output, for example, when rendering a table as a CSV file.
-* the other to a hierarchical (i.e. tree-structured) output, such as an HTML file.
+* the other to a hierarchical (i.e., tree-structured) output, such as an HTML file.
 
 ## Non-hierarchical output
 

@@ -332,12 +332,15 @@ case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](override v
 
 /**
  * Abstract class to define a StringTableParser that assumes a header to be found in the input file.
- * There are two sub-classes: PlainTextHeadedStringTableParser and EncryptedHeadedStringTableParser
+ * There are two subclasses: PlainTextHeadedStringTableParser and EncryptedHeadedStringTableParser
  * This class attempts to provide as much built-in functionality as possible.
  *
  * This class assumes that the names of the columns are in the first line.
  * This class implements builder with a HeadedTable object.
  * This class uses StandardRowParser of its rowParser.
+ *
+ * NOTE that this class and HeadedCSVTableParser are extremely similar (maybe identical)
+ * CONSIDER merging with HeadedCSVTableParser
  *
  * @param maybeFixedHeader None => requires that the data source has a header row.
  *                         Some(h) => specifies that the header is to be taken from h.
