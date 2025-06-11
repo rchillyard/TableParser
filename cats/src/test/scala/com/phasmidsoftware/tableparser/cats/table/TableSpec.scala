@@ -31,10 +31,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     trait IntPairRowParser extends StringParser[IntPair] {
-      def parse(indexedString: (String, Int))(header: Header): Try[IntPair] = IntPairParser.parseAll(IntPairParser.pair, indexedString._1) match {
-        case IntPairParser.Success((x, y), _) => Success(IntPair(x, y))
-        case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
-      }
+      def parse(header: Header)(input: String): Try[IntPair] =
+        IntPairParser.parseAll(IntPairParser.pair, input) match {
+          case IntPairParser.Success((x, y), _) => Success(IntPair(x, y))
+          case _ => Failure(TableException(s"unable to parse ${input}"))
+        }
+
+      def parseIndexed(header: Header)(indexedString: (String, Int)): Try[IntPair] =
+        parse(header)(indexedString._1)
 
       //noinspection NotImplementedCode
       def parseHeader(w: Seq[String]): Try[Header] = ???
@@ -45,11 +49,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
-      val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
+      override val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
 
-      val headerRowsToRead: Int = 0
+      override val headerRowsToRead: Int = 0
 
-      protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
+      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }

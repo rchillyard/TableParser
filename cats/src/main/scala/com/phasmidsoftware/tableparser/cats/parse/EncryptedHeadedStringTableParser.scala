@@ -23,7 +23,7 @@ import scala.util.Try
  *
  * @param encryptedRowPredicate a function which takes a String and returns a Boolean.
  * @param keyFunction           a function which takes a String and returns a String (input might be ignored).
- * @param maybeFixedHeader      None => requires that the data source has a header row.
+ * @param maybeHeader           None => requires that the data source has a header row.
  *                              Some(h) => specifies that the header is to be taken from h.
  *                              Defaults to None.
  *                              NOTE: that the simplest is to specify the header directly from the type X.
@@ -35,7 +35,7 @@ import scala.util.Try
  * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
  * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
  */
-case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncryption](encryptedRowPredicate: String => Boolean, keyFunction: String => String, maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncryption](encryptedRowPredicate: String => Boolean, keyFunction: String => String, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
         extends HeadedStringTableParser[X](None, false, headerRowsToRead) {
 
   private val phase2Parser: PlainTextHeadedStringTableParser[X] = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
@@ -45,7 +45,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
    *
    * @param xr the sequence of Inputs, one for each row
    * @param n  the number of lines that should be used as a Header.
-   *           If n == 0 == maybeFixedHeader.empty then there is a logic error.
+   *           If n == 0 == maybeHeader.empty then there is a logic error.
    * @return an IO[Table]
    */
   def parseIO(xr: Iterator[String], n: Int): IO[Table[X]] = {

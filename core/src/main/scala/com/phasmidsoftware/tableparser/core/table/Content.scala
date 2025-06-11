@@ -5,11 +5,15 @@ import scala.collection.parallel.ParIterable
 import scala.reflect.ClassTag
 
 /**
- * Class to represent the rows of a Table.
- * NOTE: do not expect an iterator on Content to be in any particular order.
+ * Class to represent the rows of a `Table`.
  *
- * At present, the rows are implemented as a ParIterable.
- * However, we might later change the internal representation, thus xs is private.
+ * At present, the rows are implemented as a `ParIterable`.
+ * However, we might later change the internal representation; thus `xs` is private.
+ *
+ * In general, however, you should probably expect that storing rows inside Content will force
+ * an aggregation of all rows.
+ * There are alternatives (using InputProcessor) that allow you to process an `Iterator[Input]` and
+ * yield an `Iterator[Row]`.
  *
  * @param xs a ParIterable[Row].
  * @tparam Row the underlying Row type.
@@ -60,6 +64,7 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
 
   /**
    * Provides an iterator to traverse the rows in this content.
+   * NOTE: do not expect an iterator on Content to be in any particular order.
    *
    * @return an `Iterator` over the `Row` elements of this content in their current order.
    */
@@ -149,7 +154,8 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
 
   /**
    * Method to concatenate two Contents.
-   * CONSIDER is this a source of inefficiency?
+   * CONSIDER perhaps we should use the combiner functionality more directly?
+   * (It's what the ++ method uses).
    *
    * @param other the other Content.
    * @tparam B the underlying type of the other Content and the result. Must be a super-type of Row.
@@ -262,4 +268,13 @@ object Content {
    * @return an instance of `Content` containing the parallelized collection
    */
   def apply[T](xs: Iterable[T]): Content[T] = Content(xs.par)
+
+  /**
+   * Creates an instance of the `Content` class by converting the provided iterator
+   * into a sequence and then processing it using the factory method for iterable collections.
+   *
+   * @param xs the iterator to be converted into a sequence and processed
+   * @return an instance of `Content` containing the processed collection
+   */
+  def apply[T](xs: Iterator[T]): Content[T] = apply(xs to Seq)
 }

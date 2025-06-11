@@ -5,7 +5,6 @@ name := "tableparser-cats"
 lazy val scalaModules = "org.scala-lang.modules"
 lazy val scalaTestVersion = "3.2.19"
 
-lazy val nScalaTimeVersion = "2.32.0"
 lazy val tsecVersion = "0.5.0"
 lazy val catsVersion = "3.6.1"
 

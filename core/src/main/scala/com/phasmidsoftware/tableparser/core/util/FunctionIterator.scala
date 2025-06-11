@@ -10,16 +10,46 @@ import scala.collection.AbstractIterator
 import scala.util.{Failure, Success, Try}
 
 /**
- * This iterator gets its input from a call-by-name value, which is essentially a parameterless function.
+ * The `FunctionIterator` class wraps an existing iterator to apply a function `f` to its elements,
+ * returning an iterator that yields `Try[R]`, where `R` is the result type of the function application.
  *
- * @param f the call-by-name value.
- * @tparam X a Joinable input type.
- * @tparam R the underlying type of f and also the result.
+ * This class processes elements from a given iterator of type `X` and handles various scenarios such as:
+ * - Validating inputs against a custom `Joinable` type class.
+ * - Handling exceptions during function execution and input processing.
+ * - Providing support for "multi-line" inputs that can be joined using the `Joinable` logic.
+ *
+ * @tparam X The input type of the iterator.
+ *           Must have an implicit type class `Joinable` that provides methods for validation, joining, and a zero value.
+ * @tparam R The result type produced by applying function `f` to elements of type `X`.
+ * @param f  A function from `X` to `Try[R]` that is applied to each element of the iterator.
+ * @param xs An `Iterator[X]` containing the input elements to be processed.
+ *
+ *           The class extends `AbstractIterator[Try[R]]` and provides these key methods:
+ * @constructor
+ * Creates a `FunctionIterator` that wraps the input iterator and applies the given function to its elements.
+ *
+ * Usage example:
+ * {{{
+ * implicit object StringJoinable extends Joinable[String] {
+ *   def join(t1: String, t2: String): String = t1 + t2
+ *   val zero: String = ""
+ *   def valid(t: String): Boolean = t.nonEmpty
+ * }
+ *
+ * val inputs = Iterator("abc", "123", "")
+ * val function: String => Try[Int] = str => Try(str.toInt)
+ * val functionIterator = new FunctionIterator(function)(inputs)
+ *
+ * while (functionIterator.hasNext) {
+ *   println(functionIterator.next())
+ * }
+ * }}}
+ * @note The `FunctionIterator` may use a mutable variable `ry` internally to store the result of the last element processed.
  */
 class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends AbstractIterator[Try[R]] {
   private val xj = implicitly[Joinable[X]]
 
-  // NOTE: yes, this has to be a var.
+  // NOTE: yes, this has to be a var. Don't be too heartbroken--an Iterator is a mutable construct, after all.
   private var ry: Try[R] = Failure(new Exception("FunctionIterator: uninitialized"))
 
   def hasNext: Boolean = takeFromIterator match {

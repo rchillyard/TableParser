@@ -5,6 +5,7 @@
 package com.phasmidsoftware.tableparser.core.table
 
 import com.phasmidsoftware.tableparser.core.examples.Movie
+import com.phasmidsoftware.tableparser.core.examples.Movie.header
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table.Table.parseResource
@@ -33,10 +34,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     trait IntPairRowParser extends StringParser[IntPair] {
-      def parse(indexedString: (String, Int))(header: Header): Try[IntPair] = IntPairParser.parseAll(IntPairParser.pair, indexedString._1) match {
+      def parse(header: Header)(input: String): Try[IntPair] =
+        IntPairParser.parseAll(IntPairParser.pair, input) match {
         case IntPairParser.Success((x, y), _) => Success(IntPair(x, y))
-        case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
+        case _ => Failure(TableException(s"unable to parse ${input}"))
       }
+
+      def parseIndexed(header: Header)(indexedString: (String, Int)): Try[IntPair] =
+        parse(header)(indexedString._1)
 
       //noinspection NotImplementedCode
       def parseHeader(w: Seq[String]): Try[Header] = ???
@@ -47,11 +52,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
-      val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
+      override val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
 
-      val headerRowsToRead: Int = 0
+      override val headerRowsToRead: Int = 0
 
-      protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
+      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -77,7 +82,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse and not filter the movies from the IMDB dataset" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
     implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
     matchTry(parseResource("movie_metadata.csv", classOf[Movie])) {
       case mt@HeadedTable(_, _) =>
@@ -117,12 +122,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  // TODO not sure if this is a problem
-  ignore should "parse from null File" in {
+  it should "parse from null File" in {
     import IntPair._
 
     val f: String = null
-    a[NullPointerException] should be thrownBy Table.parseFile(new File(f))
+    Table.parseFile(new File(f)) should matchPattern { case Failure(_) => }
   }
 
   it should "parse from Resource" in {
@@ -173,13 +177,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "parse with safeResource"
 
-  // TODO Not sure if this is a problem
-  ignore should "return failure(0)" in {
+  it should "return failure(0)" in {
     import IntPair._
-
-    a[NullPointerException] should be thrownBy Table.parse(Try(Source.fromResource(null)))
+    Table.parse(Try(Source.fromResource(null))) should matchPattern { case Failure(_) => }
   }
-
 
   it should "return failure(2)" in {
     lazy val si: InputStream = getClass.getResourceAsStream("emptyResource.txt")
@@ -522,13 +523,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "transform"
 
-  private val movieHeader = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
-
   it should "parse and transform the following rows with pushdown function" in {
     import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
 
     val rows = Seq(
-      movieHeader,
+      header,
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
@@ -543,13 +542,32 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   }
 
+  it should "parse and aggregate the following rows with pushdown function" in {
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
+
+    val rows = Seq(
+      header,
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+    )
+
+    matchTry(Table.parse(rows)) {
+      case mt@HeadedTable(_, _) =>
+        mt.size shouldBe 1
+        mt.head(1).get shouldBe "Doug Walker"
+
+        val f = RawTableAggregation(Map("MOVIE_TITLE" -> CellTransformation(_.toLowerCase)))
+        f.apply(mt).head(11).get shouldBe "star wars: episode vii - the force awakens             "
+    }
+
+  }
+
   behavior of "projection"
 
   it should "parse and project the following rows" in {
     import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
 
     val rows = Seq(
-      movieHeader,
+      header,
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 

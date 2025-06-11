@@ -4,6 +4,9 @@
 
 package com.phasmidsoftware.tableparser.core.parse
 
+import com.phasmidsoftware.tableparser.core.examples.Movie
+import com.phasmidsoftware.tableparser.core.examples.Movie.MovieRowProcessor
+import com.phasmidsoftware.tableparser.core.table.Table.{parseSequence, sourceFromClassResource}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import com.phasmidsoftware.tableparser.core.util.TryUsing
@@ -19,8 +22,6 @@ import scala.util.{Failure, Success, Try}
 //noinspection SpellCheckingInspection
 class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
-  behavior of "TableParser"
-
   case class IntPair(a: Int, b: Int)
 
   //noinspection ScalaUnusedSymbol
@@ -34,10 +35,12 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     trait IntPairRowParser extends StringParser[IntPair] {
-      def parse(indexedString: (String, Int))(header: Header): Try[IntPair] = IntPairParser.parseAll(IntPairParser.pair, indexedString._1) match {
+      def parse(header: Header)(input: String): Try[IntPair] = IntPairParser.parseAll(IntPairParser.pair, input) match {
         case IntPairParser.Success((x: Int, y: Int), _) => Success(IntPair(x, y))
-        case _ => Failure(TableException(s"unable to parse ${indexedString._1}"))
+        case _ => Failure(TableException(s"unable to parse ${input}"))
       }
+
+      def parseIndexed(header: Header)(indexedString: (String, Int)): Try[IntPair] = parse(header)(indexedString._1)
 
       //noinspection NotImplementedCode
       def parseHeader(w: Seq[String]): Try[Header] = ???
@@ -46,13 +49,13 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object IntPairRowParser extends IntPairRowParser
 
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
-      protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, header)
 
       type Row = IntPair
 
-      val maybeFixedHeader: Option[Header] = Some(Header.create("x", "y"))
+      override val maybeHeader: Option[Header] = Some(Header.create("x", "y"))
 
-      val headerRowsToRead: Int = 0
+      override val headerRowsToRead: Int = 0
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -60,6 +63,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object IntPairTableParser extends IntPairTableParser
 
   }
+
+  behavior of "IntPair TableParser"
 
   it should "parse int pair" in {
 
@@ -74,20 +79,27 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "TableParser with StandardRowParser"
 
+  /**
+   * CONSIDER using the DailyRaptorReport defined in its own module.
+   */
   case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
 
   object DailyRaptorReport {
 
     object DailyRaptorReportParser extends CellParsers {
 
+      private val raptorReportDateFormatter =
+        DateTimeFormat.forPattern("MM/dd/yyyy")
 
-      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+      def parseDate(w: String): LocalDate =
+        LocalDate.parse(w, raptorReportDateFormatter)
 
-      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
-
-      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
-      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
-      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser4(DailyRaptorReport.apply)
+      implicit val dateParser: CellParser[LocalDate] =
+        cellParser(parseDate)
+      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] =
+        columnHelper()
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] =
+        cellParser4(DailyRaptorReport.apply)
     }
 
     import DailyRaptorReportParser._
@@ -99,22 +111,20 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
 
-    implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
+    implicit val parser: StandardRowParser[DailyRaptorReport] =
+      StandardRowParser[DailyRaptorReport](LineParser.apply)
 
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeFixedHeader: Option[Header] = None
+      val rowParser: RowParser[Row, String] =
+        implicitly[RowParser[Row, String]]
 
-      val headerRowsToRead: Int = 1
-
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] =
+        HeadedTable(rows, header)
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
-
   }
 
   behavior of "RowParser.parse"
@@ -130,7 +140,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val row = "09/16/2018\t" + partlyCloudy + "\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410"
     matchTry(rowParser.parseHeader(Seq(firstRow))) {
       case header@Header(_, _) =>
-        val hawkCount: Try[DailyRaptorReport] = parser.parse((row, 0))(header)
+        val hawkCount: Try[DailyRaptorReport] = parser.parseIndexed(header)((row, 0))
         hawkCount should matchPattern { case Success(DailyRaptorReport(_, `partlyCloudy`, 3308, 5)) => }
     }
   }
@@ -165,11 +175,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  // TODO check to see if this is a problem or not.
-  ignore should "fail empty sequence" in {
+  it should "fail empty sequence" in {
     import DailyRaptorReport._
 
-    a[ParserException] should be thrownBy Table.parse(Seq(headerRaptors, ""))
+    Table.parse(Seq(headerRaptors, "")) should matchPattern { case Failure(e: ParserException) => }
   }
 
   it should "parse empty sequence" in {
@@ -191,9 +200,12 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 
-      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
-      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
-      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser4(DailyRaptorReport.apply)
+      implicit val dateParser: CellParser[LocalDate] =
+        cellParser(parseDate)
+      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] =
+        columnHelper()
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] =
+        cellParser4(DailyRaptorReport.apply)
     }
 
     import DailyRaptorReportParser._
@@ -205,22 +217,20 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
 
-    implicit val parser: StandardStringsParser[DailyRaptorReport] = StandardStringsParser[DailyRaptorReport]()
+    implicit val parser: StandardStringsParser[DailyRaptorReport] =
+      StandardStringsParser[DailyRaptorReport]()
 
     trait DailyRaptorReportStringsTableParser extends StringsTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeFixedHeader: Option[Header] = None
+      val rowParser: RowParser[Row, Seq[String]] =
+        implicitly[RowParser[Row, Seq[String]]]
 
-      val headerRowsToRead: Int = 1
-
-      val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
-
-      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] =
+        HeadedTable(rows, header)
     }
 
     implicit object DailyRaptorReportStringsTableParser extends DailyRaptorReportStringsTableParser
-
   }
 
   it should "parse raptors from Seq[Seq[String]]" in {
@@ -242,10 +252,10 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val header: Seq[String] = Seq("Date", "Weather", "Wnd Dir", "Wnd Spd", "BV", "TV", "UV", "OS", "BE", "NH", "SS", "CH", "GO", "UA", "RS", "BW", "RT", "RL", "UB", "GE", "UE", "AK", "M", "P", "UF", "UR", "Oth", "Tot")
 
     object DailyRaptorReportParser extends CellParsers {
-
       private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
 
-      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
+      def parseDate(w: String): LocalDate =
+        LocalDate.parse(w, raptorReportDateFormatter)
 
       implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
       implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
@@ -266,11 +276,12 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeFixedHeader: Option[Header] = Some(Header.create(header: _*))
+      override val maybeHeader: Option[Header] = Some(Header.create(header: _*))
 
-      val headerRowsToRead: Int = 0
+      override val headerRowsToRead: Int = 0
 
-      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[DailyRaptorReport] =
+        HeadedTable(rows, header)
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -292,42 +303,46 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-
-  behavior of "StringsParser"
-
-  behavior of "Table"
-
-  case class Question(questionId: String, question: String, answer: Option[String], possiblePoints: Int, autoScore: Option[Double], manualScore: Option[Double])
-
   case class Submission(username: String, lastName: String, firstName: String, questions: Seq[Question])
 
-  object Submissions extends CellParsers {
-
-    private val baseColumnNameMapper: String => String = _.replaceAll("(_)", " ")
-
+  object Submission extends CellParsers {
     implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, Some("$c $x"))
-    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper, Some("$c $x"), "questionId" -> "question_ID")
-    implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
-    implicit val questionParser: CellParser[Question] = cellParser6(Question)
-    implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
-    implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
+    implicit val submissionParser: CellParser[Submission] = cellParser4(apply)
     implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
 
-    implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
+    implicit object TableParser extends StringsTableParser[Table[Submission]] {
       type Row = Submission
 
-      val maybeFixedHeader: Option[Header] = None // Some(header)
+      /**
+       * Default method to create a new table.
+       * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
+       *
+       * CONSIDER changing Iterable back to Iterator as it was at V1.0.13.
+       *
+       * @param rows   the rows which will make up the table.
+       * @param header the Header, derived either from the program or the data.
+       * @return an instance of Table.
+       */
 
-      val headerRowsToRead: Int = 1
-
-      protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+      protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
       val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
     }
-
   }
+
+  case class Question(questionId: String, question: String, answer: Option[String], possiblePoints: Int, autoScore: Option[Double], manualScore: Option[Double])
+
+  object Question extends CellParsers {
+    private val mapper: String => String = _.replaceAll("(_)", " ")
+    implicit val helper: ColumnHelper[Question] = columnHelper(mapper, Some("$c $x"), "questionId" -> "question_ID")
+    implicit val optParserString: CellParser[Option[String]] = cellParserOption
+    implicit val parser: CellParser[Question] = cellParser6(apply)
+    implicit val seqParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
+  }
+
+  behavior of "TableParser"
 
   it should "parse Submission" in {
 
@@ -336,9 +351,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
     )
 
-    import Submissions._
     // TODO note that the column lookup isn't correct for Question ID 1
-
+    import Submission.TableParser
     matchTry(Table.parseSequence(rows.iterator)) {
       case rt@HeadedTable(_, _) =>
         println(rt.head)
@@ -346,32 +360,27 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  // TODO not sure if this is a problem
-  ignore should "fail on incompatible parser" in {
-    import Submissions._
+  it should "fail on incompatible parser" in {
+    import Submission.TableParser
     val strings: Seq[String] = Nil
-    a[ParserException] should be thrownBy Table.parse(strings)
+    Table.parse(strings) should matchPattern { case Failure(e: ParserException) => }
   }
 
-//  it should "fail on empty rows" in {
-//    import Submissions._
-//    val rows: Seq[Seq[String]] = Nil
-//    a[NoSuchElementException] shouldBe thrownBy Table.parseSequence(rows.iterator)
-//  }
-
+  it should "fail on empty rows" in {
+    import Submission.TableParser
+    val rows: Seq[Seq[String]] = Nil
+    parseSequence(rows.iterator) should matchPattern { case Failure(e: NoSuchElementException) => }
+  }
 
   behavior of "submissions from file"
 
-  object Submissions1 extends CellParsers {
+  object SubmissionAlt extends CellParsers {
 
     private val baseColumnNameMapper: String => String = _.replaceAll("(_)", " ")
 
     implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace)
-    implicit val questionColumnHelper: ColumnHelper[Question] = columnHelper(baseColumnNameMapper)
     implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
-    implicit val questionParser: CellParser[Question] = cellParser6(Question)
-    implicit val questionsParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
-    implicit val submissionParser: CellParser[Submission] = cellParser4(Submission)
+    implicit val submissionParser: CellParser[Submission] = cellParser4(Submission.apply)
 
     implicit object SubmissionConfig extends DefaultRowConfig {
       override val string: Regex = """[^\t]*""".r
@@ -383,21 +392,15 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object SubmissionTableParser extends StringTableParser[Table[Submission]] {
       type Row = Submission
 
-      protected def builder(rows: Iterable[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
-
-      val maybeFixedHeader: Option[Header] = None // Some(header)
-
-      val headerRowsToRead: Int = 1
+      protected def builder(rows: Iterator[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = true
-
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
-
   }
 
   it should "parse sample.csv with Submission1" in {
-    import Submissions1._
+    import SubmissionAlt._
     implicit val codec: Codec = Codec("UTF-16") // Not sure why it is in UTF-16 but it is.
     val sy: Try[Source] = Try(Source.fromURL(classOf[TableParserSpec].getResource("submissions.csv")))
     val sti: Try[Table[Submission]] = TryUsing(sy)(s => Table.parseSource(s))
@@ -407,7 +410,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse sample.csv with Submission1 Alt" in {
-    import Submissions1._
+    import SubmissionAlt._
     implicit val codec: Codec = Codec("UTF-16") // Not sure why it is in UTF-16 but it is.
     matchTry(Table.parseResource("submissions.csv", classOf[TableParserSpec])) {
       case rt@HeadedTable(_, _) => rt.size shouldBe 1
@@ -468,7 +471,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "header should be set" in {
     val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
     val hdr = Header(Seq(Seq("a")))
-    parser.setHeader(hdr) shouldBe RawTableParser(maybeFixedHeader = Some(hdr)).setMultiline(true)
+    parser.setHeader(hdr) shouldBe RawTableParser(maybeHeader = Some(hdr)).setMultiline(true)
   }
 
   it should "it should set forgiving" in {
@@ -506,6 +509,21 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val rowConfig = RowConfig.defaultEncryptedRowConfig
     val lineParser: LineParser = LineParser.apply(rowConfig)
     parser.setRowParser(StandardRowParser[Int](lineParser)) shouldBe parser
+  }
+
+  behavior of "MovieRowProcessor"
+
+  it should "process the movies from the IMDB dataset" in {
+    val movieRowProcessor: MovieRowProcessor = implicitly[RowProcessor[Movie]].asInstanceOf[MovieRowProcessor]
+    val z: Try[Source] = sourceFromClassResource("movie_metadata.csv", classOf[Movie])
+    matchTry(z) {
+      case source: Source =>
+        val iterator: Iterator[String] = source.getLines()
+        val ms: Iterator[Movie] = movieRowProcessor.process(iterator, movieRowProcessor.headerRowsToRead)
+        (ms to List).size shouldBe 1567
+      case _ =>
+        fail("unable to open \"movie_metadata.csv\"")
+    }
   }
 
 }

@@ -39,6 +39,27 @@ trait Joinable[T] {
  */
 object Joinable {
   /**
+   * A trait extending the behavior of `Joinable` for a tuple of type `(T, Int)`.
+   * It defines how to join two `(T, Int)` values, a zero value, and validity checks
+   * based on the underlying `Joinable` instance for `T`.
+   *
+   * @tparam T the type to be joined within the `(T, Int)` tuple.
+   */
+  trait JoinableTInt[T] extends Joinable[(T, Int)] {
+
+    def tj: Joinable[T]
+
+    def join(t1: (T, Int), t2: (T, Int)): (T, Int) =
+      tj.join(t1._1, t2._1) -> (if (t1._2 >= 0) t1._2 else t2._2)
+
+    val zero: (T, Int) =
+      tj.zero -> -1
+
+    def valid(t: (T, Int)): Boolean =
+      tj.valid(t._1)
+  }
+
+  /**
    * Provides an implicit implementation of the `Joinable` type class for the `String` type.
    * This enables strings to be combined using the `join` method, defines a zero value for
    * strings, and validates non-empty strings.

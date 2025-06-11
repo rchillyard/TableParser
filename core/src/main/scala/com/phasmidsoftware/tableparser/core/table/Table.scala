@@ -423,12 +423,12 @@ object Table {
   /**
    * Method to parse a table from a Source (with proper resource management of the source).
    *
-   * @param si the Source.
+   * @param sy the Source.
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parse[T: TableParser](si: => Try[Source]): Try[T] =
-    TryUsing(si)(parseSource(_))
+  def parse[T: TableParser](sy: => Try[Source]): Try[T] =
+    TryUsing(sy)(parseSource(_))
 
   /**
    * Method to parse a table from a URI with an implicit encoding.
@@ -543,8 +543,8 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseResource[T: TableParser](w: String, clazz: Class[_] =
-  getClass)(implicit codec: Codec): Try[T] = parse(sourceFromClassResource(w, clazz))
+  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
+    parse(sourceFromClassResource(w, clazz))
 
   /**
    * Method to parse a table from a URL.
@@ -723,7 +723,7 @@ object Table {
    * @param filename a File.
    * @return an Try[Source].
    */
-  private def sourceFromFilename(filename: => String)(implicit codec: Codec): Try[Source] =
+  def sourceFromFilename(filename: => String)(implicit codec: Codec): Try[Source] =
     Try(Source.fromFile(filename))
 
   /**
@@ -733,7 +733,7 @@ object Table {
    * @param clazz the class.
    * @return an Try[Source].
    */
-  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Try[Source] =
+  def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Try[Source] =
     Try(Source.fromURL(clazz.getResource(w))).recoverWith {
       case _: java.lang.NullPointerException =>
         Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
@@ -792,9 +792,9 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
       rows.toSeq else rows.toSeq) map {
       case p: Product =>
         ww.writeRow(o2)(p)
-      case xs: Seq[Row] =>
+      case xs: Seq[_] =>
         ww.writeRowElements(o2)(xs) // TESTME
-      case xs: Array[Row] =>
+      case xs: Array[_] =>
         ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
       case _ =>
         throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
@@ -1004,6 +1004,10 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
     Header(xs ++ other.xs, for (xs <- xss; ys <- other.xss) yield xs ++ ys)
 }
 
+/**
+ * This companion object contains utility methods and constants
+ * for creating and manipulating instances of the Header class.
+ */
 object Header {
 
   // TODO come back and figure out why recursiveLetters (below) didn't work properly.

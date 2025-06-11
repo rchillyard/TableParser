@@ -33,8 +33,14 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   /**
    * Method to parse a Row.
    *
-   * NOTE: the expression "end of input expected" must be the same as the failure defined in (trait) Parsers: def phrase[T](p: Parser[T]): Parser[T]
+   * NOTE: the expressions "end of input expected" and "end of input" are defined in (trait) Parsers:
+   * def phrase[T](p: Parser[T]): Parser[T]
+   * def acceptMatch[U]...
+   * def acceptIf...
    * It's a shame that they didn't make it a constant in Parsers!
+   *
+   * CONSIDER checking that sequential lines really are sequential.
+   * Currently, no use is made of `indexedString._2`
    *
    * @param indexedString a tuple of String and Int denoting the line and its index in the file.
    * @return a Try[Strings].
@@ -43,7 +49,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
     parseAll(row, indexedString._1) match {
       case Success(s, _) =>
         scala.util.Success(s)
-      case Failure("end of input expected", _) =>
+      case Failure("end of input", _) | Failure("end of input expected", _) =>
         scala.util.Failure(MultiLineException(indexedString))
       case Failure(x, _) =>
         scala.util.Failure(formException(indexedString, x))
@@ -51,27 +57,134 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
         scala.util.Failure(formException(indexedString, x))
   }
 
+  /**
+   * A parser for parsing a single row consisting of multiple cells separated by a delimiter.
+   *
+   * This parser matches and extracts repetitions of cells (parsed by the `cell` parser) separated by the specified
+   * delimiter. The result is returned as a sequence of strings (`Strings`).
+   *
+   * - The `rep1sep` combinator ensures that at least one cell is expected in the row.
+   * - The delimiter parser defines the separator between cells.
+   *
+   * This parser can be used in conjunction with other parsers to process row-based data with a specific format or structure.
+   */
   lazy val row: Parser[Strings] =
     rep1sep(cell, delimiter)
 
+  /**
+   * A `Parser` that attempts to parse a cell value in a variety of forms.
+   *
+   * The `cell` parser evaluates different parsing strategies in sequence:
+   *  - `quotedString`: Parses a string enclosed in quotation marks.
+   *  - `list`: Parses a list structure.
+   *  - `string`: Parses a generic string.
+   *  - `failure("invalid string")`: Returns a parsing failure with the message "invalid string"
+   *    if none of the other parsers are successful.
+   *
+   * This parser is declared as `lazy` to allow it to be initialized when first accessed,
+   * enabling any dependencies it might have to be resolved at runtime.
+   */
   lazy val cell: Parser[String] =
     quotedString | list | string | failure("invalid string")
 
+  /**
+   * A parser for quoted strings in the input, using a combination of possible parsing strategies.
+   *
+   * The `quotedString` method combines three different parsers to handle quoted strings:
+   * 1. `quotedStringWithQuotes`: Parses quoted strings that include surrounding quotation marks.
+   * 2. `pureQuotedString`: Parses quoted strings but may apply stricter conditions (e.g., specific delimiters or special characters).
+   * 3. `failure("invalid quoted string")`: Ensures that any string not following the valid quoted string format results in a failure.
+   *
+   * This is defined as a lazy val, meaning the parser's initialization is deferred until it is first accessed.
+   *
+   * @return A `Parser[String]` that matches valid quoted strings in the input.
+   */
   lazy val quotedString: Parser[String] =
     quotedStringWithQuotes | pureQuotedString | failure("invalid quoted string")
 
-  private lazy val pureQuotedString: Parser[String] =
+  /**
+   * A `Parser` that extracts a quoted string from the input.
+   *
+   * The parser is defined as a combination of three elements:
+   * - `quote`: Matches the opening quote character.
+   * - `stringInQuotes`: Parses the content inside the quotes.
+   * - `quote`: Matches the closing quote character.
+   *
+   * This parser uses the sequence combinators (`~>` and `<~`) to drop the quote characters themselves.
+   *
+   * @return a `Parser[String]` that successfully parses a string enclosed in quotes
+   *         and returns the content within the quotes as a `String`.
+   */
+  lazy val pureQuotedString: Parser[String] =
     quote ~> stringInQuotes <~ quote
 
-  private lazy val stringInQuotes: Parser[String] =
+  /**
+   * A `Parser` that matches a string that includes zero or more characters (other than quote characters as defined by the `quote` parameter).
+   *
+   * This parser specifically matches a sequence of characters that does not include the quote character (`"`).
+   * The `quote` character in this context is expected to be defined elsewhere in the class or inherited scope.
+   *
+   * Usage:
+   * This parser can be used to identify and extract substrings within a larger input that are enclosed in quotes,
+   * as part of a more complex parsing process.
+   *
+   * @return a string that matches the defined regular expression.
+   */
+  lazy val stringInQuotes: Parser[String] =
     s"""[^$quote]*""".r
 
+  /**
+   * Parser for quoted strings that includes the surrounding quotes as part of the result.
+   *
+   * This lazy value utilizes `quotedStringWithQuotesAsList`, which parses the string components
+   * into a list of strings. It then combines those components into a single string by adding
+   * the surrounding quotes (as defined by the `quote` variable).
+   *
+   * The resulting parsed string includes both the content of the quoted string and the enclosing
+   * quote characters.
+   *
+   * For example:
+   * Input: `"Hello, World!"`
+   * Output: `"Hello, World!"` (as a single string, including the quotation marks)
+   *
+   * @return a parser that yields the entire quoted string, including the enclosing quotes.
+   */
   lazy val quotedStringWithQuotes: Parser[String] =
     quotedStringWithQuotesAsList ^^ (ws => ws.mkString(s"$quote"))
 
+  /**
+   * A parser that extracts a sequence of strings (Strings) from a quoted string,
+   * interpreting quotes and escaped quotes appropriately.
+   *
+   * The input is expected to start and end with a quote character.
+   * Inside the quotes, delimited substrings can be separated by pairs of quote characters.
+   *
+   * Example Input: "abc""def""ghi"
+   * Parsed Output: Seq("abc", "def", "ghi")
+   *
+   * The parser works as follows:
+   * - `quote ~>` ensures that the input starts with a single opening quote.
+   * - `repsep(stringInQuotes, s"$quote$quote")` parses a repetition of strings defined by `stringInQuotes`,
+   * with consecutive strings separated by double quotes (`""`).
+   * - `<~ quote` ensures the input ends with a single closing quote.
+   *
+   * @return a Parser[Strings] capable of parsing a quoted string into a sequence of substrings.
+   */
   lazy val quotedStringWithQuotesAsList: Parser[Strings] =
     quote ~> repsep(stringInQuotes, s"$quote$quote") <~ quote
 
+  /**
+   * A lazy val for a Parser that parses a list-like structure encapsulated by open and close characters.
+   *
+   * The parser works as follows:
+   * 1. It expects an opening character (`getOpenChar`).
+   * 2. It parses a component followed by a `listSeparator`, and one or more components separated by `listSeparator` using `rep1sep`.
+   * 3. It concludes by expecting a closing character (`getCloseChar`).
+   * 4. Finally, it transforms the parsed elements into a String representation where the components are encapsulated by curly braces
+   * and separated by commas, e.g., "{component1,component2,...}".
+   *
+   * @return A `Parser[String]` that produces the string representation of the parsed list.
+   */
   lazy val list: Parser[String] =
     getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
 
@@ -146,11 +259,8 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
         if (x.isSuccess) y else x
     }
 
-    (
-            check(cell, "Hello", "Hello") &&
-                    //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
-                    check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")
-            ).squawk()
+    //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
+    (check(cell, "Hello", "Hello") && check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")).squawk()
   }
 
 }

@@ -1,9 +1,10 @@
 package com.phasmidsoftware.tableparser.core.render
 
-import com.phasmidsoftware.tableparser.core.parse.Strings
+import com.phasmidsoftware.tableparser.core.parse.{StringList, Strings}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.Writable
 import java.io.{File, FileWriter}
+import org.joda.time.LocalDate
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -27,21 +28,36 @@ trait CsvRenderer[-T] extends Renderer[T, String] {
  * This object can include predefined implicit renderers (e.g., `Row` renderer) that leverage attributes
  * (`Map[String, String]`) to modify the output or handle special behaviors for CSV attributes.
  */
-object CsvRenderer {
-//    implicit object RowStringRenderer extends CsvRenderer[Row] {
-//    /**
-//     * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
-//     *
-//     * @param t     the input parameter, i.e. the T object to render.
-//     * @param attrs a map of attributes for this value of O.
-//     * @return an instance of type O.
-//     */
-//    def render(t: Row, attrs: Map[String, String]): String =
-//    t.toString()  // TESTME
-//
-//      val csvAttributes: CsvAttributes =
-//      CsvAttributes.defaultCsvAttributes // TESTME
-//    }
+object CsvRenderer extends CsvRenderers {
+  /**
+   * Implicit object that provides a CSV rendering implementation for the `Row` class.
+   *
+   * This object extends the `CsvRenderer` type class for `Row`, enabling rows to be
+   * rendered as CSV strings. The default behavior concatenates the row elements (`ws`)
+   * into a single string, separated by the delimiter defined in the implicit `CsvAttributes`.
+   *
+   * @see CsvRenderer
+   * @see Row
+   */
+  implicit object CsvRendererRow extends CsvRenderer[Row] {
+    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+    def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
+  }
+
+  implicit val rendererInt: CsvRenderer[Int] = CsvRenderers.CsvRendererInt
+  implicit val rendererDouble: CsvRenderer[Double] = CsvRenderers.CsvRendererDouble
+  implicit val stringRenderer: CsvRenderer[String] = CsvRenderers.CsvRendererString
+  implicit val rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
+  implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer("no double")
+  implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()
+  implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer()
+
+  implicit val localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
+    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+    def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
+  }
 
 }
 

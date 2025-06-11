@@ -6,14 +6,13 @@ package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.table._
 
-
 /**
  * Abstract class to define a raw parser, that's to say a Parser of Seq[String]
  *
- * @param maybeHeader a header if appropriate.
+ * @param optionalHeader a header if appropriate.
  * @param forgiving   true if we want this parser to be forgiving (defaults to false).
  */
-abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = false, headerRows: Int = 1) extends CellParsers {
+abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = false, headerRows: Int = 1) extends CellParsers {
   self =>
 
   override implicit val rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
@@ -24,21 +23,18 @@ abstract class RawParsers(maybeHeader: Option[Header], forgiving: Boolean = fals
   implicit object RawTableParser extends StringTableParser[RawTable] {
     type Row = RawRow
 
-    val maybeFixedHeader: Option[Header] = maybeHeader
+    override val maybeHeader: Option[Header] = optionalHeader
 
-    val headerRowsToRead: Int = headerRows
+    override val headerRowsToRead: Int = headerRows
 
     override val forgiving: Boolean = self.forgiving
 
-    //    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    protected def builder(rows: Iterator[RawRow], header: Header): RawTable =
+      new HeadedTable(Content(rows), header)
 
-    //    protected def builder(rows: Iterable[Row], header: Header): RawTable = HeadedTable(rows.map(r => RawRow(r, header)), header)
-
-    protected def builder(rows: Iterable[Row], header: Header): RawTable = new HeadedTable(Content(rows), header)
-
-    protected val rowParser: RowParser[Row, Input] = implicitly[RowParser[Row, String]]
+    val rowParser: RowParser[Row, Input] =
+      implicitly[RowParser[Row, String]]
   }
-
 }
 
 /**

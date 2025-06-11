@@ -1,7 +1,9 @@
 package com.phasmidsoftware.tableparser.core.render
 
+import com.phasmidsoftware.tableparser.core.parse.StringList
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import com.phasmidsoftware.tableparser.core.util.Reflection
+import org.joda.time.LocalDate
 import scala.reflect.ClassTag
 
 /**
@@ -25,6 +27,33 @@ trait CsvGenerator[-T] {
    * @return a list of names of the form parent.column.
    */
   def toColumnName(po: Option[String], name: String): String
+}
+
+/**
+ * Companion object for the CsvGenerator type class providing implicit instances for various types.
+ *
+ * The implicit generators defined here are standard implementations used to generate CSV headers
+ * for specific data types. These generators are derived from predefined instances in the CsvGenerators object.
+ *
+ * Implicit instances:
+ * - Integer values (`Int`), using `CsvGenerators.CsvGeneratorInt`
+ * - String values (`String`), using `CsvGenerators.CsvGeneratorString`
+ * - Boolean values (`Boolean`), using `CsvGenerators.CsvGeneratorBoolean`
+ * - Double-precision floating-point numbers (`Double`), using `CsvGenerators.CsvGeneratorDouble`
+ * - Arbitrarily large integers (`BigInt`), using `CsvGenerators.CsvGeneratorBigInt`
+ * - Long integer values (`Long`), using `CsvGenerators.CsvGeneratorLong`
+ * - URL values from the `java.net` package (`java.net.URL`), using `CsvGenerators.CsvGeneratorURL`
+ */
+object CsvGenerator extends CsvGenerators {
+  implicit val intGenerator: CsvGenerator[Int] = CsvGenerators.CsvGeneratorInt
+  implicit val stringGenerator: CsvGenerator[String] = CsvGenerators.CsvGeneratorString
+  implicit val booleanGenerator: CsvGenerator[Boolean] = CsvGenerators.CsvGeneratorBoolean
+  implicit val doubleGenerator: CsvGenerator[Double] = CsvGenerators.CsvGeneratorDouble
+  implicit val bigIntGenerator: CsvGenerator[BigInt] = CsvGenerators.CsvGeneratorBigInt
+  implicit val longGenerator: CsvGenerator[Long] = CsvGenerators.CsvGeneratorLong
+  implicit val urlGenerator: CsvGenerator[java.net.URL] = CsvGenerators.CsvGeneratorURL
+  implicit val localDateGenerator: CsvGenerator[LocalDate] = CsvGenerators.CsvGeneratorLocalDate
+  implicit val generatorStringList: CsvGenerator[StringList] = sequenceGenerator[String]
 }
 
 /**

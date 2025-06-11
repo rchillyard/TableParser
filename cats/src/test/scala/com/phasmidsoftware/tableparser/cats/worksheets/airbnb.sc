@@ -3,9 +3,10 @@ import com.phasmidsoftware.tableparser.cats.table.AirBNBSpec
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.FP.resource
-import scala.io.{BufferedSource, Source}
+import scala.io.Source
+import scala.util.Try
 
-// NOTE: We show how to parse the AirBNB dataset where the resulting Table rows.
+// NOTE: We show how to parse the AirBNB dataset where the resulting Table rows
 // are plain sequences of String (no parsing to specific types).
 // We also show how to analyze the resulting columns.
 // This is useful for unfamiliar datasets.
@@ -14,7 +15,9 @@ import scala.io.{BufferedSource, Source}
 // The resource method is just a utility for convenience--
 // you could just as easily use the Java URL methods directly.
 // The result (sy) is a Try[Source].
-val sy: IO[BufferedSource] = IO.fromTry(for (u <- resource[AirBNBSpec]("/airbnb2.csv")) yield Source.fromURL(u))
+// Ideally, we would create an IO[Source] and be able to parse that below.
+// However, that will come in a future revision of TableParser.
+val sy: Try[Source] = (for (u <- resource[AirBNBSpec]("airbnb2.csv")) yield Source.fromURL(u))
 
 // NOTE: Set up the parser as a "raw" parser (no conversion to types).
 // We set multiline to be true because the AirBNB file has many lines which "run on"
@@ -26,7 +29,9 @@ val parser: RawTableParser = RawTableParser().setMultiline(true).setPredicate(Ta
 // NOTE: parse the source to create the table.
 // This triggers usage of an implicit class (in the TableParser companion object) which defines several parse methods.
 // The result is a Try[RawTable].
-val rti: IO[RawTable] = parser parse sy
+// Because the future version isn't available yet, we do all the parsing wrapped in Try
+// and then convert to IO.
+val rti: IO[RawTable] = IO.fromTry(parser parse sy)
 
 // NOTE: if successful, analyze the resulting rows and print the analysis.
 // There should be 87 columns and approximately 128 rows in this resulting table (the exact number is random).
@@ -42,4 +47,4 @@ val zi: IO[Unit] = rti map {
 import cats.effect.unsafe.implicits.global
 
 // TODO eliminate use of unsafe methods
-zi.unsafeRunSync()
+zi.unsafeRunSync

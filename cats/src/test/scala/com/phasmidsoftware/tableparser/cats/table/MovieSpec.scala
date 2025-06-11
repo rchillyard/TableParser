@@ -22,7 +22,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "Movie table"
 
   it should "parse the first movie from the IMDB dataset" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
 
     val movies = Seq(
       movieHeader,
@@ -40,7 +40,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   // CONSIDER rework this test to be more significant
   it should "parse the first (edited) movie from the IMDB dataset" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
 
     val movies = Seq(
       movieHeader,
@@ -54,20 +54,16 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "fail to parse the first (edited) movie from the IMDB dataset" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
 
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
-
-      val maybeFixedHeader: Option[Header] = None
-
-      val headerRowsToRead: Int = 1
 
       override val forgiving: Boolean = false
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      protected def builder(rows: Iterable[Movie], header: Header): Table[Row] =
+      protected def builder(rows: Iterator[Movie], header: Header): Table[Row] =
         HeadedTable(rows, header)
     }
 
@@ -82,16 +78,12 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse all the following rows" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
 
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
 
-      val maybeFixedHeader: Option[Header] = None
-
-      val headerRowsToRead: Int = 1
-
-      def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
@@ -109,16 +101,12 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse and transform the following rows with simple map" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
 
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
 
-      val maybeFixedHeader: Option[Header] = None
-
-      val headerRowsToRead: Int = 1
-
-      def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = false
 
@@ -143,7 +131,6 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Name"
   it should "parse Philip Michael Thomas" in {
-    import com.phasmidsoftware.tableparser.core.examples.MovieParser._
     implicitly[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", None, "Thomas", None))
     implicitly[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Michael Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", Some("Michael"), "Thomas", None))
 

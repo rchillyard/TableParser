@@ -311,7 +311,8 @@ object IOTable {
     t.maybeHeader match {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
-        import Row.CsvRendererRow
+        import com.phasmidsoftware.tableparser.core.render.CsvRenderer.CsvRendererRow
+//        import Row.CsvRendererRow
         IO.fromTry(t.toCSV)
       case _ => throw TableException("toCSVRow: cannot write this Table to CSV (no header)")
     }

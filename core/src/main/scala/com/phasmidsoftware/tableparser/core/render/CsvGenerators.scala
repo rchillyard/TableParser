@@ -2,6 +2,7 @@ package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import java.net.URL
+import org.joda.time.LocalDate
 import scala.reflect.ClassTag
 
 /**
@@ -28,6 +29,16 @@ trait CsvGenerators {
    * @return a CsvGenerator[ Option[T] ].
    */
   def optionGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Option[T]] = new StandardCsvGenerator[Option[T]]
+
+  implicit val optionIntGenerator: CsvGenerator[Option[Int]] = optionGenerator
+  implicit val optionDoubleGenerator: CsvGenerator[Option[Double]] = optionGenerator
+  implicit val optionStringGenerator: CsvGenerator[Option[String]] = optionGenerator
+  implicit val optionBooleanGenerator: CsvGenerator[Option[Boolean]] = optionGenerator
+  implicit val optionLocalDateGenerator: CsvGenerator[Option[LocalDate]] = optionGenerator
+  implicit val optionLongGenerator: CsvGenerator[Option[Long]] = optionGenerator
+  implicit val optionFloatGenerator: CsvGenerator[Option[Float]] = optionGenerator
+  implicit val optionShortGenerator: CsvGenerator[Option[Short]] = optionGenerator
+  implicit val optionByteGenerator: CsvGenerator[Option[Byte]] = optionGenerator
 
   /**
    * Method to return a CsvGenerator[T] which does not output a column header for at all.
@@ -485,17 +496,19 @@ trait CsvGenerators {
 }
 
 object CsvGenerators {
-  implicit object CsvGeneratorBoolean extends StandardCsvGenerator[Boolean]
+   object CsvGeneratorBoolean extends StandardCsvGenerator[Boolean]
 
-  implicit object CsvGeneratorInt extends StandardCsvGenerator[Int]
+   object CsvGeneratorInt extends StandardCsvGenerator[Int]
 
-  implicit object CsvGeneratorBigInt extends StandardCsvGenerator[BigInt]
+   object CsvGeneratorBigInt extends StandardCsvGenerator[BigInt]
 
-  implicit object CsvGeneratorLong extends StandardCsvGenerator[Long]
+   object CsvGeneratorLong extends StandardCsvGenerator[Long]
 
-  implicit object CsvGeneratorDouble extends StandardCsvGenerator[Double]
+   object CsvGeneratorDouble extends StandardCsvGenerator[Double]
 
-  implicit object CsvGeneratorString extends StandardCsvGenerator[String]
+   object CsvGeneratorString extends StandardCsvGenerator[String]
 
-  implicit object CsvGeneratorURL extends StandardCsvGenerator[URL]
+   object CsvGeneratorURL extends StandardCsvGenerator[URL]
+
+  object CsvGeneratorLocalDate extends StandardCsvGenerator[LocalDate]
 }
