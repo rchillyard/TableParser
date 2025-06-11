@@ -83,7 +83,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-Current version: 1.2.0.
+Current version: 1.2.1.
 
 See release notes below for history.
 
@@ -701,6 +701,8 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.2.0 -> V1.2.1
+* ???
 V1.1.4 -> V1.2.0
 * Significant changes including the completion of the split into three packages with...
 * Functioning _spark_ package.
