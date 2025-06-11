@@ -70,15 +70,14 @@ object CrimeParser extends CellParsers {
   trait CrimeTableParser extends StringTableParser[Table[Crime]] {
     type Row = Crime
 
-    val maybeFixedHeader: Option[Header] = None
-
-    val headerRowsToRead: Int = 1
+    val maybeHeader: Option[Header] = None
 
     override val forgiving: Boolean = true
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-    protected def builder(rows: Iterable[Crime], header: Header): Table[Row] = HeadedTable(Content(rows), header)
+    protected def builder(rows: Iterable[Crime], header: Header): Table[Row] =
+      HeadedTable(Content(rows), header)
   }
 
   implicit object CrimeTableParser extends CrimeTableParser
@@ -86,7 +85,6 @@ object CrimeParser extends CellParsers {
 
 object CrimeRenderer extends CsvRenderers {
 
-  import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
   import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
 
   private val generators = new CsvGenerators {}
@@ -105,7 +103,6 @@ object CrimeRenderer extends CsvRenderers {
 
 object CrimeLocationRenderer extends CsvRenderers {
 
-  import com.phasmidsoftware.tableparser.core.render.CsvGenerators._
   import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
 
   private val generators = new CsvGenerators {}

@@ -1,7 +1,6 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.examples.Movie
-import com.phasmidsoftware.tableparser.core.examples.Movie.MovieTableParser
 import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Table}
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import org.scalatest.flatspec
@@ -16,9 +15,9 @@ class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "implicit class"
 
   it should "properly parse movie data" in {
-    val sy = Try(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))
-    val parser = MovieTableParser
-    val parsed: Try[Table[Movie]] = parser.parse(sy)
+    val sy: Try[Source] = Try(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))
+    val parser: StringTableParser[Table[Movie]] = implicitly[StringTableParser[Table[Movie]]]
+    val parsed: Try[Table[Movie]] = sy flatMap (ms => parser.parse(ms.getLines()))
     matchTry(parsed) {
       case tm@HeadedTable(_, _) =>
         println(s"Table read with ${tm.content} rows")

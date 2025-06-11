@@ -86,7 +86,7 @@ See release notes below for history.
 Parsing
 =======
 
-The _Table_ trait expresses the result of parsing from a representation of a table.
+The _Table_ trait expresses the result of parsing from a serialized representation of a table.
 Each row is represented by a parametric type _Row_.
 Typically, this _Row_ type is a case class with one parameter corresponding to one column in the table file.
 However, some table files will have too many columns to be practical for this correspondence.
@@ -104,7 +104,7 @@ For the first option, you will do something like the following (see the _Analysi
     }
 
 This analysis will give you a list of columns, each showing its name,
-whether it is optional (i.e. contains nulls), and (if it's a numerical column),
+whether it is optional (i.e., contains nulls), and (if it's a numerical column),
 its range, mean, and standard deviation.
 
 Incidentally, this raw parser has three signatures, one for resources, one for files, and one for a sequence of Strings.
@@ -112,8 +112,8 @@ And the default for raw row parsing is to allow quoted strings to span multiple 
 
 But, if not parsing as raw rows, you will need to design a class hierarchy to model the columns of the table.
 _TableParser_ will take care of any depth of case classes/tuples.
-Currently, there is a limit of 12 parameters per case class/tuple so with a depth of _h_ classes/tuples you could
-handle _12^h_ attributes altogether.
+Currently, there is a limit of 13 parameters per case class/tuple so with a depth of _h_ classes/tuples you could
+theoretically handle _13^h_ attributes altogether.
 
 The names of the parameters of a case class do not necessarily have to be the same as the column from which the value derives.
 The _ColumnHelper_ class is available to manage the mapping between parameters and columns.
@@ -121,13 +121,15 @@ The _ColumnHelper_ class is available to manage the mapping between parameters a
 The result of parsing a table file (CSV, etc.) will be a _Table\[Row]_, wrapped in _Try_.
 There are object methods to parse most forms of text: _File, Resource, InputStream, URL, Seq\[String]_, etc. (see _Table_ below).
 
-The parser responsible for parsing the contents of a cell is called _CellParser\[T]_ where T is the type of the value in the cell in question.
-T is covariant so that if you have alternative parsers which generate different subclasses of trait, for instance, this can be done.
+The parser responsible for parsing the contents of a cell is called _CellParser\[T]_ where _T_ is the type of the value
+in the cell in question.
+_T_ is covariant so that if you have alternative parsers which generate different subclasses of trait, for instance,
+this can be done.
 
 In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
 an implicit instance of _CellParser\[T]_ must be in scope.
 This is achieved via invoking a method (from object _Parsers_) of the following form:
-where _f_ is a function which takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
+where _f_ is a function that takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
 and where _T_ is the type to be constructed:
 
     cellParserN[T,P1,P2,...Pn](f)
@@ -141,16 +143,17 @@ Or, more simply, do as for _ratingParser_ in the example below.
 
 Note that _P1_, _P2_, ... _Pn_ each have a context bound on _CellParser_ (that's to say, there is implicit
 evidence of type _CellParser\[P]_).
-This is the mechanism which saves the programmer from having to specify explicit conversions.
+This is the mechanism that saves the programmer from having to specify explicit conversions.
 _T_ is bound to be a subtype of _Product_ and has two context bounds: _ClassTag_ and _ColumnHelper_.
 
-See section on _CellParsers_ below.
+See the section on _CellParsers_ below.
 
 ## Table
 
 The _Table_ class, which implements _Iterable\[Row]_, also has several methods for manipulation:
 ### query methods
-* def rows: Seq\[Row]
+
+* def content: Content\[Row]
 * def maybeHeader: Option\[Header]
 * def toCSV(implicit renderer: CsvRenderer\[Row], generator: CsvProductGenerator\[Row], csvAttributes: CsvAttributes): Iterable\[String]
 * def maybeColumnNames: Option\[Seq\[String]]
@@ -409,28 +412,14 @@ The _Movie_ object has additional code like this:
         implicit val stringParser: StringParser[Movie] = StandardRowParser.create[Movie]
 
         // Next, if we want to be able to parse rows into a Table[Movie], we will need a TableParser[Movie]...
-        trait MovieTableParser extends StringTableParser[Table[Movie]] {
-            type Row = Movie
-            val maybeFixedHeader: Option[Header] = None
-            val headerRowsToRead: Int = 1
+        trait MovieTableParser extends HeadedCSVTableParser[Movie] {
             override val forgiving: Boolean = true
-            val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-
-            protected def builder(rows: Iterable[Movie], header: Header): Table[Row] = HeadedTable(rows, header)
         }
         implicit object MovieTableParser extends MovieTableParser
-
-        // Finally, an optional row processor--this is useful when you simply want to end up with an _Iterator[Movie]_.
-        trait MovieRowProcessor extends StringRowProcessor[Movie] {
-            type Row = Movie
-            val maybeFixedHeader: Option[Header] = None
-            val headerRowsToRead: Int = 1
-            override val forgiving: Boolean = true
-            val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
-        }
-        implicit object MovieRowProcessor extends MovieRowProcessor
     }
 
+We use the `forgiving` mode for `MovieTableParser` because we expect that there will be many rows which cannot be
+parsed.
 In this code, _helper_, and the other columnHelpers, specify parameter-column mappings.
 Note that _helper_ for _Principal_ has an extra parameter at the start of the parameter list:
     
@@ -461,6 +450,24 @@ All you have to do is declare it optional in the case class and _TableParser_ wi
 
 Note that there is a default, implicit _RowConfig_ object defined in the object _RowConfig_.
 
+If, instead of building a _Table\[Movie]_, you prefer to process rows into an _Iterator\[Movie]_,
+then you should define the following instead of the _MovieTableParser_:
+
+    object Movie ... {
+        // Required code as shown above but 
+
+        // Finally, an optional row processor--this is useful when you simply want to end up with an _Iterator[Movie]_
+        // rather than a Table[Movie]. Typically, we will either use this OR 
+        trait MovieRowProcessor extends StringRowProcessor[Movie] {
+            type Row = Movie
+            val maybeHeader: Option[Header] = None
+            val headerRowsToRead: Int = 1
+            override val forgiving: Boolean = true
+            val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+        }
+        implicit object MovieRowProcessor extends MovieRowProcessor
+    }
+
 ## Example: Submissions
 
 This example has two variations on the earlier theme of the _Movies_ example:
@@ -482,7 +489,7 @@ The example comes from a report on the submissions to a Scala exam. Only one que
         implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
         implicit object SubmissionTableParser extends StringsTableParser[Table[Submission]] {
             type Row = Submission
-            val maybeFixedHeader: Option[Header] = None
+            val maybeHeader: Option[Header] = None
             protected def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
             override val forgiving: Boolean = false
             val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]

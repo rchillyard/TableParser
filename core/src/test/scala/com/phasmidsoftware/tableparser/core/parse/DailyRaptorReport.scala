@@ -52,9 +52,7 @@ object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerator
   trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
     type Row = DailyRaptorReport
 
-    val maybeFixedHeader: Option[Header] = None
-
-    val headerRowsToRead: Int = 1
+    val maybeHeader: Option[Header] = None
 
     val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
@@ -115,9 +113,9 @@ object Hawks extends CsvRenderers with CellParsers with CsvGenerators {
   trait HawksTableParser extends StringTableParser[Table[Hawks]] {
     type Row = Hawks
 
-    val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
+    val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
 
-    val headerRowsToRead: Int = 0
+    override val headerRowsToRead: Int = 0
 
     protected def builder(rows: Iterable[Hawks], header: Header): Table[Hawks] = HeadedTable(rows, Header[Hawks]())
 

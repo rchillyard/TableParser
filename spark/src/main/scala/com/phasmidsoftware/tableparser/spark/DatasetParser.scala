@@ -89,7 +89,6 @@ object DatasetParser extends App {
     import com.phasmidsoftware.tableparser.core.examples.Movie._
     import spark.implicits._
 
-    implicit val movieTableParser: TableParser[Table[Movie]] = implicitly[MovieTableParser]
     new DatasetParser[Movie]().createDataset[DatasetParser[_]]("movie_metadata.csv") match {
       case Success(ds) =>
         ds.show(10)

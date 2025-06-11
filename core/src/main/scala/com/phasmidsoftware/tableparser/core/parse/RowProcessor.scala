@@ -13,6 +13,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Typeclass trait representing a row processor that defines how rows of input data can be parsed into specific types,
  * typically useful for parsing and processing tabular data with headers.
+ * CONSIDER finding a common super-type between this and `TableParser`.
  *
  * @tparam Row the type that each row will be processed into.
  */
@@ -25,15 +26,15 @@ trait RowProcessor[Row] {
   type Input
 
   /**
-   * This variable determines if there is a programmed, i.e. fixed, header for the parser.
-   * If its value is None, it signifies that we must look to the first line of data
+   * This variable determines if there is a programmed, i.e., fixed, header for the parser.
+   * If its value is None, it signifies that we must look to the first line(s) of data
    * for an appropriate header.
    */
-  protected val maybeFixedHeader: Option[Header]
+  protected val maybeHeader: Option[Header]
 
   /**
    * This indicates the number of header rows which must be read from the input.
-   * If maybeFixedHeader exists, then this number should be zero.
+   * If optionalHeader exists, then this number should be zero.
    */
   val headerRowsToRead: Int
 
@@ -99,7 +100,7 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    * @return a `Try` containing an iterator of parsed `Row` objects if the parsing succeeds,
    *         or a failure if any step of the process encounters an error (e.g., invalid header or processing logic).
    */
-  def process(xs: Iterator[Input], n: Int)(implicit ev: Joinable[Input]): Iterator[Row] = maybeFixedHeader match {
+  def process(xs: Iterator[Input], n: Int)(implicit ev: Joinable[Input]): Iterator[Row] = maybeHeader match {
     case Some(h) =>
       doProcessRows(xs drop n, rowParser.parseIndexed(h)) // CONSIDER reverting to check that n = 0
     case None if n > 0 =>

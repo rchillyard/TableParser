@@ -1,7 +1,7 @@
 package com.phasmidsoftware.tableparser.spark
 
 import com.phasmidsoftware.tableparser.core.examples.Movie
-import com.phasmidsoftware.tableparser.core.parse.RowParser
+import com.phasmidsoftware.tableparser.core.parse.{HeadedCSVTableParser, RowParser}
 import com.phasmidsoftware.tableparser.core.table.Header
 import com.phasmidsoftware.tableparser.spark.MovieDatabase.{filename, header}
 import org.apache.spark.api.java.function.MapFunction
@@ -78,7 +78,7 @@ object MovieDatabase {
 
   import com.phasmidsoftware.tableparser.core.examples.Movie._
 
-  val parser: RowParser[Movie, String] = MovieTableParser.rowParser
+  val parser: RowParser[Movie, String] = implicitly[HeadedCSVTableParser[Movie]].rowParser
   val header: Header = Header.create((Movie.header.split(',')): _*)
 
   // NOTE: I don't know if there's a way to specify a classpath resource in Spark so, for now, we define a totally non-portable filename

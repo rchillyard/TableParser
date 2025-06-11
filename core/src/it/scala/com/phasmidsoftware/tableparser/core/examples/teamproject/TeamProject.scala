@@ -60,7 +60,7 @@ object TeamProjectParser extends CellParsers {
 sealed trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
   type Row = TeamProject
 
-  val maybeFixedHeader: Option[Header] = None
+  val maybeHeader: Option[Header] = None
 
   val headerRowsToRead: Int = 2
 

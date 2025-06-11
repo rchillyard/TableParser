@@ -49,9 +49,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait IntPairTableParser extends StringTableParser[Table[IntPair]] {
       type Row = IntPair
 
-      val maybeFixedHeader: Option[Header] = Some(Header.create("a", "b"))
+      val maybeHeader: Option[Header] = Some(Header.create("a", "b"))
 
-      val headerRowsToRead: Int = 0
+      override val headerRowsToRead: Int = 0
 
       protected def builder(rows: Iterable[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 

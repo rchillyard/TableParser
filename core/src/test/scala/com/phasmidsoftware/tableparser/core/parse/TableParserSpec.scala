@@ -53,9 +53,9 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       type Row = IntPair
 
-      val maybeFixedHeader: Option[Header] = Some(Header.create("x", "y"))
+      val maybeHeader: Option[Header] = Some(Header.create("x", "y"))
 
-      val headerRowsToRead: Int = 0
+      override val headerRowsToRead: Int = 0
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
     }
@@ -112,9 +112,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeFixedHeader: Option[Header] = None
-
-      val headerRowsToRead: Int = 1
+      val maybeHeader: Option[Header] = None
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
@@ -217,9 +215,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait DailyRaptorReportStringsTableParser extends StringsTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeFixedHeader: Option[Header] = None
-
-      val headerRowsToRead: Int = 1
+      val maybeHeader: Option[Header] = None
 
       val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
 
@@ -273,9 +269,9 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      val maybeFixedHeader: Option[Header] = Some(Header.create(header: _*))
+      val maybeHeader: Option[Header] = Some(Header.create(header: _*))
 
-      val headerRowsToRead: Int = 0
+      override val headerRowsToRead: Int = 0
 
       protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = HeadedTable(rows, header)
 
@@ -309,9 +305,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object TableParser extends StringsTableParser[Table[Submission]] {
       type Row = Submission
 
-      val maybeFixedHeader: Option[Header] = None // Some(header)
-
-      val headerRowsToRead: Int = 1
+      val maybeHeader: Option[Header] = None // Some(header)
 
       protected def builder(rows: Iterable[Row], header: Header): Table[Row] = HeadedTable(rows, header)
 
@@ -383,9 +377,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       protected def builder(rows: Iterable[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
 
-      val maybeFixedHeader: Option[Header] = None // Some(header)
-
-      val headerRowsToRead: Int = 1
+      val maybeHeader: Option[Header] = None // Some(header)
 
       override val forgiving: Boolean = true
 
@@ -466,7 +458,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "header should be set" in {
     val parser = RawTableParser(TableParser.includeAll, None).setMultiline(true)
     val hdr = Header(Seq(Seq("a")))
-    parser.setHeader(hdr) shouldBe RawTableParser(maybeFixedHeader = Some(hdr)).setMultiline(true)
+    parser.setHeader(hdr) shouldBe RawTableParser(maybeHeader = Some(hdr)).setMultiline(true)
   }
 
   it should "it should set forgiving" in {
