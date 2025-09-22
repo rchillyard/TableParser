@@ -13,6 +13,7 @@ class DatasetMapperSpec extends AnyFlatSpec with should.Matchers with Serializab
     implicit val spark: SparkSession = SparkSession.builder.appName("DatasetMapper").master("local[*]").getOrCreate()
     implicit val encoder: Encoder[Movie] = Encoders.product[Movie]
 
+    println(s"Current Directory is: ${System.getProperty("user.dir")}")
     val target = new DatasetMapper[Movie](MovieDatabase.parser.parse(MovieDatabase.header))(Movie.missing)
     val dataset: Dataset[Movie] = target.as(MovieDatabase.filename)
     dataset.show(20)
