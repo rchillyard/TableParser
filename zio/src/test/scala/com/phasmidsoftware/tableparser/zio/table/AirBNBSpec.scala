@@ -3,7 +3,7 @@ package com.phasmidsoftware.tableparser.zio.table
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.table.{Analysis, HeadedTable, RawTable}
 import com.phasmidsoftware.tableparser.core.util.FP.resource
-import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO.matchIO
+import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO.matchZIO
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.io.Source
@@ -27,7 +27,7 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
     // Create the table
     val wsty: Task[RawTable] = ZIO.fromTry(parser.parse(sy))
 
-    matchIO(wsty) {
+    matchZIO(wsty) {
       case t@HeadedTable(_, _) =>
 //        t.foreach(r => println("**********" + r))
         val analysis = Analysis(t)
@@ -54,7 +54,7 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
     // Create the table
     val wsty: Task[RawTable] = ZIO.fromTry(parser.parse(sy))
 
-    matchIO(wsty) {
+    matchZIO(wsty) {
       case t@HeadedTable(_, _) =>
         t.foreach(r => println("**********" + r))
         val analysis = Analysis(t)
@@ -75,7 +75,7 @@ class AirBNBSpec extends AnyFlatSpec with Matchers {
     // Create the table
     val wsty: Task[RawTable] = ZIO.fromTry(parser.parse(sy))
 
-    matchIO(wsty) {
+    matchZIO(wsty) {
       case t@HeadedTable(r, _) =>
         val analysis = Analysis(t)
         println(s"AirBNB: $analysis")

@@ -31,16 +31,13 @@ object EvaluateZIO {
    * For usage, see EvaluateZIOSpec.
    *
    * @param xio             a value of Task[X].
-   * @param timeout         a timeout (defaults to 1 second).
    * @param partialFunction a PartialFunction of type X=>Assertion
    * @tparam X the underlying type of xio.
    * @return an Assertion.
    */
-  def matchIO[X](xio: => Task[X])(partialFunction: PartialFunction[X, Boolean]): Task[TestResult] = {
+  def matchZIO[X](xio: => Task[X])(partialFunction: PartialFunction[X, Boolean]): Task[TestResult] = {
     val f: (=> X) => Boolean = partialFunction(_)
-    assertZIO(xio)(Assertion.assertion("matchIO OK") {
-      f
-    })
+    assertZIO(xio)(Assertion.assertion("matchZIO OK")(f))
   }
 //
 //  /**
@@ -70,7 +67,7 @@ object EvaluateZIO {
 //   * @return an IO[Assertion].
 //   */
 //  def checkFailure[Z, X: ClassTag](xio: => Task[Z], x: Throwable): Task[TestResult] = {
-//    assertZIO(xio.exit)(fails(isSubtype[Throwable](Assertion.assertion("matchIO OK") { z => z == implicitly[ClassTag[X]] })))
+//    assertZIO(xio.exit)(fails(isSubtype[Throwable](Assertion.assertion("matchZIO OK") { z => z == implicitly[ClassTag[X]] })))
 //
 //    val result: ZIO[Any, Nothing, ZIO[Any, Throwable, TestResult]] = for (z <- xio.exit) yield assertZIO(z)(fails(equalTo(x)))
 //    result.

@@ -8,7 +8,7 @@ import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
-import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO.matchIO
+import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO.matchZIO
 import java.io.{File, FileWriter, InputStream}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -39,8 +39,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def parseIndexed(header: Header)(indexedString: (String, Int)): Try[IntPair] =
         parse(header)(indexedString._1)
 
-      //noinspection NotImplementedCode
-      def parseHeader(w: Seq[String]): Try[Header] = ???
+      // NOTE this is never invoked
+      def parseHeader(w: Seq[String]): Try[Header] = Failure(TableException("parseHeader not implemented"))
     }
 
     implicit object IntPairRowParser extends IntPairRowParser
@@ -67,7 +67,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 //    import IntPair._
 //    val z1 = ZIO.fromTry(Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", "UTF-8"))
 //    val z2 = ZIO.fromTry(Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))
-//    matchIO(z1 product z2) {
+//    matchZIO(z1 product z2) {
 //      case (a@HeadedTable(_, _), b@HeadedTable(_, _)) => a.size shouldBe 2; b.size shouldBe 2
 //    }
 //  }
@@ -76,7 +76,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 //  it should "parse table from raw file" in {
 //    val z1: Task[Table[RawRow]] = ZIO.fromTry(Table.parseFileRaw(new File("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))))
 //    val z2: Task[Table[RawRow]] = ZIO.fromTry(Table.parseFileRaw("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", TableParser.includeAll))
-//    matchIO(z1 product z2) {
+//    matchZIO(z1 product z2) {
 //      case (a@HeadedTable(_, _), b@HeadedTable(_, _)) =>
 //        a.size shouldBe 0; b.size shouldBe 1
 //    }
@@ -90,7 +90,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 //                        _ = println(s"written to file output.csv")
 //                        y <- ZIO.fromTry(Table.parseFileRaw("output.csv", TableParser.includeAll))
 //                        } yield y
-//    matchIO(resultIO) {
+//    matchZIO(resultIO) {
 //      case xt@HeadedTable(_, _) => xt.content.head.toString() shouldBe """A="1", B="2""""
 //    }
 //    val tableWithoutHead = Table(Seq(row1), None)
@@ -99,7 +99,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse from Iterator[String]" in {
     import IntPair._
-    matchIO(ZIO.fromTry(Table.parse(Seq("1 2", "42 99").iterator))) {
+    matchZIO(ZIO.fromTry(Table.parse(Seq("1 2", "42 99").iterator))) {
       case xt@HeadedTable(_, _) => xt.size == 2
     }
   }
@@ -121,7 +121,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val f: IntPair => IntPair = _ map (_ * 2)
 
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.map(f).content.toSeq == Seq(IntPair(2, 4), IntPair(84, 198))
     }
@@ -131,7 +131,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val f: IntPair => Table[IntPair] = p => HeadedTable(Seq(p), Header())
 
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.flatMap(f).content.toSeq == Seq(IntPair(1, 2), IntPair(42, 99))
     }
@@ -139,7 +139,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "to Seq" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.toSeq == Seq(IntPair(1, 2), IntPair(42, 99))
     }
@@ -147,7 +147,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "to Shuffle" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.shuffle.content.size == 2
     }
@@ -155,7 +155,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "drop" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.drop(1).content.toSeq == Seq(IntPair(42, 99))
     }
@@ -163,7 +163,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "empty" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.empty.content.toSeq == Seq.empty
     }
@@ -171,7 +171,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "dropWhile" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.dropWhile(_.equals(IntPair(3, 4))).content.toSeq == Seq(IntPair(1, 2), IntPair(42, 99))
     }
@@ -179,7 +179,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "filter" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.filter(_.equals(IntPair(3, 4))).content.toSeq == Seq(IntPair(3, 4))
     }
@@ -187,7 +187,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "filterNot" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.filterNot(_.equals(IntPair(3, 4))).content.toSeq == Seq(IntPair(1, 2), IntPair(42, 99))
     }
@@ -195,7 +195,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "slice" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.slice(0, 2).content.toSeq == Seq(IntPair(3, 4), IntPair(1, 2))
     }
@@ -203,7 +203,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "takeWhile" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.takeWhile(_.equals(IntPair(3, 4))).content.toSeq == Seq(IntPair(3, 4))
     }
@@ -234,7 +234,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   // TODO this is a mystery: it sometimes fails (?)
   it should "render the table to CSV" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
       case HeadedTable(_, _) => true
       case x => fail(s"error: $x")
     }
@@ -259,7 +259,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case r: Table[IntPair] => implicitly[Renderer[Table[IntPair], String]].render(r)
       case _ => fail("cannot render table")
     }
-    matchIO(wi) {
+    matchZIO(wi) {
       case "a|b\n1|2\n42|99\n" => true
       case x => fail(s"string is $x")
     }
@@ -267,7 +267,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "render the table to CSV using a Writable" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
+    matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))) {
       case HeadedTable(_, _) => true
     }
 
@@ -294,7 +294,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
         z.render(r)
       case _ => fail("cannot render table")
     }
-    matchIO(fi) {
+    matchZIO(fi) {
       case _ => true
     }
   }
@@ -315,10 +315,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
-    matchIO(ZIOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
+    matchZIO(ZIOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws: Task[String] = ZIO.fromTry(iIt.toCSV)
-        matchIO(ws) {
+        matchZIO(ws) {
           case "a, b\n1, 2\n42, 99\n" => true // Any checking happen here?
         }
         true
@@ -341,10 +341,10 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
     }
 
-    matchIO(ZIOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
+    matchZIO(ZIOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = ZIO.fromTry(iIt.toCSV)
-        matchIO(ws) {
+        matchZIO(ws) {
           case "a|b\n1|2\n42|99\n" => true
         }
         true
@@ -374,7 +374,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "sort a Table and then select" in {
     import IntPair._
-    matchIO(ZIOTable.parse(Seq("1 2", "42 99", "1 3"))) {
+    matchZIO(ZIOTable.parse(Seq("1 2", "42 99", "1 3"))) {
       case mt: Table[IntPair] =>
 
         implicit object IntPairOrdering extends Ordering[IntPair] {
@@ -403,7 +403,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
-    matchIO(ZIO.fromTry(Table.toCSVRow(table))) {
+    matchZIO(ZIO.fromTry(Table.toCSVRow(table))) {
       case "a,b\n1,2\n" => true
     }
     true

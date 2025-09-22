@@ -7,7 +7,7 @@ package com.phasmidsoftware.tableparser.zio.table
 import com.phasmidsoftware.tableparser.core.examples.Movie
 import com.phasmidsoftware.tableparser.core.parse.{CellParser, RowParser, StringTableParser}
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO.matchIO
+import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO.matchZIO
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.annotation.unused
@@ -30,7 +30,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
     )
 
     val mty: Task[Table[Movie]] = ZIO.fromTry(Table.parse(movies))
-    matchIO(mty) {
+    matchZIO(mty) {
       case mt@HeadedTable(_, _) =>
         println(s"Movie: successfully parsed ${mt.size} rows")
         mt.size == 1
@@ -46,7 +46,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
     )
 
-    matchIO(ZIO.fromTry(Table.parse(movies))) {
+    matchZIO(ZIO.fromTry(Table.parse(movies))) {
       case mt@HeadedTable(_, _) =>
         mt.size == 1
     }
@@ -93,7 +93,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    matchIO(ZIO.fromTry(Table.parse(movies))) {
+    matchZIO(ZIO.fromTry(Table.parse(movies))) {
       case t@HeadedTable(_, _) => t.size == 1
     }
   }
@@ -118,7 +118,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     @unused
     val mti: Task[Table[Movie]] = ZIO.fromTry(Table.parse(movies))
-    matchIO(mti) {
+    matchZIO(mti) {
       case t@HeadedTable(_, _) =>
         t.size shouldBe 1
         val z = t.map(m => UnMovie(m.title.toLowerCase))

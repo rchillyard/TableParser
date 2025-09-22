@@ -27,7 +27,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     // Create the table
     val wsty: Task[RawTable] = ZIO.fromTry(parser.parse(sy))
 
-    EvaluateZIO.matchIO(wsty) {
+    EvaluateZIO.matchZIO(wsty) {
       case t@HeadedTable(r, _) =>
         val analysis = Analysis(t)
         println(s"Crime: $analysis")
@@ -48,7 +48,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
 //      w <- IO.fromTry(st.toCSV)
 //    } yield w
 //
-//    matchIO(wi, Timeout(Span(20, Seconds))) {
+//    matchZIO(wi, Timeout(Span(20, Seconds))) {
 //      case w =>
 //        w should startWith(
 //          """crimeID,longitude,latitude
