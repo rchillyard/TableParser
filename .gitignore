@@ -26,3 +26,5 @@ hprof.samples.txt
 /tmp/other-render to CSV.csv
 /tmp/Table-write Table To File.csv
 /out/
+
+zio/src/it/scala/com/phasmidsoftware/tableparser/zio/table/MovieFuncSpec.scala
