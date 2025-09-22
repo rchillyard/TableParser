@@ -92,5 +92,6 @@ object MovieDatabase {
    * It should not change.
    */
   private val resource = "/spark/src/main/resources/com/phasmidsoftware/tableparser/spark/movie_metadata.csv"
-  val filename: String = home + projects + tableParserDirectory + resource
+//  val filename: String = home + projects + tableParserDirectory + resource
+  val filename: String = home + tableParserDirectory + resource
 }
