@@ -513,7 +513,7 @@ object ListParser extends JavaTokenParsers {
    * - Output: `List("example")`
    */
   private lazy val singleton: Parser[StringList] =
-    """\w*""".r ^^ { w: String => List(w) }
+    """\w*""".r ^^ { (w: String) => List(w) }
 }
 
 /**

@@ -1,0 +1,140 @@
+/*
+ * Copyright (c) 2019. Phasmid Software
+ */
+
+package com.phasmidsoftware.tableparser.zio.table
+
+import com.phasmidsoftware.tableparser.core.examples.Movie
+import com.phasmidsoftware.tableparser.core.parse.{CellParser, RowParser, StringTableParser}
+import com.phasmidsoftware.tableparser.core.table._
+import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO.matchIO
+import org.scalatest.flatspec
+import org.scalatest.matchers.should
+import scala.annotation.unused
+import scala.util._
+import zio._
+
+//noinspection SpellCheckingInspection
+class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
+
+  private val movieHeader = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
+
+  behavior of "Movie table"
+
+  it should "parse the first movie from the IMDB dataset" in {
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
+
+    val movies = Seq(
+      movieHeader,
+      "Color,James Cameron,723,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,237000000,2009,936,7.9,1.78,33000"
+    )
+
+    val mty: Task[Table[Movie]] = ZIO.fromTry(Table.parse(movies))
+    matchIO(mty) {
+      case mt@HeadedTable(_, _) =>
+        println(s"Movie: successfully parsed ${mt.size} rows")
+        mt.size == 1
+    }
+  }
+
+  // CONSIDER rework this test to be more significant
+  it should "parse the first (edited) movie from the IMDB dataset" in {
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
+
+    val movies = Seq(
+      movieHeader,
+      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-13,,2009,936,7.9,1.78,33000"
+    )
+
+    matchIO(ZIO.fromTry(Table.parse(movies))) {
+      case mt@HeadedTable(_, _) =>
+        mt.size == 1
+    }
+  }
+
+  it should "fail to parse the first (edited) movie from the IMDB dataset" in {
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
+
+    implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+      type Row = Movie
+
+      override val forgiving: Boolean = false
+
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+
+      protected def builder(rows: Iterator[Movie], header: Header): Table[Row] =
+        HeadedTable(rows, header)
+    }
+
+    val movies = Seq(
+      movieHeader,
+      "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-,,2009,936,7.9,1.78,33000"
+    )
+    val x: Task[Table[Movie]] = ZIO.fromTry(Table.parse(movies))
+    // TODO eliminate use of unsafe methods
+//    checkFailure(x)(classOf[InvalidParseException]).unsafeRunSync()
+  }
+
+  it should "parse all the following rows" in {
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
+
+    implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+      type Row = Movie
+
+      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+
+      override val forgiving: Boolean = false
+
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    }
+
+    val movies = Seq(
+      movieHeader,
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+    )
+
+    matchIO(ZIO.fromTry(Table.parse(movies))) {
+      case t@HeadedTable(_, _) => t.size == 1
+    }
+  }
+
+  it should "parse and transform the following rows with simple map" in {
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
+
+    implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
+      type Row = Movie
+
+      def builder(rows: Iterator[Row], header: Header): Table[Row] = HeadedTable(rows, header)
+
+      override val forgiving: Boolean = false
+
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    }
+
+    val movies = Seq(
+      movieHeader,
+      ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
+    )
+
+    @unused
+    val mti: Task[Table[Movie]] = ZIO.fromTry(Table.parse(movies))
+    matchIO(mti) {
+      case t@HeadedTable(_, _) =>
+        t.size shouldBe 1
+        val z = t.map(m => UnMovie(m.title.toLowerCase))
+        z.size shouldBe 1
+        z.head.title shouldBe "star wars: episode vii - the force awakens             "
+        true
+    }
+  }
+
+  behavior of "Name"
+  it should "parse Philip Michael Thomas" in {
+    implicitly[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", None, "Thomas", None))
+    implicitly[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Michael Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", Some("Michael"), "Thomas", None))
+
+  }
+
+}
+
+case class UnMovie(title: String)

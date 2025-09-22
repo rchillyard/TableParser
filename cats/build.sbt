@@ -1,6 +1,6 @@
 name := "tableparser-cats"
 
-//Compile / doc / scalacOptions ++= Seq("-Vimplicits", "-deprecation", "-Ywarn-dead-code", "-Ywarn-value-discard", "-Ywarn-unused")
+//Compile / doc / scalacOptions ++= Seq("-implicits", "-deprecation", "-Ywarn-dead-code", "-Ywarn-value-discard", "-Ywarn-unused")
 
 lazy val scalaModules = "org.scala-lang.modules"
 lazy val scalaTestVersion = "3.2.19"

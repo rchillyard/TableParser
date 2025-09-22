@@ -2,7 +2,7 @@ ThisBuild / organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-ThisBuild / version := "1.2.1-SNAPSHOT"
+ThisBuild / version := "1.2.2-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.16"
 
@@ -10,9 +10,11 @@ lazy val core = project
 
 lazy val cats = project.dependsOn(core)
 
+lazy val zio = project.dependsOn(core)
+
 lazy val spark = project.dependsOn(core)
 
-lazy val root = (project in file(".")).aggregate(core, cats, spark)
+lazy val root = (project in file(".")).aggregate(core, cats, zio, spark)
 
 Test / parallelExecution := false
 

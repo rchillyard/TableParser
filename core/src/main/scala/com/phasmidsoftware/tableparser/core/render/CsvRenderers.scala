@@ -57,7 +57,7 @@ trait CsvRenderers {
      * @return A string representing the sequence `ts` in CSV format, concatenated using the delimiter defined in `csvAttributes`.
      */
     def render(ts: Seq[T], attrs: Map[String, String]): String =
-      (ts map { t: T => implicitly[CsvRenderer[T]].render(t) }).mkString(csvAttributes.delimiter)
+      (ts map { (t: T) => implicitly[CsvRenderer[T]].render(t) }).mkString(csvAttributes.delimiter)
 
     val csvAttributes: CsvAttributes = ca
   }
