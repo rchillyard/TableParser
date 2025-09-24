@@ -1,5 +1,7 @@
 name := "tableparser-core"
 
+scalaVersion := "2.13.16"
+
 //Compile / doc / scalacOptions ++= Seq("-Vimplicits", "-deprecation", "-Ywarn-dead-code", "-Ywarn-value-discard", "-Ywarn-unused")
 
 lazy val scalaModules = "org.scala-lang.modules"
@@ -11,7 +13,7 @@ lazy val nScalaTimeVersion = "2.32.0"
 lazy val tsecVersion = "0.4.0"
 
 libraryDependencies ++= Seq(
-  "com.phasmidsoftware" %% "flog" % "1.0.10",
+  "com.phasmidsoftware" %% "flog" % "1.0.8",
   "io.spray" %%  "spray-json" % "1.3.6",
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
 //noinspection SbtDependencyVersionInspection

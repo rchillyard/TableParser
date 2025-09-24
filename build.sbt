@@ -2,9 +2,11 @@ ThisBuild / organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-ThisBuild / version := "1.2.2"
+ThisBuild / version := "1.2.3"
 
-ThisBuild / scalaVersion := "2.13.16"
+scalaVersion := "2.13.16"
+
+scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-Ywarn-dead-code", "-Ywarn-value-discard", "-Ywarn-unused")
 
 lazy val core = project
 
@@ -17,10 +19,6 @@ lazy val spark = project.dependsOn(core)
 lazy val root = (project in file(".")).aggregate(core, cats, zio, spark)
 
 Test / parallelExecution := false
-
-//javaOptions ++= Seq("-Xms512M", "-Xmx2048M", "-XX:+CMSClassUnloadingEnabled")
-
-scalacOptions += "-deprecation"
 
 // NOTE: if you reinstate these directories, you will need to manage the large crimes file (see code).
 //Test / unmanagedSourceDirectories += baseDirectory.value / "src/it/scala"
