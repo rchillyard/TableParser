@@ -19,9 +19,9 @@ libraryDependencies ++= Seq(
 //noinspection SbtDependencyVersionInspection
   scalaModules %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
   "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
-  "ch.qos.logback" % "logback-classic" % "1.5.16" % "runtime",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-  "org.slf4j" % "slf4j-simple" % "2.0.16" % "test",
+  "ch.qos.logback" % "logback-classic" % "1.5.21" % "runtime",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
+  "org.slf4j" % "slf4j-simple" % "2.0.17" % "test",
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 

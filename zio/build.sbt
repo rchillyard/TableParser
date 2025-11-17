@@ -7,8 +7,8 @@ scalaVersion := "2.13.16"
 lazy val scalaModules = "org.scala-lang.modules"
 lazy val scalaTestVersion = "3.2.19"
 
-lazy val zioVersion = "2.1.20"
-lazy val zioTestVersion = "2.1.20"
+lazy val zioVersion = "2.1.22"
+lazy val zioTestVersion = "2.1.22"
 
 libraryDependencies ++= Seq(
   "com.phasmidsoftware" %% "tableparser-core" % version.value,

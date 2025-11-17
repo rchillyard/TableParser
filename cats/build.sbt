@@ -8,7 +8,7 @@ lazy val scalaModules = "org.scala-lang.modules"
 lazy val scalaTestVersion = "3.2.19"
 
 lazy val tsecVersion = "0.5.0"
-lazy val catsVersion = "3.6.1"
+lazy val catsVersion = "3.6.3"
 
 libraryDependencies ++= Seq(
   "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,

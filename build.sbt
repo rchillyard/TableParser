@@ -2,11 +2,24 @@ ThisBuild / organization := "com.phasmidsoftware"
 
 name := "TableParser"
 
-ThisBuild / version := "1.2.3"
+ThisBuild / version := "1.2.4"
 
 scalaVersion := "2.13.16"
 
-scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-Ywarn-dead-code", "-Ywarn-value-discard", "-Ywarn-unused")
+scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation")
+scalacOptions ++= Seq("-java-output-version", "17")
+javacOptions ++= Seq("-source", "17", "-target", "17")
+
+// Enforce Java 17 minimum
+initialize := {
+  val _ = initialize.value
+  val required = "17"
+  val current = sys.props("java.specification.version")
+  assert(
+    current.toDouble >= required.toDouble,
+    s"Java $required or higher required. Current version: $current"
+  )
+}
 
 lazy val core = project
 
