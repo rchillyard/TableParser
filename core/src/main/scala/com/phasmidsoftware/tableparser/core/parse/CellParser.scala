@@ -19,14 +19,7 @@ import scala.util.{Failure, Success, Try}
  * @tparam T the (covariant) type of the resulting object.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of CellParser[${T}]. Typically, you should invoke a suitable method from CellParsers.")
-trait CellParser[+T] {
-  /**
-   * Convert a String into a T.
-   *
-   * @param w the String to be converted.
-   * @return a new instance of T wrapped in Try
-   */
-  def convertString(w: String): Try[T]
+trait CellParser[+T] extends StringConverter[T] {
 
   /**
    * Parse a Convertible value into a T.

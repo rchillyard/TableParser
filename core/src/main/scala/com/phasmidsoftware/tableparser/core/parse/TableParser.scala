@@ -117,17 +117,7 @@ object TableParser {
      * @return a `Try[Table]`.
      */
     def parse(sy: Try[Source]): Try[Table] =
-      sy flatMap doParse
-
-    /**
-     * Method to parse a `Source`.
-     * NOTE the source `s` will be closed after parsing has been completed (no resource leaks).
-     *
-     * @param s a Source.
-     * @return a `Try[Table]`.
-     */
-    private def doParse(s: Source): Try[Table] =
-      TryUsing(s)(x => doParse(x.getLines()))
+      TryUsing(sy)(x => doParse(x.getLines()))
 
     /**
      * Method to parse an iterator of String.
