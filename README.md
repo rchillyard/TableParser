@@ -1,5 +1,5 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/app/scalaprof/TableParser?utm_source=github.com&utm_medium=referral&utm_content=rchillyard/TableParser&utm_campaign=Badge_Grade_Settings)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.phasmidsoftware/tableparser_2.13/badge.svg?color=blue)](https://maven-badges.herokuapp.com/maven-central/com.phasmidsoftware_2.13/tableparser/)
+[![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_2.13.svg?color=blue)](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_2.13)
 ![GitHub Top Languages](https://img.shields.io/github/languages/top/rchillyard/TableParser)
 ![GitHub](https://img.shields.io/github/license/rchillyard/TableParser)
 ![GitHub last commit](https://img.shields.io/github/last-commit/rchillyard/TableParser)
@@ -34,10 +34,12 @@ together with something like, for instance, a JSON writer.
 Package Structure
 ===========
 
-As of version 1.1.4, the code has been split into three packages: _core_, _cats_, and _spark_.
+As of version 1.2.1, the code is made up of four packages: _core_, _cats_, _zio_, and _spark_.
 Most of the remainder of this README file refers to the _core_ package.
-Use of _cats-effect IO_ and encryption have been moved into the _cats_ package.
+The _cats_ package is for use with Cats Effect, particularly _IO_.
+All usage of _cats-effect IO_ and encryption have been moved into the _cats_ package.
 The _spark_ package is for use with Apache Spark (beginning with 1.2.0).
+The _zio_ package is for use with ZIO.
 
 Quick Intro
 ===========
@@ -50,7 +52,7 @@ Another way to see how it works is to look at this application Pairings which ta
 and outputs a JSON file.
 This way of parsing is a little different from what is shown in the worksheets.
 But both are effective.
-The minimum code necessary to read parse the CSV file as a table of "Player"s, using as many defaults as possible is:
+The minimum code necessary to parse the CSV file as a table of "Player"s, using as many defaults as possible is:
 
     case class Player(first: String, last: String)
 
@@ -83,7 +85,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-Current version: 1.2.1.
+This version of the README.md file refers to version: 1.2.5.
 
 See release notes below for history.
 
@@ -331,7 +333,7 @@ For an example of this, please see the example in _CellParsersSpec_ ("conditiona
 
 Keep in mind when using implicit values that the best practice is to define an implicit involving a type T,
 for example, _CellParser\[T]_, in the companion object of _T_.
-This will tend to eliminate any amiguously defined implicits, and it also tends to avoid any problems with
+This will tend to eliminate any ambiguously defined implicits, and it also tends to avoid any problems with
 initialization.
 If you still run into initialization problems, try defining the troublemaker as lazy.
 It also relieves you from having to make up names for the implicit values (which the compiler more or less ignores,
@@ -552,7 +554,7 @@ Rendering
 
 _TableParser_ provides a general mechanism for rendering (serializing to text) tables.
 Indeed, _Table\[Row]_ extends _Renderable\[Row]_ which supports the _render(implicit rs: StringRenderer\[Row])_ method. 
-two mechanisms for rendering a table:
+There are two distinct mechanisms for rendering a table:
 * one to a straight serialized output, for example, when rendering a table as a CSV file.
 * the other to a hierarchical (i.e., tree-structured) output, such as an HTML file.
 
@@ -701,8 +703,12 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.2.3 -> V1.2.5
+* Dependency updates, e.g., use Spark 4.0.1 (not 4.1.1) and Spark is now "provided."
+V1.2.1 -> V1.2.3
+* Minor changes, mostly in the build.sbt file.
 V1.2.0 -> V1.2.1
-* ???
+* Added support for ZIO.
 V1.1.4 -> V1.2.0
 * Significant changes including the completion of the split into three packages with...
 * Functioning _spark_ package.

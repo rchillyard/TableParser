@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "1.2.4"
+ThisBuild / version := "1.2.5"
 ThisBuild / scalaVersion := "2.13.17"
 ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation")
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "17")
@@ -26,6 +26,7 @@ val tsecVersion_core = "0.4.0"
 val tsecVersion_cats = "0.5.0"
 val catsVersion = "3.6.3"
 val zioVersion = "2.1.22" // NOTE 2.1.24 is broken for some reason.
+val sparkVersion = "4.0.1"
 
 lazy val core = project.settings(
   name := "tableparser-core",
@@ -69,7 +70,7 @@ lazy val zio = project.dependsOn(core).settings(
 lazy val spark = project.dependsOn(core).settings(
   name := "tableparser-spark",
   libraryDependencies ++= Seq(
-    "org.apache.spark" %% "spark-sql" % "4.1.1",
+    "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.slf4j" % "slf4j-simple" % "2.0.17" % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
