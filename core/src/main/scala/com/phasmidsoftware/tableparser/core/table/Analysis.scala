@@ -202,6 +202,7 @@ object Statistics {
  * resource file path before running the application.
  */
 object Main extends App {
+//  doMain(FP.resource[Crime]("2023-01-metropolitan-street.csv"))
   doMain(FP.resource[Crime]("2023-01-metropolitan-street-sample.csv"))
 
   /**
