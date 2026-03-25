@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "1.2.5"
+ThisBuild / version := "1.2.6"
 ThisBuild / scalaVersion := "2.13.17"
 ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation")
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "17")
@@ -24,8 +24,9 @@ val scalaParserCombinatorsVersion = "2.4.0"
 val nScalaTimeVersion = "3.0.0"
 val tsecVersion_core = "0.4.0"
 val tsecVersion_cats = "0.5.0"
-val catsVersion = "3.6.3"
+val catsVersion = "3.6.3" // NOTE 3.7.0 appears to be missing the encryption classes that we need.
 val zioVersion = "2.1.22" // NOTE 2.1.24 is broken for some reason.
+val zioHttpVersion = "3.4.0" // NOTE 3.10.1 causes a dependency conflict.
 val sparkVersion = "4.0.1"
 
 lazy val core = project.settings(
@@ -57,7 +58,7 @@ lazy val zio = project.dependsOn(core).settings(
   name := "tableparser-zio",
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio" % zioVersion,
-    "dev.zio" %% "zio-http" % "3.4.0",
+    "dev.zio" %% "zio-http" % zioHttpVersion,
     "dev.zio" %% "zio-test-junit" % zioVersion,
     "dev.zio" %% "zio-test" % zioVersion % Test,
     "dev.zio" %% "zio-test-sbt" % zioVersion % Test,

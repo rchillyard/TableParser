@@ -85,7 +85,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 1.2.5.
+This version of the README.md file refers to version: 1.2.6.
 
 See release notes below for history.
 
@@ -703,6 +703,8 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.2.5 -> V1.2.6
+* Non-functional change to TableParser. The only difference is that CircleCI is not using Java 17
 V1.2.3 -> V1.2.5
 * Dependency updates, e.g., use Spark 4.0.1 (not 4.1.1) and Spark is now "provided."
 V1.2.1 -> V1.2.3
