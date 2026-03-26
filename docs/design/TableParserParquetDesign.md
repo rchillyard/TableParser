@@ -258,25 +258,25 @@ A `YellowTaxiTrip` case class is defined in the test sources, modelling the NYC 
 
 ```scala
 case class YellowTaxiTrip(
-  vendorId:            Int,
-  tpepPickupDatetime:  java.time.Instant,
-  tpepDropoffDatetime: java.time.Instant,
-  passengerCount:      Option[Int],
-  tripDistance:        Double,
-  ratecodeId:          Option[Int],
-  storeAndFwdFlag:     String,
-  puLocationId:        Int,
-  doLocationId:        Int,
-  paymentType:         Int,
-  fareAmount:          Double,
-  extra:               Double,
-  mtaTax:              Double,
-  tipAmount:           Double,
-  tollsAmount:         Double,
-  improvementSurcharge:Double,
-  totalAmount:         Double,
-  congestionSurcharge: Option[Double],
-  airportFee:          Option[Double]
+  vendorId:             Int,
+  tpepPickupDatetime:   java.time.Instant,
+  tpepDropoffDatetime:  java.time.Instant,
+  passengerCount:       Long,
+  tripDistance:         Double,
+  ratecodeId:           Long,
+  storeAndFwdFlag:      String,
+  puLocationId:         Int,
+  doLocationId:         Int,
+  paymentType:          Long,
+  fareAmount:           Double,
+  extra:                Double,
+  mtaTax:               Double,
+  tipAmount:            Double,
+  tollsAmount:          Double,
+  improvementSurcharge: Double,
+  totalAmount:          Double,
+  congestionSurcharge:  Double,
+  airportFee:           Double
 )
 ```
 
