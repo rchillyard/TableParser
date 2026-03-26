@@ -12,6 +12,7 @@ import com.phasmidsoftware.tableparser.core.util.{Reflection, TryUsing}
 import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
+import java.nio.file.{Files, Path, Paths}
 import scala.annotation.unused
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
@@ -345,8 +346,21 @@ trait Table[Row] extends Iterable[Row] {
    * @param generator     implicit value of CsvProductGenerator[Row].
    * @param csvAttributes implicit value of CsvAttributes.
    */
+  @deprecated("Use writeCSVFile(Path) instead", "1.3.0")
   def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
-    CsvTableFileRenderer[Row](file).render(this)
+    CsvTableFileRenderer[Row](file.toPath).render(this)
+
+  /**
+   * Writes the contents of the current table to a CSV file at the specified path.
+   *
+   * @param path          The file system path where the CSV file will be written.
+   * @param renderer      Implicit parameter that provides a mechanism to render rows to CSV format.
+   * @param generator     Implicit parameter that is used to generate CSV rows from the data.
+   * @param csvAttributes Implicit parameter containing attributes for customizing the CSV formatting.
+   * @return Unit, indicating the operation does not return a value.
+   */
+  def writeCSVFile(path: Path)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
+    CsvTableFileRenderer[Row](path).render(this)
 
   def maybeColumnNames: Option[Seq[String]] =
     maybeHeader map (_.xs)
@@ -479,6 +493,31 @@ object Table {
   }
 
   /**
+   * Parses a file at the given path into an instance of type T using the provided implicit TableParser.
+   *
+   * @param path  The path to the file that needs to be parsed.
+   * @param codec The character codec to be used for reading the file. It is provided implicitly.
+   * @tparam T The type to which the file content will be parsed.
+   * @return A Try containing the parsed instance of type T if successful, or a Failure if an error occurs.
+   */
+  def parseFile[T: TableParser](path: Path)(implicit codec: Codec): Try[T] =
+    parse(sourceFromFile(path.toFile))
+
+  /**
+   * Parses a file located at the specified path using the provided encoding and a typeclass instance
+   * for parsing the file content into the desired type.
+   *
+   * @param path The path to the file that needs to be parsed.
+   * @param enc  The encoding used to read the file.
+   * @tparam T The type to which the file content will be parsed, requiring an implicit TableParser instance.
+   * @return A Try containing the parsed result of type T if successful, or a failure if an error occurs during parsing.
+   */
+  def parseFile[T: TableParser](path: Path, enc: String): Try[T] = {
+    implicit val codec: Codec = Codec(enc)
+    parseFile(path)
+  }
+
+  /**
    * Method to parse a table from a File.
    *
    * NOTE: you should use parseFile(String) if you have a pathname in String form.
@@ -490,25 +529,34 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
+  @deprecated("Use parseFile(Path) instead", "1.3.0")
+  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] =
+    parseFile(f.toPath)
+
+  @deprecated("Use parseFile(Path) instead", "1.3.0")
+  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] =
+    parseFile(Paths.get(pathname))
+
+  @deprecated("Use parseFile(Path, String) instead", "1.3.0")
   def parseFile[T: TableParser](f: => File, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
-    parseFile(f)
+    parseFile(f.toPath)
   }
-
-  /**
-   * Method to parse a table from an File.
-   *
-   * NOTE: you should use parseFile(String) if you have a pathname in String form.
-   *
-   * TESTME
-   *
-   * @param f     the File (call by name in case there is an exception thrown while constructing the file).
-   * @param codec (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return an Try[T]
-   */
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] =
-    parse(sourceFromFile(f))
+//
+//  /**
+//   * Method to parse a table from an File.
+//   *
+//   * NOTE: you should use parseFile(String) if you have a pathname in String form.
+//   *
+//   * TESTME
+//   *
+//   * @param f     the File (call by name in case there is an exception thrown while constructing the file).
+//   * @param codec (implicit) the encoding.
+//   * @tparam T the type of the resulting table.
+//   * @return an Try[T]
+//   */
+//  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] =
+//    parse(sourceFromFile(f))
 
   /**
    * Method to parse a table from a File.
@@ -518,24 +566,25 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
+  @deprecated("Use parseFile(Path, String) instead", "1.3.0")
   def parseFile[T: TableParser](pathname: String, enc: String): Try[T] = {
     implicit val codec: Codec = Codec(enc)
-    parseFile(pathname)
+    parseFile(Paths.get(pathname))
   }
+//
+//  /**
+//   * Method to parse a table from an File.
+//   *
+//   * @param pathname the file pathname.
+//   * @param codec    (implicit) the encoding.
+//   * @tparam T the type of the resulting table.
+//   * @return a Try[T]
+//   */
+//  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] =
+//    parse(sourceFromFilename(pathname))
 
   /**
-   * Method to parse a table from an File.
-   *
-   * @param pathname the file pathname.
-   * @param codec    (implicit) the encoding.
-   * @tparam T the type of the resulting table.
-   * @return a Try[T]
-   */
-  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] =
-    parse(sourceFromFilename(pathname))
-
-  /**
-   * Method to parse a table from an File.
+   * Method to parse a table from a resource.
    *
    * @param w     the resource name.
    * @param clazz the class for which the resource should be sought (should default to the calling class but doesn't).
@@ -589,17 +638,41 @@ object Table {
   }
 
   /**
-   * Method to parse a table from a File as a table of Seq[String].
+   * Parses a file at the given path into a `Table[RawRow]` using the specified conditions and options.
    *
-   * @param f                the file.
-   * @param maybeFixedHeader an optional fixed header. If None (the default), we expect to find the header defined in the first line of the file.
-   * @param forgiving        forcing (defaults to true). If true (the default) then an individual malformed row will not prevent subsequent rows being parsed.
-   * @param codec            (implicit) the encoding.
-   * @return an Try of Table[RawRow] where RawRow is a Seq[String].
+   * @param path             the file path to be parsed
+   * @param predicate        a filtering function applied to each `RawRow` wrapped in a `Try`, determining whether the row is included
+   * @param maybeFixedHeader an optional header to be used instead of inferring it from the file
+   * @param forgiving        a flag indicating whether parsing should continue with warnings or fail on errors
+   * @param codec            the character encoding to be used for reading the file
+   * @return a `Try` containing the parsed `Table[RawRow]` on success or an exception on failure
    */
+  def parsePathRaw(path: Path, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
+    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    parseFile[Table[RawRow]](path)
+  }
+
+  /**
+   * Parses a file to produce a `Table` of `RawRow`, applying a predicate to filter rows
+   * and optionally using a fixed header. This method is deprecated and should be replaced
+   * with `parseFileRaw(Path, Try[RawRow] => Boolean, Option[Header] = None, Boolean = true)`.
+   *
+   * @param f                the input file to parse
+   * @param predicate        a function that determines whether a given `Try[RawRow]`
+   *                         should be included in the output table
+   * @param maybeFixedHeader an optional fixed header to be used instead of extracting
+   *                         it from the file
+   * @param forgiving        a flag indicating if parsing should continue despite errors,
+   *                         default is true
+   * @param codec            an implicit `Codec` used to handle the file's character
+   *                         encoding
+   * @return a `Try` containing the parsed `Table` of `RawRow` if
+   *         successful, or an error otherwise
+   */
+  @deprecated("Use parseFileRaw(Path, Try[RawRow] => Boolean, Option[Header] = None, Boolean = true) instead", "1.3.0")
   def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
-    parseFile[Table[RawRow]](f)
+    parseFile[Table[RawRow]](f.toPath)
   }
 
   /**
@@ -611,7 +684,7 @@ object Table {
    */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
-    parseFile[Table[RawRow]](pathname)
+    parseFile[Table[RawRow]](Paths.get(pathname))
   }
 
   /**
@@ -714,8 +787,23 @@ object Table {
    * @param f a File.
    * @return an Try[Source].
    */
+  private def sourceFromFile(path: Path)(implicit codec: Codec): Try[Source] =
+    sourceFromPath(path)
+
   private def sourceFromFile(f: => File)(implicit codec: Codec): Try[Source] =
     Try(Source.fromFile(f))
+
+  /**
+   * Creates a `Source` from the given file path.
+   * NOTE The input stream must be closed by the caller to avoid resource leaks.
+   *
+   * @param path  the file path from which the source is created
+   * @param codec an implicit codec specifying the character encoding to use
+   * @return a `Try` containing the `Source` if successful, or a `Failure` if an error occurs
+   */
+  private def sourceFromPath(path: Path)(implicit codec: Codec): Try[Source] = {
+    Try(Source.fromInputStream(Files.newInputStream(path))(codec))
+  }
 
   /**
    * Method to open source defined by a File.
