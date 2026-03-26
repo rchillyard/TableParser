@@ -1,23 +1,39 @@
 package com.phasmidsoftware.tableparser.parquet
 
+import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapperLower
+import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
+import java.time.Instant
+
 case class YellowTaxiTrip(
-                                 vendorId: Int,
-                                 tpepPickupDatetime: java.time.Instant,
-                                 tpepDropoffDatetime: java.time.Instant,
-                                 passengerCount: Long,
-                                 tripDistance: Double,
-                                 ratecodeId: Long,
-                                 storeAndFwdFlag: String,
-                                 puLocationId: Int,
-                                 doLocationId: Int,
-                                 paymentType: Long,
-                                 fareAmount: Double,
-                                 extra: Double,
-                                 mtaTax: Double,
-                                 tipAmount: Double,
-                                 tollsAmount: Double,
-                                 improvementSurcharge: Double,
-                                 totalAmount: Double,
-                                 congestionSurcharge: Double,
-                                 airportFee: Double
+                                 vendorId: Option[Int],
+                                 tpepPickupDatetime: Option[Instant],
+                                 tpepDropoffDatetime: Option[Instant],
+                                 passengerCount: Option[Long],
+                                 tripDistance: Option[Double],
+                                 ratecodeId: Option[Long],
+                                 storeAndFwdFlag: Option[String],
+                                 puLocationId: Option[Int],
+                                 doLocationId: Option[Int],
+                                 paymentType: Option[Long],
+                                 fareAmount: Option[Double],
+                                 extra: Option[Double],
+                                 mtaTax: Option[Double],
+                                 tipAmount: Option[Double],
+                                 tollsAmount: Option[Double],
+                                 improvementSurcharge: Option[Double],
+                                 totalAmount: Option[Double],
+                                 congestionSurcharge: Option[Double],
+                                 airportFee: Option[Double]
                          )
+
+object YellowTaxiTrip extends CellParsers {
+  implicit val helper: ColumnHelper[YellowTaxiTrip] =
+    columnHelper(
+      camelToSnakeCaseColumnNameMapperLower,
+      "vendorId" -> "VendorID",
+      "ratecodeId" -> "RatecodeID",
+      "puLocationId" -> "PULocationID",
+      "doLocationId" -> "DOLocationID",
+      "airportFee" -> "Airport_fee"
+    )
+}

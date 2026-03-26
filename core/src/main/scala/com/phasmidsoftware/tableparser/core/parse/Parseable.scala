@@ -6,6 +6,7 @@ package com.phasmidsoftware.tableparser.core.parse
 
 import java.io.File
 import java.net.URL
+import java.nio.file.Path
 import org.joda.time.LocalDate
 import scala.annotation.implicitNotFound
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -291,6 +292,23 @@ object Parseable {
   implicit object ParseableURL extends ParseableURL
 
   /**
+   * A trait representing a path that can be parsed from a String.
+   *
+   * This type class extends `Parseable[java.nio.file.Path]`, enabling the parsing of `String` inputs
+   * into `java.nio.file.Path` objects. It provides a default implementation of the `parse`
+   * method, leveraging utility methods such as `lift` and `parseAndRecover` to handle parsing
+   * and recovery in case of errors.
+   */
+  trait ParseablePath extends Parseable[Path] {
+    def parse(s: String, optModifier: Option[String]): Try[Path] =
+      parseAndRecover(s)(lift(java.nio.file.Paths.get(_)))(
+        w => s"ParseablePath: cannot interpret '$w' as a Path"
+      )
+  }
+
+  implicit object ParseablePath extends ParseablePath
+
+  /**
    * Parser of File.
    */
   trait ParseableFile extends Parseable[File] {
@@ -451,6 +469,8 @@ object ParseableOption {
   implicit object ParseableOptionURL extends ParseableOption[URL]
 
   implicit object ParseableOptionFile extends ParseableOption[File]
+
+  implicit object ParseableOptionPath extends ParseableOption[Path]
 
 }
 

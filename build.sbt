@@ -60,6 +60,7 @@ name := "tableparser-parquet",
     "org.apache.parquet" % "parquet-column" % "1.15.2",
     "org.apache.parquet" % "parquet-hadoop" % "1.15.2",
     "org.apache.hadoop"  % "hadoop-common"  % "3.4.1" % "provided",
+    "org.apache.hadoop"  % "hadoop-mapreduce-client-core" % "3.4.1" % Test,
     "org.scalatest"     %% "scalatest"      % scalaTestVersion % Test
   )
 )
