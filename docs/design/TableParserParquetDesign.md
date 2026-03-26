@@ -2,8 +2,8 @@
 
 **Project:** TableParser  
 **Module:** `parquet`  
-**Version:** 1.0 (draft)  
-**Status:** Pre-implementation
+**Version:** 1.0  
+**Status:** Implemented
 
 ---
 
@@ -17,19 +17,22 @@ The motivation for supporting Parquet is identical to the motivation for support
 
 ## 2. Scope
 
-### In scope (this iteration)
-- Reading a Parquet dataset (a directory of `.parquet` part files) or a single `.parquet` file into a `Table[Row]`
+### Implemented in this iteration
+- Reading a single `.parquet` file into a `Table[Row]`
 - Schema validation: Parquet file schema vs. target case class, failing fast on mismatch
 - Canonical type mapping from Parquet physical and logical types to Scala types
-- Column name mapping via the existing `ColumnHelper` mechanism
-- `Analysis` support (works automatically since `Analysis` operates on `Table[Row]`)
+- Column name mapping via the existing `ColumnHelper` mechanism, including a new `camelToSnakeCaseColumnNameMapperLower` mapper added to `core`
 - A new `ParquetParserException` for all Parquet-specific failures
-- A committed binary test fixture (one month of NYC Yellow Taxi data, trimmed to ~1,000 rows)
+- A committed binary test fixture (NYC Yellow Taxi January 2024 data, trimmed to 1,000 rows)
+- A `TableBuilder` trait extracted from `TableParser` in `core` to cleanly support non-string source types
 
 ### Deferred
+- Reading a Parquet dataset (directory of part files) — `ParquetReader` requires additional work for directory support
 - Writing a `Table[Row]` to Parquet (output direction)
 - Spark module integration (Parquet-aware `Dataset[Row]` path)
 - Backfilling `java.nio.file.Path` into the existing `core` module API (noted as desirable, separate PR)
+- `Analysis` support on Parquet-sourced tables (see Section 8)
+- Parallel row group reading
 
 ---
 
@@ -41,16 +44,17 @@ A new top-level SBT module `parquet`, alongside the existing `core`, `cats`, `zi
 tableparser-parquet
   src/
     main/scala/com/phasmidsoftware/tableparser/parquet/
-      ParquetParser.scala         -- main entry point
-      ParquetTableParser.scala    -- TableParser instance for Parquet
-      ParquetRowParser.scala      -- RowParser for Parquet records
-      ParquetTypeMapper.scala     -- Parquet type → Scala type mapping
+      ParquetParser.scala          -- main entry point
+      ParquetTableParser.scala     -- TableBuilder instance for Parquet
+      ParquetRowParser.scala       -- row parser for Parquet SimpleGroup records
+      ParquetCellConverter.scala   -- type class for direct typed value extraction
+      ParquetTypeMapper.scala      -- Parquet type → Scala type mapping
       ParquetSchemaValidator.scala -- schema validation logic
       ParquetParserException.scala -- exception type
     test/scala/com/phasmidsoftware/tableparser/parquet/
       ParquetParserSpec.scala
     test/resources/
-      taxi_sample.parquet         -- committed binary fixture (~1,000 rows)
+      taxi_sample.parquet          -- committed binary fixture (1,000 rows)
 ```
 
 In `build.sbt`:
@@ -59,14 +63,16 @@ In `build.sbt`:
 lazy val parquet = project.dependsOn(core).settings(
   name := "tableparser-parquet",
   libraryDependencies ++= Seq(
-    "org.apache.parquet" % "parquet-avro"   % "1.14.x",
-    "org.apache.hadoop"  % "hadoop-common"  % "3.x.x" % "provided",
-    "org.scalatest"     %% "scalatest"      % scalaTestVersion % Test
+    "org.apache.parquet" % "parquet-column"             % "1.15.2",
+    "org.apache.parquet" % "parquet-hadoop"             % "1.15.2",
+    "org.apache.hadoop"  % "hadoop-common"              % "3.4.1" % "provided",
+    "org.apache.hadoop"  % "hadoop-mapreduce-client-core" % "3.4.1" % Test,
+    "org.scalatest"     %% "scalatest"                  % scalaTestVersion % Test
   )
 )
 ```
 
-Note: `hadoop-common` is a transitive requirement of `parquet-mr` but should be scoped `provided` since users of the `spark` module will already have it, and users of `core` alone should not be forced to pull in Hadoop.
+Note: `parquet-avro` is NOT used. The module works directly with `parquet-mr`'s native `SimpleGroup` / `GroupReadSupport` API, avoiding the Avro object model entirely. `hadoop-mapreduce-client-core` is required at test runtime but not in production (where Hadoop is expected on the classpath).
 
 The root aggregator in `build.sbt` is updated to include `parquet`:
 
@@ -81,166 +87,201 @@ lazy val root = (project in file("."))
 
 ---
 
-## 4. API
+## 4. Core Refactoring: TableBuilder
 
-### 4.1 Entry Point
-
-The primary entry point mirrors the style of `Table.parseFile` but uses `java.nio.file.Path` exclusively, avoiding all Java resource/classpath machinery.
+A prerequisite to implementing the `parquet` module cleanly was extracting a `TableBuilder` trait from `TableParser` in `core`. The existing `TableParser` trait is built around an `Iterator[String]` input pipeline which has no meaning for Parquet sources. Rather than force-fitting `ParquetTableParser` into that hierarchy (with stub implementations of `rowParser`, `parse(Iterator)` etc.), a thin base trait was extracted:
 
 ```scala
-object Table {
-  // existing methods unchanged ...
-
-  // New Parquet methods (defined in the parquet module via extension or companion):
-  def parseParquet[T: TableParser](path: Path): Try[T]
+trait TableBuilder[Table] {
+  type Row
+  protected def builder(rows: Iterator[Row], header: Header): Table
+  protected val forgiving: Boolean = false
+  protected val predicate: Try[Row] => Boolean = includeAll
 }
 ```
 
-For the common case of parsing directly to a `Table[Row]`, the call site looks like:
-
-```scala
-import com.phasmidsoftware.tableparser.parquet.ParquetParser._
-
-val result: Try[Table[YellowTaxiTrip]] =
-  Table.parseParquet(Path.of("data/yellow_tripdata_2024-01"))
-```
-
-Both a directory (Parquet dataset) and a single `.parquet` file are accepted. If a directory is supplied, all `.parquet` files within it are read in lexicographic order. Non-`.parquet` files in the directory (e.g. `_SUCCESS`, `_metadata`) are silently ignored.
-
-### 4.2 ParquetTableParser
-
-Users define a `ParquetTableParser` for their row type in an analogous way to the existing `HeadedCSVTableParser`:
-
-```scala
-object YellowTaxiTrip extends CellParsers {
-  implicit val helper: ColumnHelper[YellowTaxiTrip] =
-    columnHelper(camelToSnakeCaseColumnNameMapper)
-  implicit val parser: CellParser[YellowTaxiTrip] = cellParser19(apply)
-
-  implicit object TaxiTableParser extends ParquetTableParser[Table[YellowTaxiTrip]] {
-    type Row = YellowTaxiTrip
-    val rowParser: ParquetRowParser[YellowTaxiTrip] =
-      implicitly[ParquetRowParser[YellowTaxiTrip]]
-    def builder(rows: Iterator[Row]): Table[Row] =
-      HeadedTable(Content(rows), /* header from Parquet metadata */)
-  }
-}
-```
-
-### 4.3 Path API Notes
-
-`java.nio.file.Path` is used throughout this module. Convenience constructors are provided:
-
-```scala
-Table.parseParquet(Path.of("relative/path/to/data"))
-Table.parseParquet(Path.of("/absolute/path/to/data"))
-Table.parseParquet(Path.of(sys.env("DATA_DIR"), "yellow_2024"))
-```
-
-There is no `parseParquetResource` method. Resources are a Java classpath concept that does not map cleanly to Parquet datasets. Test fixtures are accessed via `Path.of(getClass.getResource(...).toURI)` where necessary, but this is confined to test code.
+`TableParser` now extends `TableBuilder`, so all existing code is unchanged. `ParquetTableParser` extends `TableBuilder` directly, gaining `builder`, `forgiving`, and `predicate` without inheriting the string-parsing machinery.
 
 ---
 
-## 5. Schema Validation
+## 5. API
 
-### 5.1 Behaviour
+### 5.1 Entry Point
 
-On opening a Parquet file or dataset, the Parquet file schema is read from the footer metadata and validated against the target case class before any rows are parsed. If validation fails, a `ParquetParserException` is thrown and no rows are read.
+```scala
+object ParquetParser {
+  def parse[Row <: Product : ClassTag](
+    path: Path
+  )(implicit helper: ColumnHelper[Row]): Try[Table[Row]]
+}
+```
+
+The call site looks like:
+
+```scala
+import com.phasmidsoftware.tableparser.parquet.ParquetParser
+
+implicit val helper: ColumnHelper[YellowTaxiTrip] =
+  columnHelper(camelToSnakeCaseColumnNameMapperLower, ...)
+
+val result: Try[Table[YellowTaxiTrip]] =
+  ParquetParser.parse[YellowTaxiTrip](Path.of("data/taxi_sample.parquet"))
+```
+
+`java.nio.file.Path` is used exclusively. There is no `parseParquetResource` method — test fixtures are accessed via `Path.of(getClass.getResource(...).toURI)`.
+
+### 5.2 ColumnHelper and Name Mapping
+
+A new mapper was added to `ColumnHelper` in `core`:
+
+```scala
+val camelToSnakeCaseColumnNameMapperLower: String => String =
+  camelToSnakeCaseColumnNameMapper andThen (_.toLowerCase)
+```
+
+This correctly maps `passengerCount` → `passenger_count`. The existing `camelToSnakeCaseColumnNameMapper` is unchanged (it does not lowercase).
+
+Real-world Parquet schemas often have inconsistent casing (e.g. TLC uses `VendorID`, `RatecodeID`, `Airport_fee`). These are handled via aliases in `ColumnHelper`:
+
+```scala
+implicit val helper: ColumnHelper[YellowTaxiTrip] =
+  columnHelper(
+    camelToSnakeCaseColumnNameMapperLower,
+    "vendorId"    -> "VendorID",
+    "ratecodeId"  -> "RatecodeID",
+    "puLocationId" -> "PULocationID",
+    "doLocationId" -> "DOLocationID",
+    "airportFee"  -> "Airport_fee"
+  )
+```
+
+---
+
+## 6. Schema Validation
+
+### 6.1 Behaviour
+
+On opening a Parquet file, the schema is read from the footer metadata and validated against the target case class before any rows are parsed. If validation fails, a `ParquetParserException` is thrown and no rows are read.
 
 Validation checks:
 - Every parameter of the target case class has a corresponding column in the Parquet schema (after `ColumnHelper` name mapping is applied)
-- The Parquet type of each column is compatible with the Scala type of the corresponding parameter (see Section 6)
-- For datasets (multiple files), all part files have identical schemas; a mismatch between part files throws `ParquetParserException`
+- Every such column has a supported Parquet type (via `ParquetTypeMapper`)
+- Any `OPTIONAL` Parquet column must map to an `Option[T]` parameter — mapping to a non-`Option` parameter throws `ParquetParserException`
 
-Columns present in the Parquet schema but not in the case class are silently ignored, consistent with the existing CSV behaviour.
+Columns present in the Parquet schema but absent from the case class are silently ignored, consistent with existing CSV behaviour.
 
-### 5.2 ColumnHelper Integration
+Note: In practice, real-world Parquet datasets (including all TLC Yellow Taxi 2024 data) may mark every column as `OPTIONAL`. Users should declare all fields as `Option[T]` unless they have specific knowledge that a column is `REQUIRED`.
 
-`ColumnHelper` is applied during schema validation to map case class parameter names to Parquet column names. The `camelToSnakeCaseColumnNameMapper` handles the common case (e.g. `passengerCount` → `passenger_count`). Custom mappers and aliases are supported as with CSV parsing.
-
-### 5.3 ParquetParserException
+### 6.2 ParquetParserException
 
 ```scala
 case class ParquetParserException(msg: String, cause: Option[Throwable] = None)
   extends Exception(msg, cause.orNull)
 ```
 
-This is thrown for:
-- Schema mismatch between case class and Parquet file
-- Schema mismatch between part files in a dataset
-- Unsupported Parquet type with no registered mapping
-- Corrupt or unreadable Parquet file
-
 ---
 
-## 6. Type Mapping
+## 7. Type Mapping
 
-### 6.1 Canonical Mapping
+### 7.1 Canonical Mapping
 
-The following canonical mapping is defined in `ParquetTypeMapper`. Physical types are listed with their LogicalType annotations where applicable.
+Defined in `ParquetTypeMapper`:
 
-| Parquet Physical Type | Logical Type Annotation | Scala Type              |
-|-----------------------|------------------------|-------------------------|
-| `BOOLEAN`             | —                      | `Boolean`               |
-| `INT32`               | —                      | `Int`                   |
-| `INT32`               | `DATE`                 | `java.time.LocalDate`   |
-| `INT32`               | `DECIMAL(p,s)`         | `BigDecimal`            |
-| `INT64`               | —                      | `Long`                  |
-| `INT64`               | `TIMESTAMP_MILLIS`     | `java.time.Instant`     |
-| `INT64`               | `TIMESTAMP_MICROS`     | `java.time.Instant`     |
-| `INT64`               | `DECIMAL(p,s)`         | `BigDecimal`            |
-| `FLOAT`               | —                      | `Float`                 |
-| `DOUBLE`              | —                      | `Double`                |
-| `BYTE_ARRAY`          | `STRING` (or none)     | `String`                |
-| `FIXED_LEN_BYTE_ARRAY`| `DECIMAL(p,s)`         | `BigDecimal`            |
+| Parquet Physical Type   | Logical Type Annotation  | Scala Type                  |
+|-------------------------|--------------------------|-----------------------------|
+| `BOOLEAN`               | —                        | `Boolean`                   |
+| `INT32`                 | —                        | `Int`                       |
+| `INT32`                 | `DATE`                   | `java.time.LocalDate`       |
+| `INT32`                 | `DECIMAL(p,s)`           | `BigDecimal`                |
+| `INT64`                 | —                        | `Long`                      |
+| `INT64`                 | `TIMESTAMP_MILLIS/MICROS`| `java.time.Instant`         |
+| `INT64`                 | `DECIMAL(p,s)`           | `BigDecimal`                |
+| `FLOAT`                 | —                        | `Float`                     |
+| `DOUBLE`                | —                        | `Double`                    |
+| `BINARY`                | `STRING` (or none)       | `String`                    |
+| `FIXED_LEN_BYTE_ARRAY`  | `DECIMAL(p,s)`           | `BigDecimal`                |
 
-### 6.2 Optional Fields
+Note: `BINARY` without a logical type annotation is treated as `String`. The `large_string` type reported by PyArrow is an Arrow concept; at the Parquet level it is `BINARY` with `StringLogicalTypeAnnotation`.
 
-Parquet columns marked as `OPTIONAL` in the schema map to `Option[T]` in the case class, consistent with the existing CSV behaviour. A `REQUIRED` Parquet column mapping to an `Option[T]` parameter is permitted (the value will always be `Some`). An `OPTIONAL` Parquet column mapping to a non-`Option` parameter causes a `ParquetParserException` at schema validation time, since nulls could not be safely represented.
+### 7.2 Optional Fields and Type Erasure
 
-### 6.3 Unsupported Types
+A key implementation detail: for `Option[T]` fields, generic type reflection (`getActualTypeArguments`) returns `java.lang.Object` at runtime due to JVM type erasure. The inner type cannot be recovered this way.
 
-Any Parquet type not in the canonical mapping table causes a `ParquetParserException` at schema validation time with a clear message identifying the column name and type. No silent fallback to `String` is provided.
+The solution is to use the Parquet schema itself as the authoritative source of type information. `convertOption` takes the `PrimitiveType` from the schema rather than the field's generic type:
 
-### 6.4 Extensibility
-
-Users may register custom type mappings via an implicit `ParquetTypeMapper` instance, following the same implicit evidence pattern used elsewhere in TableParser. This allows exotic types (e.g. `MAP`, `LIST`, Parquet `GROUP` types) to be handled by application code without requiring changes to the library.
-
----
-
-## 7. Row Reading
-
-### 7.1 ParquetRowParser
-
-Unlike `StandardRowParser`, which works with `String` inputs, `ParquetRowParser` works directly with Parquet `Group` records (the `parquet-mr` row representation). It does not go through `LineParser` or regex-based cell splitting. The path is:
-
-```
-Parquet file → RecordReader[Group] → ParquetRowParser → CellParser[Row] → Row
+```scala
+def convertOption(
+  group:       SimpleGroup,
+  columnName:  String,
+  parquetType: PrimitiveType
+): Try[Any] =
+  if (group.getFieldRepetitionCount(columnName) == 0) Success(None)
+  else ParquetTypeMapper.mapType(parquetType) match {
+    case Left(ex)     => Failure(ex)
+    case Right(clazz) => convertByClass(group, columnName, clazz).map(Some(_))
+  }
 ```
 
-The `ParquetRowParser` reads typed values directly from each `Group` using the canonical type mapping, then passes them to the existing `CellParser` machinery. This preserves full type safety and avoids the string round-trip.
+`convertByClass` matches against both primitive and boxed types (e.g. `classOf[Int]` and `classOf[java.lang.Integer]`) to handle JVM boxing correctly.
 
-### 7.2 Row Groups and Parallelism
+### 7.3 BigDecimal Scale Limitation
 
-Parquet files are internally organised as row groups (typically 128MB each). Each row group is independent and can be read in parallel. The `ParquetTableParser` reads row groups via `parquet-mr`'s `ParquetReader` and feeds them into `Content`, which is already backed by `ParIterable`. This gives a natural parallelism opportunity that will be explored in a subsequent iteration once baseline reading is working.
-
-### 7.3 Forgiving Mode
-
-The existing `forgiving` flag is supported. In forgiving mode, rows that fail conversion are logged and skipped rather than causing the entire parse to fail. Schema validation failures (Section 5) always fail regardless of `forgiving` mode, since they indicate a fundamental incompatibility rather than a data quality issue.
+`BigDecimalConverter` currently hardcodes scale to `0`. The correct scale is available in `DecimalLogicalTypeAnnotation` but passing `PrimitiveType` through to all converters is deferred. This converter will produce incorrect results for Parquet decimals with non-zero scale.
 
 ---
 
 ## 8. Analysis Support
 
-`Analysis` operates on `Table[Row]` and is therefore format-agnostic. No changes to `Analysis` are required. A `Table[Row]` produced from a Parquet source supports `Analysis` identically to one produced from CSV.
+`Analysis` in `core` operates on `RawTable` (`Table[RawRow]`), not on typed `Table[Row]`. A `Table[YellowTaxiTrip]` produced from a Parquet source therefore does not support `Analysis` directly. This was not apparent from the design document and is noted here as a correction.
+
+Supporting `Analysis` on Parquet-sourced tables is deferred. Options include a separate raw Parquet read path or a dedicated column statistics mechanism in the `parquet` module.
 
 ---
 
-## 9. Testing
+## 9. Row Reading
 
-### 9.1 Test Fixture
+### 9.1 ParquetCellConverter
 
-A committed binary test fixture `taxi_sample.parquet` is included in `src/test/resources/`. This is derived from the NYC TLC Yellow Taxi January 2024 monthly Parquet file, trimmed to 1,000 rows using:
+A new type class `ParquetCellConverter[T]` was introduced to extract typed values directly from a `SimpleGroup`, bypassing the `String`-based `CellParser` machinery of `core` entirely:
+
+```scala
+trait ParquetCellConverter[T] {
+  def convert(group: SimpleGroup, fieldName: String): Try[T]
+}
+```
+
+Instances are provided for `Boolean`, `Int`, `Long`, `Float`, `Double`, `String`, `Instant`, `LocalDate`, and `BigDecimal`. The companion object provides `convertField`, `convertOption`, and `convertByClass` dispatch methods.
+
+### 9.2 Read Path
+
+```
+java.nio.file.Path
+  → HadoopPath
+  → ParquetFileReader.open (schema from footer)
+  → ParquetSchemaValidator.validate
+  → StandardParquetRowParser.apply (converters built once via reflection)
+  → ParquetReader[Group] / GroupReadSupport
+  → Iterator.unfold → Iterator[Row]
+  → builder → HeadedTable[Row] (forces materialisation into Content)
+```
+
+Reflection cost (field inspection, converter construction) is paid once at parser construction time, not per row.
+
+### 9.3 Resource Management
+
+`ParquetReader` is `AutoCloseable`. The `Iterator.unfold` approach produces a lazy iterator, but `builder` immediately materialises it into `Content` (via `HeadedTable`), which exhausts the reader. If `builder` is overridden to return a lazy structure, resource management must be revisited.
+
+### 9.4 Dataset Support (Deferred)
+
+`ParquetReader` with `GroupReadSupport` does not handle directories natively — it requires a single file path. Directory (dataset) support is deferred and requires enumerating part files and reading them sequentially or in parallel.
+
+---
+
+## 10. Testing
+
+### 10.1 Test Fixture
+
+`taxi_sample.parquet` — 1,000 rows from NYC TLC Yellow Taxi January 2024, generated via:
 
 ```python
 import pyarrow.parquet as pq
@@ -250,68 +291,75 @@ pq.write_table(
 )
 ```
 
-This fixture provides a structurally faithful sample with real-world column names, types, and optional fields, without committing a large binary to the repository.
+### 10.2 Test Case Class
 
-### 9.2 Test Case Class
-
-A `YellowTaxiTrip` case class is defined in the test sources, modelling the NYC TLC schema:
+All 19 columns in the 2024 TLC Yellow Taxi schema are `OPTIONAL`. The case class reflects this:
 
 ```scala
 case class YellowTaxiTrip(
-  vendorId:             Int,
-  tpepPickupDatetime:   java.time.Instant,
-  tpepDropoffDatetime:  java.time.Instant,
-  passengerCount:       Long,
-  tripDistance:         Double,
-  ratecodeId:           Long,
-  storeAndFwdFlag:      String,
-  puLocationId:         Int,
-  doLocationId:         Int,
-  paymentType:          Long,
-  fareAmount:           Double,
-  extra:                Double,
-  mtaTax:               Double,
-  tipAmount:            Double,
-  tollsAmount:          Double,
-  improvementSurcharge: Double,
-  totalAmount:          Double,
-  congestionSurcharge:  Double,
-  airportFee:           Double
+  vendorId:             Option[Int],
+  tpepPickupDatetime:   Option[Instant],
+  tpepDropoffDatetime:  Option[Instant],
+  passengerCount:       Option[Long],
+  tripDistance:         Option[Double],
+  ratecodeId:           Option[Long],
+  storeAndFwdFlag:      Option[String],
+  puLocationId:         Option[Int],
+  doLocationId:         Option[Int],
+  paymentType:          Option[Long],
+  fareAmount:           Option[Double],
+  extra:                Option[Double],
+  mtaTax:               Option[Double],
+  tipAmount:            Option[Double],
+  tollsAmount:          Option[Double],
+  improvementSurcharge: Option[Double],
+  totalAmount:          Option[Double],
+  congestionSurcharge:  Option[Double],
+  airportFee:           Option[Double]
 )
 ```
 
-### 9.3 Test Scenarios
+### 10.3 Test Scenarios
 
-- Happy path: parse `taxi_sample.parquet` into `Table[YellowTaxiTrip]`, verify row count and spot-check typed field values
+- Happy path: parse `taxi_sample.parquet` into `Table[YellowTaxiTrip]`, verify 1,000 rows and spot-check typed field values
+- Header: verify 19 columns in the header
 - Schema mismatch: supply a case class with an unknown column name, expect `ParquetParserException`
-- Type mismatch: supply a case class with an incompatible type for a known column, expect `ParquetParserException`
-- Optional field: verify `Option[Int]` columns correctly produce `None` for null Parquet values
-- Dataset: split `taxi_sample.parquet` into two part files in a directory, verify both are read and row counts sum correctly
-- Analysis: run `Analysis` on a Parquet-sourced table, verify output is consistent with equivalent CSV-sourced table
+- OPTIONAL/non-Option mismatch: pending (all columns happen to be OPTIONAL in the fixture)
+- Dataset (multi-file): pending — deferred until dataset support is implemented
+- Analysis: pending — deferred (see Section 8)
 
 ---
 
-## 10. Open Questions and Deferred Decisions
+## 11. Open Questions and Deferred Decisions
 
 | Topic | Status | Notes |
 |-------|--------|-------|
+| Parquet dataset (directory) support | Deferred | `ParquetReader` needs directory handling |
 | Parquet output (write direction) | Deferred | Separate design document when in scope |
 | Spark module Parquet integration | Deferred | Depends on this module being stable first |
 | `Path` backfill into `core` | Deferred | Desirable; separate PR to avoid scope creep |
 | Parallel row group reading | Deferred | Revisit once baseline reading is working |
-| `LIST` and `MAP` Parquet types | Deferred | Supported via custom `ParquetTypeMapper`; no built-in mapping initially |
-| Encryption (Parquet-MR supports encrypted Parquet) | Deferred | Out of scope for initial iteration |
+| `LIST` and `MAP` Parquet types | Deferred | No built-in mapping; custom `ParquetTypeMapper` possible |
+| `BigDecimal` scale from `DecimalLogicalTypeAnnotation` | Deferred | Currently hardcoded to 0 |
+| `Analysis` on Parquet-sourced tables | Deferred | Requires raw read path or separate statistics mechanism |
+| Encryption | Deferred | Out of scope for initial iteration |
 
 ---
 
-## 11. Summary of New Types
+## 12. Summary of New Types
 
 | Type | Location | Purpose |
 |------|----------|---------|
 | `ParquetParserException` | `parquet` module | All Parquet-specific failures |
-| `ParquetTableParser[T]` | `parquet` module | `TableParser` instance for Parquet sources |
-| `ParquetRowParser[Row]` | `parquet` module | Reads typed values from Parquet `Group` records |
-| `ParquetTypeMapper` | `parquet` module | Canonical Parquet→Scala type mapping; extensible |
+| `ParquetTableParser[R]` | `parquet` module | `TableBuilder` instance for Parquet sources |
+| `ParquetRowParser[Row]` / `StandardParquetRowParser[Row]` | `parquet` module | Converts `SimpleGroup` records to typed `Row` |
+| `ParquetCellConverter[T]` | `parquet` module | Type class for direct typed value extraction from `SimpleGroup` |
+| `ParquetTypeMapper` | `parquet` module | Canonical Parquet→Scala type mapping |
 | `ParquetSchemaValidator` | `parquet` module | Validates Parquet schema against case class at open time |
+| `ParquetParser` | `parquet` module | Entry point: `parse[Row](path)` |
+| `TableBuilder[Table]` | `core` module | Thin base trait extracted from `TableParser`; extended by `ParquetTableParser` |
 
-No changes are required to `core` types (`Table`, `Content`, `Header`, `Row`, `CellParser`, `ColumnHelper`, `Analysis`) for this iteration.
+### Changes to `core`
+- `TableBuilder[Table]` trait added
+- `TableParser[Table]` now extends `TableBuilder[Table]`
+- `camelToSnakeCaseColumnNameMapperLower` added to `ColumnHelper`

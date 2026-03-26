@@ -1,7 +1,8 @@
 package com.phasmidsoftware.tableparser.parquet
 
-import com.phasmidsoftware.tableparser.core.parse.{ColumnHelper, RowParser, TableParser}
+import com.phasmidsoftware.tableparser.core.parse.{ColumnHelper, TableBuilder}
 import com.phasmidsoftware.tableparser.core.table.{Content, HeadedTable, Header, Table}
+import java.nio.file.Path
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{Path => HadoopPath}
 import org.apache.parquet.example.data.Group
@@ -9,124 +10,117 @@ import org.apache.parquet.example.data.simple.SimpleGroup
 import org.apache.parquet.hadoop.ParquetReader
 import org.apache.parquet.hadoop.example.GroupReadSupport
 import org.apache.parquet.schema.MessageType
-import java.nio.file.{Files, Path}
 import scala.reflect.ClassTag
-import scala.util.{Try, Using}
+import scala.util.Try
 
 /**
- * A TableParser for Parquet sources.
+ * A TableBuilder for Parquet sources.
+ *
  * Reads a Parquet file or dataset directory into a Table[Row] using
- * ParquetRowParser and ParquetSchemaValidator.
+ * ParquetSchemaValidator, StandardParquetRowParser, and ParquetCellConverter.
  *
- * Unlike the string-based parsers in core, this does not extend
- * AbstractTableParser -- the Parquet read path is fundamentally different.
+ * Extends TableBuilder directly rather than TableParser, since the Parquet
+ * read path does not involve Iterator[String], header rows, or LineParser.
  *
- * @tparam Row the target case class type.
+ * @tparam R the target case class type.
  */
-abstract class ParquetTableParser[Row <: Product : ClassTag]
-        extends TableParser[Table[Row]] {
+abstract class ParquetTableParser[R <: Product : ClassTag]
+        extends TableBuilder[Table[R]] {
 
-  type Row    // already declared by TableParser -- this is the case class type
-  type Input  = SimpleGroup  // Parquet records, not Strings
+  type Row = R
 
   /**
    * The ColumnHelper providing parameter-to-column name mapping.
-   * Users must provide this in their concrete instance, exactly as
-   * they do for CSV parsing.
+   * Users provide this in their concrete instance, exactly as for CSV.
    */
   val helper: ColumnHelper[Row]
 
   /**
-   * The ParquetRowParser to use for converting SimpleGroup records to Row.
-   * Built lazily once the schema is known (see parse below).
-   */
-  protected def rowParserFor(schema: MessageType): ParquetRowParser[Row] =
-    StandardParquetRowParser[Row](schema, helper)
-
-  /**
-   * Build a Table[Row] from an Iterator[Row] and a Header derived from
-   * the Parquet schema.
+   * Build a Table[Row] from parsed rows and a Header derived from
+   * the Parquet schema. Can be overridden if a different Table
+   * implementation is needed.
    */
   protected def builder(rows: Iterator[Row], header: Header): Table[Row] =
     HeadedTable(Content(rows), header)
 
   /**
-   * Not used in the Parquet path -- header comes from Parquet metadata.
-   * Required by TableParser trait but never called.
-   */
-  val rowParser: RowParser[Row, SimpleGroup] =
-    throw ParquetParserException("rowParser should not be called directly on ParquetTableParser")
-
-  /**
    * Parse a Parquet file or dataset directory into a Table[Row].
    *
-   * @param path the java.nio.file.Path to a .parquet file or directory.
+   * Schema validation is performed before any rows are read.
+   * Fails fast with ParquetParserException on any schema mismatch
+   * or unsupported type.
+   *
+   * @param path a java.nio.file.Path to a .parquet file or directory
+   *             containing part files.
    * @return a Try[Table[Row]].
    */
   def parseParquet(path: Path): Try[Table[Row]] = Try {
-    val conf      = new Configuration()
+    val conf = new Configuration()
     val hadoopPath = new HadoopPath(path.toUri)
 
-    // Read the schema from the Parquet footer metadata
-    val schema: MessageType = ParquetParser.readSchema(hadoopPath, conf)
+    // Read schema from Parquet footer metadata
+    val schema: MessageType = readSchema(hadoopPath, conf)
 
-    // Validate schema against the target case class
+    // Validate schema against the target case class before reading any rows
     ParquetSchemaValidator.validate[Row](schema, helper).get
 
     // Build the Header from Parquet column names
     val header: Header = headerFromSchema(schema)
 
-    // Build the row parser now that we have the schema
-    val rp = rowParserFor(schema)
+    // Build the row parser once, paying reflection cost here not per row
+    val rowParser: StandardParquetRowParser[Row] =
+      StandardParquetRowParser[Row](schema, helper)
 
-    // Read all rows
-    val rows: Iterator[Row] = readRows(hadoopPath, conf, schema, rp)
+    // Read and materialise all rows -- materialisation into Content
+    // via builder ensures the ParquetReader is exhausted before we return,
+    // avoiding any resource leak from a partially-consumed iterator.
+    val rows: Iterator[Row] = readRows(hadoopPath, conf, schema, rowParser)
 
     builder(rows, header)
   }
 
-  /**
-   * The standard parse method from TableParser -- not used in the Parquet path.
-   * Parquet sources should use parseParquet(path) instead.
-   */
-  def parse(xs: Iterator[SimpleGroup], n: Int = 0): Try[Table[Row]] =
-    Failure(ParquetParserException(
-      "Use parseParquet(path: java.nio.file.Path) for Parquet sources, not parse(Iterator)"
-    ))
+  // ── private helpers ──────────────────────────────────────────────────────
 
-  // ── private helpers ────────────────────────────────────────────────────────
+  private def headerFromSchema(schema: MessageType): Header =
+    Header(
+      (0 until schema.getFieldCount).map(schema.getFieldName),
+      Nil
+    )
 
-  private def headerFromSchema(schema: MessageType): Header = {
-    val columnNames = (0 until schema.getFieldCount).map(schema.getFieldName)
-    Header(columnNames)
+  private def readSchema(path: HadoopPath, conf: Configuration): MessageType = {
+    val reader = org.apache.parquet.hadoop.ParquetFileReader.open(
+      org.apache.parquet.hadoop.util.HadoopInputFile.fromPath(path, conf)
+    )
+    try reader.getFooter.getFileMetaData.getSchema
+    finally reader.close()
   }
 
   private def readRows(
-                              path:   HadoopPath,
-                              conf:   Configuration,
+                              path: HadoopPath,
+                              conf: Configuration,
                               schema: MessageType,
-                              rp:     ParquetRowParser[Row]
+                              rowParser: StandardParquetRowParser[Row]
                       ): Iterator[Row] = {
-
     val reader: ParquetReader[Group] =
       ParquetReader
               .builder(new GroupReadSupport(), path)
               .withConf(conf)
               .build()
 
-    // Unfold the reader into an Iterator[Row], closing it when exhausted.
-    // NOTE: ParquetReader is AutoCloseable so Using handles cleanup.
+    // Unfold the reader into an Iterator[Row].
+    // builder() will force full materialisation into Content,
+    // ensuring the reader is fully consumed and can be closed.
     Iterator.unfold(reader) { r =>
       Option(r.read()).map { group =>
-        val row = rp.parse(schema, helper)(group.asInstanceOf[SimpleGroup])
-                .fold(
-                  e => throw e,
-                  identity
-                )
+        val row = rowParser
+                .parse(schema, helper)(group.asInstanceOf[SimpleGroup])
+                .fold(e => throw e, identity)
         row -> r
       }
     }
-    // NOTE: the reader is not closed here -- see ParquetParser.parseParquet
-    // which wraps this in a Using block at the call site.
+    // NOTE: reader is not explicitly closed here because builder()
+    // materialises the iterator eagerly into Content via HeadedTable.
+    // If you ever change builder() to return a lazy structure,
+    // resource management must be revisited.
   }
 }
