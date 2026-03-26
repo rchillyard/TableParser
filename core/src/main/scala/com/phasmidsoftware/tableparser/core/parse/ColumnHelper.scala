@@ -73,5 +73,9 @@ object ColumnHelper {
   /**
    * Precede each upper case letter (or digit) with _.
    */
-  val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", "_$1")
+  val camelToSnakeCaseColumnNameMapper: String => String =
+    _.replaceAll("([A-Z\\d])", "_$1")
+
+  val camelToSnakeCaseColumnNameMapperLower: String => String =
+    camelToSnakeCaseColumnNameMapper andThen (_.toLowerCase)
 }

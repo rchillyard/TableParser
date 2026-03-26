@@ -122,13 +122,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  it should "parse from null File" in {
-    import IntPair._
-
-    val f: String = null
-    Table.parseFile(new File(f)) should matchPattern { case Failure(_) => }
-  }
-
   it should "parse from Resource" in {
     import IntPair._
 

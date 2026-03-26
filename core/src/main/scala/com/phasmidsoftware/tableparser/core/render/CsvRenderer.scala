@@ -4,6 +4,7 @@ import com.phasmidsoftware.tableparser.core.parse.{StringList, Strings}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.Writable
 import java.io.{File, FileWriter}
+import java.nio.file.Path
 import org.joda.time.LocalDate
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -167,8 +168,14 @@ case class CsvTableStringRenderer[T]()(implicit z1: CsvRenderer[T], z2: CsvGener
  *
  * TODO merge this with CsvTableEncryptedFileRenderer to avoid duplicate code.
  *
- * @param file          the file to which the table will be written.
+ * @param path the path to which the table will be written.
  * @param csvAttributes implicit instance of CsvAttributes.
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
-case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file))
+case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](path: Path)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(path.toFile))
+
+object CsvTableFileRenderer {
+  @deprecated("Use apply(file: File) instead.", "1.3.0")
+  def apply[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes): CsvTableFileRenderer[T] =
+    CsvTableFileRenderer(file.toPath)(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], csvAttributes)
+}

@@ -10,7 +10,7 @@ class DatasetMapperSpec extends AnyFlatSpec with should.Matchers with Serializab
   behavior of "DatasetMapper"
 
   it should "create a Movie Dataset" in {
-    implicit val spark: SparkSession = SparkSession.builder.appName("DatasetMapper").master("local[*]").getOrCreate()
+    implicit val spark: SparkSession = SparkSession.builder().appName("DatasetMapper").master("local[*]").getOrCreate()
     implicit val encoder: Encoder[Movie] = Encoders.product[Movie]
 
     println(s"Current Directory is: ${System.getProperty("user.dir")}")

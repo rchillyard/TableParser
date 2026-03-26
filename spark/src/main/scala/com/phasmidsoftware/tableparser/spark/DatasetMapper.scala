@@ -63,7 +63,7 @@ class DatasetMapper[T](f: String => Try[T])(missing: T)(implicit sparkSession: S
  *
  */
 object DatasetMapper extends App {
-  implicit val spark: SparkSession = SparkSession.builder.appName("DatasetMapper").master("local[*]").getOrCreate()
+  implicit val spark: SparkSession = SparkSession.builder().appName("DatasetMapper").master("local[*]").getOrCreate()
   implicit val encoder: Encoder[Movie] = Encoders.product[Movie]
   println(s"Current Directory is: ${System.getProperty("user.dir")}")
   new DatasetMapper[Movie](MovieDatabase.parser.parse(header))(Movie.missing).doMain(filename)
@@ -80,7 +80,7 @@ object MovieDatabase {
   import com.phasmidsoftware.tableparser.core.examples.Movie._
 
   val parser: RowParser[Movie, String] = implicitly[HeadedCSVTableParser[Movie]].rowParser
-  val header: Header = Header.create((Movie.header.split(',')): _*)
+  val header: Header = Header.create(Movie.header.split(','): _*)
 
   // NOTE: I don't know if there's a way to specify a classpath resource in Spark so, for now, we define a totally non-portable filename
   private val home = System.getProperties.getOrDefault("user.home", "/Users/rhillyardXX")
