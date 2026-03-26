@@ -4,7 +4,6 @@
 
 package com.phasmidsoftware.tableparser.core.parse
 
-import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.{Joinable, TeeIterator, TryUsing}
 import org.slf4j.{Logger, LoggerFactory}
@@ -19,24 +18,18 @@ import scala.util.{Failure, Random, Success, Try}
  * @tparam Table the Table type.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of TableParser[${Table}]. Typically, you should define an instance of StringTableParser or StringsTableParser.")
-trait TableParser[Table] {
-
-  /**
-   * The row type.
-   */
-  type Row
-
+trait TableParser[Table] extends TableBuilder[Table] {
   /**
    * The input type, typically `String` or `Strings`.
    */
   type Input
 
   /**
-   * This variable determines if there is a programmed, i.e., fixed, header for the parser.
-   * If its value is None, it signifies that we must look to the first line(s) of data
-   * for an appropriate header.
+   * Method to define a row parser.
+   *
+   * @return a RowParser[Row, Input].
    */
-  protected val maybeHeader: Option[Header] = None
+  val rowParser: RowParser[Row, Input]
 
   /**
    * This indicates the number of header rows which must be read from the input.
@@ -48,20 +41,11 @@ trait TableParser[Table] {
   val headerRowsToRead: Int = 1
 
   /**
-   * Method to construct a Table based on the provided rows and header.
-   *
-   * @param rows   an iterator of Row objects representing the data rows.
-   * @param header a Header object representing the table's column headers.
-   * @return the constructed Table based on the input rows and header.
+   * This variable determines if there is a programmed, i.e., fixed, header for the parser.
+   * If its value is None, it signifies that we must look to the first line(s) of data
+   * for an appropriate header.
    */
-  protected def builder(rows: Iterator[Row], header: Header): Table
-
-  /**
-   * Method to determine how errors are handled.
-   *
-   * @return true if individual errors are logged but do not cause parsing to fail.
-   */
-  protected val forgiving: Boolean = false
+  protected val maybeHeader: Option[Header] = None
 
   /**
    * Value to determine whether it is acceptable to have a quoted string span more than one line.
@@ -71,20 +55,7 @@ trait TableParser[Table] {
   protected val multiline: Boolean = false
 
   /**
-   * Function to determine whether or not a row should be included in the table.
-   * Typically used for random sampling.
-   */
-  protected val predicate: Try[Row] => Boolean = includeAll
-
-  /**
-   * Method to define a row parser.
-   *
-   * @return a RowParser[Row, Input].
-   */
-  val rowParser: RowParser[Row, Input]
-
-  /**
-   * Method to parse a table based on a sequence of Inputs.
+   * Method to parse a table based on an iterator of Inputs.
    *
    * @param xs the sequence of Inputs, one for each row
    * @param n  the number of rows to drop (length of the header).
