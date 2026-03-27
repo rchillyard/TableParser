@@ -11,7 +11,7 @@ import org.apache.parquet.hadoop.ParquetReader
 import org.apache.parquet.hadoop.example.GroupReadSupport
 import org.apache.parquet.schema.MessageType
 import scala.reflect.ClassTag
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * A TableBuilder for Parquet sources.
@@ -62,7 +62,11 @@ abstract class ParquetTableParser[R <: Product : ClassTag]
     val schema: MessageType = readSchema(hadoopPath, conf)
 
     // Validate schema against the target case class before reading any rows
-    ParquetSchemaValidator.validate[Row](schema, helper).get
+    ParquetSchemaValidator.validate[Row](schema, helper) match {
+      case Failure(exception) =>
+        throw exception
+      case Success(_) =>
+    }
 
     // Build the Header from Parquet column names
     val header: Header = headerFromSchema(schema)
