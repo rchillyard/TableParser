@@ -7,6 +7,7 @@ package com.phasmidsoftware.tableparser.core.render
 import com.phasmidsoftware.tableparser.core.parse.Strings
 import com.phasmidsoftware.tableparser.core.table._
 import java.net.URL
+import java.time.Instant
 import scala.reflect.ClassTag
 
 /**
@@ -930,7 +931,455 @@ trait CsvRenderers {
     def toColumnNames(po: Option[String], no: Option[String]): String =
       new CsvGenerators {}.generator13(construct).toColumnNames(po, no)
   }
+// ── 14 ──────────────────────────────────────────────────────────────────────
 
+  /**
+   * Method to return a CsvRenderer[T] where T is a 14-ary Product and which is based on the given "construct" function.
+   *
+   * @param construct a function (P1,...,P14) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param ca        the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvRenderer[T].
+   */
+  def renderer14[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, P12: CsvRenderer, P13: CsvRenderer, P14: CsvRenderer, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14) => T)(implicit ca: CsvAttributes): CsvRenderer[T] = new BaseCsvRenderer[T] {
+    val csvAttributes: CsvAttributes = ca
+
+    def elements(t: T): Strings = {
+      val p14 = t.productElement(13).asInstanceOf[P14]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13) => T = construct(_, _, _, _, _, _, _, _, _, _, _, _, _, p14)
+      val sequenceFirst = renderer13(constructFirst).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P14]].render(p14)
+    }
+  }
+
+  /**
+   * Method to return a CsvProduct[T] where T is a 14-ary Product and which is based on the given "construct" function.
+   *
+   * TESTME
+   *
+   * @param construct     a function (P1,...,P14) => T, usually the apply method of a case class.
+   *                      The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param csvAttributes the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvProduct[T].
+   */
+  def rendererGenerator14[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, P10: CsvRenderer : CsvGenerator, P11: CsvRenderer : CsvGenerator, P12: CsvRenderer : CsvGenerator, P13: CsvRenderer : CsvGenerator, P14: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
+    def elements(t: T): Strings = renderer14(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+
+    def toColumnNames(po: Option[String], no: Option[String]): String =
+      new CsvGenerators {}.generator14(construct).toColumnNames(po, no)
+  }
+
+  // ── 15 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvRenderer[T] where T is a 15-ary Product and which is based on the given "construct" function.
+   *
+   * @param construct a function (P1,...,P15) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param ca        the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvRenderer[T].
+   */
+  def renderer15[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, P12: CsvRenderer, P13: CsvRenderer, P14: CsvRenderer, P15: CsvRenderer, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15) => T)(implicit ca: CsvAttributes): CsvRenderer[T] = new BaseCsvRenderer[T] {
+    val csvAttributes: CsvAttributes = ca
+
+    def elements(t: T): Strings = {
+      val p15 = t.productElement(14).asInstanceOf[P15]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14) => T = construct(_, _, _, _, _, _, _, _, _, _, _, _, _, _, p15)
+      val sequenceFirst = renderer14(constructFirst).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P15]].render(p15)
+    }
+  }
+
+  /**
+   * Method to return a CsvProduct[T] where T is a 15-ary Product and which is based on the given "construct" function.
+   *
+   * TESTME
+   *
+   * @param construct     a function (P1,...,P15) => T, usually the apply method of a case class.
+   *                      The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param csvAttributes the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvProduct[T].
+   */
+  def rendererGenerator15[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, P10: CsvRenderer : CsvGenerator, P11: CsvRenderer : CsvGenerator, P12: CsvRenderer : CsvGenerator, P13: CsvRenderer : CsvGenerator, P14: CsvRenderer : CsvGenerator, P15: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
+    def elements(t: T): Strings = renderer15(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+
+    def toColumnNames(po: Option[String], no: Option[String]): String =
+      new CsvGenerators {}.generator15(construct).toColumnNames(po, no)
+  }
+
+  // ── 16 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvRenderer[T] where T is a 16-ary Product and which is based on the given "construct" function.
+   *
+   * @param construct a function (P1,...,P16) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param ca        the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvRenderer[T].
+   */
+  def renderer16[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, P12: CsvRenderer, P13: CsvRenderer, P14: CsvRenderer, P15: CsvRenderer, P16: CsvRenderer, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16) => T)(implicit ca: CsvAttributes): CsvRenderer[T] = new BaseCsvRenderer[T] {
+    val csvAttributes: CsvAttributes = ca
+
+    def elements(t: T): Strings = {
+      val p16 = t.productElement(15).asInstanceOf[P16]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15) => T = construct(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, p16)
+      val sequenceFirst = renderer15(constructFirst).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P16]].render(p16)
+    }
+  }
+
+  /**
+   * Method to return a CsvProduct[T] where T is a 16-ary Product and which is based on the given "construct" function.
+   *
+   * TESTME
+   *
+   * @param construct     a function (P1,...,P16) => T, usually the apply method of a case class.
+   *                      The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param csvAttributes the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvProduct[T].
+   */
+  def rendererGenerator16[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, P10: CsvRenderer : CsvGenerator, P11: CsvRenderer : CsvGenerator, P12: CsvRenderer : CsvGenerator, P13: CsvRenderer : CsvGenerator, P14: CsvRenderer : CsvGenerator, P15: CsvRenderer : CsvGenerator, P16: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
+    def elements(t: T): Strings = renderer16(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+
+    def toColumnNames(po: Option[String], no: Option[String]): String =
+      new CsvGenerators {}.generator16(construct).toColumnNames(po, no)
+  }
+
+  // ── 17 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvRenderer[T] where T is a 17-ary Product and which is based on the given "construct" function.
+   *
+   * @param construct a function (P1,...,P17) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param ca        the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam P17 the type of the seventeenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvRenderer[T].
+   */
+  def renderer17[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, P12: CsvRenderer, P13: CsvRenderer, P14: CsvRenderer, P15: CsvRenderer, P16: CsvRenderer, P17: CsvRenderer, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17) => T)(implicit ca: CsvAttributes): CsvRenderer[T] = new BaseCsvRenderer[T] {
+    val csvAttributes: CsvAttributes = ca
+
+    def elements(t: T): Strings = {
+      val p17 = t.productElement(16).asInstanceOf[P17]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16) => T = construct(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, p17)
+      val sequenceFirst = renderer16(constructFirst).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P17]].render(p17)
+    }
+  }
+
+  /**
+   * Method to return a CsvProduct[T] where T is a 17-ary Product and which is based on the given "construct" function.
+   *
+   * TESTME
+   *
+   * @param construct     a function (P1,...,P17) => T, usually the apply method of a case class.
+   *                      The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param csvAttributes the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam P17 the type of the seventeenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvProduct[T].
+   */
+  def rendererGenerator17[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, P10: CsvRenderer : CsvGenerator, P11: CsvRenderer : CsvGenerator, P12: CsvRenderer : CsvGenerator, P13: CsvRenderer : CsvGenerator, P14: CsvRenderer : CsvGenerator, P15: CsvRenderer : CsvGenerator, P16: CsvRenderer : CsvGenerator, P17: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
+    def elements(t: T): Strings = renderer17(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+
+    def toColumnNames(po: Option[String], no: Option[String]): String =
+      new CsvGenerators {}.generator17(construct).toColumnNames(po, no)
+  }
+
+  // ── 18 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvRenderer[T] where T is an 18-ary Product and which is based on the given "construct" function.
+   *
+   * @param construct a function (P1,...,P18) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param ca        the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam P17 the type of the seventeenth field of the Product type T.
+   * @tparam P18 the type of the eighteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvRenderer[T].
+   */
+  def renderer18[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, P12: CsvRenderer, P13: CsvRenderer, P14: CsvRenderer, P15: CsvRenderer, P16: CsvRenderer, P17: CsvRenderer, P18: CsvRenderer, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18) => T)(implicit ca: CsvAttributes): CsvRenderer[T] = new BaseCsvRenderer[T] {
+    val csvAttributes: CsvAttributes = ca
+
+    def elements(t: T): Strings = {
+      val p18 = t.productElement(17).asInstanceOf[P18]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17) => T = construct(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, p18)
+      val sequenceFirst = renderer17(constructFirst).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P18]].render(p18)
+    }
+  }
+
+  /**
+   * Method to return a CsvProduct[T] where T is an 18-ary Product and which is based on the given "construct" function.
+   *
+   * TESTME
+   *
+   * @param construct     a function (P1,...,P18) => T, usually the apply method of a case class.
+   *                      The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param csvAttributes the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam P17 the type of the seventeenth field of the Product type T.
+   * @tparam P18 the type of the eighteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvProduct[T].
+   */
+  def rendererGenerator18[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, P10: CsvRenderer : CsvGenerator, P11: CsvRenderer : CsvGenerator, P12: CsvRenderer : CsvGenerator, P13: CsvRenderer : CsvGenerator, P14: CsvRenderer : CsvGenerator, P15: CsvRenderer : CsvGenerator, P16: CsvRenderer : CsvGenerator, P17: CsvRenderer : CsvGenerator, P18: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
+    def elements(t: T): Strings = renderer18(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+
+    def toColumnNames(po: Option[String], no: Option[String]): String =
+      new CsvGenerators {}.generator18(construct).toColumnNames(po, no)
+  }
+
+  // ── 19 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvRenderer[T] where T is a 19-ary Product and which is based on the given "construct" function.
+   *
+   * @param construct a function (P1,...,P19) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param ca        the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam P17 the type of the seventeenth field of the Product type T.
+   * @tparam P18 the type of the eighteenth field of the Product type T.
+   * @tparam P19 the type of the nineteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvRenderer[T].
+   */
+  def renderer19[P1: CsvRenderer, P2: CsvRenderer, P3: CsvRenderer, P4: CsvRenderer, P5: CsvRenderer, P6: CsvRenderer, P7: CsvRenderer, P8: CsvRenderer, P9: CsvRenderer, P10: CsvRenderer, P11: CsvRenderer, P12: CsvRenderer, P13: CsvRenderer, P14: CsvRenderer, P15: CsvRenderer, P16: CsvRenderer, P17: CsvRenderer, P18: CsvRenderer, P19: CsvRenderer, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19) => T)(implicit ca: CsvAttributes): CsvRenderer[T] = new BaseCsvRenderer[T] {
+    val csvAttributes: CsvAttributes = ca
+
+    def elements(t: T): Strings = {
+      val p19 = t.productElement(18).asInstanceOf[P19]
+      val constructFirst: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18) => T = construct(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, p19)
+      val sequenceFirst = renderer18(constructFirst).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+      sequenceFirst :+ implicitly[CsvRenderer[P19]].render(p19)
+    }
+  }
+
+  /**
+   * Method to return a CsvProduct[T] where T is a 19-ary Product and which is based on the given "construct" function.
+   *
+   * TESTME
+   *
+   * @param construct     a function (P1,...,P19) => T, usually the apply method of a case class.
+   *                      The sole purpose of this function is for type inference--it is never actually invoked.
+   * @param csvAttributes the (implicit) CsvAttributes.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam P17 the type of the seventeenth field of the Product type T.
+   * @tparam P18 the type of the eighteenth field of the Product type T.
+   * @tparam P19 the type of the nineteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvProduct[T].
+   */
+  def rendererGenerator19[P1: CsvRenderer : CsvGenerator, P2: CsvRenderer : CsvGenerator, P3: CsvRenderer : CsvGenerator, P4: CsvRenderer : CsvGenerator, P5: CsvRenderer : CsvGenerator, P6: CsvRenderer : CsvGenerator, P7: CsvRenderer : CsvGenerator, P8: CsvRenderer : CsvGenerator, P9: CsvRenderer : CsvGenerator, P10: CsvRenderer : CsvGenerator, P11: CsvRenderer : CsvGenerator, P12: CsvRenderer : CsvGenerator, P13: CsvRenderer : CsvGenerator, P14: CsvRenderer : CsvGenerator, P15: CsvRenderer : CsvGenerator, P16: CsvRenderer : CsvGenerator, P17: CsvRenderer : CsvGenerator, P18: CsvRenderer : CsvGenerator, P19: CsvRenderer : CsvGenerator, T <: Product : ClassTag]
+  (construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19) => T)(implicit csvAttributes: CsvAttributes): CsvProduct[T] = new ProductCsvRenderer[T] {
+    def elements(t: T): Strings = renderer19(construct).asInstanceOf[BaseCsvRenderer[T]].elements(t)
+
+    def toColumnNames(po: Option[String], no: Option[String]): String =
+      new CsvGenerators {}.generator19(construct).toColumnNames(po, no)
+  }
 }
 
 /**
@@ -1051,6 +1500,42 @@ object CsvRenderers {
   implicit object CsvRendererDouble extends StandardCsvRenderer[Double]
 
   /**
+   * Implicit object that provides a CSV renderer for `Float` values by extending the `StandardCsvRenderer`
+   * abstract class with type parameter `Float`.
+   *
+   * This renderer converts `Float` values into their CSV string representation, utilizing the default
+   * behavior from the `StandardCsvRenderer` class unless overridden. The implicit nature of this object
+   * allows it to be automatically used wherever a `StandardCsvRenderer` for `Float` is required.
+   *
+   * This renderer adheres to the base `CsvRenderer` trait interface, enabling consistent rendering
+   * of `Float` values in CSV-related operations.
+   */
+  implicit object CsvRendererFloat extends StandardCsvRenderer[Float]
+
+  /**
+   * Implicit object providing a CSV renderer for the `Short` type.
+   *
+   * This object extends the `StandardCsvRenderer` class, implementing
+   * the base functionality to render `Short` values into their string
+   * representation in CSV format. It can be used implicitly wherever
+   * a `CsvRenderer[Short]` is required.
+   *
+   * It adheres to the default behavior of `StandardCsvRenderer`, which
+   * converts the given value to its string representation without
+   * applying additional attributes or custom processing.
+   */
+  implicit object CsvRendererShort extends StandardCsvRenderer[Short]
+
+  /**
+   * An implicit implementation of the `StandardCsvRenderer` for the `Byte` type.
+   *
+   * The `CsvRendererByte` object provides functionality to render `Byte` values into CSV format
+   * by extending the `StandardCsvRenderer` abstract class. This implementation defines the specific
+   * rendering behavior for converting `Byte` type data into its CSV-compatible string representation.
+   */
+  implicit object CsvRendererByte extends StandardCsvRenderer[Byte]
+
+  /**
    * `CsvRendererString` is an implicit object that extends the `StandardCsvRenderer` class
    * to provide a concrete implementation of CSV rendering for `String` objects.
    *
@@ -1087,4 +1572,15 @@ object CsvRenderers {
    * is required, such as within collections or for pipeline-based CSV serialization.
    */
   implicit object CsvRendererURL extends StandardCsvRenderer[URL]
+
+  implicit object CsvRendererInstant extends CsvRenderer[Instant] {
+    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+    def render(t: Instant, attrs: Map[String, String]): String = t.toString
+  }
+
+//  implicit object CsvRendererTemporal extends CsvRenderer[Temporal] {
+//    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+//    def render(t: Temporal, attrs: Map[String, String]): String = t.toString
+//  }
 }

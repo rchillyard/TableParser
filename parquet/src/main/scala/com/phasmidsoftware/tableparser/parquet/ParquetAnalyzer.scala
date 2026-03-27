@@ -47,7 +47,6 @@ private object ParquetAnalysisHelper {
    * For directories, sums row counts from all part files.
    */
   def analyzeInternal(path: Path): ColumnStatistics = {
-    import java.nio.file.Files
     import org.apache.hadoop.conf.Configuration
     import org.apache.hadoop.fs.{Path => HadoopPath}
     import org.apache.parquet.hadoop.ParquetFileReader
@@ -56,27 +55,8 @@ private object ParquetAnalysisHelper {
 
     val conf = new Configuration()
 
-    val isDataset = Files.isDirectory(path)
-
-    // Determine which file to read for schema
-    val schemaSourcePath = if (isDataset) {
-      val metadataPath = path.resolve("_metadata")
-      if (Files.exists(metadataPath)) {
-        metadataPath
-      } else {
-        // Find first part-*.parquet file
-        Files.list(path)
-                .filter(p => Files.isRegularFile(p) && p.getFileName.toString.startsWith("part-") && p.toString.endsWith(".parquet"))
-                .findFirst()
-                .orElseThrow(() => new ParquetParserException(
-                  s"No _metadata or part-*.parquet files found in directory: $path",
-                  None
-                ))
-      }
-    } else {
-      path
-    }
-
+    // Get schema from appropriate source (metadata or first part file)
+    val schemaSourcePath = ParquetPathResolver.schemaSourcePath(path)
     val hadoopPath = new HadoopPath(schemaSourcePath.toUri)
     val reader = ParquetFileReader.open(HadoopInputFile.fromPath(hadoopPath, conf))
     try {
@@ -84,19 +64,18 @@ private object ParquetAnalysisHelper {
       val footer = reader.getFooter
 
       // For datasets without _metadata, sum all part files
-      val rowCount = if (isDataset && !Files.exists(path.resolve("_metadata"))) {
+      val rowCount = if (ParquetPathResolver.isDataset(path) && !ParquetPathResolver.hasMetadata(path)) {
+        // Sum row counts from all part-*.parquet files
         val rowCounts = scala.collection.mutable.ArrayBuffer[Long]()
-        Files.list(path)
-                .filter(p => Files.isRegularFile(p) && p.getFileName.toString.startsWith("part-") && p.toString.endsWith(".parquet"))
-                .forEach { partFile =>
-                  val partReader = ParquetFileReader.open(HadoopInputFile.fromPath(new HadoopPath(partFile.toUri), conf))
-                  try {
-                    val count = partReader.getFooter.getBlocks.asScala.foldLeft(0L)((acc, b) => acc + b.getRowCount)
-                    rowCounts += count
-                  } finally {
-                    partReader.close()
-                  }
-                }
+        ParquetPathResolver.allPartFiles(path).foreach { partFile =>
+          val partReader = ParquetFileReader.open(HadoopInputFile.fromPath(new HadoopPath(partFile.toUri), conf))
+          try {
+            val count = partReader.getFooter.getBlocks.asScala.foldLeft(0L)((acc, b) => acc + b.getRowCount)
+            rowCounts += count
+          } finally {
+            partReader.close()
+          }
+        }
         rowCounts.sum.toInt
       } else {
         // Single file or _metadata present: use footer blocks from schema source
@@ -242,8 +221,9 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
   /**
    * Compute statistics by materializing a single column from the Parquet file.
    * This is expensive; prefer metadata when available.
+   * Handles both single files and dataset directories.
    *
-   * @param path     the path to the Parquet file.
+   * @param path the path to the Parquet file or dataset directory.
    * @param fieldIdx the field index.
    * @return optional Statistics computed from row values.
    */
@@ -255,8 +235,10 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
     import org.apache.parquet.hadoop.example.GroupReadSupport
 
     val conf = new Configuration()
-    val hadoopPath = new HadoopPath(path.toUri)
 
+    // For datasets, use the directory path directly with ParquetReader
+    // ParquetReader.builder handles datasets automatically
+    val hadoopPath = new HadoopPath(path.toUri)
     val reader: ParquetReader[Group] =
       ParquetReader
               .builder(new GroupReadSupport(), hadoopPath)

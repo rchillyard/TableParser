@@ -145,31 +145,15 @@ abstract class ParquetTableParser[R <: Product : ClassTag]
     )
 
   private def readSchema(path: HadoopPath, conf: Configuration): MessageType = {
-    import java.nio.file.{Files, Paths}
+    import java.nio.file.Paths
 
-    // Convert Hadoop path back to Java Path to check if it's a directory
+    // Convert Hadoop path to Java Path for resolver
     val javaPath = Paths.get(path.toUri)
-    val actualPath = if (Files.isDirectory(javaPath)) {
-      val metadataPath = javaPath.resolve("_metadata")
-      if (Files.exists(metadataPath)) {
-        new HadoopPath(metadataPath.toUri)
-      } else {
-        // No _metadata, find first part file
-        val firstPart = Files.list(javaPath)
-                .filter(p => Files.isRegularFile(p) && p.getFileName.toString.startsWith("part-") && p.toString.endsWith(".parquet"))
-                .findFirst()
-                .orElseThrow(() => new ParquetParserException(
-                  s"No _metadata or part-*.parquet files found in directory: $javaPath",
-                  None
-                ))
-        new HadoopPath(firstPart.toUri)
-      }
-    } else {
-      path
-    }
+    val actualPath = ParquetPathResolver.schemaSourcePath(javaPath)
+    val actualHadoopPath = new HadoopPath(actualPath.toUri)
 
     val reader = org.apache.parquet.hadoop.ParquetFileReader.open(
-      org.apache.parquet.hadoop.util.HadoopInputFile.fromPath(actualPath, conf)
+      org.apache.parquet.hadoop.util.HadoopInputFile.fromPath(actualHadoopPath, conf)
     )
     try reader.getFooter.getFileMetaData.getSchema
     finally reader.close()

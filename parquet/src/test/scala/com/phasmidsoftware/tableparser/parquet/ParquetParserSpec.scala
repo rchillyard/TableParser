@@ -245,4 +245,14 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
     stats.columnMap.get("trip_distance").map(_.clazz) shouldBe Some("Double")
     stats.columnMap.get("passenger_count").map(_.clazz) shouldBe Some("Int")
   }
+
+  behavior of "Parquet to CSV"
+  it should "write taxi data to CSV" in {
+    import YellowTaxiTrip.helper
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val outputPath = Path.of("yellowtaxitrip.csv")
+    for {
+      table <- ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
+    } table.toCSVPath(outputPath)
+  }
 }

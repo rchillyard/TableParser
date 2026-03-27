@@ -337,6 +337,19 @@ trait Table[Row] extends Iterable[Row] {
   }
 
   /**
+   * Converts the table to a CSV file and writes it to the specified output path.
+   *
+   * @param outputPath the path where the CSV file will be written
+   * @param r          an implicit CsvRenderer instance for rendering rows
+   * @param g          an implicit CsvGenerator instance for generating CSV data from rows
+   * @param ca         an implicit CsvAttributes instance specifying CSV configuration attributes
+   * @return Unit
+   * @throws TableException if the CSV file cannot be written to the specified output path
+   */
+  def toCSVPath(outputPath: Path)(implicit r: CsvRenderer[Row], g: CsvGenerator[Row], ca: CsvAttributes): Unit =
+    CsvTableFileRenderer[Row](outputPath).render(this).map(_.close()).getOrElse(throw TableException(s"Failed to write CSV to $outputPath"))
+
+  /**
    * Method to render this Table[T] as a CSV file with (maybe) header.
    *
    * TESTME (probably tested only in it)

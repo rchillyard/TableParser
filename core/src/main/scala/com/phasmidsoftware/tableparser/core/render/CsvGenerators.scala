@@ -2,6 +2,7 @@ package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import java.net.URL
+import java.time.Instant
 import org.joda.time.LocalDate
 import scala.reflect.ClassTag
 
@@ -39,6 +40,8 @@ trait CsvGenerators {
   implicit val optionFloatGenerator: CsvGenerator[Option[Float]] = optionGenerator
   implicit val optionShortGenerator: CsvGenerator[Option[Short]] = optionGenerator
   implicit val optionByteGenerator: CsvGenerator[Option[Byte]] = optionGenerator
+  implicit val optionInstantGenerator: CsvGenerator[Option[Instant]] = optionGenerator
+//  implicit val optionTemporalGenerator: CsvGenerator[Option[Temporal]] = optionGenerator
 
   /**
    * Method to return a CsvGenerator[T] which does not output a column header for at all.
@@ -150,7 +153,7 @@ trait CsvGenerators {
    * @tparam P1 the type of the first field of the Product type T.
    * @tparam P2 the type of the second field of the Product type T.
    * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the third field of the Product type T.
+   * @tparam P4 the type of the fourth field of the Product type T.
    * @tparam T  the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[T].
    */
@@ -493,22 +496,355 @@ trait CsvGenerators {
       ) mkString c.delimiter
     }
   }
+// ── 14 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvGenerator[T] where T is a 14-ary Product and which is based on a function to convert a
+   * (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13,P14) into a T.
+   *
+   * @param construct a function (P1,...,P14) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvGenerator[T].
+   */
+  def generator14[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, P12: CsvGenerator, P13: CsvGenerator, P14: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
+    private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14) = fieldNames
+
+    def toColumnNames(po: Option[String], no: Option[String]): String = {
+      val wo = merge(po, no)
+      Seq(
+        implicitly[CsvGenerator[P1]].toColumnName(wo, p1)
+        , implicitly[CsvGenerator[P2]].toColumnName(wo, p2)
+        , implicitly[CsvGenerator[P3]].toColumnName(wo, p3)
+        , implicitly[CsvGenerator[P4]].toColumnName(wo, p4)
+        , implicitly[CsvGenerator[P5]].toColumnName(wo, p5)
+        , implicitly[CsvGenerator[P6]].toColumnName(wo, p6)
+        , implicitly[CsvGenerator[P7]].toColumnName(wo, p7)
+        , implicitly[CsvGenerator[P8]].toColumnName(wo, p8)
+        , implicitly[CsvGenerator[P9]].toColumnName(wo, p9)
+        , implicitly[CsvGenerator[P10]].toColumnName(wo, p10)
+        , implicitly[CsvGenerator[P11]].toColumnName(wo, p11)
+        , implicitly[CsvGenerator[P12]].toColumnName(wo, p12)
+        , implicitly[CsvGenerator[P13]].toColumnName(wo, p13)
+        , implicitly[CsvGenerator[P14]].toColumnName(wo, p14)
+      ) mkString c.delimiter
+    }
+  }
+
+  // ── 15 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvGenerator[T] where T is a 15-ary Product and which is based on a function to convert a
+   * (P1,...,P15) into a T.
+   *
+   * @param construct a function (P1,...,P15) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvGenerator[T].
+   */
+  def generator15[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, P12: CsvGenerator, P13: CsvGenerator, P14: CsvGenerator, P15: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
+    private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15) = fieldNames
+
+    def toColumnNames(po: Option[String], no: Option[String]): String = {
+      val wo = merge(po, no)
+      Seq(
+        implicitly[CsvGenerator[P1]].toColumnName(wo, p1)
+        , implicitly[CsvGenerator[P2]].toColumnName(wo, p2)
+        , implicitly[CsvGenerator[P3]].toColumnName(wo, p3)
+        , implicitly[CsvGenerator[P4]].toColumnName(wo, p4)
+        , implicitly[CsvGenerator[P5]].toColumnName(wo, p5)
+        , implicitly[CsvGenerator[P6]].toColumnName(wo, p6)
+        , implicitly[CsvGenerator[P7]].toColumnName(wo, p7)
+        , implicitly[CsvGenerator[P8]].toColumnName(wo, p8)
+        , implicitly[CsvGenerator[P9]].toColumnName(wo, p9)
+        , implicitly[CsvGenerator[P10]].toColumnName(wo, p10)
+        , implicitly[CsvGenerator[P11]].toColumnName(wo, p11)
+        , implicitly[CsvGenerator[P12]].toColumnName(wo, p12)
+        , implicitly[CsvGenerator[P13]].toColumnName(wo, p13)
+        , implicitly[CsvGenerator[P14]].toColumnName(wo, p14)
+        , implicitly[CsvGenerator[P15]].toColumnName(wo, p15)
+      ) mkString c.delimiter
+    }
+  }
+
+  // ── 16 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvGenerator[T] where T is a 16-ary Product and which is based on a function to convert a
+   * (P1,...,P16) into a T.
+   *
+   * @param construct a function (P1,...,P16) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvGenerator[T].
+   */
+  def generator16[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, P12: CsvGenerator, P13: CsvGenerator, P14: CsvGenerator, P15: CsvGenerator, P16: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
+    private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16) = fieldNames
+
+    def toColumnNames(po: Option[String], no: Option[String]): String = {
+      val wo = merge(po, no)
+      Seq(
+        implicitly[CsvGenerator[P1]].toColumnName(wo, p1)
+        , implicitly[CsvGenerator[P2]].toColumnName(wo, p2)
+        , implicitly[CsvGenerator[P3]].toColumnName(wo, p3)
+        , implicitly[CsvGenerator[P4]].toColumnName(wo, p4)
+        , implicitly[CsvGenerator[P5]].toColumnName(wo, p5)
+        , implicitly[CsvGenerator[P6]].toColumnName(wo, p6)
+        , implicitly[CsvGenerator[P7]].toColumnName(wo, p7)
+        , implicitly[CsvGenerator[P8]].toColumnName(wo, p8)
+        , implicitly[CsvGenerator[P9]].toColumnName(wo, p9)
+        , implicitly[CsvGenerator[P10]].toColumnName(wo, p10)
+        , implicitly[CsvGenerator[P11]].toColumnName(wo, p11)
+        , implicitly[CsvGenerator[P12]].toColumnName(wo, p12)
+        , implicitly[CsvGenerator[P13]].toColumnName(wo, p13)
+        , implicitly[CsvGenerator[P14]].toColumnName(wo, p14)
+        , implicitly[CsvGenerator[P15]].toColumnName(wo, p15)
+        , implicitly[CsvGenerator[P16]].toColumnName(wo, p16)
+      ) mkString c.delimiter
+    }
+  }
+
+  // ── 17 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvGenerator[T] where T is a 17-ary Product and which is based on a function to convert a
+   * (P1,...,P17) into a T.
+   *
+   * @param construct a function (P1,...,P17) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam P17 the type of the seventeenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvGenerator[T].
+   */
+  def generator17[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, P12: CsvGenerator, P13: CsvGenerator, P14: CsvGenerator, P15: CsvGenerator, P16: CsvGenerator, P17: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
+    private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17) = fieldNames
+
+    def toColumnNames(po: Option[String], no: Option[String]): String = {
+      val wo = merge(po, no)
+      Seq(
+        implicitly[CsvGenerator[P1]].toColumnName(wo, p1)
+        , implicitly[CsvGenerator[P2]].toColumnName(wo, p2)
+        , implicitly[CsvGenerator[P3]].toColumnName(wo, p3)
+        , implicitly[CsvGenerator[P4]].toColumnName(wo, p4)
+        , implicitly[CsvGenerator[P5]].toColumnName(wo, p5)
+        , implicitly[CsvGenerator[P6]].toColumnName(wo, p6)
+        , implicitly[CsvGenerator[P7]].toColumnName(wo, p7)
+        , implicitly[CsvGenerator[P8]].toColumnName(wo, p8)
+        , implicitly[CsvGenerator[P9]].toColumnName(wo, p9)
+        , implicitly[CsvGenerator[P10]].toColumnName(wo, p10)
+        , implicitly[CsvGenerator[P11]].toColumnName(wo, p11)
+        , implicitly[CsvGenerator[P12]].toColumnName(wo, p12)
+        , implicitly[CsvGenerator[P13]].toColumnName(wo, p13)
+        , implicitly[CsvGenerator[P14]].toColumnName(wo, p14)
+        , implicitly[CsvGenerator[P15]].toColumnName(wo, p15)
+        , implicitly[CsvGenerator[P16]].toColumnName(wo, p16)
+        , implicitly[CsvGenerator[P17]].toColumnName(wo, p17)
+      ) mkString c.delimiter
+    }
+  }
+
+  // ── 18 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvGenerator[T] where T is an 18-ary Product and which is based on a function to convert a
+   * (P1,...,P18) into a T.
+   *
+   * @param construct a function (P1,...,P18) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam P17 the type of the seventeenth field of the Product type T.
+   * @tparam P18 the type of the eighteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvGenerator[T].
+   */
+  def generator18[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, P12: CsvGenerator, P13: CsvGenerator, P14: CsvGenerator, P15: CsvGenerator, P16: CsvGenerator, P17: CsvGenerator, P18: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
+    private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18) = fieldNames
+
+    def toColumnNames(po: Option[String], no: Option[String]): String = {
+      val wo = merge(po, no)
+      Seq(
+        implicitly[CsvGenerator[P1]].toColumnName(wo, p1)
+        , implicitly[CsvGenerator[P2]].toColumnName(wo, p2)
+        , implicitly[CsvGenerator[P3]].toColumnName(wo, p3)
+        , implicitly[CsvGenerator[P4]].toColumnName(wo, p4)
+        , implicitly[CsvGenerator[P5]].toColumnName(wo, p5)
+        , implicitly[CsvGenerator[P6]].toColumnName(wo, p6)
+        , implicitly[CsvGenerator[P7]].toColumnName(wo, p7)
+        , implicitly[CsvGenerator[P8]].toColumnName(wo, p8)
+        , implicitly[CsvGenerator[P9]].toColumnName(wo, p9)
+        , implicitly[CsvGenerator[P10]].toColumnName(wo, p10)
+        , implicitly[CsvGenerator[P11]].toColumnName(wo, p11)
+        , implicitly[CsvGenerator[P12]].toColumnName(wo, p12)
+        , implicitly[CsvGenerator[P13]].toColumnName(wo, p13)
+        , implicitly[CsvGenerator[P14]].toColumnName(wo, p14)
+        , implicitly[CsvGenerator[P15]].toColumnName(wo, p15)
+        , implicitly[CsvGenerator[P16]].toColumnName(wo, p16)
+        , implicitly[CsvGenerator[P17]].toColumnName(wo, p17)
+        , implicitly[CsvGenerator[P18]].toColumnName(wo, p18)
+      ) mkString c.delimiter
+    }
+  }
+
+  // ── 19 ──────────────────────────────────────────────────────────────────────
+
+  /**
+   * Method to return a CsvGenerator[T] where T is a 19-ary Product and which is based on a function to convert a
+   * (P1,...,P19) into a T.
+   *
+   * @param construct a function (P1,...,P19) => T, usually the apply method of a case class.
+   *                  The sole purpose of this function is for type inference--it is never actually invoked.
+   * @tparam P1  the type of the first field of the Product type T.
+   * @tparam P2  the type of the second field of the Product type T.
+   * @tparam P3  the type of the third field of the Product type T.
+   * @tparam P4  the type of the fourth field of the Product type T.
+   * @tparam P5  the type of the fifth field of the Product type T.
+   * @tparam P6  the type of the sixth field of the Product type T.
+   * @tparam P7  the type of the seventh field of the Product type T.
+   * @tparam P8  the type of the eighth field of the Product type T.
+   * @tparam P9  the type of the ninth field of the Product type T.
+   * @tparam P10 the type of the tenth field of the Product type T.
+   * @tparam P11 the type of the eleventh field of the Product type T.
+   * @tparam P12 the type of the twelfth field of the Product type T.
+   * @tparam P13 the type of the thirteenth field of the Product type T.
+   * @tparam P14 the type of the fourteenth field of the Product type T.
+   * @tparam P15 the type of the fifteenth field of the Product type T.
+   * @tparam P16 the type of the sixteenth field of the Product type T.
+   * @tparam P17 the type of the seventeenth field of the Product type T.
+   * @tparam P18 the type of the eighteenth field of the Product type T.
+   * @tparam P19 the type of the nineteenth field of the Product type T.
+   * @tparam T   the underlying type of the first parameter of the input to the render method.
+   * @return a CsvGenerator[T].
+   */
+  def generator19[P1: CsvGenerator, P2: CsvGenerator, P3: CsvGenerator, P4: CsvGenerator, P5: CsvGenerator, P6: CsvGenerator, P7: CsvGenerator, P8: CsvGenerator, P9: CsvGenerator, P10: CsvGenerator, P11: CsvGenerator, P12: CsvGenerator, P13: CsvGenerator, P14: CsvGenerator, P15: CsvGenerator, P16: CsvGenerator, P17: CsvGenerator, P18: CsvGenerator, P19: CsvGenerator, T <: Product : ClassTag](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19) => T)(implicit c: CsvAttributes): CsvProductGenerator[T] = new StandardCsvGenerator[T]() with CsvProductGenerator[T] {
+    private val Array(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19) = fieldNames
+
+    def toColumnNames(po: Option[String], no: Option[String]): String = {
+      val wo = merge(po, no)
+      Seq(
+        implicitly[CsvGenerator[P1]].toColumnName(wo, p1)
+        , implicitly[CsvGenerator[P2]].toColumnName(wo, p2)
+        , implicitly[CsvGenerator[P3]].toColumnName(wo, p3)
+        , implicitly[CsvGenerator[P4]].toColumnName(wo, p4)
+        , implicitly[CsvGenerator[P5]].toColumnName(wo, p5)
+        , implicitly[CsvGenerator[P6]].toColumnName(wo, p6)
+        , implicitly[CsvGenerator[P7]].toColumnName(wo, p7)
+        , implicitly[CsvGenerator[P8]].toColumnName(wo, p8)
+        , implicitly[CsvGenerator[P9]].toColumnName(wo, p9)
+        , implicitly[CsvGenerator[P10]].toColumnName(wo, p10)
+        , implicitly[CsvGenerator[P11]].toColumnName(wo, p11)
+        , implicitly[CsvGenerator[P12]].toColumnName(wo, p12)
+        , implicitly[CsvGenerator[P13]].toColumnName(wo, p13)
+        , implicitly[CsvGenerator[P14]].toColumnName(wo, p14)
+        , implicitly[CsvGenerator[P15]].toColumnName(wo, p15)
+        , implicitly[CsvGenerator[P16]].toColumnName(wo, p16)
+        , implicitly[CsvGenerator[P17]].toColumnName(wo, p17)
+        , implicitly[CsvGenerator[P18]].toColumnName(wo, p18)
+        , implicitly[CsvGenerator[P19]].toColumnName(wo, p19)
+      ) mkString c.delimiter
+    }
+  }
 }
 
 object CsvGenerators {
-   object CsvGeneratorBoolean extends StandardCsvGenerator[Boolean]
+  object CsvGeneratorBoolean extends StandardCsvGenerator[Boolean]
 
-   object CsvGeneratorInt extends StandardCsvGenerator[Int]
+  object CsvGeneratorInt extends StandardCsvGenerator[Int]
 
-   object CsvGeneratorBigInt extends StandardCsvGenerator[BigInt]
+  object CsvGeneratorBigInt extends StandardCsvGenerator[BigInt]
 
-   object CsvGeneratorLong extends StandardCsvGenerator[Long]
+  object CsvGeneratorLong extends StandardCsvGenerator[Long]
 
-   object CsvGeneratorDouble extends StandardCsvGenerator[Double]
+  object CsvGeneratorDouble extends StandardCsvGenerator[Double]
 
-   object CsvGeneratorString extends StandardCsvGenerator[String]
+  object CsvGeneratorFloat extends StandardCsvGenerator[Float]
 
-   object CsvGeneratorURL extends StandardCsvGenerator[URL]
+  object CsvGeneratorShort extends StandardCsvGenerator[Short]
+
+  object CsvGeneratorByte extends StandardCsvGenerator[Byte]
+
+  object CsvGeneratorString extends StandardCsvGenerator[String]
+
+  object CsvGeneratorURL extends StandardCsvGenerator[URL]
 
   object CsvGeneratorLocalDate extends StandardCsvGenerator[LocalDate]
+
+  object CsvGeneratorInstant extends StandardCsvGenerator[Instant]
+
+//  object CsvGeneratorTemporal extends StandardCsvGenerator[Temporal]
 }
