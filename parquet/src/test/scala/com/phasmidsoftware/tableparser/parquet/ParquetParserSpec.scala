@@ -108,12 +108,63 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
 
   // ── Analysis ──────────────────────────────────────────────────────────────
 
-  it should "support Analysis on a Parquet-sourced table" in {
-    pending
-    import YellowTaxiTrip.helper
-    val table = ParquetParser.parse[YellowTaxiTrip](samplePath).get
-    // Analysis should run without throwing
-//    val analysis = Analysis(table.asInstanceOf[Table[YellowTaxiTrip]])
-//    analysis should not be null
+  behavior of "Analysis"
+
+// ── Analysis ──────────────────────────────────────────────────────────
+
+  it should "analyze a Parquet file and extract schema without materializing rows" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val stats = Analysis.forParquet[YellowTaxiTrip](samplePath)
+    stats.rows shouldBe 1000
+    stats.columns shouldBe 19
+  }
+
+  it should "infer column types from Parquet schema" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val stats = Analysis.forParquet[YellowTaxiTrip](samplePath)
+    // Spot-check a few columns based on TLC schema
+    stats.columnMap.get("trip_distance").map(_.clazz) shouldBe Some("Double")
+    stats.columnMap.get("fare_amount").map(_.clazz) shouldBe Some("Double")
+    stats.columnMap.get("passenger_count").map(_.clazz) shouldBe Some("Int")
+    stats.columnMap.get("store_and_fwd_flag").map(_.clazz) shouldBe Some("String")
+  }
+
+  it should "infer optionality from Parquet schema (OPTIONAL vs REQUIRED)" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val stats = Analysis.forParquet[YellowTaxiTrip](samplePath)
+    // TLC schema has all columns as OPTIONAL
+    stats.columnMap.values.forall(_.optional) shouldBe true
+  }
+
+  it should "leave statistics as None (lazy) for Parquet columns in schema analysis" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val stats = Analysis.forParquet[YellowTaxiTrip](samplePath)
+    // All columns should have maybeStatistics = None (deferred)
+    stats.columnMap.values.forall(_.maybeStatistics.isEmpty) shouldBe true
+  }
+
+  it should "compute statistics for a single numeric column on demand" in {
+    import com.phasmidsoftware.tableparser.core.table.Column
+    val tripDistStats = Column.statisticsFrom(samplePath, "trip_distance")
+    tripDistStats shouldBe a[Some[_]]
+    val col = tripDistStats.get
+    col.clazz shouldBe "Double"
+    col.optional shouldBe true
+    col.maybeStatistics shouldBe a[Some[_]]
+    val stats = col.maybeStatistics.get
+    stats.min should be >= 0.0
+    stats.max should be >= stats.min
+  }
+
+  it should "return None for non-numeric columns when computing statistics" in {
+    import com.phasmidsoftware.tableparser.core.table.Column
+    val storeAndFwdStats = Column.statisticsFrom(samplePath, "store_and_fwd_flag")
+    storeAndFwdStats shouldBe None
+  }
+
+  it should "return None for non-existent columns when computing statistics" in {
+    import com.phasmidsoftware.tableparser.core.table.Column
+    val nonExistentStats = Column.statisticsFrom(samplePath, "nonexistent_column")
+    nonExistentStats shouldBe None
   }
 }

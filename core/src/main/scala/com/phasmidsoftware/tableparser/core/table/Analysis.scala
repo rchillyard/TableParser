@@ -47,10 +47,10 @@ object ColumnStatistics {
 }
 
 /**
- * Sealed trait for polymorphic analysis of table sources.
+ * Unsealed trait for polymorphic analysis of table sources.
  * Implement this trait to add support for new sources (CSV, Parquet, etc.).
  */
-sealed trait Analyzer {
+trait Analyzer {
   /**
    * Compute statistics for the source.
    *
@@ -76,18 +76,19 @@ case class CsvAnalyzer(table: RawTable) extends Analyzer {
 }
 
 /**
- * Analyzer for Parquet sources.
- * Reads schema and metadata from the Parquet file without materializing all rows.
- *
- * @param path the path to a .parquet file or dataset directory.
- * @tparam Row the target case class type (not used for schema extraction, but kept for consistency).
+ * Provider trait for computing column statistics from external sources (e.g., Parquet files).
+ * Implement this in modules that add support for new sources.
  */
-case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer {
-  def analyze(): ColumnStatistics = {
-    // TODO: Implement Parquet-specific analysis.
-    // For now, placeholder. Will read schema and extract metadata.
-    ???
-  }
+trait ColumnStatisticsProvider {
+  /**
+   * Compute statistics for a single numeric column in a source file.
+   * Returns None if the column is non-numeric or does not exist.
+   *
+   * @param path       the path to the source file.
+   * @param columnName the name of the column to analyze.
+   * @return an optional Column with statistics computed.
+   */
+  def computeStatistics(path: Path, columnName: String): Option[Column]
 }
 
 /**
@@ -102,7 +103,7 @@ case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer {
  *   implicit val parser: RawTableParser = RawTableParser()
  *   val stats: ColumnStatistics = Analysis.forCsv(Path.of("data.csv"))
  *
- *   // Analyze a Parquet file
+ *   // Analyze a Parquet file (requires parquet module in scope)
  *   val stats: ColumnStatistics = Analysis.forParquet[YellowTaxiTrip](Path.of("data.parquet"))
  * }}}
  */
@@ -136,15 +137,16 @@ object Analysis {
 
   /**
    * Analyze a Parquet file by Path.
-   * Reads schema and metadata from the Parquet file.
-   * Full row materialization is deferred until/unless needed.
+   * Requires the parquet module to be in scope: `import com.phasmidsoftware.tableparser.parquet._`
+   * This provides the implicit analyzer factory needed to construct a ParquetAnalyzer.
    *
    * @param path the path to a .parquet file or dataset directory.
    * @tparam Row the target case class type.
+   * @param analyzerFactory implicit factory (Path => Analyzer) provided by parquet module.
    * @return a ColumnStatistics object.
    */
-  def forParquet[Row <: Product](path: Path): ColumnStatistics =
-    ParquetAnalyzer[Row](path).analyze()
+  def forParquet[Row <: Product](path: Path)(implicit analyzerFactory: Path => Analyzer): ColumnStatistics =
+    analyzerFactory(path).analyze()
 }
 
 /**
@@ -207,6 +209,18 @@ object Column {
     lazy val co2 = for (xs <- sequence(for (w <- ws) yield w.toDoubleOption); ys = xs) yield Column("Double", nullable, Statistics.make(ys))
     co1 orElse co2 orElse Some(Column("String", nullable, None))
   }
+
+  /**
+   * Compute statistics for a single numeric column from an external source via a provider.
+   * The provider (typically from the parquet module) is passed implicitly.
+   *
+   * @param path       the path to the source file.
+   * @param columnName the name of the column to analyze.
+   * @param provider   the ColumnStatisticsProvider, usually implicit.
+   * @return an optional Column with statistics computed, or None if column is non-numeric or absent.
+   */
+  def statisticsFrom(path: Path, columnName: String)(implicit provider: ColumnStatisticsProvider): Option[Column] =
+    provider.computeStatistics(path, columnName)
 }
 
 /**
