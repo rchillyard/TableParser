@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "1.2.6"
+ThisBuild / version := "1.3.0"
 ThisBuild / scalaVersion := "2.13.17"
 ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation")
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "17")
@@ -54,6 +54,26 @@ lazy val cats = project.dependsOn(core).settings(
   )
 )
 
+lazy val parquet = project.dependsOn(core).settings(
+name := "tableparser-parquet",
+  libraryDependencies ++= Seq(
+    "org.apache.parquet" % "parquet-column" % "1.15.2",
+    "org.apache.parquet" % "parquet-hadoop" % "1.15.2",
+    "org.apache.hadoop"  % "hadoop-common"  % "3.4.1" % "provided",
+    "org.apache.hadoop"  % "hadoop-mapreduce-client-core" % "3.4.1" % Test,
+    "org.scalatest"     %% "scalatest"      % scalaTestVersion % Test
+  )
+)
+
+lazy val spark = project.dependsOn(core).settings(
+  name := "tableparser-spark",
+  libraryDependencies ++= Seq(
+    "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
+    "org.slf4j" % "slf4j-simple" % "2.0.17" % Test,
+    "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+  )
+)
+
 lazy val zio = project.dependsOn(core).settings(
   name := "tableparser-zio",
   libraryDependencies ++= Seq(
@@ -68,17 +88,8 @@ lazy val zio = project.dependsOn(core).settings(
   )
 )
 
-lazy val spark = project.dependsOn(core).settings(
-  name := "tableparser-spark",
-  libraryDependencies ++= Seq(
-    "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-    "org.slf4j" % "slf4j-simple" % "2.0.17" % Test,
-    "org.scalatest" %% "scalatest" % scalaTestVersion % Test
-  )
-)
-
 lazy val root = (project in file("."))
-        .aggregate(core, cats, zio, spark)
+        .aggregate(core, cats, parquet, spark, zio)
         .settings(
           name := "TableParser",
           publish / skip := true

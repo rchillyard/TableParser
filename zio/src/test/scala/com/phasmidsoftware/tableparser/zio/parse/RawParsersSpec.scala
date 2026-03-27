@@ -31,6 +31,7 @@ class RawParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
         triedString match {
           case Success(s) if s == "Doug Walker" => println(s"success: $s"); true
           case Failure(e) => fail(s"failure: $e")
+          case _ => fail("unexpected")
         }
     }
   }

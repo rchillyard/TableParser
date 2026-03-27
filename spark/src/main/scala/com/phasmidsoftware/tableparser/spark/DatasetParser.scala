@@ -97,7 +97,7 @@ object DatasetParser extends App {
     }
   }
 
-  val spark: SparkSession = SparkSession.builder.appName("DatasetParser").master("local[*]").getOrCreate()
+  val spark: SparkSession = SparkSession.builder().appName("DatasetParser").master("local[*]").getOrCreate()
 
   doMain(spark)
 }

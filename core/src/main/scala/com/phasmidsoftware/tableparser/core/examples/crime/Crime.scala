@@ -7,7 +7,7 @@ import scala.util.Try
 
 /**
  * This example of table parsing is based on the Kaggle data set:
- * [[https://www.kaggle.com/datasets/marshuu/crimes-in-uk-2023?select=2023-01-metropolitan-street.csv]]
+ * [[https://www.kaggle.com/datasets/marshuu/crimes-in-uk-2023?select=2023-01-metropolitan-street.csv Metropolitan Crime Data]]
  *
  * The file under resources is an edited version of the Metropolitan Crime Statistics 2023-01 (only the first 5,000 rows)
  *
