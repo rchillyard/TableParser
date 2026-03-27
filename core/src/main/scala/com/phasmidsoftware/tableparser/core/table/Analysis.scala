@@ -1,28 +1,29 @@
 package com.phasmidsoftware.tableparser.core.table
 
 import com.phasmidsoftware.tableparser.core.examples.crime.Crime
-import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
+import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser, TableParserException}
 import com.phasmidsoftware.tableparser.core.util.FP
 import com.phasmidsoftware.tableparser.core.util.FP.sequence
 import java.net.URL
+import java.nio.file.Path
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 /**
- * Class to represent the analysis of a table.
+ * Case class to represent the analysis of a table.
  *
  * @param rows      the number of rows.
  * @param columns   the number of columns.
  * @param columnMap a map of column names to Column objects (the statistics of a column).
  */
-case class Analysis(rows: Int, columns: Int, columnMap: Map[String, Column]) {
+case class ColumnStatistics(rows: Int, columns: Int, columnMap: Map[String, Column]) {
   /**
-   * Returns a string representation of the `Analysis` object, including its row count,
+   * Returns a string representation of the `ColumnStatistics` object, including its row count,
    * column count, and a formatted view of the column map.
    *
-   * @return a string in the format "Analysis: rows: <row count>, columns: <column count>, <column map details>".
+   * @return a string in the format "ColumnStatistics: rows: <row count>, columns: <column count>, <column map details>".
    */
-  override def toString: String = s"Analysis: rows: $rows, columns: $columns, $showColumnMap"
+  override def toString: String = s"ColumnStatistics: rows: $rows, columns: $columns, $showColumnMap"
 
   private def showColumnMap: String = {
     val sb = new StringBuilder("\ncolumns:\n")
@@ -32,34 +33,118 @@ case class Analysis(rows: Int, columns: Int, columnMap: Map[String, Column]) {
 }
 
 /**
- * The `Analysis` object provides functionality to analyze a given raw table and produce an `Analysis`
- * instance, representing statistical insights such as the number of rows, number of columns, and detailed
- * metadata for each column (if analysable).
+ * Companion object for ColumnStatistics.
+ * Provides a deprecated alias for backward compatibility.
+ */
+object ColumnStatistics {
+  /**
+   * Deprecated: use ColumnStatistics directly.
+   * This exists only for source compatibility with code that was using Analysis(table).
+   */
+  @deprecated("Use ColumnStatistics or Analysis.forCsv directly", "1.4.0")
+  def apply(rows: Int, columns: Int, columnMap: Map[String, Column]): ColumnStatistics =
+    new ColumnStatistics(rows, columns, columnMap)
+}
+
+/**
+ * Sealed trait for polymorphic analysis of table sources.
+ * Implement this trait to add support for new sources (CSV, Parquet, etc.).
+ */
+sealed trait Analyzer {
+  /**
+   * Compute statistics for the source.
+   *
+   * @return a ColumnStatistics object.
+   */
+  def analyze(): ColumnStatistics
+}
+
+/**
+ * Analyzer for CSV sources.
+ * Operates on an in-memory RawTable and walks rows to compute statistics.
+ *
+ * @param table the raw table to analyze.
+ */
+case class CsvAnalyzer(table: RawTable) extends Analyzer {
+  def analyze(): ColumnStatistics = {
+    def createColumnMap(names: Seq[String]): Seq[(String, Column)] =
+      for (name <- names; column <- Column.make(table, name)) yield name -> column
+
+    val columnMap = for (ws <- table.maybeColumnNames.toSeq; z <- createColumnMap(ws)) yield z
+    ColumnStatistics(table.size, table.head.ws.size, columnMap.toMap)
+  }
+}
+
+/**
+ * Analyzer for Parquet sources.
+ * Reads schema and metadata from the Parquet file without materializing all rows.
+ *
+ * @param path the path to a .parquet file or dataset directory.
+ * @tparam Row the target case class type (not used for schema extraction, but kept for consistency).
+ */
+case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer {
+  def analyze(): ColumnStatistics = {
+    // TODO: Implement Parquet-specific analysis.
+    // For now, placeholder. Will read schema and extract metadata.
+    ???
+  }
+}
+
+/**
+ * The `Analysis` object provides factory methods to analyze tables from various sources.
+ *
+ * Example usage:
+ * {{{
+ *   // Analyze a CSV-sourced RawTable
+ *   val stats: ColumnStatistics = Analysis(rawTable)
+ *
+ *   // Analyze a CSV file by Path
+ *   implicit val parser: RawTableParser = RawTableParser()
+ *   val stats: ColumnStatistics = Analysis.forCsv(Path.of("data.csv"))
+ *
+ *   // Analyze a Parquet file
+ *   val stats: ColumnStatistics = Analysis.forParquet[YellowTaxiTrip](Path.of("data.parquet"))
+ * }}}
  */
 object Analysis {
 
   /**
-   * Applies analysis on the given raw table to generate an Analysis object. The analysis includes deriving
-   * metrics such as the number of rows, columns, and a column map that represents the relationship between
-   * column names and their respective analyzed `Column` objects.
+   * Analyze a CSV-sourced RawTable.
+   * This is the primary method for analyzing in-memory tables.
    *
-   * @param table the raw table to be analyzed, providing data and metadata required for column insights.
-   * @return an Analysis object containing rows, columns, and a map of column names to corresponding `Column` objects.
+   * @param table the raw table to be analyzed.
+   * @return a ColumnStatistics object containing rows, columns, and column-level statistics.
    */
-  def apply(table: RawTable): Analysis = {
-    /**
-     * Method to create a column map, i.e. a sequence of String->Column pairs.
-     *
-     * Complexity of this statement is W * X where W is the number of columns and X is the time to make a Column object.
-     *
-     * @param names a sequence of column names.
-     * @return a sequence of String,Column tuples.
-     */
-    def createColumnMap(names: Seq[String]): Seq[(String, Column)] = for (name <- names; column <- Column.make(table, name)) yield name -> column
+  def apply(table: RawTable): ColumnStatistics =
+    CsvAnalyzer(table).analyze()
 
-    val columnMap = for (ws <- table.maybeColumnNames.toSeq; z <- createColumnMap(ws)) yield z
-    new Analysis(table.size, table.head.ws.size, columnMap.toMap)
-  }
+  /**
+   * Analyze a CSV file by Path.
+   * Parses the file using the provided RawTableParser, then analyzes the result.
+   *
+   * @param path        the path to a CSV file.
+   * @param tableParser the RawTableParser to use. Defaults to RawTableParser().
+   * @return a ColumnStatistics object.
+   */
+  def forCsv(path: Path)(implicit tableParser: RawTableParser = RawTableParser()): ColumnStatistics =
+    tableParser.parse(Try(Source.fromFile(path.toFile))) match {
+      case Success(rawTable: RawTable) =>
+        CsvAnalyzer(rawTable).analyze()
+      case Failure(ex) =>
+        throw new TableParserException(s"Failed to parse CSV file at $path", Some(ex))
+    }
+
+  /**
+   * Analyze a Parquet file by Path.
+   * Reads schema and metadata from the Parquet file.
+   * Full row materialization is deferred until/unless needed.
+   *
+   * @param path the path to a .parquet file or dataset directory.
+   * @tparam Row the target case class type.
+   * @return a ColumnStatistics object.
+   */
+  def forParquet[Row <: Product](path: Path): ColumnStatistics =
+    ParquetAnalyzer[Row](path).analyze()
 }
 
 /**
@@ -202,7 +287,6 @@ object Statistics {
  * resource file path before running the application.
  */
 object Main extends App {
-//  doMain(FP.resource[Crime]("2023-01-metropolitan-street.csv"))
   doMain(FP.resource[Crime]("2023-01-metropolitan-street-sample.csv"))
 
   /**

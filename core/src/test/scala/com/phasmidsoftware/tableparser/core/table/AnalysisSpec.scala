@@ -21,7 +21,7 @@ class AnalysisSpec extends AnyFlatSpec with should.Matchers {
   }
 
   it should "apply 2" in {
-    val analysis = Analysis(2, 2, columnMap)
+    val analysis = ColumnStatistics(2, 2, columnMap)
     analysis.rows shouldBe 2
     analysis.columns shouldBe 2
   }
