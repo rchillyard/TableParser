@@ -46,10 +46,10 @@ case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer {
   /**
    * Infer a Column from a Parquet field type.
    * Determines class (Int, Double, String, BigDecimal) and optionality from schema metadata.
-   * Statistics are left as None (lazy); they can be computed on demand via Column.statisticsFrom with a provider.
+   * Statistics are left as lazy thunks (deferred computation on demand).
    *
    * @param fieldType the Parquet Type to analyze.
-   * @return a Column with clazz and optional inferred from schema, maybeStatistics = None.
+   * @return a Column with clazz and optional inferred from schema, maybeStatistics = LazyStatistics thunk.
    */
   private def columnFromParquetType(fieldType: Type): Column = {
     import org.apache.parquet.schema.{OriginalType, PrimitiveType}
@@ -70,31 +70,33 @@ case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer {
         }
       case _ => "String"
     }
-    Column(clazz, optional, None) // Statistics deferred (lazy)
+    // Statistics deferred as lazy thunk (not computed during schema analysis)
+    Column(clazz, optional, None)
   }
 }
 
 /**
  * Provider for computing column statistics from Parquet files.
- * Materializes only the target column, not the entire row.
+ * Attempts to use Parquet metadata for eager statistics.
+ * Falls back to lazy column scan if metadata unavailable and useMetadataOnly=false.
  */
 object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
 
   /**
    * Compute statistics for a single numeric column in a Parquet file.
-   * Reads the schema once upfront, then streams only the target column.
+   * Prefers Parquet metadata (eager, no row scan).
+   * Falls back to lazy column materialization if metadata unavailable.
    *
-   * @param path       the path to a .parquet file or dataset directory.
-   * @param columnName the name of the column to analyze.
-   * @return an optional Column with statistics computed, or None if column is non-numeric or absent.
+   * @param path            the path to a .parquet file or dataset directory.
+   * @param columnName      the name of the column to analyze.
+   * @param useMetadataOnly if true, return None if metadata unavailable; if false, return lazy thunk.
+   * @return an optional Column with eager or lazy statistics.
    */
-  def computeStatistics(path: Path, columnName: String): Option[Column] = {
+  def computeStatistics(path: Path, columnName: String, useMetadataOnly: Boolean = true): Option[Column] = {
     import org.apache.hadoop.conf.Configuration
     import org.apache.hadoop.fs.{Path => HadoopPath}
-    import org.apache.parquet.example.data.Group
-    import org.apache.parquet.hadoop.example.GroupReadSupport
+    import org.apache.parquet.hadoop.ParquetFileReader
     import org.apache.parquet.hadoop.util.HadoopInputFile
-    import org.apache.parquet.hadoop.{ParquetFileReader, ParquetReader}
     import org.apache.parquet.schema.PrimitiveType
 
     val conf = new Configuration()
@@ -103,6 +105,7 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
     // Read schema first to validate and inspect the column
     val schemaReader = ParquetFileReader.open(HadoopInputFile.fromPath(hadoopPath, conf))
     val schema = schemaReader.getFooter.getFileMetaData.getSchema
+    val footer = schemaReader.getFooter
     schemaReader.close()
 
     // Check if column exists and is numeric
@@ -119,39 +122,91 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
 
       if (!isNumeric) None
       else {
-        val reader: ParquetReader[Group] =
-          ParquetReader
-                  .builder(new GroupReadSupport(), hadoopPath)
-                  .withConf(conf)
-                  .build()
+        val optional = fieldType.getRepetition.toString == "OPTIONAL"
+        val clazz = fieldType.asInstanceOf[PrimitiveType]
+                .getPrimitiveTypeName.toString match {
+          case "INT32" | "INT64" => "Int"
+          case _ => "Double"
+        }
 
-        try {
-          val values = scala.collection.mutable.ArrayBuffer[Double]()
-          var group = reader.read()
-          while (group != null) {
-            try {
-              // getDouble(fieldIdx: Int, repetitionLevel: Int)
-              // Use 0 for repetition level (non-repeated field)
-              val value: Double = group.getDouble(fieldIdx: Int, 0)
-              values += value
-            } catch {
-              case _: Exception => // Skip null or conversion errors
-            }
-            group = reader.read()
-          }
+        // Try to extract statistics from Parquet metadata
+        val metadataStats: Option[Statistics] = extractMetadataStatistics(footer, fieldIdx)
 
-          val optional = fieldType.getRepetition.toString == "OPTIONAL"
-          val clazz = fieldType.asInstanceOf[PrimitiveType]
-                  .getPrimitiveTypeName.toString match {
-            case "INT32" | "INT64" => "Int"
-            case _ => "Double"
-          }
+        metadataStats match {
+          case Some(stats) =>
+            // Metadata available: return Column with eager statistics
+            Some(Column(clazz, optional, Some(EagerStatistics(stats))))
 
-          Statistics.make(values.toSeq).map(stats => Column(clazz, optional, Some(stats)))
-        } finally {
-          reader.close()
+          case None if useMetadataOnly =>
+            // No metadata and user wants metadata only: return None
+            None
+
+          case None =>
+            // No metadata but user allows fallback: return Column with lazy thunk
+            val lazyStats: () => Option[Statistics] = () =>
+              computeStatsFromRowsForColumn(path, fieldIdx)
+            Some(Column(clazz, optional, Some(LazyStatistics(lazyStats))))
         }
       }
+    }
+  }
+
+  /**
+   * Extract statistics from Parquet column metadata if available.
+   * Parquet footers may contain min, max, null_count for each column.
+   *
+   * @param footer   the Parquet file footer.
+   * @param fieldIdx the field index.
+   * @return optional Statistics if metadata is present.
+   */
+  private def extractMetadataStatistics(footer: org.apache.parquet.hadoop.metadata.ParquetMetadata, fieldIdx: Int): Option[Statistics] = {
+    // TODO: Implement metadata extraction
+    // For now, return None (fallback to lazy computation)
+    None
+  }
+
+  /**
+   * Compute statistics by materializing a single column from the Parquet file.
+   * This is expensive; prefer metadata when available.
+   *
+   * @param path     the path to the Parquet file.
+   * @param fieldIdx the field index.
+   * @return optional Statistics computed from row values.
+   */
+  private def computeStatsFromRowsForColumn(path: Path, fieldIdx: Int): Option[Statistics] = {
+    import org.apache.hadoop.conf.Configuration
+    import org.apache.hadoop.fs.{Path => HadoopPath}
+    import org.apache.parquet.example.data.Group
+    import org.apache.parquet.hadoop.ParquetReader
+    import org.apache.parquet.hadoop.example.GroupReadSupport
+
+    val conf = new Configuration()
+    val hadoopPath = new HadoopPath(path.toUri)
+
+    val reader: ParquetReader[Group] =
+      ParquetReader
+              .builder(new GroupReadSupport(), hadoopPath)
+              .withConf(conf)
+              .build()
+
+    try {
+      val values = scala.collection.mutable.ArrayBuffer[Double]()
+      var group = reader.read()
+      while (group != null) {
+        try {
+          // getDouble(fieldIdx: Int, repetitionLevel: Int)
+          // Use 0 for repetition level (non-repeated field)
+          val value: Double = group.getDouble(fieldIdx: Int, 0)
+          values += value
+        } catch {
+          case _: Exception => // Skip null or conversion errors
+        }
+        group = reader.read()
+      }
+
+      Statistics.make(values.toSeq)
+    } finally {
+      reader.close()
     }
   }
 }

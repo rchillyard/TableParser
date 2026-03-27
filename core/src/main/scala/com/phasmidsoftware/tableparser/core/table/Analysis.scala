@@ -83,12 +83,14 @@ trait ColumnStatisticsProvider {
   /**
    * Compute statistics for a single numeric column in a source file.
    * Returns None if the column is non-numeric or does not exist.
+   * For sources with metadata, may return eager or lazy statistics.
    *
-   * @param path       the path to the source file.
-   * @param columnName the name of the column to analyze.
-   * @return an optional Column with statistics computed.
+   * @param path            the path to the source file.
+   * @param columnName      the name of the column to analyze.
+   * @param useMetadataOnly if true, only use metadata (no row scan); if false, allow lazy fallback.
+   * @return an optional Column with statistics (eager or lazy).
    */
-  def computeStatistics(path: Path, columnName: String): Option[Column]
+  def computeStatistics(path: Path, columnName: String, useMetadataOnly: Boolean = true): Option[Column]
 }
 
 /**
@@ -154,16 +156,16 @@ object Analysis {
  *
  * @param clazz           a String denoting which class (maybe which variant of class) this column may be represented as.
  * @param optional        if true then this column contains nulls (empty strings).
- * @param maybeStatistics an optional set of statistics but only if the column represents numbers.
+ * @param maybeStatistics an optional MaybeStatistics (eager or lazy); None if statistics are unavailable or deferred.
  */
-case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[Statistics]) {
+case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[MaybeStatistics]) {
   /**
    * Converts the current `Column` instance into a descriptive string representation.
    *
    * The output string is generated based on the following rules:
    * - If the `optional` field is true, the string starts with "optional ".
    * - Appends the `clazz` value.
-   * - If `maybeStatistics` contains a value, appends the string representation of the statistics.
+   * - If `maybeStatistics` contains a value, forces evaluation and appends the statistics.
    *
    * @return a string representation of the `Column` instance. This includes the class type, optionality,
    *         and any associated statistics (if present).
@@ -173,7 +175,12 @@ case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[Stat
     if (optional) sb.append("optional ")
     sb.append(clazz)
     maybeStatistics match {
-      case Some(s) => sb.append(s" $s")
+      case Some(ms) =>
+        ms.getStatistics() match {
+          case Some(s) =>
+            sb.append(s" $s")
+          case None =>
+        }
       case _ =>
     }
     sb.toString()
@@ -196,6 +203,7 @@ object Column {
   /**
    * Method to make a Column, the analysis of a column of a (raw) Table.
    * If the column is numeric (can be parsed as integers or doubles), then we can create a result, otherwise not.
+   * Statistics are computed eagerly (CSV case).
    *
    * Complexity: O(N) where N is the length of xs.
    *
@@ -205,22 +213,61 @@ object Column {
   def make(xs: Seq[String]): Option[Column] = {
     val (ws, nulls) = xs.partition(_.nonEmpty)
     val nullable: Boolean = nulls.nonEmpty
-    val co1 = for (xs <- sequence(for (w <- ws) yield w.toIntOption); ys = xs map (_.toDouble)) yield Column("Int", nullable, Statistics.make(ys))
-    lazy val co2 = for (xs <- sequence(for (w <- ws) yield w.toDoubleOption); ys = xs) yield Column("Double", nullable, Statistics.make(ys))
+    val co1 = for (xs <- sequence(for (w <- ws) yield w.toIntOption); ys = xs map (_.toDouble)) yield
+      Column("Int", nullable, Statistics.make(ys).map(EagerStatistics(_)))
+    lazy val co2 = for (xs <- sequence(for (w <- ws) yield w.toDoubleOption); ys = xs) yield
+      Column("Double", nullable, Statistics.make(ys).map(EagerStatistics(_)))
     co1 orElse co2 orElse Some(Column("String", nullable, None))
   }
 
   /**
    * Compute statistics for a single numeric column from an external source via a provider.
    * The provider (typically from the parquet module) is passed implicitly.
+   * Optionally allows lazy evaluation instead of eager metadata-only lookup.
    *
-   * @param path       the path to the source file.
-   * @param columnName the name of the column to analyze.
-   * @param provider   the ColumnStatisticsProvider, usually implicit.
-   * @return an optional Column with statistics computed, or None if column is non-numeric or absent.
+   * @param path            the path to the source file.
+   * @param columnName      the name of the column to analyze.
+   * @param useMetadataOnly if true, only use metadata (return None if unavailable);
+   *                        if false, allow lazy fallback for expensive computation.
+   * @param provider        the ColumnStatisticsProvider, usually implicit.
+   * @return an optional Column with statistics computed (eager or lazy).
    */
-  def statisticsFrom(path: Path, columnName: String)(implicit provider: ColumnStatisticsProvider): Option[Column] =
-    provider.computeStatistics(path, columnName)
+  def statisticsFrom(path: Path, columnName: String, useMetadataOnly: Boolean = true)(implicit provider: ColumnStatisticsProvider): Option[Column] =
+    provider.computeStatistics(path, columnName, useMetadataOnly)
+}
+
+/**
+ * Sealed trait representing statistics that may be eager or lazy.
+ * Eager statistics are computed upfront (from Parquet metadata).
+ * Lazy statistics are deferred as a thunk (computed on demand).
+ */
+sealed trait MaybeStatistics {
+  /**
+   * Force evaluation of statistics.
+   * If eager, returns immediately. If lazy, executes the thunk.
+   *
+   * @return an optional Statistics (None if computation fails or thunk returns None).
+   */
+  def getStatistics(): Option[Statistics]
+}
+
+/**
+ * Eager statistics, computed upfront (typically from Parquet metadata).
+ *
+ * @param stats the computed Statistics.
+ */
+case class EagerStatistics(stats: Statistics) extends MaybeStatistics {
+  def getStatistics(): Option[Statistics] = Some(stats)
+}
+
+/**
+ * Lazy statistics, deferred as a thunk for later evaluation.
+ * Useful for expensive computations (e.g., column scan) that you may not need.
+ *
+ * @param compute a function that computes the Statistics when called.
+ */
+case class LazyStatistics(compute: () => Option[Statistics]) extends MaybeStatistics {
+  def getStatistics(): Option[Statistics] = compute()
 }
 
 /**

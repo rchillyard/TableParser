@@ -52,8 +52,12 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
         val maybeColumn: Option[Column] = sequence(z) flatMap (ws => make(ws))
         maybeColumn should matchPattern { case Some(Column(_, _, Some(_))) => }
         maybeColumn match {
-          case Some(Column("Int", false, Some(statistics))) =>
-            statistics.mu shouldBe 2.785 +- 0.005
+          case Some(Column("Int", false, Some(maybeStatistics))) =>
+            maybeStatistics.getStatistics() match {
+              case Some(statistics) =>
+                statistics.mu shouldBe 2.785 +- 0.005
+              case None => fail("Statistics should be available")
+            }
           case x => fail(x.toString)
         }
         true

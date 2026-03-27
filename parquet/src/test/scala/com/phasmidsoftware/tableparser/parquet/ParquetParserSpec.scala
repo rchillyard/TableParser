@@ -136,24 +136,32 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
     stats.columnMap.values.forall(_.optional) shouldBe true
   }
 
-  it should "leave statistics as None (lazy) for Parquet columns in schema analysis" in {
+  it should "leave statistics deferred (lazy) in Parquet schema analysis" in {
     import com.phasmidsoftware.tableparser.core.table.Analysis
     val stats = Analysis.forParquet[YellowTaxiTrip](samplePath)
-    // All columns should have maybeStatistics = None (deferred)
+    // All columns should have maybeStatistics = None (deferred, not computed during schema read)
     stats.columnMap.values.forall(_.maybeStatistics.isEmpty) shouldBe true
   }
 
   it should "compute statistics for a single numeric column on demand" in {
-    import com.phasmidsoftware.tableparser.core.table.Column
-    val tripDistStats = Column.statisticsFrom(samplePath, "trip_distance")
+    import com.phasmidsoftware.tableparser.core.table.{Column, EagerStatistics, LazyStatistics}
+    val tripDistStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = false)
     tripDistStats shouldBe a[Some[_]]
     val col = tripDistStats.get
     col.clazz shouldBe "Double"
     col.optional shouldBe true
     col.maybeStatistics shouldBe a[Some[_]]
-    val stats = col.maybeStatistics.get
-    stats.min should be >= 0.0
-    stats.max should be >= stats.min
+    val maybeStats = col.maybeStatistics
+    maybeStats match {
+      case Some(LazyStatistics(statsThunk)) =>
+        val stats = statsThunk().get
+        stats.min should be >= 0.0
+        stats.max should be >= stats.min
+      case Some(EagerStatistics(stats)) =>
+        stats.min should be >= 0.0
+        stats.max should be >= stats.min
+      case None => fail("Expected statistics for numeric column")
+    }
   }
 
   it should "return None for non-numeric columns when computing statistics" in {
@@ -166,5 +174,25 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
     import com.phasmidsoftware.tableparser.core.table.Column
     val nonExistentStats = Column.statisticsFrom(samplePath, "nonexistent_column")
     nonExistentStats shouldBe None
+  }
+
+  it should "support metadata-only mode (return None if no metadata)" in {
+    import com.phasmidsoftware.tableparser.core.table.Column
+    // useMetadataOnly=true (default) should return None if metadata unavailable
+    val metadataOnlyStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = true)
+    // Currently no metadata extraction implemented, so should return None
+    metadataOnlyStats shouldBe None
+  }
+
+  it should "support lazy fallback mode (return LazyStatistics if no metadata)" in {
+    import com.phasmidsoftware.tableparser.core.table.{Column, LazyStatistics}
+    // useMetadataOnly=false should return LazyStatistics even if metadata unavailable
+    val lazyStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = false)
+    lazyStats shouldBe a[Some[_]]
+    val col = lazyStats.get
+    col.maybeStatistics match {
+      case Some(LazyStatistics(_)) => succeed
+      case _ => fail("Expected LazyStatistics when useMetadataOnly=false")
+    }
   }
 }
