@@ -94,6 +94,22 @@ trait ColumnStatisticsProvider {
 }
 
 /**
+ * Marker trait for single-file analyzer factories.
+ * Implemented by parquet module to enable Analysis.forParquet.
+ */
+trait SingleFileAnalyzerFactory {
+  def apply(path: Path): Analyzer
+}
+
+/**
+ * Marker trait for dataset analyzer factories.
+ * Implemented by parquet module to enable Analysis.forParquetDataset.
+ */
+trait DatasetAnalyzerFactory {
+  def apply(path: Path): Analyzer
+}
+
+/**
  * The `Analysis` object provides factory methods to analyze tables from various sources.
  *
  * Example usage:
@@ -138,17 +154,30 @@ object Analysis {
     }
 
   /**
-   * Analyze a Parquet file by Path.
+   * Analyze a single Parquet file by Path.
+   * Fails if path is a directory; use forParquetDataset for dataset directories.
    * Requires the parquet module to be in scope: `import com.phasmidsoftware.tableparser.parquet._`
-   * This provides the implicit analyzer factory needed to construct a ParquetAnalyzer.
    *
-   * @param path the path to a .parquet file or dataset directory.
+   * @param path the path to a .parquet file.
    * @tparam Row the target case class type.
-   * @param analyzerFactory implicit factory (Path => Analyzer) provided by parquet module.
+   * @param singleFileFactory implicit single-file analyzer factory from parquet module.
    * @return a ColumnStatistics object.
    */
-  def forParquet[Row <: Product](path: Path)(implicit analyzerFactory: Path => Analyzer): ColumnStatistics =
-    analyzerFactory(path).analyze()
+  def forParquet[Row <: Product](path: Path)(implicit singleFileFactory: SingleFileAnalyzerFactory): ColumnStatistics =
+    singleFileFactory(path).analyze()
+
+  /**
+   * Analyze a Parquet dataset directory by Path.
+   * Fails if path is not a directory; use forParquet for single files.
+   * Requires the parquet module to be in scope: `import com.phasmidsoftware.tableparser.parquet._`
+   *
+   * @param path the path to a dataset directory containing part-*.parquet files.
+   * @tparam Row the target case class type.
+   * @param datasetFactory implicit dataset analyzer factory from parquet module.
+   * @return a ColumnStatistics object.
+   */
+  def forParquetDataset[Row <: Product](path: Path)(implicit datasetFactory: DatasetAnalyzerFactory): ColumnStatistics =
+    datasetFactory(path).analyze()
 }
 
 /**

@@ -195,4 +195,54 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
       case _ => fail("Expected LazyStatistics when useMetadataOnly=false")
     }
   }
+
+  // ── Dataset (multi-file) ───────────────────────────────────────────────────
+
+  behavior of "Dataset"
+
+  it should "parse a dataset directory with multiple part files" in {
+    import YellowTaxiTrip.helper
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val result = ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
+    result shouldBe a[Success[_]]
+  }
+
+  it should "produce 1000 rows total from dataset with multiple parts" in {
+    import YellowTaxiTrip.helper
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val result = ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
+    result.get.size shouldBe 1000
+  }
+
+  it should "fail with clear error when parseParquet receives a directory" in {
+    import YellowTaxiTrip.helper
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val result = ParquetParser.parse[YellowTaxiTrip](datasetPath)
+    result.failed.get shouldBe a[ParquetParserException]
+    result.failed.get.getMessage should include("directory")
+  }
+
+  it should "fail with clear error when parseDataset receives a single file" in {
+    import YellowTaxiTrip.helper
+    val filePath = samplePath
+    val result = ParquetParser.parseDataset[YellowTaxiTrip](filePath)
+    result.failed.get shouldBe a[ParquetParserException]
+    result.failed.get.getMessage should include("not a directory")
+  }
+
+  it should "analyze a dataset directory without materializing rows" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val stats = Analysis.forParquetDataset[YellowTaxiTrip](datasetPath)
+    stats.rows shouldBe 1000
+    stats.columns shouldBe 19
+  }
+
+  it should "have correct schema for dataset analysis" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val stats = Analysis.forParquetDataset[YellowTaxiTrip](datasetPath)
+    stats.columnMap.get("trip_distance").map(_.clazz) shouldBe Some("Double")
+    stats.columnMap.get("passenger_count").map(_.clazz) shouldBe Some("Int")
+  }
 }

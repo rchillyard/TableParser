@@ -3,31 +3,105 @@ package com.phasmidsoftware.tableparser.parquet
 import com.phasmidsoftware.tableparser.core.table._
 import java.nio.file.Path
 import org.apache.parquet.schema.Type
-import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 /**
- * Analyzer for Parquet sources.
- * Reads schema and metadata from the Parquet file without materializing all rows.
+ * Analyzer for Parquet sources (single files or datasets).
+ * Reads schema and metadata from the Parquet file or dataset directory without materializing all rows.
  * Column types are inferred from the Parquet schema; statistics are lazy (None).
  *
  * @param path the path to a .parquet file or dataset directory.
  * @tparam Row the target case class type (not used for schema extraction, but kept for consistency).
  */
 case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer {
+  def analyze(): ColumnStatistics = ParquetAnalysisHelper.analyzeInternal(path)
+}
+
+/**
+ * Analyzer for Parquet dataset directories.
+ * Same behavior as ParquetAnalyzer but validates that path is a directory.
+ *
+ * @param path the path to a dataset directory containing part-*.parquet files.
+ * @tparam Row the target case class type.
+ */
+case class ParquetDatasetAnalyzer[Row <: Product](path: Path) extends Analyzer {
   def analyze(): ColumnStatistics = {
+    import java.nio.file.Files
+    if (!Files.isDirectory(path)) {
+      throw ParquetParserException(
+        s"Path is not a directory: $path. Use ParquetAnalyzer for single files.",
+        None
+      )
+    }
+    ParquetAnalysisHelper.analyzeInternal(path)
+  }
+}
+
+/**
+ * Helper object for shared analysis logic between single files and datasets.
+ */
+private object ParquetAnalysisHelper {
+
+  /**
+   * Shared internal analysis logic for both single files and datasets.
+   * For directories, sums row counts from all part files.
+   */
+  def analyzeInternal(path: Path): ColumnStatistics = {
+    import java.nio.file.Files
     import org.apache.hadoop.conf.Configuration
     import org.apache.hadoop.fs.{Path => HadoopPath}
     import org.apache.parquet.hadoop.ParquetFileReader
     import org.apache.parquet.hadoop.util.HadoopInputFile
+    import scala.jdk.CollectionConverters._
 
     val conf = new Configuration()
-    val hadoopPath = new HadoopPath(path.toUri)
+
+    val isDataset = Files.isDirectory(path)
+
+    // Determine which file to read for schema
+    val schemaSourcePath = if (isDataset) {
+      val metadataPath = path.resolve("_metadata")
+      if (Files.exists(metadataPath)) {
+        metadataPath
+      } else {
+        // Find first part-*.parquet file
+        Files.list(path)
+                .filter(p => Files.isRegularFile(p) && p.getFileName.toString.startsWith("part-") && p.toString.endsWith(".parquet"))
+                .findFirst()
+                .orElseThrow(() => new ParquetParserException(
+                  s"No _metadata or part-*.parquet files found in directory: $path",
+                  None
+                ))
+      }
+    } else {
+      path
+    }
+
+    val hadoopPath = new HadoopPath(schemaSourcePath.toUri)
     val reader = ParquetFileReader.open(HadoopInputFile.fromPath(hadoopPath, conf))
     try {
       val schema = reader.getFooter.getFileMetaData.getSchema
       val footer = reader.getFooter
-      val rowCount = footer.getBlocks.asScala.foldLeft(0L)((acc, b) => acc + b.getRowCount).toInt
+
+      // For datasets without _metadata, sum all part files
+      val rowCount = if (isDataset && !Files.exists(path.resolve("_metadata"))) {
+        val rowCounts = scala.collection.mutable.ArrayBuffer[Long]()
+        Files.list(path)
+                .filter(p => Files.isRegularFile(p) && p.getFileName.toString.startsWith("part-") && p.toString.endsWith(".parquet"))
+                .forEach { partFile =>
+                  val partReader = ParquetFileReader.open(HadoopInputFile.fromPath(new HadoopPath(partFile.toUri), conf))
+                  try {
+                    val count = partReader.getFooter.getBlocks.asScala.foldLeft(0L)((acc, b) => acc + b.getRowCount)
+                    rowCounts += count
+                  } finally {
+                    partReader.close()
+                  }
+                }
+        rowCounts.sum.toInt
+      } else {
+        // Single file or _metadata present: use footer blocks from schema source
+        footer.getBlocks.asScala.foldLeft(0L)((acc, b) => acc + b.getRowCount).toInt
+      }
 
       // Build columnMap from schema, inferring Column type without materializing rows
       val columnMap: Map[String, Column] = (0 until schema.getFieldCount).map { i =>
@@ -49,7 +123,7 @@ case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer {
    * Statistics are left as lazy thunks (deferred computation on demand).
    *
    * @param fieldType the Parquet Type to analyze.
-   * @return a Column with clazz and optional inferred from schema, maybeStatistics = LazyStatistics thunk.
+   * @return a Column with clazz and optional inferred from schema, maybeStatistics = None.
    */
   private def columnFromParquetType(fieldType: Type): Column = {
     import org.apache.parquet.schema.{OriginalType, PrimitiveType}
