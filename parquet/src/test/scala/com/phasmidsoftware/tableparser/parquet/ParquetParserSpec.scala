@@ -4,15 +4,30 @@ import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseC
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
 import com.phasmidsoftware.tableparser.core.table.Table
 import java.nio.file.{Path, Paths}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.util.{Success, Try}
 
-class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
+class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with BeforeAndAfterAll {
 
   // Path to the committed test fixture
   private val samplePath: Path =
     Paths.get(getClass.getResource("/taxi_sample.parquet").toURI)
+
+  private var table: Table[YellowTaxiTrip] = _
+
+  // The first row in the Parquet file has vendorId=2, puLocationId=75, doLocationId=237.
+  // We find it by key rather than relying on ParIterable ordering.
+  private def firstRow: YellowTaxiTrip =
+    table.content.toSeq
+            .find(r => r.puLocationId.contains(75) && r.doLocationId.contains(237))
+            .getOrElse(fail("Expected row with puLocationId=75, doLocationId=237 not found"))
+
+  override def beforeAll(): Unit = {
+    import YellowTaxiTrip.helper
+    table = ParquetParser.parse[YellowTaxiTrip](samplePath).get
+  }
 
   behavior of "YellowTaxiTrip model"
 
@@ -46,30 +61,44 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
   }
 
   it should "produce exactly 1000 rows" in {
-    import YellowTaxiTrip.helper
-    val result = ParquetParser.parse[YellowTaxiTrip](samplePath)
-    result.get.size shouldBe 1000
-  }
-
-  it should "parse typed field values correctly for the first row" in {
-    import YellowTaxiTrip.helper
-    val firstRow = ParquetParser.parse[YellowTaxiTrip](samplePath).get.head
-    // vendorId should be 1 or 2 (Creative Mobile Technologies or VeriFone)
-    firstRow.storeAndFwdFlag should (be(Some("Y")) or be(Some("N")))
-    // tripDistance should be non-negative
-    firstRow.tripDistance.get should be >= 0.0
-    // fareAmount should be non-negative
-    firstRow.fareAmount.get should be >= 0.0
-    // pickup should be before dropoff
-    firstRow.tpepPickupDatetime.zip(firstRow.tpepDropoffDatetime).headOption.forall { case (p, d) => p.isBefore(d) } shouldBe true
-    // storeAndFwdFlag should be Y or N
-    firstRow.storeAndFwdFlag should (be(Some("Y")) or be(Some("N")))
+    table.size shouldBe 1000
   }
 
   it should "have a header with 19 columns" in {
-    import YellowTaxiTrip.helper
-    val table = ParquetParser.parse[YellowTaxiTrip](samplePath).get
     table.maybeHeader.map(_.size) shouldBe Some(19)
+  }
+
+  it should "parse storeAndFwdFlag correctly for the known first row" in {
+    firstRow.storeAndFwdFlag shouldBe Some("N")
+  }
+
+  it should "parse tripDistance as non-negative for the known first row" in {
+    firstRow.tripDistance.get should be >= 0.0
+  }
+
+  it should "parse fareAmount correctly for the known first row" in {
+    firstRow.fareAmount shouldBe Some(10.0)
+  }
+
+  it should "parse totalAmount correctly for the known first row" in {
+    firstRow.totalAmount shouldBe Some(19.5)
+  }
+
+  it should "have pickup before dropoff for the known first row" in {
+    firstRow.tpepPickupDatetime.zip(firstRow.tpepDropoffDatetime)
+            .headOption.forall { case (p, d) => p.isBefore(d) } shouldBe true
+  }
+
+  it should "have all rows with storeAndFwdFlag = Y or N" in {
+    table.content.toSeq.forall(r =>
+      r.storeAndFwdFlag.forall(f => f == "Y" || f == "N")
+    ) shouldBe true
+  }
+
+  it should "have all rows with non-negative tripDistance" in {
+    table.content.toSeq.forall(r =>
+      r.tripDistance.forall(_ >= 0.0)
+    ) shouldBe true
   }
 
   // ── Schema validation ──────────────────────────────────────────────────────
@@ -92,25 +121,9 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
     pending
   }
 
-  // ── Dataset (multi-file) ───────────────────────────────────────────────────
-
-  it should "parse a two-part dataset directory" in {
-    pending
-    // ParquetReader requires directory support -- to be implemented
-    import YellowTaxiTrip.helper
-    // This test requires taxi_sample_dataset/ with two part files
-    // generated from taxi_sample.parquet -- see design document section 9.
-    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
-    val result = ParquetParser.parse[YellowTaxiTrip](datasetPath)
-    result shouldBe a[Success[_]]
-    result.get.size shouldBe 1000
-  }
-
   // ── Analysis ──────────────────────────────────────────────────────────────
 
   behavior of "Analysis"
-
-// ── Analysis ──────────────────────────────────────────────────────────
 
   it should "analyze a Parquet file and extract schema without materializing rows" in {
     import com.phasmidsoftware.tableparser.core.table.Analysis
@@ -151,8 +164,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
     col.clazz shouldBe "Double"
     col.optional shouldBe true
     col.maybeStatistics shouldBe a[Some[_]]
-    val maybeStats = col.maybeStatistics
-    maybeStats match {
+    col.maybeStatistics match {
       case Some(LazyStatistics(statsThunk)) =>
         val stats = statsThunk().get
         stats.min should be >= 0.0
@@ -166,31 +178,24 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
 
   it should "return None for non-numeric columns when computing statistics" in {
     import com.phasmidsoftware.tableparser.core.table.Column
-    val storeAndFwdStats = Column.statisticsFrom(samplePath, "store_and_fwd_flag")
-    storeAndFwdStats shouldBe None
+    Column.statisticsFrom(samplePath, "store_and_fwd_flag") shouldBe None
   }
 
   it should "return None for non-existent columns when computing statistics" in {
     import com.phasmidsoftware.tableparser.core.table.Column
-    val nonExistentStats = Column.statisticsFrom(samplePath, "nonexistent_column")
-    nonExistentStats shouldBe None
+    Column.statisticsFrom(samplePath, "nonexistent_column") shouldBe None
   }
 
   it should "support metadata-only mode (return None if no metadata)" in {
     import com.phasmidsoftware.tableparser.core.table.Column
-    // useMetadataOnly=true (default) should return None if metadata unavailable
-    val metadataOnlyStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = true)
-    // Currently no metadata extraction implemented, so should return None
-    metadataOnlyStats shouldBe None
+    Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = true) shouldBe None
   }
 
   it should "support lazy fallback mode (return LazyStatistics if no metadata)" in {
     import com.phasmidsoftware.tableparser.core.table.{Column, LazyStatistics}
-    // useMetadataOnly=false should return LazyStatistics even if metadata unavailable
     val lazyStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = false)
     lazyStats shouldBe a[Some[_]]
-    val col = lazyStats.get
-    col.maybeStatistics match {
+    lazyStats.get.maybeStatistics match {
       case Some(LazyStatistics(_)) => succeed
       case _ => fail("Expected LazyStatistics when useMetadataOnly=false")
     }
@@ -210,8 +215,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
   it should "produce 1000 rows total from dataset with multiple parts" in {
     import YellowTaxiTrip.helper
     val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
-    val result = ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
-    result.get.size shouldBe 1000
+    ParquetParser.parseDataset[YellowTaxiTrip](datasetPath).get.size shouldBe 1000
   }
 
   it should "fail with clear error when parseParquet receives a directory" in {
@@ -224,8 +228,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
 
   it should "fail with clear error when parseDataset receives a single file" in {
     import YellowTaxiTrip.helper
-    val filePath = samplePath
-    val result = ParquetParser.parseDataset[YellowTaxiTrip](filePath)
+    val result = ParquetParser.parseDataset[YellowTaxiTrip](samplePath)
     result.failed.get shouldBe a[ParquetParserException]
     result.failed.get.getMessage should include("not a directory")
   }
@@ -247,12 +250,13 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
   }
 
   behavior of "Parquet to CSV"
+
   it should "write taxi data to CSV" in {
     import YellowTaxiTrip.helper
     val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
     val outputPath = Path.of("yellowtaxitrip.csv")
     for {
-      table <- ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
-    } table.writeCSVPath(outputPath)
+      t <- ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
+    } t.writeCSVPath(outputPath)
   }
 }

@@ -2,7 +2,7 @@
 
 **Project:** TableParser  
 **Module:** `parquet`  
-**Version:** 1.4.0  
+**Version:** 1.5.0  
 **Status:** Implemented
 
 ---
@@ -35,15 +35,17 @@ TableParser's Parquet module restores that type safety by ingesting Parquet data
   `Option` instances for `Float`, `Short`, `Byte`, `Instant`, `Temporal`, and `Option[Long]`
 - `YellowTaxiTrip` companion object wired with `renderer19` and `generator19`, enabling direct output of
   Parquet-ingested taxi data to CSV via `CsvTableFileRenderer` / `CsvTableStringRenderer`
+- Grouped case class mapping for flat Parquet schemas: `converterN` factory methods (`converter2`-`converter8`) in
+  `ParquetCellConverter`, with `converterMap` and `groupedHelpers` threaded through `ParquetTableParser` and
+  `ParquetSchemaValidator`; `YellowTaxiTripGrouped` with five sub-case-classes as a worked example (see Section 13)
 
 ### Deferred
 - Writing a `Table[Row]` to Parquet (output direction)
-- Direct Spark module integration (Parquet-aware `Dataset[Row]` path). 
+- Direct Spark module integration (Parquet-aware `Dataset[Row]` path).
   Many tables can already be read from Parquet and then converted into Spark `Dataset`.
 - Parallel row group reading
 - `BigDecimal` scale handling (currently hardcoded to 0; see Section 7.3)
-- Grouped case class mapping for flat Parquet schemas: mapping multiple flat Parquet columns onto nested case classes (
-  analogous to the IMDB movie database grouping pattern in `core`), avoiding the arity ceiling for wide schemas
+- Grouped case class mapping for truly nested Parquet `GROUP` types (the current implementation handles flat schemas only)
 
 ---
 
@@ -255,7 +257,7 @@ def convertOption(
 ### 7.3 BigDecimal Scale Limitation
 
 `BigDecimalConverter` currently hardcodes scale to `0`.
-The correct scale is available in `DecimalLogicalTypeAnnotation` but passing `PrimitiveType` through to all converters is deferred. 
+The correct scale is available in `DecimalLogicalTypeAnnotation` but passing `PrimitiveType` through to all converters is deferred.
 This converter will produce incorrect results for Parquet decimals with non-zero scale.
 
 ---
@@ -358,6 +360,7 @@ direct CSV output of Parquet-ingested data.
 - Header: verify 19 columns in the header
 - CSV output: render `Table[YellowTaxiTrip]` to CSV and verify header row and data rows
 - Schema mismatch: supply a case class with an unknown column name, expect `ParquetParserException`
+- Grouped parsing: parse `taxi_sample.parquet` into `Table[YellowTaxiTripGrouped]`, verify 1,000 rows and spot-check sub-case-class field values; key-based row lookup used throughout to avoid `ParIterable` ordering non-determinism
 - OPTIONAL/non-Option mismatch: pending (all columns happen to be OPTIONAL in the fixture)
 - Dataset (multi-file): pending — deferred until dataset support is implemented
 - Analysis: pending — deferred (see Section 8)
@@ -375,7 +378,8 @@ direct CSV output of Parquet-ingested data.
 | `LIST` and `MAP` Parquet types                         | Deferred | No built-in mapping; custom `ParquetTypeMapper` possible                  |
 | `BigDecimal` scale from `DecimalLogicalTypeAnnotation` | Deferred | Currently hardcoded to 0                                                  |
 | `Analysis` on Parquet-sourced tables                   | Deferred | Requires raw read path or separate statistics mechanism                   |
-| Grouped case class mapping for flat schemas            | Deferred | Analogous to IMDB grouping pattern; avoids arity ceiling for wide schemas |
+| Grouped case class mapping for flat schemas            | Implemented | `converterN` in `ParquetCellConverter`; see Section 13             |
+| Grouped case class mapping for nested Parquet GROUP    | Deferred    | Flat schema grouping only; true Parquet GROUP types not yet handled |
 | Encryption                                             | Deferred | Out of scope for initial iteration                                        |
 
 ---
@@ -394,6 +398,8 @@ direct CSV output of Parquet-ingested data.
 | `ParquetSchemaValidator`                                  | Validates Parquet schema against case class at open time                         |
 | `ParquetParser`                                           | Entry point: `parse[Row](path)`                                                  |
 | `YellowTaxiTrip`                                          | Example case class for NYC TLC Yellow Taxi data with CSV render/generate support |
+| `YellowTaxiTripGrouped`                                   | Grouped variant of `YellowTaxiTrip` with five sub-case-classes; demonstrates flat schema grouping |
+| `TripIdentifiers`, `TripTiming`, `TripGeography`, `FareBreakdown`, `TripMetrics` | Sub-case-classes for `YellowTaxiTripGrouped`; each has its own `ColumnHelper` and `ParquetCellConverter` |
 
 ### Changes to `core`
 
@@ -406,3 +412,63 @@ direct CSV output of Parquet-ingested data.
 | `CsvRenderers` companion                | Added `CsvRendererFloat`, `CsvRendererShort`, `CsvRendererByte`, `CsvRendererInstant`, `CsvRendererTemporal`; added `rendererOptionFloat`, `rendererOptionShort`, `rendererOptionByte`, `rendererOptionInstant`, `rendererOptionTemporal`, `rendererOptionLong` |
 | `CsvGenerators` companion               | Added `CsvGeneratorFloat`, `CsvGeneratorShort`, `CsvGeneratorByte`, `CsvGeneratorInstant`, `CsvGeneratorTemporal`                                                                                                                                               |
 | `CsvGenerator` companion                | Added `floatGenerator`, `shortGenerator`, `byteGenerator`, `instantGenerator`, `temporalGenerator`                                                                                                                                                              |
+---
+
+## 13. Grouped Case Class Mapping
+
+### 13.1 Motivation
+
+A flat Parquet schema with many columns (e.g. the 19-column TLC Yellow Taxi schema) exceeds
+the `cellParser13` arity ceiling for CSV re-reading and is unwieldy as a single flat case class.
+The grouping pattern — borrowed from the CSV `cellParserN` / `ColumnHelper` mechanism — maps
+multiple flat Parquet columns onto nested sub-case-classes, keeping every arity within bounds.
+
+### 13.2 Design
+
+The mechanism mirrors `CellParsers.cellParserN` exactly:
+
+- `converter2` through `converter8` factory methods in `ParquetCellConverter` accept a constructor
+  function and implicit `ParquetCellConverter` instances for each field type.
+- Each `converterN` reads field `f1` from the `SimpleGroup` using `ColumnHelper[T].lookup`, then
+  delegates the remaining fields to `converter(N-1)` by passing the **tail** of the field names array —
+  preventing re-reflection on `T` at each recursive level.
+- `effectiveFieldNames[T]` mirrors `CellParsers.fieldNames`: uses the provided list if non-empty,
+  otherwise reflects on `ClassTag[T]` via `Reflection.extractFieldNames`.
+- Column lookup is by name, not position — position-independent, exactly as for CSV.
+
+### 13.3 Threading through the stack
+
+`ParquetTableParser` exposes two overridable `val`s with empty-map defaults:
+
+```scala
+val converterMap: Map[String, ParquetCellConverter[Any]] = Map.empty
+val groupedHelpers: Map[String, (ClassTag[_], ColumnHelper[_])] = Map.empty
+```
+
+`converterMap` is passed to `StandardParquetRowParser.apply`; `groupedHelpers` is passed to
+`ParquetSchemaValidator.validate`. Both default to flat behaviour when empty.
+
+### 13.4 Example: YellowTaxiTripGrouped
+
+```scala
+case class YellowTaxiTripGrouped(
+  ids:     TripIdentifiers,   // vendorId, ratecodeId, storeAndFwdFlag
+  timing:  TripTiming,        // tpepPickupDatetime, tpepDropoffDatetime
+  geo:     TripGeography,     // puLocationId, doLocationId
+  fare:    FareBreakdown,     // fareAmount, extra, mtaTax, tipAmount, tollsAmount,
+                              //   improvementSurcharge, congestionSurcharge, airportFee
+  metrics: TripMetrics        // passengerCount, tripDistance, paymentType, totalAmount
+)
+```
+
+Top-level arity: 5. Maximum sub-class arity: 8 (`FareBreakdown`). All within `cellParser8` / `converter8`.
+
+Each sub-case-class companion provides:
+- `implicit val helper: ColumnHelper[T]` — field-to-column-name mapping
+- `implicit val converter: ParquetCellConverter[T]` — built via `converterN(T.apply)`
+
+### 13.5 Key implementation note
+
+`Reflection.extractFieldNames` (not `getDeclaredFields`) must be used throughout to exclude
+the synthetic `productElementNames: Array[String]` field that Scala 2.13 generates for every
+case class. Using `getDeclaredFields` directly causes a `MatchError` at row construction time.

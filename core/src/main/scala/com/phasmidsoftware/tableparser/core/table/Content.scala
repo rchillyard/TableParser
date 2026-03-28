@@ -236,7 +236,7 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
     Content(xs.slice(from, until))
 
   /**
-   * This should be used only by unit tests and not be code.
+   * This should be used only by unit tests and not by code.
    *
    * @return the first element of xs.
    */
