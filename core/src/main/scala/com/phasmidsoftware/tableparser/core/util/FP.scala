@@ -16,6 +16,26 @@ import scala.util.control.NonFatal
 object FP {
 
   /**
+   * Attempts to recover the value from a computation represented as a lazy `Try[Option[X]]`.
+   * If the computation succeeds, it returns the contained `Option[X]`.
+   * If the computation fails with a non-fatal exception, the exception is passed to the provided
+   * recovery function, and the result is `None`. Fatal exceptions are rethrown.
+   *
+   * @param xy A lazy computation resulting in a `Try[Option[X]]`.
+   *           It is evaluated when the method is invoked.
+   * @param f  A function to handle non-fatal exceptions encountered during evaluation of `xy`.
+   * @tparam X The underlying type of the `Option`.
+   * @return The `Option[X]` value if successful, `None` if a non-fatal exception occurs,
+   *         or the exception is rethrown if it is fatal.
+   */
+  def recoverOption[X](xy: => Try[Option[X]])(f: Throwable => Unit): Option[X] =
+    xy match {
+      case Success(x) => x
+      case Failure(NonFatal(x)) => f(x); None
+      case Failure(x) => throw x
+    }
+
+  /**
    * Method to return a random sampling function.
    *
    * @param n this is the sample factor: approximately one in every n successful results will form part of the result.

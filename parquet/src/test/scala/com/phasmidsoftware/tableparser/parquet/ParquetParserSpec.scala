@@ -253,6 +253,6 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
     val outputPath = Path.of("yellowtaxitrip.csv")
     for {
       table <- ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
-    } table.toCSVPath(outputPath)
+    } table.writeCSVPath(outputPath)
   }
 }
