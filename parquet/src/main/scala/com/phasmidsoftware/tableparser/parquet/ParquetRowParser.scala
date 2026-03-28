@@ -30,8 +30,15 @@ trait ParquetRowParser[Row] {
  * Uses reflection to identify case class parameters and
  * ParquetCellConverter to extract typed values from each field.
  *
+ * Supports both flat primitive fields and grouped sub-case-class fields.
+ * A grouped field is any field whose type has an implicit ParquetCellConverter[T]
+ * provided in its companion object.
+ *
  * @param converters a sequence of (columnName, converter) pairs,
  *                   one per case class parameter, in declaration order.
+ *                   For grouped fields, columnName is the Scala field name
+ *                   (not a Parquet column name) and the converter delegates
+ *                   to the sub-case-class's ParquetCellConverter.
  * @tparam Row the target case class type, must be a Product (case class).
  */
 class StandardParquetRowParser[Row <: Product : ClassTag](
@@ -40,7 +47,6 @@ class StandardParquetRowParser[Row <: Product : ClassTag](
 
   def parse(schema: MessageType, helper: ColumnHelper[Row])(group: SimpleGroup): Try[Row] =
     Try {
-      // Extract all field values in parameter order
       val values: Seq[Any] = converters.map { case (columnName, converter) =>
         converter(group) match {
           case Success(v) => v
@@ -50,8 +56,8 @@ class StandardParquetRowParser[Row <: Product : ClassTag](
           )
         }
       }
-      // Invoke the case class constructor via reflection
-      // NOTE that this may fail if there are additional constructors defined for the case class.
+      // Invoke the case class constructor via reflection.
+      // NOTE: may fail if there are additional constructors defined for the case class.
       val ctor = implicitly[ClassTag[Row]].runtimeClass.getConstructors.head
       ctor.newInstance(values.map(_.asInstanceOf[AnyRef]): _*).asInstanceOf[Row]
     }
@@ -66,36 +72,57 @@ object StandardParquetRowParser {
   /**
    * Build a StandardParquetRowParser for a given case class type.
    *
-   * Reflects on the case class fields, maps each parameter name to
-   * a Parquet column name via ColumnHelper, and builds a converter
-   * function for each field using ParquetCellConverter.
+   * Reflects on the case class fields and builds a converter for each:
+   * - If the field's type has an implicit ParquetCellConverter in scope,
+   * that converter is used directly (supports grouped sub-case-classes).
+   * - If the field type is Option[_], the legacy PrimitiveType path is used.
+   * - Otherwise, the field is treated as a non-optional primitive.
    *
-   * @param schema the Parquet MessageType (already validated).
-   * @param helper the ColumnHelper providing name mapping.
+   * @param schema       the Parquet MessageType (already validated).
+   * @param helper       the ColumnHelper providing name mapping for the top-level Row.
+   * @param converterMap a map from field name to ParquetCellConverter[Any],
+   *                     populated by implicit resolution for grouped sub-case-classes.
+   *                     For flat schemas this map is empty.
    * @tparam Row the target case class type.
    * @return a StandardParquetRowParser[Row].
    */
   def apply[Row <: Product : ClassTag](
                                               schema: MessageType,
-                                              helper: ColumnHelper[Row]
+                                              helper: ColumnHelper[Row],
+                                              converterMap: Map[String, ParquetCellConverter[Any]] = Map.empty
                                       ): StandardParquetRowParser[Row] = {
 
-    val fields = implicitly[ClassTag[Row]]
-            .runtimeClass
-            .getDeclaredFields
-            .toSeq
+    val runtimeClass = implicitly[ClassTag[Row]].runtimeClass
+    val fieldNames = com.phasmidsoftware.tableparser.core.util.Reflection
+            .extractFieldNames(implicitly[ClassTag[Row]])
+    val declaredFieldMap = runtimeClass.getDeclaredFields.map(f => f.getName -> f).toMap
+
+    println(s"DEBUG: fieldNames for ${runtimeClass.getSimpleName}: ${fieldNames.mkString(", ")}")
 
     val converters: Seq[(String, SimpleGroup => Try[Any])] =
-      fields.map { field =>
-        val columnName = helper.lookup(None, field.getName)
-        val isOption = field.getType == classOf[Option[_]]
+      fieldNames.map { fieldName =>
+        val field = declaredFieldMap(fieldName)
+        val columnName = helper.lookup(None, fieldName)
 
         val converter: SimpleGroup => Try[Any] =
-          if (isOption) {
-            val pt = schema.getType(schema.getFieldIndex(columnName)).asPrimitiveType()
-            group => ParquetCellConverter.convertOption(group, columnName, pt)
-          } else
-            group => ParquetCellConverter.convertField(group, columnName, field)
+          converterMap.get(fieldName) match {
+
+            case Some(groupedConverter) =>
+              println(s"field '$fieldName': converterMap hit = ${converterMap.contains(fieldName)}, type = ${field.getType.getSimpleName}")
+              // Grouped sub-case-class: delegate to its own ParquetCellConverter.
+              // fieldName is used as the dispatch key; the converter ignores it
+              // and reads its own columns by name via its ColumnHelper.
+              group => groupedConverter.convert(group, fieldName)
+
+            case None if field.getType == classOf[Option[_]] =>
+              // Flat optional primitive: use PrimitiveType metadata path.
+              val pt = schema.getType(schema.getFieldIndex(columnName)).asPrimitiveType()
+              group => ParquetCellConverter.convertOption(group, columnName, pt)
+
+            case None =>
+              // Flat non-optional primitive.
+              group => ParquetCellConverter.convertField(group, columnName, field)
+          }
 
         columnName -> converter
       }

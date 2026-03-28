@@ -97,7 +97,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 1.4.0.
+This version of the README.md file refers to version: 1.5.0.
 
 See release notes below for history.
 
@@ -806,8 +806,12 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.4.1 -> V1.5.0
+Implemented column-grouping of flat Parquet files (13. Grouped Case Class Mapping)
+See [TableParserParquetDesign](TableParserParquetDesign.md)
+V1.4.0 -> V1.4.1
+* Refactoring, internal improvements such as extending csv renderers to 19-tuples.
 V1.3.0 -> V1.4.0
-
 * New Analyzer trait with deprecated methods for the old Analysis class and object.
 * The old Analysis class has been renamed ColumnStatistics.
 V1.2.6 -> V1.3.0
