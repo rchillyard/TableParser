@@ -346,7 +346,7 @@ trait Table[Row] extends Iterable[Row] {
    * @return Unit
    * @throws TableException if the CSV file cannot be written to the specified output path
    */
-  def toCSVPath(outputPath: Path)(implicit r: CsvRenderer[Row], g: CsvGenerator[Row], ca: CsvAttributes): Unit =
+  def writeCSVPath(outputPath: Path)(implicit r: CsvRenderer[Row], g: CsvGenerator[Row], ca: CsvAttributes): Unit =
     CsvTableFileRenderer[Row](outputPath).render(this).map(_.close()).getOrElse(throw TableException(s"Failed to write CSV to $outputPath"))
 
   /**
@@ -375,6 +375,11 @@ trait Table[Row] extends Iterable[Row] {
   def writeCSVFile(path: Path)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableFileRenderer[Row](path).render(this)
 
+  /**
+   * Retrieves an optional sequence of column names derived from a possible header.
+   *
+   * @return An `Option` containing a `Seq[String]` of column names if the header exists, otherwise `None`.
+   */
   def maybeColumnNames: Option[Seq[String]] =
     maybeHeader map (_.xs)
 
