@@ -2,16 +2,22 @@
 
 **Project:** TableParser  
 **Module:** `parquet`  
-**Version:** 1.0  
+**Version:** 1.4.0  
 **Status:** Implemented
 
 ---
 
 ## 1. Motivation
 
-TableParser's core value proposition is type-safe ingestion of tabular data into typed case classes. Currently this is achieved for CSV and other text-based formats. Parquet has become the dominant format for large-scale tabular data (it is the default format in Apache Spark pipelines, and the format used by the NYC TLC taxi dataset and many other public datasets). The TLC no longer provides CSV downloads at all.
+TableParser's core value proposition is type-safe ingestion of tabular data into typed case classes.
+Currently this is achieved for CSV and other text-based formats.
+Parquet has become the dominant format for large-scale tabular data (it is the default format in Apache Spark pipelines,
+and the format used by the NYC TLC taxi dataset and many other public datasets).
+The TLC no longer provides CSV downloads at all.
 
-The motivation for supporting Parquet is identical to the motivation for supporting CSV in the Spark context: `spark.read.parquet(...)` produces an untyped `DataFrame`, losing all type safety. TableParser's Parquet module restores that type safety by ingesting Parquet data directly into a `Table[Row]` backed by typed case classes.
+The motivation for supporting Parquet is identical to the motivation for supporting CSV in the Spark context:
+`spark.read.parquet(...)` produces an untyped `DataFrame`, losing all type safety.
+TableParser's Parquet module restores that type safety by ingesting Parquet data directly into a `Table[Row]` backed by typed case classes.
 
 ---
 
@@ -25,14 +31,19 @@ The motivation for supporting Parquet is identical to the motivation for support
 - A new `ParquetParserException` for all Parquet-specific failures
 - A committed binary test fixture (NYC Yellow Taxi January 2024 data, trimmed to 1,000 rows)
 - A `TableBuilder` trait extracted from `TableParser` in `core` to cleanly support non-string source types
+- CSV rendering of Parquet-sourced tables: `CsvRenderer` and `CsvGenerator` extended to arity 19, with new bare-type and
+  `Option` instances for `Float`, `Short`, `Byte`, `Instant`, `Temporal`, and `Option[Long]`
+- `YellowTaxiTrip` companion object wired with `renderer19` and `generator19`, enabling direct output of
+  Parquet-ingested taxi data to CSV via `CsvTableFileRenderer` / `CsvTableStringRenderer`
 
 ### Deferred
-- Reading a Parquet dataset (directory of part files) — `ParquetReader` requires additional work for directory support
 - Writing a `Table[Row]` to Parquet (output direction)
-- Spark module integration (Parquet-aware `Dataset[Row]` path)
-- Backfilling `java.nio.file.Path` into the existing `core` module API (noted as desirable, separate PR)
-- `Analysis` support on Parquet-sourced tables (see Section 8)
+- Direct Spark module integration (Parquet-aware `Dataset[Row]` path). 
+  Many tables can already be read from Parquet and then converted into Spark `Dataset`.
 - Parallel row group reading
+- `BigDecimal` scale handling (currently hardcoded to 0; see Section 7.3)
+- Grouped case class mapping for flat Parquet schemas: mapping multiple flat Parquet columns onto nested case classes (
+  analogous to the IMDB movie database grouping pattern in `core`), avoiding the arity ceiling for wide schemas
 
 ---
 
@@ -51,6 +62,7 @@ tableparser-parquet
       ParquetTypeMapper.scala      -- Parquet type → Scala type mapping
       ParquetSchemaValidator.scala -- schema validation logic
       ParquetParserException.scala -- exception type
+      YellowTaxiTrip.scala         -- example case class for NYC TLC Yellow Taxi data
     test/scala/com/phasmidsoftware/tableparser/parquet/
       ParquetParserSpec.scala
     test/resources/
@@ -130,7 +142,23 @@ val result: Try[Table[YellowTaxiTrip]] =
 
 `java.nio.file.Path` is used exclusively. There is no `parseParquetResource` method — test fixtures are accessed via `Path.of(getClass.getResource(...).toURI)`.
 
-### 5.2 ColumnHelper and Name Mapping
+### 5.2 CSV Output
+
+A Parquet-sourced `Table[T]` is rendered to CSV identically to any other `Table[T]`, since the render pipeline is
+source-agnostic. Given appropriate implicits in the companion object:
+
+```scala
+val table: Try[Table[YellowTaxiTrip]] =
+  ParquetParser.parse[YellowTaxiTrip](path)
+
+// Render to file
+table.flatMap(CsvTableFileRenderer[YellowTaxiTrip](outputPath).render(_))
+
+// Render to string
+table.map(CsvTableStringRenderer[YellowTaxiTrip]().render(_))
+```
+
+### 5.3 ColumnHelper and Name Mapping
 
 A new mapper was added to `ColumnHelper` in `core`:
 
@@ -226,7 +254,9 @@ def convertOption(
 
 ### 7.3 BigDecimal Scale Limitation
 
-`BigDecimalConverter` currently hardcodes scale to `0`. The correct scale is available in `DecimalLogicalTypeAnnotation` but passing `PrimitiveType` through to all converters is deferred. This converter will produce incorrect results for Parquet decimals with non-zero scale.
+`BigDecimalConverter` currently hardcodes scale to `0`.
+The correct scale is available in `DecimalLogicalTypeAnnotation` but passing `PrimitiveType` through to all converters is deferred. 
+This converter will produce incorrect results for Parquet decimals with non-zero scale.
 
 ---
 
@@ -319,10 +349,14 @@ case class YellowTaxiTrip(
 )
 ```
 
+The companion object provides `CsvRenderer` and `CsvGenerator` instances via `renderer19` and `generator19`, enabling
+direct CSV output of Parquet-ingested data.
+
 ### 10.3 Test Scenarios
 
 - Happy path: parse `taxi_sample.parquet` into `Table[YellowTaxiTrip]`, verify 1,000 rows and spot-check typed field values
 - Header: verify 19 columns in the header
+- CSV output: render `Table[YellowTaxiTrip]` to CSV and verify header row and data rows
 - Schema mismatch: supply a case class with an unknown column name, expect `ParquetParserException`
 - OPTIONAL/non-Option mismatch: pending (all columns happen to be OPTIONAL in the fixture)
 - Dataset (multi-file): pending — deferred until dataset support is implemented
@@ -332,34 +366,43 @@ case class YellowTaxiTrip(
 
 ## 11. Open Questions and Deferred Decisions
 
-| Topic | Status | Notes |
-|-------|--------|-------|
-| Parquet dataset (directory) support | Deferred | `ParquetReader` needs directory handling |
-| Parquet output (write direction) | Deferred | Separate design document when in scope |
-| Spark module Parquet integration | Deferred | Depends on this module being stable first |
-| `Path` backfill into `core` | Deferred | Desirable; separate PR to avoid scope creep |
-| Parallel row group reading | Deferred | Revisit once baseline reading is working |
-| `LIST` and `MAP` Parquet types | Deferred | No built-in mapping; custom `ParquetTypeMapper` possible |
-| `BigDecimal` scale from `DecimalLogicalTypeAnnotation` | Deferred | Currently hardcoded to 0 |
-| `Analysis` on Parquet-sourced tables | Deferred | Requires raw read path or separate statistics mechanism |
-| Encryption | Deferred | Out of scope for initial iteration |
+| Topic                                                  | Status   | Notes                                                                     |
+|--------------------------------------------------------|----------|---------------------------------------------------------------------------|
+| Parquet dataset (directory) support                    | Deferred | `ParquetReader` needs directory handling                                  |
+| Parquet output (write direction)                       | Deferred | Separate design document when in scope                                    |
+| Spark module Parquet integration                       | Deferred | Depends on this module being stable first                                 |
+| Parallel row group reading                             | Deferred | Revisit once baseline reading is working                                  |
+| `LIST` and `MAP` Parquet types                         | Deferred | No built-in mapping; custom `ParquetTypeMapper` possible                  |
+| `BigDecimal` scale from `DecimalLogicalTypeAnnotation` | Deferred | Currently hardcoded to 0                                                  |
+| `Analysis` on Parquet-sourced tables                   | Deferred | Requires raw read path or separate statistics mechanism                   |
+| Grouped case class mapping for flat schemas            | Deferred | Analogous to IMDB grouping pattern; avoids arity ceiling for wide schemas |
+| Encryption                                             | Deferred | Out of scope for initial iteration                                        |
 
 ---
 
-## 12. Summary of New Types
+## 12. Summary of New and Modified Types
 
-| Type | Location | Purpose |
-|------|----------|---------|
-| `ParquetParserException` | `parquet` module | All Parquet-specific failures |
-| `ParquetTableParser[R]` | `parquet` module | `TableBuilder` instance for Parquet sources |
-| `ParquetRowParser[Row]` / `StandardParquetRowParser[Row]` | `parquet` module | Converts `SimpleGroup` records to typed `Row` |
-| `ParquetCellConverter[T]` | `parquet` module | Type class for direct typed value extraction from `SimpleGroup` |
-| `ParquetTypeMapper` | `parquet` module | Canonical Parquet→Scala type mapping |
-| `ParquetSchemaValidator` | `parquet` module | Validates Parquet schema against case class at open time |
-| `ParquetParser` | `parquet` module | Entry point: `parse[Row](path)` |
-| `TableBuilder[Table]` | `core` module | Thin base trait extracted from `TableParser`; extended by `ParquetTableParser` |
+### New Types in `parquet` module
+
+| Type                                                      | Purpose                                                                          |
+|-----------------------------------------------------------|----------------------------------------------------------------------------------|
+| `ParquetParserException`                                  | All Parquet-specific failures                                                    |
+| `ParquetTableParser[R]`                                   | `TableBuilder` instance for Parquet sources                                      |
+| `ParquetRowParser[Row]` / `StandardParquetRowParser[Row]` | Converts `SimpleGroup` records to typed `Row`                                    |
+| `ParquetCellConverter[T]`                                 | Type class for direct typed value extraction from `SimpleGroup`                  |
+| `ParquetTypeMapper`                                       | Canonical Parquet→Scala type mapping                                             |
+| `ParquetSchemaValidator`                                  | Validates Parquet schema against case class at open time                         |
+| `ParquetParser`                                           | Entry point: `parse[Row](path)`                                                  |
+| `YellowTaxiTrip`                                          | Example case class for NYC TLC Yellow Taxi data with CSV render/generate support |
 
 ### Changes to `core`
-- `TableBuilder[Table]` trait added
-- `TableParser[Table]` now extends `TableBuilder[Table]`
-- `camelToSnakeCaseColumnNameMapperLower` added to `ColumnHelper`
+
+| Item                                    | Change                                                                                                                                                                                                                                                          |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `TableBuilder[Table]` trait             | Added; thin base trait extracted from `TableParser`                                                                                                                                                                                                             |
+| `TableParser[Table]`                    | Now extends `TableBuilder[Table]`; existing code unchanged                                                                                                                                                                                                      |
+| `camelToSnakeCaseColumnNameMapperLower` | Added to `ColumnHelper`                                                                                                                                                                                                                                         |
+| `CsvRenderers` / `CsvGenerators` traits | Extended to arity 19 (previously 13)                                                                                                                                                                                                                            |
+| `CsvRenderers` companion                | Added `CsvRendererFloat`, `CsvRendererShort`, `CsvRendererByte`, `CsvRendererInstant`, `CsvRendererTemporal`; added `rendererOptionFloat`, `rendererOptionShort`, `rendererOptionByte`, `rendererOptionInstant`, `rendererOptionTemporal`, `rendererOptionLong` |
+| `CsvGenerators` companion               | Added `CsvGeneratorFloat`, `CsvGeneratorShort`, `CsvGeneratorByte`, `CsvGeneratorInstant`, `CsvGeneratorTemporal`                                                                                                                                               |
+| `CsvGenerator` companion                | Added `floatGenerator`, `shortGenerator`, `byteGenerator`, `instantGenerator`, `temporalGenerator`                                                                                                                                                              |

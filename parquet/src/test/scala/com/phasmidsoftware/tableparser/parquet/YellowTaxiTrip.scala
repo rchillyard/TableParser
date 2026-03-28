@@ -2,6 +2,8 @@ package com.phasmidsoftware.tableparser.parquet
 
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapperLower
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
+import com.phasmidsoftware.tableparser.core.render.{CsvGenerators, CsvProductGenerator, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import java.time.Instant
 
 case class YellowTaxiTrip(
@@ -26,7 +28,8 @@ case class YellowTaxiTrip(
                                  airportFee: Option[Double]
                          )
 
-object YellowTaxiTrip extends CellParsers {
+object YellowTaxiTrip extends CellParsers with CsvRenderers with CsvGenerators {
+
   implicit val helper: ColumnHelper[YellowTaxiTrip] =
     columnHelper(
       camelToSnakeCaseColumnNameMapperLower,
@@ -36,4 +39,12 @@ object YellowTaxiTrip extends CellParsers {
       "doLocationId" -> "DOLocationID",
       "airportFee" -> "Airport_fee"
     )
+
+  implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
+
+  implicit val renderer: CsvRenderer[YellowTaxiTrip] =
+    renderer19(YellowTaxiTrip.apply)
+
+  implicit val csvGenerator: CsvProductGenerator[YellowTaxiTrip] =
+    generator19(YellowTaxiTrip.apply)
 }

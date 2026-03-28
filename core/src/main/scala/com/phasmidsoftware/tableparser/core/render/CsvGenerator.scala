@@ -3,6 +3,7 @@ package com.phasmidsoftware.tableparser.core.render
 import com.phasmidsoftware.tableparser.core.parse.StringList
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import com.phasmidsoftware.tableparser.core.util.Reflection
+import java.time.Instant
 import org.joda.time.LocalDate
 import scala.reflect.ClassTag
 
@@ -49,10 +50,15 @@ object CsvGenerator extends CsvGenerators {
   implicit val stringGenerator: CsvGenerator[String] = CsvGenerators.CsvGeneratorString
   implicit val booleanGenerator: CsvGenerator[Boolean] = CsvGenerators.CsvGeneratorBoolean
   implicit val doubleGenerator: CsvGenerator[Double] = CsvGenerators.CsvGeneratorDouble
+  implicit val floatGenerator: CsvGenerator[Float] = CsvGenerators.CsvGeneratorFloat
+  implicit val shortGenerator: CsvGenerator[Short] = CsvGenerators.CsvGeneratorShort
+  implicit val byteGenerator: CsvGenerator[Byte] = CsvGenerators.CsvGeneratorByte
   implicit val bigIntGenerator: CsvGenerator[BigInt] = CsvGenerators.CsvGeneratorBigInt
   implicit val longGenerator: CsvGenerator[Long] = CsvGenerators.CsvGeneratorLong
   implicit val urlGenerator: CsvGenerator[java.net.URL] = CsvGenerators.CsvGeneratorURL
   implicit val localDateGenerator: CsvGenerator[LocalDate] = CsvGenerators.CsvGeneratorLocalDate
+  implicit val instantGenerator: CsvGenerator[Instant] = CsvGenerators.CsvGeneratorInstant
+  //  implicit val temporalGenerator: CsvGenerator[Temporal] = CsvGenerators.CsvGeneratorTemporal
   implicit val generatorStringList: CsvGenerator[StringList] = sequenceGenerator[String]
 }
 

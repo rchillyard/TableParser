@@ -2,7 +2,7 @@ package com.phasmidsoftware.tableparser.parquet
 
 import com.phasmidsoftware.tableparser.core.parse.{ColumnHelper, TableBuilder}
 import com.phasmidsoftware.tableparser.core.table.{Content, HeadedTable, Header, Table}
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{Path => HadoopPath}
 import org.apache.parquet.example.data.Group
@@ -14,7 +14,7 @@ import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 /**
- * A TableBuilder for Parquet sources.
+ * A TableBuilder for Parquet sources (single files or dataset directories).
  *
  * Reads a Parquet file or dataset directory into a Table[Row] using
  * ParquetSchemaValidator, StandardParquetRowParser, and ParquetCellConverter.
@@ -44,21 +44,74 @@ abstract class ParquetTableParser[R <: Product : ClassTag]
     HeadedTable(Content(rows), header)
 
   /**
-   * Parse a Parquet file or dataset directory into a Table[Row].
+   * Parse a single Parquet file into a Table[Row].
+   * Fails if path is a directory; use parseParquetDataset for dataset directories.
    *
    * Schema validation is performed before any rows are read.
    * Fails fast with ParquetParserException on any schema mismatch
    * or unsupported type.
    *
-   * @param path a java.nio.file.Path to a .parquet file or directory
-   *             containing part files.
+   * @param path a java.nio.file.Path to a .parquet file (not a directory).
    * @return a Try[Table[Row]].
    */
   def parseParquet(path: Path): Try[Table[Row]] = Try {
+    // Validate that path is a file, not a directory
+    if (Files.isDirectory(path)) {
+      throw ParquetParserException(
+        s"Path is a directory: $path. Use parseParquetDataset for dataset directories.",
+        None
+      )
+    }
+
+    parseParquetInternal(path)
+  }
+
+  /**
+   * Parse a Parquet dataset directory into a Table[Row].
+   * Dataset directories contain multiple part-*.parquet files.
+   * Fails if path is not a directory.
+   *
+   * Schema validation is performed before any rows are read.
+   * Fails fast with ParquetParserException on any schema mismatch
+   * or unsupported type.
+   *
+   * @param path a java.nio.file.Path to a directory containing part files.
+   * @return a Try[Table[Row]].
+   */
+  def parseParquetDataset(path: Path): Try[Table[Row]] = Try {
+    // Validate that path is a directory
+    if (!Files.isDirectory(path)) {
+      throw ParquetParserException(
+        s"Path is not a directory: $path. Use parseParquet for single files.",
+        None
+      )
+    }
+
+    parseParquetInternal(path)
+  }
+
+  /**
+   * Internal implementation for both single-file and dataset parsing.
+   * ParquetReader.builder() handles both cases transparently.
+   *
+   * @param path the path to a .parquet file or dataset directory.
+   * @return a Table[Row].
+   */
+  private def parseParquetInternal(path: Path): Table[Row] = {
+    import java.nio.file.Files
+
     val conf = new Configuration()
-    val hadoopPath = new HadoopPath(path.toUri)
+
+    // If path is a directory, try to use it directly (ParquetReader should handle datasets)
+    // If that fails, find the first part file
+    val hadoopPath = if (Files.isDirectory(path)) {
+      new HadoopPath(path.toUri)
+    } else {
+      new HadoopPath(path.toUri)
+    }
 
     // Read schema from Parquet footer metadata
+    // For datasets, this reads from _metadata if present, or the first part file
     val schema: MessageType = readSchema(hadoopPath, conf)
 
     // Validate schema against the target case class before reading any rows
@@ -92,8 +145,15 @@ abstract class ParquetTableParser[R <: Product : ClassTag]
     )
 
   private def readSchema(path: HadoopPath, conf: Configuration): MessageType = {
+    import java.nio.file.Paths
+
+    // Convert Hadoop path to Java Path for resolver
+    val javaPath = Paths.get(path.toUri)
+    val actualPath = ParquetPathResolver.schemaSourcePath(javaPath)
+    val actualHadoopPath = new HadoopPath(actualPath.toUri)
+
     val reader = org.apache.parquet.hadoop.ParquetFileReader.open(
-      org.apache.parquet.hadoop.util.HadoopInputFile.fromPath(path, conf)
+      org.apache.parquet.hadoop.util.HadoopInputFile.fromPath(actualHadoopPath, conf)
     )
     try reader.getFooter.getFileMetaData.getSchema
     finally reader.close()

@@ -108,12 +108,151 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
 
   // ── Analysis ──────────────────────────────────────────────────────────────
 
-  it should "support Analysis on a Parquet-sourced table" in {
-    pending
+  behavior of "Analysis"
+
+// ── Analysis ──────────────────────────────────────────────────────────
+
+  it should "analyze a Parquet file and extract schema without materializing rows" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val stats = Analysis.forParquet[YellowTaxiTrip](samplePath)
+    stats.rows shouldBe 1000
+    stats.columns shouldBe 19
+  }
+
+  it should "infer column types from Parquet schema" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val stats = Analysis.forParquet[YellowTaxiTrip](samplePath)
+    // Spot-check a few columns based on TLC schema
+    stats.columnMap.get("trip_distance").map(_.clazz) shouldBe Some("Double")
+    stats.columnMap.get("fare_amount").map(_.clazz) shouldBe Some("Double")
+    stats.columnMap.get("passenger_count").map(_.clazz) shouldBe Some("Int")
+    stats.columnMap.get("store_and_fwd_flag").map(_.clazz) shouldBe Some("String")
+  }
+
+  it should "infer optionality from Parquet schema (OPTIONAL vs REQUIRED)" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val stats = Analysis.forParquet[YellowTaxiTrip](samplePath)
+    // TLC schema has all columns as OPTIONAL
+    stats.columnMap.values.forall(_.optional) shouldBe true
+  }
+
+  it should "leave statistics deferred (lazy) in Parquet schema analysis" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val stats = Analysis.forParquet[YellowTaxiTrip](samplePath)
+    // All columns should have maybeStatistics = None (deferred, not computed during schema read)
+    stats.columnMap.values.forall(_.maybeStatistics.isEmpty) shouldBe true
+  }
+
+  it should "compute statistics for a single numeric column on demand" in {
+    import com.phasmidsoftware.tableparser.core.table.{Column, EagerStatistics, LazyStatistics}
+    val tripDistStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = false)
+    tripDistStats shouldBe a[Some[_]]
+    val col = tripDistStats.get
+    col.clazz shouldBe "Double"
+    col.optional shouldBe true
+    col.maybeStatistics shouldBe a[Some[_]]
+    val maybeStats = col.maybeStatistics
+    maybeStats match {
+      case Some(LazyStatistics(statsThunk)) =>
+        val stats = statsThunk().get
+        stats.min should be >= 0.0
+        stats.max should be >= stats.min
+      case Some(EagerStatistics(stats)) =>
+        stats.min should be >= 0.0
+        stats.max should be >= stats.min
+      case None => fail("Expected statistics for numeric column")
+    }
+  }
+
+  it should "return None for non-numeric columns when computing statistics" in {
+    import com.phasmidsoftware.tableparser.core.table.Column
+    val storeAndFwdStats = Column.statisticsFrom(samplePath, "store_and_fwd_flag")
+    storeAndFwdStats shouldBe None
+  }
+
+  it should "return None for non-existent columns when computing statistics" in {
+    import com.phasmidsoftware.tableparser.core.table.Column
+    val nonExistentStats = Column.statisticsFrom(samplePath, "nonexistent_column")
+    nonExistentStats shouldBe None
+  }
+
+  it should "support metadata-only mode (return None if no metadata)" in {
+    import com.phasmidsoftware.tableparser.core.table.Column
+    // useMetadataOnly=true (default) should return None if metadata unavailable
+    val metadataOnlyStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = true)
+    // Currently no metadata extraction implemented, so should return None
+    metadataOnlyStats shouldBe None
+  }
+
+  it should "support lazy fallback mode (return LazyStatistics if no metadata)" in {
+    import com.phasmidsoftware.tableparser.core.table.{Column, LazyStatistics}
+    // useMetadataOnly=false should return LazyStatistics even if metadata unavailable
+    val lazyStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = false)
+    lazyStats shouldBe a[Some[_]]
+    val col = lazyStats.get
+    col.maybeStatistics match {
+      case Some(LazyStatistics(_)) => succeed
+      case _ => fail("Expected LazyStatistics when useMetadataOnly=false")
+    }
+  }
+
+  // ── Dataset (multi-file) ───────────────────────────────────────────────────
+
+  behavior of "Dataset"
+
+  it should "parse a dataset directory with multiple part files" in {
     import YellowTaxiTrip.helper
-    val table = ParquetParser.parse[YellowTaxiTrip](samplePath).get
-    // Analysis should run without throwing
-//    val analysis = Analysis(table.asInstanceOf[Table[YellowTaxiTrip]])
-//    analysis should not be null
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val result = ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
+    result shouldBe a[Success[_]]
+  }
+
+  it should "produce 1000 rows total from dataset with multiple parts" in {
+    import YellowTaxiTrip.helper
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val result = ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
+    result.get.size shouldBe 1000
+  }
+
+  it should "fail with clear error when parseParquet receives a directory" in {
+    import YellowTaxiTrip.helper
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val result = ParquetParser.parse[YellowTaxiTrip](datasetPath)
+    result.failed.get shouldBe a[ParquetParserException]
+    result.failed.get.getMessage should include("directory")
+  }
+
+  it should "fail with clear error when parseDataset receives a single file" in {
+    import YellowTaxiTrip.helper
+    val filePath = samplePath
+    val result = ParquetParser.parseDataset[YellowTaxiTrip](filePath)
+    result.failed.get shouldBe a[ParquetParserException]
+    result.failed.get.getMessage should include("not a directory")
+  }
+
+  it should "analyze a dataset directory without materializing rows" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val stats = Analysis.forParquetDataset[YellowTaxiTrip](datasetPath)
+    stats.rows shouldBe 1000
+    stats.columns shouldBe 19
+  }
+
+  it should "have correct schema for dataset analysis" in {
+    import com.phasmidsoftware.tableparser.core.table.Analysis
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val stats = Analysis.forParquetDataset[YellowTaxiTrip](datasetPath)
+    stats.columnMap.get("trip_distance").map(_.clazz) shouldBe Some("Double")
+    stats.columnMap.get("passenger_count").map(_.clazz) shouldBe Some("Int")
+  }
+
+  behavior of "Parquet to CSV"
+  it should "write taxi data to CSV" in {
+    import YellowTaxiTrip.helper
+    val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
+    val outputPath = Path.of("yellowtaxitrip.csv")
+    for {
+      table <- ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
+    } table.toCSVPath(outputPath)
   }
 }

@@ -97,7 +97,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 1.3.0.
+This version of the README.md file refers to version: 1.4.0.
 
 See release notes below for history.
 
@@ -806,6 +806,10 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.3.0 -> V1.4.0
+
+* New Analyzer trait with deprecated methods for the old Analysis class and object.
+* The old Analysis class has been renamed ColumnStatistics.
 V1.2.6 -> V1.3.0
 * Now supports parsing of Parquet files; _Path_ is the primary type for accessing files.
 V1.2.5 -> V1.2.6
