@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "1.5.1"
+ThisBuild / version := "1.5.2"
 ThisBuild / scalaVersion := "2.13.17"
 ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation")
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "17")
