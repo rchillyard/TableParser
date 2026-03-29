@@ -97,8 +97,6 @@ object StandardParquetRowParser {
             .extractFieldNames(implicitly[ClassTag[Row]])
     val declaredFieldMap = runtimeClass.getDeclaredFields.map(f => f.getName -> f).toMap
 
-    println(s"DEBUG: fieldNames for ${runtimeClass.getSimpleName}: ${fieldNames.mkString(", ")}")
-
     val converters: Seq[(String, SimpleGroup => Try[Any])] =
       fieldNames.map { fieldName =>
         val field = declaredFieldMap(fieldName)
@@ -108,7 +106,6 @@ object StandardParquetRowParser {
           converterMap.get(fieldName) match {
 
             case Some(groupedConverter) =>
-              println(s"field '$fieldName': converterMap hit = ${converterMap.contains(fieldName)}, type = ${field.getType.getSimpleName}")
               // Grouped sub-case-class: delegate to its own ParquetCellConverter.
               // fieldName is used as the dispatch key; the converter ignores it
               // and reads its own columns by name via its ColumnHelper.
