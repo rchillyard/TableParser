@@ -4,7 +4,7 @@
 
 package com.phasmidsoftware.tableparser.core.write
 
-import com.phasmidsoftware.write.WritableSpec.complexFile
+import com.phasmidsoftware.tableparser.core.write.WritableSpec.complexFile
 import java.io.{File, FileWriter}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should

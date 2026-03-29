@@ -1,8 +1,8 @@
-package com.phasmidsoftware.table
+package com.phasmidsoftware.tableparser.core.table
 
-import com.phasmidsoftware.parse.CellParser
-import com.phasmidsoftware.render.CsvProduct
-import com.phasmidsoftware.table.Sequence.SequenceOrdering
+import com.phasmidsoftware.tableparser.core.parse.CellParser
+import com.phasmidsoftware.tableparser.core.render.CsvProduct
+import com.phasmidsoftware.tableparser.core.table.Sequence.SequenceOrdering
 import scala.util.{Failure, Success, Try}
 
 trait Sequential {

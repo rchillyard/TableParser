@@ -274,6 +274,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   object DailyRaptorReport {
 
+    def apply(date: LocalDate, weather: String, hawks: Hawks): DailyRaptorReport = new DailyRaptorReport(date, weather, hawks)
+
     implicit val dailyRaptorReportOrdering: Ordering[DailyRaptorReport] = NonSequential.ordering[DailyRaptorReport, LocalDate](c => c.date)
 
     object DailyRaptorReportParser extends CellParsers {
@@ -303,11 +305,18 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       val maybeFixedHeader: Option[Header] = None
 
-      val headerRowsToRead: Int = 1
+      override val headerRowsToRead: Int = 1
 
       val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
 
-      protected def builder(rows: Iterable[DailyRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
+      /**
+       * Method to construct a Table based on the given iterator of rows and the given header.
+       *
+       * @param rows   an iterator of Row objects representing the data rows.
+       * @param header a Header object representing the table's column headers.
+       * @return the constructed Table based on the input rows and header.
+       */
+      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = HeadedTable(rows, header)
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser

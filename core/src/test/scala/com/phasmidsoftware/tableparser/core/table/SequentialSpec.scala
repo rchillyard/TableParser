@@ -1,5 +1,6 @@
 package com.phasmidsoftware.table
 
+import com.phasmidsoftware.tableparser.core.table.NonSequential
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import scala.util.{Failure, Success, Try}

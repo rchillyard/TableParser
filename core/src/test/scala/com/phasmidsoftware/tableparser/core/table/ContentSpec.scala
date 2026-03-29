@@ -15,7 +15,7 @@ class ContentSpec extends AnyFlatSpec with should.Matchers {
 
   it should "ordered" in {
     val target: Content[Int] = Content(List(1, 2, 3))
-    target.ordered shouldBe List(1, 2, 3)
+    target.sorted.toSeq shouldBe List(1, 2, 3)
   }
 
   it should "sorted" in {

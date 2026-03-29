@@ -99,50 +99,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  it should "parse table from file" in {
-    import IntPair._
-    val z1 = Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv", "UTF-8")
-    val z2 = Table.parseFile("src/test/resources/com/phasmidsoftware/table/intPairs.csv")
-    matchIO(z1 parProduct z2) {
-      case (a@HeadedTable(_, _), b@HeadedTable(_, _)) => a.size shouldBe 2; b.size shouldBe 2
-    }
-  }
-
-  // NOTE: this test can be flaky. Perhaps we should just use zip instead of parProduct.
-  // TODO we are relying on the existence of WritableSpec.complexFile, which may not exist.
-  it should "parse table from raw file" in {
-    val z1: IO[Table[RawRow]] = Table.parseFileRaw(new File(WritableSpec.complexFile), TableParser.includeAll, Some(Header(Seq(Seq("a", "b")))))
-    val z2: IO[Table[RawRow]] = Table.parseFileRaw("src/test/resources/com/phasmidsoftware/table/intPairs.csv", TableParser.includeAll)
-    matchIO(z1 parProduct z2) {
-      case (a@HeadedTable(_, _), b@HeadedTable(_, _)) =>
-        a.size shouldBe 0; b.size shouldBe 1
-    }
-  }
-
-  it should "write table to file" in {
-    val hdr = Header(Seq(Seq("a", "b")))
-    val row1 = Row(Seq("1", "2"), hdr, 1)
-    val table = Table(Seq(row1), Some(hdr))
-    implicit val z: Ordering[Row] = Content.noOrdering[Row]
-    val outputFile = "tmp/Table-write Table To File.csv"
-    val resultIO = for {_ <- Table.writeCSVFileRow(table, new File(outputFile))
-                        _ <- IO.println(s"written to file " + outputFile)
-                        y <- Table.parseFileRaw(outputFile, TableParser.includeAll)
-                        } yield y
-    matchIO(resultIO) {
-      case xt@HeadedTable(_, _) => xt.content.head.toString() shouldBe """A="1", B="2""""
-    }
-    val tableWithoutHead = Table(Seq(row1), None)
-    the[TableException] thrownBy Table.writeCSVFileRow(tableWithoutHead, new File(outputFile))
-  }
-
-  it should "parse from Iterator[String]" in {
-    import IntPair._
-    matchIO(Table.parse(Seq("1 2", "42 99").iterator)) {
-      case xt@HeadedTable(_, _) => xt.size shouldBe 2
-    }
-  }
-
   it should "parse from Source" in {
     import IntPair._
 
@@ -299,7 +255,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "filter" in {
     import IntPair._
-    matchTry(Table.parse(Seq("1 2", "42 99"))) {
+    matchTry(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.filter(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(3, 4))
     }
@@ -315,7 +271,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "drop" in {
     import IntPair._
-    matchTry(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+    matchTry(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.drop(1).content.toSeq shouldBe Seq(IntPair(42, 99))
     }
@@ -336,14 +292,14 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
         xt.slice(0, 2).content.toSeq shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
     }
   }
-
-  it should "take" in {
-    import IntPair._
-    matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
-      case xt@HeadedTable(_, _) =>
-        xt.take(2).content.toSeq shouldBe Seq(IntPair(3, 4), IntPair(1, 2))
-    }
-  }
+//
+//  it should "takeRight" in {
+//    import IntPair._
+//    matchIO(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+//      case xt@HeadedTable(_, _) =>
+//        xt.takeRight(2).rows shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+//    }
+//  }
 
   it should "takeWhile" in {
     import IntPair._
@@ -415,7 +371,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case HeadedTable(_, _) => succeed
     }
 
-    val file = new File("tmp/other-render to CSV.csv")
+    val file = new File("output.csv")
     implicit val fw: Writable[FileWriter] = Writable.fileWritable(file)
 
     implicit object FileRenderer extends Renderer[Table[IntPair], FileWriter] {

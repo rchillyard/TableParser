@@ -1,4 +1,4 @@
-package com.phasmidsoftware.table
+package com.phasmidsoftware.tableparser.core.table
 
 trait Validity[T] {
 
