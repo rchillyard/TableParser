@@ -63,6 +63,10 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
     }
   }
 
+  behavior of "Histogram"
+
+  it should "make a histogram"
+
   behavior of "Main"
 
   it should "doMain" in {

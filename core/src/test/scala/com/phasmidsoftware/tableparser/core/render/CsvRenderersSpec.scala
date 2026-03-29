@@ -22,6 +22,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   object IntPair {
 
+    implicit val intPairOrdering: Ordering[IntPair] = NonSequential.ordering[IntPair, Int](c => c.a)
+
     object IntPairParser extends JavaTokenParsers {
       lazy val pair: Parser[(Int, Int)] = wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }
     }
@@ -270,6 +272,56 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   }
 
 
+  object DailyRaptorReport {
+
+    def apply(date: LocalDate, weather: String, hawks: Hawks): DailyRaptorReport = new DailyRaptorReport(date, weather, hawks)
+
+    implicit val dailyRaptorReportOrdering: Ordering[DailyRaptorReport] = NonSequential.ordering[DailyRaptorReport, LocalDate](c => c.date)
+
+    object DailyRaptorReportParser extends CellParsers {
+      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+
+      def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
+
+      implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
+      implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
+      implicit val hawksCellParser: CellParser[Hawks] = cellParser2(Hawks.apply)
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser3(DailyRaptorReport.apply)
+    }
+
+    import DailyRaptorReportParser._
+
+    trait DailyRaptorReportConfig extends DefaultRowConfig {
+      override val string: Regex = """[\w/\- ]+""".r
+      override val delimiter: Regex = """\t""".r
+    }
+
+    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+
+    implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
+
+    trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
+      type Row = DailyRaptorReport
+
+      val maybeFixedHeader: Option[Header] = None
+
+      override val headerRowsToRead: Int = 1
+
+      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+
+      /**
+       * Method to construct a Table based on the given iterator of rows and the given header.
+       *
+       * @param rows   an iterator of Row objects representing the data rows.
+       * @param header a Header object representing the table's column headers.
+       * @return the constructed Table based on the input rows and header.
+       */
+      protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[DailyRaptorReport] = HeadedTable(rows, header)
+    }
+
+    implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
+  }
+
   it should "parse and output raptors from raptors.csv" in {
     import DailyRaptorReport._
 
@@ -308,6 +360,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   case class NestedRaptorReport(date: LocalDate, weatherHawks: WeatherHawks)
 
   object NestedRaptorReport {
+    implicit val nestedRaptorReportOrdering: Ordering[NestedRaptorReport] = NonSequential.ordering[NestedRaptorReport, LocalDate](c => c.date)
 
     object NestedRaptorReportParser extends CellParsers {
       private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
