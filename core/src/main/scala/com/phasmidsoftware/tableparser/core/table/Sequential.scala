@@ -5,6 +5,14 @@ import com.phasmidsoftware.tableparser.core.render.CsvProduct
 import com.phasmidsoftware.tableparser.core.table.Sequence.SequenceOrdering
 import scala.util.{Failure, Success, Try}
 
+/**
+ * A trait that defines a contract for types that are associated with a `Sequence`.
+ *
+ * Types extending this trait must provide an implementation for the `sequence` value,
+ * which represents an instance of the `Sequence` class.
+ *
+ * NOTE none of this modules is currently used.
+ */
 trait Sequential {
   val sequence: Sequence
 }
@@ -23,6 +31,7 @@ class Sequence(val n: Long) extends AnyVal {
 object Sequence {
   // NOTE this is unashamedly using a var.
   // CONSIDER alternative strategies to avoid use of var.
+  // Perhaps use Iterator.unfold?
   var sequence: Sequence = Sequence(0L)
 
   def apply(x: Long): Sequence = new Sequence(x)
