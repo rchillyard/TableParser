@@ -3,6 +3,7 @@ package com.phasmidsoftware.tableparser.core.table
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParIterable
 import scala.reflect.ClassTag
+import scala.util.Random
 
 /**
  * Class to represent the rows of a `Table`.
@@ -242,6 +243,16 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    */
   def head: Row =
     xs.head
+
+  /**
+   * Method to randomly sample from this Content.
+   *
+   * @param n      the odds against choosing any particular element.
+   * @param random an (implicit) Random number generator.
+   * @return a new Content[Row] with approximately size/n elements.
+   */
+  def sample(n: Int)(implicit random: Random): Content[Row] =
+    Content(xs.iterator.filter(_ => random.nextInt(n) == 0).toIndexedSeq)
 
   /**
    * Method to transform this Content[Row] into a sorted Content[S] where S is a super-class of Row and for which there is

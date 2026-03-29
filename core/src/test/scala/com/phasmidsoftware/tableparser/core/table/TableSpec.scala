@@ -194,7 +194,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  behavior of "other"
+  behavior of "Other"
 
   it should "do iterator" in {
     import IntPair._
@@ -245,35 +245,11 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
-  it should "drop" in {
-    import IntPair._
-    matchTry(Table.parse(Seq("1 2", "42 99"))) {
-      case xt@HeadedTable(_, _) =>
-        xt.drop(1).content.toSeq shouldBe Seq(IntPair(42, 99))
-    }
-  }
-
-//  it should "dropRight" in {
-//    import IntPair._
-//    matchIO(Table.parse(Seq("1 2", "42 99"))) {
-//      case xt@HeadedTable(_, _) =>
-//        xt.dropRight(1).rows shouldBe Seq(IntPair(1, 2))
-//    }
-//  }
-
   it should "empty" in {
     import IntPair._
     matchTry(Table.parse(Seq("1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.empty.content.toSeq shouldBe Seq.empty
-    }
-  }
-
-  it should "dropWhile" in {
-    import IntPair._
-    matchTry(Table.parse(Seq("3 4", "1 2", "42 99"))) {
-      case xt@HeadedTable(_, _) =>
-        xt.dropWhile(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
   }
 
@@ -290,6 +266,22 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     matchTry(Table.parse(Seq("3 4", "1 2", "42 99"))) {
       case xt@HeadedTable(_, _) =>
         xt.filterNot(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
+    }
+  }
+
+  it should "drop" in {
+    import IntPair._
+    matchTry(Table.parse(Seq("1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.drop(1).content.toSeq shouldBe Seq(IntPair(42, 99))
+    }
+  }
+
+  it should "dropWhile" in {
+    import IntPair._
+    matchTry(Table.parse(Seq("3 4", "1 2", "42 99"))) {
+      case xt@HeadedTable(_, _) =>
+        xt.dropWhile(_.equals(IntPair(3, 4))).content.toSeq shouldBe Seq(IntPair(1, 2), IntPair(42, 99))
     }
   }
 

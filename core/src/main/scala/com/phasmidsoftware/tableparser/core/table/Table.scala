@@ -97,12 +97,12 @@ trait Table[Row] extends Iterable[Row] {
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param sr          a Content of S.
+   * @param sc          a Content of S.
    * @param maybeHeader an optional Header to be used in the resulting Table.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */
-  def unit[S](sr: Content[S], maybeHeader: Option[Header]): Table[S]
+  def unit[S](sc: Content[S], maybeHeader: Option[Header]): Table[S]
 
   /**
    * Method to generate a Table[S] for a set of rows.
@@ -147,7 +147,10 @@ trait Table[Row] extends Iterable[Row] {
 
   /**
    * Method to select those rows defined by the given range.
+   *
    * NOTE: the rows are numbered 1..N.
+   *
+   * NOTE: unless explicitly ordered, the content might be in random order.
    *
    * @param n the desired row.
    * @return a new Table[Row] consisting only the row requested.
@@ -174,7 +177,7 @@ trait Table[Row] extends Iterable[Row] {
    */
   override def toArray[Element >: Row : ClassTag]: Array[Element] = {
     // XXX huh?
-    lazy val rs = content.toArray[Element]
+    lazy val rs = content.iterator.toArray[Element]
     rs
   }
 
@@ -271,6 +274,23 @@ trait Table[Row] extends Iterable[Row] {
    */
   override def filterNot(p: Row => Boolean): Table[Row] =
     processRows(_.filterNot(p))
+
+  /**
+   * Method to retain only the rows which satisfy the isValid method of ev (i.e. a Validity[Row]).
+   *
+   * @param rv (implicit) a Validity[Row].
+   * @return Table[Row] consisting only of rows which satisfy Validity.
+   */
+  def filterValid(implicit rv: Validity[Row]): Table[Row] = filter(r => rv.isValid(r))
+
+  /**
+   * Method to randomly sample from this Table.
+   *
+   * @param n      the odds against choosing any particular element.
+   * @param random an (implicit) Random number generator.
+   * @return a new Table[Row] with approximately size/n elements.
+   */
+  def sample(n: Int)(implicit random: Random): Table[Row] = processRows(c => c.sample(n))
 
   /**
    * slice (as defined by Iterable).

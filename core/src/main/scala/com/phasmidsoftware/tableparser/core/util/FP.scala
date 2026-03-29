@@ -158,7 +158,7 @@ object FP {
 
   /**
    * Sequence method to combine elements of type Option[X].
-   * The result is not defined unless any of the elements are defined.
+   * The result is not defined unless all/any? of the elements are defined.
    *
    * NOTE that the order of the resulting values will be the reverse of the input.
    * This is for performance reasons.
@@ -167,6 +167,7 @@ object FP {
    * @tparam X the underlying type.
    * @return an Option of Seq[X].
    *         NOTE: that the output collection type will be Seq, regardless of the input type
+   *         CONSIDER using Builder
    */
   def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
     xos.foldLeft(Option(Seq[X]())) { // TODO merge code with duplicate
