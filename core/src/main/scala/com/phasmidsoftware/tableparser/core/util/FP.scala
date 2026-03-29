@@ -158,7 +158,7 @@ object FP {
 
   /**
    * Sequence method to combine elements of type Option[X].
-   * The result is not defined unless all of the elements are defined.
+   * The result is not defined unless all/any? of the elements are defined.
    *
    * NOTE that the order of the resulting values will be the reverse of the input.
    * This is for performance reasons.

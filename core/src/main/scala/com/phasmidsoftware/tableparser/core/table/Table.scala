@@ -26,7 +26,7 @@ import scala.util.{Failure, Random, Try}
  */
 trait Table[Row] extends Iterable[Row] {
 
-/**
+  /**
    * Optional value of the Header of this Table, if there is one.
    */
   val maybeHeader: Option[Header]
@@ -377,7 +377,6 @@ trait Table[Row] extends Iterable[Row] {
    * @param file          instance of File where the output should be stored.
    * @param renderer      implicit value of CsvRenderer[Row].
    * @param generator     implicit value of CsvProductGenerator[Row].
-   * @param ordering      implicit value of Ordering[Row] (apparently not used but I think it is).
    * @param csvAttributes implicit value of CsvAttributes.
    */
   @deprecated("Use writeCSVFile(Path) instead", "1.3.0")
@@ -881,7 +880,7 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * Method to generate a Table[S] for a set of rows.
    * Although declared as an instance method, this method produces its result independent of this.
    *
-   * @param sc a sequence of S.
+   * @param sr a sequence of S.
    * @tparam S the underlying type of the rows and the result.
    * @return a new instance of Table[S].
    */

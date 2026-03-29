@@ -11,15 +11,15 @@ import scala.util.Try
  *
  * The file under resources is an edited version of the Metropolitan Crime Statistics 2023-01 (only the first 5,000 rows)
  *
- * @param crimeID                 (optional BigInt in hexadecimal notation) see Kaggle.
+ * @param crimeID             (optional BigInt in hexadecimal notation) see Kaggle.
  * @param month               see Kaggle.
  * @param reportedBy          see Kaggle.
  * @param fallsWithin         see Kaggle.
- * @param longitude               (optional Double) the longitude of the incident.
- * @param latitude                (optional Double) the latitude of the incident.
- * @param location                see Kaggle.
- * @param lsoaCode                see Kaggle.
- * @param lsoaName                see Kaggle.
+ * @param longitude           (optional Double) the longitude of the incident.
+ * @param latitude            (optional Double) the latitude of the incident.
+ * @param location            see Kaggle.
+ * @param lsoaCode            see Kaggle.
+ * @param lsoaName            see Kaggle.
  * @param crimeType           see Kaggle.
  * @param lastOutcomeCategory see Kaggle.
  * @param context             see Kaggle.
