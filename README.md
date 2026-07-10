@@ -8,6 +8,8 @@
 
 # Introduction to TableParser
 
+Full Scaladoc is available via [javadoc.io](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13).
+
 A functional parser of tables, implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.
 However, it is perfectly possible to parse other formats.
