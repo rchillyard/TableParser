@@ -37,6 +37,7 @@ trait CsvGenerators {
   implicit val optionBooleanGenerator: CsvGenerator[Option[Boolean]] = optionGenerator
   implicit val optionLocalDateGenerator: CsvGenerator[Option[LocalDate]] = optionGenerator
   implicit val optionLongGenerator: CsvGenerator[Option[Long]] = optionGenerator
+  implicit val optionBigIntGenerator: CsvGenerator[Option[BigInt]] = optionGenerator
   implicit val optionFloatGenerator: CsvGenerator[Option[Float]] = optionGenerator
   implicit val optionShortGenerator: CsvGenerator[Option[Short]] = optionGenerator
   implicit val optionByteGenerator: CsvGenerator[Option[Byte]] = optionGenerator

@@ -1,10 +1,4 @@
 Crime ID,Month,Reported by,Falls within,Longitude,Latitude,Location,LSOA code,LSOA name,Crime type,Last outcome category,Context
-8536e93fb3ce916daa4251bd53c1a4416ba4159a938340be4a7c40cd4873bfcf,2023-01,Metropolitan Police Service,Metropolitan Police Service,-0.681541,50.792113,On or near Fletcher Way,E01031444,Arun 016B,Violence and sexual offences,Under investigation,
-483d52d514591a895c829dece6091c31f797b7dcfd0735ac89685d1d4dabf899,2023-01,Metropolitan Police Service,Metropolitan Police Service,-0.684107,50.780541,On or near Victoria Road South,E01031437,Arun 017E,Other theft,Investigation complete; no suspect identified,
-63343c1f1236bad8ce08d130f37760172dc33b20af2b56fafd9189001d014c39,2023-01,Metropolitan Police Service,Metropolitan Police Service,-0.928552,51.923331,On or near St Marys Close,E01017714,Aylesbury Vale 004D,Violence and sexual offences,Under investigation,
-a3d980f554d3ece9e8dcda8518ae87bfa9c75d62396105d63fd10390eb7879ed,2023-01,Metropolitan Police Service,Metropolitan Police Service,-0.772051,51.827897,On or near Restharrow Road,E01017641,Aylesbury Vale 007A,Violence and sexual offences,Under investigation,
-bfb1d1da32341b7129e789130001d96f7e603088593dc55e30294bc01670ff9e,2023-01,Metropolitan Police Service,Metropolitan Police Service,-0.804965,51.811332,On or near Walton Grove,E01017637,Aylesbury Vale 017C,Violence and sexual offences,Under investigation,
-de18f4ebeefb1d66f3be2c34f1fc056d751d763b57b86c28955ec793d0f77867,2023-01,Metropolitan Police Service,Metropolitan Police Service,0.724588,52.034478,On or near Catesby Meadow,E01029920,Babergh 007H,Violence and sexual offences,Under investigation,
 ,2023-01,Metropolitan Police Service,Metropolitan Police Service,0.140127,51.588913,On or near Beansland Grove,E01000027,Barking and Dagenham 001A,Anti-social behaviour,,
 ,2023-01,Metropolitan Police Service,Metropolitan Police Service,0.140194,51.582356,On or near Hatch Grove,E01000027,Barking and Dagenham 001A,Anti-social behaviour,,
 ,2023-01,Metropolitan Police Service,Metropolitan Police Service,0.135924,51.587353,On or near Gibbfield Close,E01000027,Barking and Dagenham 001A,Anti-social behaviour,,
