@@ -1,7 +1,14 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "1.5.2"
-ThisBuild / scalaVersion := "2.13.17"
-ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation")
+ThisBuild / version := "1.6.0"
+
+// Build Scala 3 with the oldest supported LTS so that the artifacts are usable from any later Scala 3 version.
+// CircleCI also runs the tests on the current LTS (3.9).
+val scala213 = "2.13.17"
+val scala3 = "3.3.8"
+
+ThisBuild / scalaVersion := scala213
+ThisBuild / crossScalaVersions := Seq(scala213, scala3)
+ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature")
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "17")
 ThisBuild / javacOptions ++= Seq("-source", "17", "-target", "17")
 
@@ -15,6 +22,8 @@ ThisBuild / initialize := {
     s"Java $required or higher required. Current version: $current"
   )
 }
+
+Global / excludeLintKeys ++= Set(pomIncludeRepository, publishMavenStyle)
 
 ThisBuild / resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
 
@@ -32,7 +41,6 @@ val sparkVersion = "4.0.1"
 lazy val core = project.settings(
   name := "tableparser-core",
   libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "flog" % "1.0.10",
     "io.spray" %% "spray-json" % "1.3.6",
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
     "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
@@ -55,7 +63,7 @@ lazy val cats = project.dependsOn(core).settings(
 )
 
 lazy val parquet = project.dependsOn(core).settings(
-name := "tableparser-parquet",
+  name := "tableparser-parquet",
   libraryDependencies ++= Seq(
     "org.apache.parquet" % "parquet-column" % "1.15.2",
     "org.apache.parquet" % "parquet-hadoop" % "1.15.2",
@@ -65,8 +73,10 @@ name := "tableparser-parquet",
   )
 )
 
+// NOTE: Spark is not published for Scala 3, so this module is built for Scala 2.13 only.
 lazy val spark = project.dependsOn(core).settings(
   name := "tableparser-spark",
+  crossScalaVersions := Seq(scala213),
   libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.slf4j" % "slf4j-simple" % "2.0.17" % Test,
@@ -92,6 +102,8 @@ lazy val root = (project in file("."))
         .aggregate(core, cats, parquet, spark, zio)
         .settings(
           name := "TableParser",
+          // Each module is cross-built with its own crossScalaVersions.
+          crossScalaVersions := Nil,
           publish / skip := true
         )
 

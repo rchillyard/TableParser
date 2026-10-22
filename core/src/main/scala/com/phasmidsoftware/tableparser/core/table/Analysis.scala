@@ -376,8 +376,11 @@ object Statistics {
  * To analyze a specific dataset, update the `crimeFile` variable with the correct
  * resource file path before running the application.
  */
-object Main extends App {
-  doMain(FP.resource[Crime]("2023-01-metropolitan-street-sample.csv"))
+object Main {
+  // NOTE: not `extends App`: in Scala 3, the body of an App runs when the object is initialized
+  // (e.g. by a call of doMain), and its parallel foreach then deadlocks on that initialization.
+  def main(args: Array[String]): Unit =
+    doMain(FP.resource[Crime]("2023-01-metropolitan-street-sample.csv"))
 
   /**
    * Executes the main logic of the program, which includes reading a crime data file,

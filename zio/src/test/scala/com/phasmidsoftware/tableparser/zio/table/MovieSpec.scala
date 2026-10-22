@@ -53,7 +53,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "fail to parse the first (edited) movie from the IMDB dataset" in {
-    import com.phasmidsoftware.tableparser.core.examples.Movie._
+    import com.phasmidsoftware.tableparser.core.examples.Movie.{MovieTableParser => _, _}
 
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
@@ -76,7 +76,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse all the following rows" in {
-    import com.phasmidsoftware.tableparser.core.examples.Movie._
+    import com.phasmidsoftware.tableparser.core.examples.Movie.{MovieTableParser => _, _}
 
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie
@@ -99,7 +99,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse and transform the following rows with simple map" in {
-    import com.phasmidsoftware.tableparser.core.examples.Movie._
+    import com.phasmidsoftware.tableparser.core.examples.Movie.{MovieTableParser => _, _}
 
     implicit object MovieTableParser extends StringTableParser[Table[Movie]] {
       type Row = Movie

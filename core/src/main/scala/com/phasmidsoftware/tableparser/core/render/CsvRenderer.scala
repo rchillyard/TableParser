@@ -127,7 +127,7 @@ abstract class ProductCsvRenderer[T <: Product : ClassTag](implicit c: CsvAttrib
  * @tparam T the type of elements contained within the table; must have implicit evidence for `CsvRenderer` and `CsvGenerator`.
  * @tparam O the type of the writable output; must have implicit evidence for `Writable`.
  */
-abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable] extends Renderer[Table[T], Try[O]] {
+abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], z3: Writable[O]) extends Renderer[Table[T], Try[O]] {
 
   /**
    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
@@ -187,7 +187,7 @@ case class CsvTableStringRenderer[T]()(implicit z1: CsvRenderer[T], z2: CsvGener
  * @param csvAttributes implicit instance of CsvAttributes.
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
-case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](path: Path)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(path.toFile))
+case class CsvTableFileRenderer[T](path: Path)(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(z1, z2, Writable.fileWritable(path.toFile))
 
 /**
  * Singleton companion object providing a factory method to create instances of `CsvTableFileRenderer`.

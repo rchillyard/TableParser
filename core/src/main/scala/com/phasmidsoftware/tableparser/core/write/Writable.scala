@@ -84,9 +84,9 @@ trait Writable[O] {
    */
   def writeValue(o: O)(x: Any): O =
     if (x.toString.contains(delimiter.toString) || x.toString.contains(sQuote))
-    writeQuoted(o)(x.toString)
-  else
-    writeRaw(o)(x.toString)
+      writeQuoted(o)(x.toString)
+    else
+      writeRaw(o)(x.toString)
 
   /**
    * Method to write a character sequence to the given instance o, but within quotes.

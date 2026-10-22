@@ -99,7 +99,11 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 1.5.0.
+This version of the README.md file refers to version: 1.6.0.
+
+From version 1.6.0, the core, cats, parquet and zio modules are published for both Scala 2.13 and Scala 3
+(e.g. _tableparser-core_2.13_ and _tableparser-core_3_; the Scala 3 artifacts are built with Scala 3.3 LTS).
+The spark module remains Scala 2.13 only, because Spark is not published for Scala 3.
 
 See release notes below for history.
 
@@ -880,6 +884,11 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.5.2 -> V1.6.0
+* Cross-built for Scala 2.13 and Scala 3 (except for the spark module, which is 2.13 only). No API changes,
+  except that a few context bounds became explicit implicit parameter lists (so that callers may pass them explicitly on Scala 3.6+)
+  and `Main` (in core/table/Analysis.scala) no longer extends `App`.
+* The unused dependency on flog has been removed.
 V1.4.1 -> V1.5.0
 Implemented column-grouping of flat Parquet files (13. Grouped Case Class Mapping)
 See [TableParserParquetDesign](TableParserParquetDesign.md)
