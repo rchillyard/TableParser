@@ -1,42 +1,48 @@
-# Scala CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/sample-config/ for more details
-#
-version: 2
+# Scala CircleCI 2.1 configuration file
+version: 2.1
+
 jobs:
   build:
     docker:
-      # specify the version you desire here
       - image: cimg/openjdk:17.0
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
 
     working_directory: ~/repo
 
     environment:
-      # Customize the JVM maximum heap limit
       JVM_OPTS: -Xmx3200m
       TERM: dumb
 
     steps:
       - checkout
 
-      # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "build.sbt" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
+            - v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}
+            - v2-dependencies-
 
-      - run: cat /dev/null | sbt test:compile
+      - run:
+          name: Compile (2.13 and 3.3)
+          command: sbt +Test/compile
 
       - save_cache:
           paths:
-            - ~/.m2
-          key: v1-dependencies--{{ checksum "build.sbt" }}
+            - ~/.sbt
+            - ~/.ivy2/cache
+            - ~/.cache/coursier
+          key: v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}
 
-      # run tests!
-      - run: cat /dev/null | sbt test:test
+      - run:
+          name: Test (2.13 and 3.3)
+          command: sbt +test
+
+      # The Scala 3 modules are built with 3.3 (LTS) but should also work on the current LTS.
+      # The spark module is Scala 2.13 only, so the modules are named explicitly.
+      - run:
+          name: Test (Scala 3.9)
+          command: sbt "++3.9.0!" core/test cats/test parquet/test zio/test
+
+workflows:
+  version: 2
+  build-and-test:
+    jobs:
+      - build
