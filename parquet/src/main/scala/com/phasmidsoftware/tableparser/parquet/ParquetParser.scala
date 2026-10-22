@@ -44,7 +44,7 @@ object ParquetParser {
     val capturedHelper = helper  // capture before entering anonymous class
 
     val parser = new ParquetTableParser[Row] {
-      val helper: ColumnHelper[Row] = capturedHelper
+      val helper: ColumnHelper[this.Row] = capturedHelper
     }
 
     parser.parseParquet(path)
@@ -67,7 +67,7 @@ object ParquetParser {
     val capturedHelper = helper  // capture before entering anonymous class
 
     val parser = new ParquetTableParser[Row] {
-      val helper: ColumnHelper[Row] = capturedHelper
+      val helper: ColumnHelper[this.Row] = capturedHelper
     }
 
     parser.parseParquetDataset(path)

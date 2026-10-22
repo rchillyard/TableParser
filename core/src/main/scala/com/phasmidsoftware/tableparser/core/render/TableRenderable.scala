@@ -46,7 +46,7 @@ trait TableRenderable[X] {
    * @tparam O a type which supports Writable (via evidence of type Writable[O])
    * @return a new (or possibly old) instance of O.
    */
-  def renderToWritable[O: Writable]: O
+  def renderToWritable[O](implicit z: Writable[O]): O
 
   /**
    * Method to render a table in a hierarchical fashion.

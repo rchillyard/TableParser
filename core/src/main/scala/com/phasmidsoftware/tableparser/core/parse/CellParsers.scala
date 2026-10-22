@@ -648,7 +648,7 @@ trait CellParsers {
     columnHelper()
 
   // CONSIDER inlining readCellWithHeader
-  private def readCell[T <: Product : ClassTag : ColumnHelper, P: CellParser](wo: Option[String], row: Row, columns: Header)(p: String): Try[P] = // if (columns.exists)
+  private def readCell[T <: Product, P](wo: Option[String], row: Row, columns: Header)(p: String)(implicit z1: ClassTag[T], z2: ColumnHelper[T], z3: CellParser[P]): Try[P] = // if (columns.exists)
     readCellWithHeader(wo, row, columns, p)
 
   /**

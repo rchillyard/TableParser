@@ -220,7 +220,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "flatMap" in {
-    val f: IntPair => Table[IntPair] = p => HeadedTable(Seq(p), Header())
+    val f: IntPair => Table[IntPair] = p => HeadedTable(Seq(p), Header.create())
 
     import IntPair._
     matchTry(Table.parse(Seq("1 2", "42 99"))) {

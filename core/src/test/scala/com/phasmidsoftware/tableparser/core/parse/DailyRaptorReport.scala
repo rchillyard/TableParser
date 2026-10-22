@@ -30,7 +30,7 @@ object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerator
 
   object DailyRaptorReportParser extends CellParsers with CsvGenerators with CsvRenderers {
     implicit val dateParser: CellParser[LocalDate] =
-      cellParser(LocalDate.parse(_: String, DateTimeFormat.forPattern("MM/dd/yyyy")))
+      this.cellParser(LocalDate.parse(_: String, DateTimeFormat.forPattern("MM/dd/yyyy")))
     implicit val helper: ColumnHelper[DailyRaptorReport] =
       columnHelper()
   }

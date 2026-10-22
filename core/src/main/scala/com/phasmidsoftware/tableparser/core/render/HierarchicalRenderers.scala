@@ -64,15 +64,15 @@ trait HierarchicalRenderers {
      * @param attrs a map of attributes for this kind of output.
      * @return an instance of type String.
      */
-    override def render(h: Header, attrs: Map[String, String]): Node = 
-      write.Node(style, attrs, headerElements(h).map((t: String) => renderer.render(t)))
+      override def render(h: Header, attrs: Map[String, String]): Node =
+        write.Node(this.style, attrs, headerElements(h).map((t: String) => renderer.render(t)))
 
-    private def headerElements(h: Header): Seq[String] = 
-      if (sequenced) 
-        "" +: h.xs
-    else 
-      h.xs
-  }
+      private def headerElements(h: Header): Seq[String] =
+        if (sequenced)
+          "" +: h.xs
+        else
+          h.xs
+    }
 
   /**
    * Method to return a HierarchicalRenderer[ Seq[T] ].
@@ -83,9 +83,9 @@ trait HierarchicalRenderers {
    */
   def sequenceRenderer[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[Seq[T]] = 
     new TaggedHierarchicalRenderer[Seq[T]](style, attrs) {
-    override def render(ts: Seq[T], attrs: Map[String, String]): Node = 
-      write.Node(style, attrs, ts map (implicitly[HierarchicalRenderer[T]].render(_)))
-  }
+      override def render(ts: Seq[T], attrs: Map[String, String]): Node =
+        write.Node(this.style, attrs, ts map (implicitly[HierarchicalRenderer[T]].render(_)))
+    }
 
   /**
    *
@@ -126,7 +126,7 @@ trait HierarchicalRenderers {
     new TaggedHierarchicalRenderer[Option[T]](style, attrs) {
     override def render(to: Option[T], attrs: Map[String, String]): Node = to match {
       case Some(t) => 
-        write.Node(style, attrs, Seq(implicitly[HierarchicalRenderer[T]].render(t)))
+        write.Node(this.style, attrs, Seq(implicitly[HierarchicalRenderer[T]].render(t)))
       case None => 
         Node("", None, Map(), Nil)
     }

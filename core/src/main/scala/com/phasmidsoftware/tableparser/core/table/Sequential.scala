@@ -86,7 +86,7 @@ object NonSequential {
    * @return an Ordering[T]
    */
   def optionalOrdering[T, P: OrderingWithZero](f: T => Option[P]): Ordering[T] = (x: T, y: T) => {
-    implicit val po = implicitly[OrderingWithZero[P]] // XXX You should ignore the request to add a type annotation here.
+    val po = implicitly[OrderingWithZero[P]]
     (f(x), f(y)) match {
       case (Some(a), Some(b)) =>
         po.compare(a, b)
