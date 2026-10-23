@@ -24,7 +24,6 @@ import scala.util.Try
  * @param lastOutcomeCategory see Kaggle.
  * @param context             see Kaggle.
  */
-@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 case class Crime(crimeID: Option[BigInt],
                  month: String,
                  reportedBy: String,
@@ -40,13 +39,11 @@ case class Crime(crimeID: Option[BigInt],
   def brief: Option[CrimeLocation] = for (long <- longitude; lat <- latitude) yield CrimeLocation(crimeID, long, lat)
 }
 
-@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 case class CrimeLocation(crimeID: Option[BigInt],
                          longitude: Double,
                          latitude: Double) {
 }
 
-@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object CrimeParser extends CellParsers {
 
   /**
@@ -84,7 +81,6 @@ object CrimeParser extends CellParsers {
   implicit object CrimeTableParser extends CrimeTableParser
 }
 
-@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object CrimeRenderer extends CsvRenderers {
 
   import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
@@ -103,7 +99,6 @@ object CrimeRenderer extends CsvRenderers {
   implicit val crimeRenderer: CsvProduct[Crime] = rendererGenerator12(Crime.apply)
 }
 
-@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object CrimeLocationRenderer extends CsvRenderers {
 
   import com.phasmidsoftware.tableparser.core.render.CsvRenderers._

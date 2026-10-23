@@ -137,6 +137,15 @@ These decide what can change without notice, and what needs a migration path.
    - Enums for the sealed hierarchies, the indentation-syntax rewrite, and `-Wunused:all`.
    - Raise coverage well above 62%; Comparer aims for 100%.
    - Migrate CSYE7200 (in CSYE7200, from which `CSYE7200_Fall2026` is derived) and LaScala to it.
+
+   2.0 is built in stages on the `2_0_0` branch, each merged into `master` by its own PR:
+   1. **Groundwork:** a Scala 3-only build without spark; the examples, `Main` and `EvaluateZIO` move into the tests; `Sequential` and the 1.3.0/1.4.0 deprecations are removed.
+   2. **Scala 3 idioms:** `given`/`using`, enums, top-level definitions, `infix def`.
+   3. **Derivation for parsing:** `CellParser` derives, with field names from `Mirror`; `Reflection` goes.
+   4. **Derivation for rendering:** `CsvRenderer`, `CsvGenerator` and the hierarchical renderers.
+   5. **Core types:** `Content` sequential by default, `Table.scala` split, casts and `ClassTag`s removed.
+   6. **Dependencies:** circe for spray-json, an encryption module, `java.time` for Joda-Time.
+   7. **Finish:** the indentation-syntax rewrite, coverage, the README with a migration table, and the release.
 5. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
 
 ## Appendix: how the figures were measured

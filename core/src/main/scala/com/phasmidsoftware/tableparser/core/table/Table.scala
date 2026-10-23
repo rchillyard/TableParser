@@ -370,20 +370,6 @@ trait Table[Row] extends Iterable[Row] {
     CsvTableFileRenderer[Row](outputPath).render(this).map(_.close()).getOrElse(throw TableException(s"Failed to write CSV to $outputPath"))
 
   /**
-   * Method to render this Table[T] as a CSV file with (maybe) header.
-   *
-   * TESTME (probably tested only in it)
-   *
-   * @param file          instance of File where the output should be stored.
-   * @param renderer      implicit value of CsvRenderer[Row].
-   * @param generator     implicit value of CsvProductGenerator[Row].
-   * @param csvAttributes implicit value of CsvAttributes.
-   */
-  @deprecated("Use writeCSVFile(Path) instead", "1.3.0")
-  def writeCSVFile(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
-    CsvTableFileRenderer[Row](file.toPath).render(this)
-
-  /**
    * Writes the contents of the current table to a CSV file at the specified path.
    *
    * @param path          The file system path where the CSV file will be written.
@@ -555,31 +541,6 @@ object Table {
     parseFile(path)
   }
 
-  /**
-   * Method to parse a table from a File.
-   *
-   * NOTE: you should use parseFile(String) if you have a pathname in String form.
-   *
-   * TESTME
-   *
-   * @param f   the File (call by name in case there is an exception thrown while constructing the file).
-   * @param enc the explicit encoding.
-   * @tparam T the type of the resulting table.
-   * @return an Try[T]
-   */
-  @deprecated("Use parseFile(Path) instead", "1.3.0")
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] =
-    parseFile(f.toPath)
-
-  @deprecated("Use parseFile(Path) instead", "1.3.0")
-  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] =
-    parseFile(Paths.get(pathname))
-
-  @deprecated("Use parseFile(Path, String) instead", "1.3.0")
-  def parseFile[T: TableParser](f: => File, enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
-    parseFile(f.toPath)
-  }
 //
 //  /**
 //   * Method to parse a table from an File.
@@ -596,19 +557,6 @@ object Table {
 //  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] =
 //    parse(sourceFromFile(f))
 
-  /**
-   * Method to parse a table from a File.
-   *
-   * @param pathname the file pathname.
-   * @param enc      the explicit encoding.
-   * @tparam T the type of the resulting table.
-   * @return an Try[T]
-   */
-  @deprecated("Use parseFile(Path, String) instead", "1.3.0")
-  def parseFile[T: TableParser](pathname: String, enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
-    parseFile(Paths.get(pathname))
-  }
 //
 //  /**
 //   * Method to parse a table from an File.
@@ -688,29 +636,6 @@ object Table {
   def parsePathRaw(path: Path, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](path)
-  }
-
-  /**
-   * Parses a file to produce a `Table` of `RawRow`, applying a predicate to filter rows
-   * and optionally using a fixed header. This method is deprecated and should be replaced
-   * with `parseFileRaw(Path, Try[RawRow] => Boolean, Option[Header] = None, Boolean = true)`.
-   *
-   * @param f                the input file to parse
-   * @param predicate        a function that determines whether a given `Try[RawRow]`
-   *                         should be included in the output table
-   * @param maybeFixedHeader an optional fixed header to be used instead of extracting
-   *                         it from the file
-   * @param forgiving        a flag indicating if parsing should continue despite errors,
-   *                         default is true
-   * @param codec            an implicit `Codec` used to handle the file's character
-   *                         encoding
-   * @return a `Try` containing the parsed `Table` of `RawRow` if
-   *         successful, or an error otherwise
-   */
-  @deprecated("Use parseFileRaw(Path, Try[RawRow] => Boolean, Option[Header] = None, Boolean = true) instead", "1.3.0")
-  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
-    parseFile[Table[RawRow]](f.toPath)
   }
 
   /**
@@ -796,7 +721,7 @@ object Table {
       case Some(hdr) =>
         implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         // CONSIDER this is a bit ugly
-        t.writeCSVFile(file)
+        t.writeCSVFile(file.toPath)
       case _ =>
         throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
     }
