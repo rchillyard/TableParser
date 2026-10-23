@@ -23,7 +23,7 @@ object Derivation {
    */
   inline def fieldNames[Ls <: Tuple]: List[String] = inline erasedValue[Ls] match {
     case _: EmptyTuple => Nil
-    case _: (l *: ls) => constValue[l].asInstanceOf[String] :: fieldNames[ls]
+    case _: (l *: ls) => constValue[l].toString :: fieldNames[ls]
   }
 }
 

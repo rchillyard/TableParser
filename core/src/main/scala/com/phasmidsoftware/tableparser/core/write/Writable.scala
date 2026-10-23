@@ -165,8 +165,10 @@ object Writable {
       def unit: FileWriter =
         new FileWriter(file)
 
-      def writeRaw(o: FileWriter)(x: CharSequence): FileWriter =
-        o.append(x).asInstanceOf[FileWriter]
+      def writeRaw(o: FileWriter)(x: CharSequence): FileWriter = {
+        o.append(x)
+        o
+      }
 
       override def close(o: FileWriter): Unit =
         o.close()
