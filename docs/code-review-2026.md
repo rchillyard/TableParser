@@ -119,11 +119,12 @@ These decide what can change without notice, and what needs a migration path.
    - Update tsec to 0.6.0, and then cats-effect, zio and parquet, as far as the pins allow.
    - Either reinstate the `src/it` tests or delete them.
    - Report coverage in CI, so that 2.0 can be measured against it.
-3. **Decide**, before 2.0:
-   - **Spark.** 2.0 is Scala 3 only, and Spark isn't. Either keep `tableparser-spark` on the 1.x line (and TableParserApps with it), or drop it. I'd keep it on 1.x: it's 203 lines, and its users are on 2.13 anyway.
-   - **JSON.** Replace spray-json with circe, or move JSON into its own module.
-   - **Encryption.** Keep it in cats (with tsec 0.6.0), or move it into its own module, so that the cats module depends on nothing but cats-effect.
-   - **`FP`.** CSYE7200 uses `core.util.FP` for its own sake, which suggests it's a general-purpose utility living in the wrong library. Keep it, or point CSYE7200 elsewhere.
+3. **Decided** (October 23, 2026):
+   - **Spark** stays on the 1.x line. 2.0 is Scala 3 only, and Spark isn't published for Scala 3. `tableparser-spark` (203 lines) and TableParserApps stay on 1.x.
+   - **JSON:** replace spray-json with circe in 2.0.
+   - **Encryption** moves out of cats into its own module, so that the cats module depends on nothing but cats-effect.
+   - **`FP`** stays in TableParser, since CSYE7200 uses it. Anything useful from LaScala's `FP` is copied in, not depended on, because LaScala is being retired. Start from the `FP` functions that CSYE7200 actually uses.
+   - **Branches:** after the last 1.x release, a long-lived `1.x` branch is cut from `master` for spark and any 1.x fixes. `master` then becomes 2.x.
 4. **2.0.0 (Scala 3 only)**: give TableParser the Comparer treatment.
    - **Derivation:** replace the four arity families and `Reflection` with `derives`, using `Mirror.ProductOf` for the field types and `MirroredElemLabels` for their names (playbook §6–7). This removes the 13- and 19-field limits as well as about 3,700 lines.
    - `given`/`using` throughout, with no implicit conversions or primitive givens.
