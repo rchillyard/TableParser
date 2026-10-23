@@ -1,9 +1,7 @@
 package com.phasmidsoftware.tableparser.parquet
 
-import com.phasmidsoftware.tableparser.core.parse.ColumnHelper
 import com.phasmidsoftware.tableparser.core.table.Table
 import java.nio.file.Path
-import scala.reflect.ClassTag
 import scala.util.Try
 
 /**
@@ -11,9 +9,7 @@ import scala.util.Try
  *
  * Typical usage for single files:
  * {{{
- *   import com.phasmidsoftware.tableparser.parquet.ParquetParser._
- *
- *   implicit val helper: ColumnHelper[YellowTaxiTrip] =
+ *   given ColumnHelper[YellowTaxiTrip] =
  *     columnHelper(camelToSnakeCaseColumnNameMapper)
  *
  *   val result: Try[Table[YellowTaxiTrip]] =
@@ -25,6 +21,9 @@ import scala.util.Try
  *   val result: Try[Table[YellowTaxiTrip]] =
  *     ParquetParser.parseDataset[YellowTaxiTrip](Path.of("data/yellow_2024"))
  * }}}
+ *
+ * Row's ParquetCellConverter is its own given, if it has one; otherwise it's derived
+ * (see ParquetCellConverter.derived), using the ColumnHelper of each case class.
  */
 object ParquetParser {
 
@@ -33,43 +32,21 @@ object ParquetParser {
    * Fails if path is a directory; use parseDataset for dataset directories.
    *
    * @param path a java.nio.file.Path to a .parquet file.
-   * @param helper the ColumnHelper providing parameter-to-column name mapping.
    * @tparam Row the target case class type.
    * @return a Try[Table[Row]].
    */
-  def parse[Row <: Product : ClassTag](
-                                              path: Path
-                                      )(using helper: ColumnHelper[Row]): Try[Table[Row]] = {
-
-    val capturedHelper = helper  // capture before entering anonymous class
-
-    val parser = new ParquetTableParser[Row] {
-      val helper: ColumnHelper[this.Row] = capturedHelper
-    }
-
-    parser.parseParquet(path)
-  }
+  inline def parse[Row](path: Path): Try[Table[Row]] =
+    new ParquetTableParser[Row](using ParquetCellConverter[Row]).parseParquet(path)
 
   /**
    * Parse a Parquet dataset directory into a Table[Row].
    * Dataset directories contain multiple part-*.parquet files.
    * Fails if path is not a directory; use parse for single files.
    *
-   * @param path   a java.nio.file.Path to a directory containing part files.
-   * @param helper the ColumnHelper providing parameter-to-column name mapping.
+   * @param path a java.nio.file.Path to a directory containing part files.
    * @tparam Row the target case class type.
    * @return a Try[Table[Row]].
    */
-  def parseDataset[Row <: Product : ClassTag](
-                                                     path: Path
-                                             )(using helper: ColumnHelper[Row]): Try[Table[Row]] = {
-
-    val capturedHelper = helper  // capture before entering anonymous class
-
-    val parser = new ParquetTableParser[Row] {
-      val helper: ColumnHelper[this.Row] = capturedHelper
-    }
-
-    parser.parseParquetDataset(path)
-  }
+  inline def parseDataset[Row](path: Path): Try[Table[Row]] =
+    new ParquetTableParser[Row](using ParquetCellConverter[Row]).parseParquetDataset(path)
 }

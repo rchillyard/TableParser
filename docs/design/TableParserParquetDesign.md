@@ -5,6 +5,14 @@
 **Version:** 1.5.0  
 **Status:** Implemented
 
+> **2.0.0:** the mapping of columns to case-class fields now comes from the `Mirror`, not reflection.
+> `ParquetCellConverter.derived` (used automatically by `ParquetParser.parse`) replaces `converter2`–`converter8`,
+> `StandardParquetRowParser`, and `ParquetTableParser`'s `helper`, `converterMap` and `groupedHelpers`:
+> grouped sub-case-classes need only their `ColumnHelper`s.
+> Each converter lists the columns it reads (`ParquetCellConverter.columns`), and `ParquetSchemaValidator` checks those,
+> including that each column's type matches its parameter's. Option fields use the converter of their parameter's type,
+> not one chosen from the Parquet type (§ on `convertOption` below describes 1.x).
+
 ---
 
 ## 1. Motivation

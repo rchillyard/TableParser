@@ -1,6 +1,6 @@
 package com.phasmidsoftware.tableparser.parquet
 
-import com.phasmidsoftware.tableparser.core.parse.{ColumnHelper, TableBuilder}
+import com.phasmidsoftware.tableparser.core.parse.TableBuilder
 import com.phasmidsoftware.tableparser.core.table.{Content, HeadedTable, Header, Table}
 import java.nio.file.{Files, Path}
 import org.apache.hadoop.conf.Configuration
@@ -10,49 +10,27 @@ import org.apache.parquet.example.data.simple.SimpleGroup
 import org.apache.parquet.hadoop.ParquetReader
 import org.apache.parquet.hadoop.example.GroupReadSupport
 import org.apache.parquet.schema.MessageType
-import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 /**
  * A TableBuilder for Parquet sources (single files or dataset directories).
  *
  * Reads a Parquet file or dataset directory into a Table[Row] using
- * ParquetSchemaValidator, StandardParquetRowParser, and ParquetCellConverter.
+ * ParquetSchemaValidator and the ParquetCellConverter of Row.
  *
  * Extends TableBuilder directly rather than TableParser, since the Parquet
  * read path does not involve Iterator[String], header rows, or LineParser.
  *
- * For flat schemas (no grouped sub-case-classes), only `helper` needs to be
- * provided. For grouped schemas, override `converterMap` and `groupedHelpers`
- * in addition to `helper`.
+ * The converter is normally derived (see ParquetCellConverter.derived),
+ * for flat and grouped case classes alike: each case class needs only its ColumnHelper.
  *
+ * @param converter the ParquetCellConverter of R.
  * @tparam R the target case class type.
  */
-abstract class ParquetTableParser[R <: Product : ClassTag]
+class ParquetTableParser[R](using converter: ParquetCellConverter[R])
         extends TableBuilder[Table[R]] {
 
   type Row = R
-
-  /**
-   * The ColumnHelper providing parameter-to-column name mapping for the
-   * top-level Row type. Always required.
-   */
-  val helper: ColumnHelper[Row]
-
-  /**
-   * Map from top-level field name to ParquetCellConverter for that field's
-   * sub-case-class type. Only required for grouped schemas.
-   * Defaults to empty (flat schema behaviour).
-   */
-  val converterMap: Map[String, ParquetCellConverter[Any]] = Map.empty
-
-  /**
-   * Map from top-level field name to (ClassTag, ColumnHelper) for each
-   * grouped sub-case-class field. Used by ParquetSchemaValidator to
-   * recursively validate sub-class fields against the Parquet schema.
-   * Defaults to empty (flat schema behaviour).
-   */
-  val groupedHelpers: Map[String, (ClassTag[?], ColumnHelper[?])] = Map.empty
 
   /**
    * Build a Table[Row] from parsed rows and a Header derived from
@@ -116,20 +94,14 @@ abstract class ParquetTableParser[R <: Product : ClassTag]
     val schema: MessageType = readSchema(hadoopPath, conf)
 
     // Validate schema against the target case class before reading any rows.
-    // For grouped schemas, groupedHelpers provides sub-class validation info.
-    ParquetSchemaValidator.validate[Row](schema, helper, groupedHelpers) match {
+    ParquetSchemaValidator.validate[Row](schema, converter) match {
       case Failure(exception) => throw exception
       case Success(_) =>
     }
 
     val header: Header = headerFromSchema(schema)
 
-    // Build the row parser once, paying reflection cost here not per row.
-    // For grouped schemas, converterMap provides sub-class converters.
-    val rowParser: StandardParquetRowParser[Row] =
-      StandardParquetRowParser[Row](schema, helper, converterMap)
-
-    val rows: Iterator[Row] = readRows(hadoopPath, conf, schema, rowParser)
+    val rows: Iterator[Row] = readRows(hadoopPath, conf)
 
     builder(rows, header)
   }
@@ -154,12 +126,7 @@ abstract class ParquetTableParser[R <: Product : ClassTag]
     finally reader.close()
   }
 
-  private def readRows(
-                              path: HadoopPath,
-                              conf: Configuration,
-                              schema: MessageType,
-                              rowParser: StandardParquetRowParser[Row]
-                      ): Iterator[Row] = {
+  private def readRows(path: HadoopPath, conf: Configuration): Iterator[Row] = {
     val reader: ParquetReader[Group] =
       ParquetReader
               .builder(new GroupReadSupport(), path)
@@ -171,8 +138,9 @@ abstract class ParquetTableParser[R <: Product : ClassTag]
     // ensuring the reader is fully consumed before we return.
     Iterator.unfold(reader) { r =>
       Option(r.read()).map { group =>
-        val row = rowParser
-                .parse(schema, helper)(group.asInstanceOf[SimpleGroup])
+        // The converter of a case class reads each field from its own column, so it needs no column name.
+        val row = converter
+                .convert(group.asInstanceOf[SimpleGroup], "")
                 .fold(e => throw e, identity)
         row -> r
       }

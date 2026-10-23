@@ -1,11 +1,9 @@
 package com.phasmidsoftware.tableparser.parquet
 
-import com.phasmidsoftware.tableparser.core.parse.ColumnHelper
 import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Table}
 import java.nio.file.{Path, Paths}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import scala.reflect.ClassTag
 import scala.util.Success
 
 class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers {
@@ -13,28 +11,12 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers {
   private val taxiParquet: Path =
     Paths.get(getClass.getResource("/taxi_sample.parquet").toURI)
 
-  private val parser = new ParquetTableParser[YellowTaxiTripGrouped] {
-    val helper = YellowTaxiTripGrouped.helper
-    override val converterMap: Map[String, ParquetCellConverter[Any]] = Map(
-      "ids" -> TripIdentifiers.converter.asInstanceOf[ParquetCellConverter[Any]],
-      "timing" -> TripTiming.converter.asInstanceOf[ParquetCellConverter[Any]],
-      "geo" -> TripGeography.converter.asInstanceOf[ParquetCellConverter[Any]],
-      "fare" -> FareBreakdown.converter.asInstanceOf[ParquetCellConverter[Any]],
-      "metrics" -> TripMetrics.converter.asInstanceOf[ParquetCellConverter[Any]]
-    )
-    override val groupedHelpers: Map[String, (ClassTag[?], ColumnHelper[?])] = Map(
-      "ids" -> (summon[ClassTag[TripIdentifiers]], TripIdentifiers.helper),
-      "timing" -> (summon[ClassTag[TripTiming]], TripTiming.helper),
-      "geo" -> (summon[ClassTag[TripGeography]], TripGeography.helper),
-      "fare" -> (summon[ClassTag[FareBreakdown]], FareBreakdown.helper),
-      "metrics" -> (summon[ClassTag[TripMetrics]], TripMetrics.helper)
-    )
-  }
+  // The converter is derived, along with those of the five grouped sub-case-classes.
+  private val parser = new ParquetTableParser[YellowTaxiTripGrouped](using ParquetCellConverter[YellowTaxiTripGrouped])
 
   private lazy val table: Table[YellowTaxiTripGrouped] = parser.parseParquet(taxiParquet).get
 
   // The first row in the Parquet file has vendorId=2, puLocationId=75, doLocationId=237.
-  // We find it by key rather than relying on ParIterable ordering.
   private def firstRow: YellowTaxiTripGrouped =
     table.content.toSeq
             .find(r => r.geo.puLocationId.contains(75) && r.geo.doLocationId.contains(237))
