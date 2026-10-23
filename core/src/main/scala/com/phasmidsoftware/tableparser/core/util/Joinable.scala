@@ -31,6 +31,16 @@ trait Joinable[T] {
    * @return true if t is valid.
    */
   def valid(t: T): Boolean
+
+  /**
+   * Method to determine if t is an incomplete record, which must be joined to what follows it before it can be parsed:
+   * for example, a line of CSV which ends inside a quoted field (whose value contains a line break, as RFC 4180 allows).
+   * By default, nothing is incomplete.
+   *
+   * @param t a T value.
+   * @return true if t must be joined to the T that follows it.
+   */
+  def incomplete(t: T): Boolean = false
 }
 
 /**
@@ -57,6 +67,9 @@ object Joinable {
 
     def valid(t: (T, Int)): Boolean =
       tj.valid(t._1)
+
+    override def incomplete(t: (T, Int)): Boolean =
+      tj.incomplete(t._1)
   }
 
   /**
@@ -72,8 +85,12 @@ object Joinable {
      * @param t2 The second string to be joined.
      * @return A single string resulting from the concatenation of `t1` and `t2`.
      */
+    /**
+     * Method to join two lines of input, which are parts of the same record, keeping the line break between them
+     * (which belongs to the value of a quoted field, as in RFC 4180).
+     */
     def join(t1: String, t2: String): String =
-      t1 + t2
+      if (t1.isEmpty) t2 else t1 + "\n" + t2
 
     /**
      * Represents the zero (identity) value for the `String` type in the context of
@@ -91,6 +108,13 @@ object Joinable {
      */
     def valid(t: String): Boolean =
       t.nonEmpty
+
+    /**
+     * A line is incomplete if it has an odd number of quote characters ("), i.e., it ends inside a quoted field.
+     * (A quote inside a quoted field is doubled, so it doesn't change whether the number is odd.)
+     */
+    override def incomplete(t: String): Boolean =
+      t.count(_ == '"') % 2 == 1
   }
 
   /**

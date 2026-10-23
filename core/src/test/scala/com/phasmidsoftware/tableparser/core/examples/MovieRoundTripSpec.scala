@@ -21,7 +21,7 @@ class MovieRoundTripSpec extends AnyFlatSpec with Matchers {
     val result: Try[(Table[Movie], Table[Movie])] = for {
       movies <- Table.parseResource[Table[Movie]]("movie_metadata.csv", classOf[Movie])
       csv <- movies.toCSV
-      again <- Table.parse[Table[Movie]](csv.split("\n").toSeq)
+      again <- Table.parse[Table[Movie]](csv.linesIterator.toSeq)
     } yield (movies, again)
 
     matchTry(result) {
@@ -33,7 +33,7 @@ class MovieRoundTripSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "write only columns of the original file" in {
-    matchTry(for (movies <- Table.parseResource[Table[Movie]]("movie_metadata.csv", classOf[Movie]); csv <- movies.toCSV) yield csv.takeWhile(_ != '\n')) {
+    matchTry(for (movies <- Table.parseResource[Table[Movie]]("movie_metadata.csv", classOf[Movie]); csv <- movies.toCSV) yield csv.linesIterator.next()) {
       case header =>
         val original = Movie.header.split(",").toSet
         header.split(",").filterNot(original) shouldBe empty

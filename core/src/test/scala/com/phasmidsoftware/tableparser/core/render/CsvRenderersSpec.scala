@@ -261,7 +261,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
       case iIt@HeadedTable(_, _) => CsvTableStringRenderer[IntPair]().render(iIt)
     }
     matchTry(sby map (_.toString())) {
-      case "a, b\n1, 2\n42, 99\n" => succeed
+      case "a, b\r\n1, 2\r\n42, 99\r\n" => succeed
       case _ => fail("didn't match")
     }
   }
@@ -341,7 +341,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         |2018-09-22, Partly cloudy/Mostly cloudy/Overcast, 455, 3
         |2018-09-23, Overcast, 470, 2
         |2018-09-24, Overcast/Mostly cloudy, 292, 2
-        |""".stripMargin
+        |""".stripMargin.replace("\n", "\r\n") // records end with CRLF, as in RFC 4180
     matchTry(resultTry) {
       case actual =>
         println(actual)
@@ -415,7 +415,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         rt.take(1).toCSV
     }
     matchTry(wy) {
-      case "date, weather, bw, rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n" => succeed
+      case "date, weather, bw, rt\r\n2018-09-12, Dense Fog/Light Rain, 0, 0\r\n" => succeed
       case _ => fail("didn't match")
     }
   }

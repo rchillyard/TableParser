@@ -209,7 +209,7 @@ class ProductCsvProduct[T](fieldNames: List[String], fieldRenderers: List[CsvRen
  * @tparam T the type of elements contained within the table; must have implicit evidence for `CsvRenderer` and `CsvGenerator`.
  * @tparam O the type of the writable output; must have implicit evidence for `Writable`.
  */
-abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], z3: Writable[O]) extends Renderer[Table[T], Try[O]] {
+abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], z3: Writable[O], ca: CsvAttributes) extends Renderer[Table[T], Try[O]] {
 
   /**
    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
@@ -232,7 +232,7 @@ abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGene
       Try(sw.unit) map {
         o =>
           // CONSIDER can remove o2 here and just use o.
-          val o2 = sw.writeRawLine(o)(hdr)
+          val o2 = writeLine(sw, o, hdr)
           for (r <- x.content.toSeq) yield generateText(sw, tc, o2, r)
           o2
       }
@@ -249,7 +249,11 @@ abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGene
    * @return O.
    */
   protected def generateText(ow: Writable[O], tc: CsvRenderer[T], o: O, t: T): O =
-    ow.writeRawLine(o)(tc.render(t, Map()))
+    writeLine(ow, o, tc.render(t, Map()))
+
+  // Each line (record) ends with the newline of the CsvAttributes (by default, CRLF, as in RFC 4180).
+  private def writeLine(ow: Writable[O], o: O, line: CharSequence): O =
+    ow.writeRaw(ow.writeRaw(o)(line))(ca.newline)
 }
 
 /**
@@ -258,7 +262,7 @@ abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGene
  * @param csvAttributes implicit instance of CsvAttributes.
  * @tparam T the type of object to be rendered; must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
-case class CsvTableStringRenderer[T]()(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, StringBuilder]()(z1, z2, Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote))
+case class CsvTableStringRenderer[T]()(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, StringBuilder]()(z1, z2, Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote), csvAttributes)
 
 /**
  * Case class to help render a Table to a File in CSV format.
@@ -269,7 +273,7 @@ case class CsvTableStringRenderer[T]()(implicit z1: CsvRenderer[T], z2: CsvGener
  * @param csvAttributes implicit instance of CsvAttributes.
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
-case class CsvTableFileRenderer[T](path: Path)(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(z1, z2, Writable.fileWritable(path.toFile))
+case class CsvTableFileRenderer[T](path: Path)(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(z1, z2, Writable.fileWritable(path.toFile), csvAttributes)
 
 /**
  * Singleton companion object providing a factory method to create instances of `CsvTableFileRenderer`.

@@ -315,6 +315,26 @@ object CsvRenderers {
    *   val csvString: String = CsvRendererString.render("example")
    * }}}
    */
+  /**
+   * Method to quote a String as a CSV field (as in RFC 4180), if it has to be quoted to be read back as it is:
+   * that is, if it contains the delimiter, the quote character or a line break, or if it starts or ends with whitespace.
+   * Any quote characters inside it are doubled.
+   *
+   * @param w  the String.
+   * @param ca the CsvAttributes (for the delimiter and the quote character).
+   * @return the String, quoted if necessary.
+   */
+  def quoteIfNecessary(w: String)(implicit ca: CsvAttributes): String = {
+    val quote = ca.quote
+    val delimiter = ca.delimiter.trim match {
+      case "" => ca.delimiter
+      case d => d
+    }
+    val mustQuote = quote.nonEmpty && w.nonEmpty &&
+            (w.contains(delimiter) || w.contains(quote) || w.exists(c => c == '\n' || c == '\r') || w.head.isWhitespace || w.last.isWhitespace)
+    if (mustQuote) quote + w.replace(quote, quote + quote) + quote else w
+  }
+
   implicit object CsvRendererString extends StandardCsvRenderer[String] {
     /**
      * Method to render a String as a CSV cell, quoting it (as in RFC 4180) when it has to be quoted to be read back as it is:
@@ -325,16 +345,8 @@ object CsvRenderers {
      * @param attrs (unused) attributes.
      * @return the String, quoted if necessary.
      */
-    override def render(w: String, attrs: Map[String, String]): String = {
-      val quote = csvAttributes.quote
-      val delimiter = csvAttributes.delimiter.trim match {
-        case "" => csvAttributes.delimiter
-        case d => d
-      }
-      val mustQuote = quote.nonEmpty && w.nonEmpty &&
-              (w.contains(delimiter) || w.contains(quote) || w.exists(c => c == '\n' || c == '\r') || w.head.isWhitespace || w.last.isWhitespace)
-      if (mustQuote) quote + w.replace(quote, quote + quote) + quote else w
-    }
+    override def render(w: String, attrs: Map[String, String]): String =
+      CsvRenderers.quoteIfNecessary(w)(csvAttributes)
   }
 
   /**
