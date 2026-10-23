@@ -19,118 +19,118 @@ trait StringConverter[+T] {
 
 object StringConverter {
 
-  implicit object BooleanStringConverter$ extends StringConverter[Boolean] {
+  given BooleanStringConverter: StringConverter[Boolean] with {
     def convertString(w: String): Try[Boolean] =
-      implicitly[Parseable[Boolean]].parse(w)
+      summon[Parseable[Boolean]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "BooleanStringConverter$"
+    override def toString: String = "BooleanStringConverter"
   }
 
-  implicit object CharStringConverter$ extends StringConverter[Char] {
+  given CharStringConverter: StringConverter[Char] with {
     def convertString(w: String): Try[Char] =
-      implicitly[Parseable[Char]].parse(w)
+      summon[Parseable[Char]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "CharStringConverter$"
+    override def toString: String = "CharStringConverter"
   }
 
-  implicit object ByteStringConverter$ extends StringConverter[Byte] {
+  given ByteStringConverter: StringConverter[Byte] with {
     def convertString(w: String): Try[Byte] =
-      implicitly[Parseable[Byte]].parse(w)
+      summon[Parseable[Byte]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "ByteStringConverter$"
+    override def toString: String = "ByteStringConverter"
   }
 
-  implicit object ShortStringConverter$ extends StringConverter[Short] {
+  given ShortStringConverter: StringConverter[Short] with {
     def convertString(w: String): Try[Short] =
-      implicitly[Parseable[Short]].parse(w)
+      summon[Parseable[Short]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "ShortStringConverter$"
+    override def toString: String = "ShortStringConverter"
   }
 
-  implicit object IntStringConverter$ extends StringConverter[Int] {
+  given IntStringConverter: StringConverter[Int] with {
     def convertString(w: String): Try[Int] =
-      implicitly[Parseable[Int]].parse(w)
+      summon[Parseable[Int]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "IntStringConverter$"
+    override def toString: String = "IntStringConverter"
   }
 
-  implicit object LongStringConverter$ extends StringConverter[Long] {
+  given LongStringConverter: StringConverter[Long] with {
     def convertString(w: String): Try[Long] =
-      implicitly[Parseable[Long]].parse(w)
+      summon[Parseable[Long]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "LongStringConverter$"
+    override def toString: String = "LongStringConverter"
   }
 
-  implicit object BigIntStringConverter$ extends StringConverter[BigInt] {
+  given BigIntStringConverter: StringConverter[BigInt] with {
     def convertString(w: String): Try[BigInt] =
-      implicitly[Parseable[BigInt]].parse(w)
+      summon[Parseable[BigInt]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "BigIntStringConverter$"
+    override def toString: String = "BigIntStringConverter"
   }
 
-  implicit object FloatStringConverter$ extends StringConverter[Float] {
+  given FloatStringConverter: StringConverter[Float] with {
     def convertString(w: String): Try[Float] =
-      implicitly[Parseable[Float]].parse(w)
+      summon[Parseable[Float]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "FloatStringConverter$"
+    override def toString: String = "FloatStringConverter"
   }
 
-  implicit object DoubleStringConverter$ extends StringConverter[Double] {
+  given DoubleStringConverter: StringConverter[Double] with {
     def convertString(w: String): Try[Double] =
-      implicitly[Parseable[Double]].parse(w)
+      summon[Parseable[Double]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "DoubleStringConverter$"
+    override def toString: String = "DoubleStringConverter"
   }
 
-  implicit object BigDecimalStringConverter$ extends StringConverter[BigDecimal] {
+  given BigDecimalStringConverter: StringConverter[BigDecimal] with {
     def convertString(w: String): Try[BigDecimal] =
-      implicitly[Parseable[BigDecimal]].parse(w)
+      summon[Parseable[BigDecimal]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "BigDecimalStringConverter$"
+    override def toString: String = "BigDecimalStringConverter"
   }
 
   /**
    * This parser succeeds on empty strings.
    */
-  implicit object StringStringConverter$ extends StringConverter[String] {
+  given StringStringConverter: StringConverter[String] with {
     def convertString(w: String): Try[String] = Success(w)
 
     // NOTE used only for debugging
-    override def toString: String = "StringStringConverter$"
+    override def toString: String = "StringStringConverter"
   }
 
-  implicit object LocalDateParser$ extends StringConverter[LocalDate] {
+  given LocalDateParser: StringConverter[LocalDate] with {
     def convertString(w: String): Try[LocalDate] =
-      implicitly[Parseable[LocalDate]].parse(w)
+      summon[Parseable[LocalDate]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "LocalDateParser$"
+    override def toString: String = "LocalDateParser"
   }
 
-  implicit object URLParser$ extends StringConverter[URL] {
+  given URLParser: StringConverter[URL] with {
     def convertString(w: String): Try[URL] =
-      implicitly[Parseable[URL]].parse(w)
+      summon[Parseable[URL]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "URLParser$"
+    override def toString: String = "URLParser"
   }
 
-  implicit object FileParser$ extends StringConverter[File] {
+  given FileParser: StringConverter[File] with {
     def convertString(w: String): Try[File] =
-      implicitly[Parseable[File]].parse(w)
+      summon[Parseable[File]].parse(w)
 
     // NOTE used only for debugging
-    override def toString: String = "FileParser$"
+    override def toString: String = "FileParser"
   }
 
 }

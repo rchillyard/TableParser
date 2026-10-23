@@ -220,7 +220,7 @@ object HierarchicalRenderer {
    * By importing this implicit object into scope, you can provide a default mechanism for string-based hierarchical
    * rendering for types supporting the `StringHierarchicalRenderer` trait.
    */
-  implicit object StringHierarchicalRenderer extends StringHierarchicalRenderer
+  given StringHierarchicalRenderer: StringHierarchicalRenderer with {}
 
   /**
    * Trait `BooleanHierarchicalRenderer` extends the `UntaggedHierarchicalRenderer` for handling Boolean types.
@@ -263,7 +263,7 @@ object HierarchicalRenderer {
    * required, making it easier to work with Boolean rendering across hierarchical structures
    * without the need for explicitly defining renderers.
    */
-  implicit object BooleanHierarchicalRenderer extends BooleanHierarchicalRenderer
+  given BooleanHierarchicalRenderer: BooleanHierarchicalRenderer with {}
 
   /**
    * A trait for rendering instances of type `Int` in a hierarchical structure, extending
@@ -299,7 +299,7 @@ object HierarchicalRenderer {
    *   val result = someHierarchicalRenderingMethod(42) // Uses IntHierarchicalRenderer implicitly
    * }}}
    */
-  implicit object IntHierarchicalRenderer extends IntHierarchicalRenderer
+  given IntHierarchicalRenderer: IntHierarchicalRenderer with {}
 
   /**
    * Trait `LongHierarchicalRenderer` extends `UntaggedHierarchicalRenderer` specifically for rendering
@@ -325,7 +325,7 @@ object HierarchicalRenderer {
    * Implicitly used in contexts where a `Long` type value needs to be serialized
    * or represented hierarchically.
    */
-  implicit object LongHierarchicalRenderer extends LongHierarchicalRenderer
+  given LongHierarchicalRenderer: LongHierarchicalRenderer with {}
 
   /**
    * A type class responsible for rendering instances of `BigInt` in a hierarchical structure
@@ -375,7 +375,7 @@ object HierarchicalRenderer {
    * println(renderedOutput)
    * }}}
    */// TESTME
-  implicit object BigIntHierarchicalRenderer extends BigIntHierarchicalRenderer
+  given BigIntHierarchicalRenderer: BigIntHierarchicalRenderer with {}
 
   /**
    * Trait `DoubleHierarchicalRenderer` extends the `UntaggedHierarchicalRenderer` to provide rendering
@@ -407,7 +407,7 @@ object HierarchicalRenderer {
    * This implicit object allows seamless rendering of `Double` values when a hierarchical rendering
    * type class is required in the context of `HierarchicalRenderer`.
    */
-  implicit object DoubleHierarchicalRenderer extends DoubleHierarchicalRenderer
+  given DoubleHierarchicalRenderer: DoubleHierarchicalRenderer with {}
 
   /**
    * Trait `LocalDateHierarchicalRenderer` is a specialized implementation of the `UntaggedHierarchicalRenderer`
@@ -451,11 +451,11 @@ object HierarchicalRenderer {
    * import LocalDateHierarchicalRenderer._
    *
    * val localDate: LocalDate = LocalDate.of(2023, 10, 15)
-   * val rendered = implicitly[LocalDateHierarchicalRenderer].render(localDate, Map.empty)
+   * val rendered = summon[LocalDateHierarchicalRenderer].render(localDate, Map.empty)
    * println(rendered) // Outputs the hierarchical representation of the LocalDate
    * }}}
    */// TESTME
-  implicit object LocalDateHierarchicalRenderer extends LocalDateHierarchicalRenderer
+  given LocalDateHierarchicalRenderer: LocalDateHierarchicalRenderer with {}
 
 //  implicit object RowStringRenderer extends Renderer[Row,String] {
 //    /**

@@ -4,18 +4,20 @@ import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseC
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
 import com.phasmidsoftware.tableparser.core.table.Table
 import java.nio.file.{Path, Paths}
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.util.{Success, Try}
 
-class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with BeforeAndAfterAll {
+class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
 
   // Path to the committed test fixture
   private val samplePath: Path =
     Paths.get(getClass.getResource("/taxi_sample.parquet").toURI)
 
-  private var table: Table[YellowTaxiTrip] = _
+  private lazy val table: Table[YellowTaxiTrip] = {
+    import YellowTaxiTrip.helper
+    ParquetParser.parse[YellowTaxiTrip](samplePath).get
+  }
 
   // The first row in the Parquet file has vendorId=2, puLocationId=75, doLocationId=237.
   // We find it by key rather than relying on ParIterable ordering.
@@ -23,11 +25,6 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
     table.content.toSeq
             .find(r => r.puLocationId.contains(75) && r.doLocationId.contains(237))
             .getOrElse(fail("Expected row with puLocationId=75, doLocationId=237 not found"))
-
-  override def beforeAll(): Unit = {
-    import YellowTaxiTrip.helper
-    table = ParquetParser.parse[YellowTaxiTrip](samplePath).get
-  }
 
   behavior of "YellowTaxiTrip model"
 
@@ -57,7 +54,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
     import YellowTaxiTrip.helper
     val result: Try[Table[YellowTaxiTrip]] =
       ParquetParser.parse[YellowTaxiTrip](samplePath)
-    result shouldBe a[Success[_]]
+    result shouldBe a[Success[?]]
   }
 
   it should "produce exactly 1000 rows" in {
@@ -159,11 +156,11 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
   it should "compute statistics for a single numeric column on demand" in {
     import com.phasmidsoftware.tableparser.core.table.{Column, EagerStatistics, LazyStatistics}
     val tripDistStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = false)
-    tripDistStats shouldBe a[Some[_]]
+    tripDistStats shouldBe a[Some[?]]
     val col = tripDistStats.get
     col.clazz shouldBe "Double"
     col.optional shouldBe true
-    col.maybeStatistics shouldBe a[Some[_]]
+    col.maybeStatistics shouldBe a[Some[?]]
     col.maybeStatistics match {
       case Some(LazyStatistics(statsThunk)) =>
         val stats = statsThunk().get
@@ -194,7 +191,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
   it should "support lazy fallback mode (return LazyStatistics if no metadata)" in {
     import com.phasmidsoftware.tableparser.core.table.{Column, LazyStatistics}
     val lazyStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = false)
-    lazyStats shouldBe a[Some[_]]
+    lazyStats shouldBe a[Some[?]]
     lazyStats.get.maybeStatistics match {
       case Some(LazyStatistics(_)) => succeed
       case _ => fail("Expected LazyStatistics when useMetadataOnly=false")
@@ -209,7 +206,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
     import YellowTaxiTrip.helper
     val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
     val result = ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
-    result shouldBe a[Success[_]]
+    result shouldBe a[Success[?]]
   }
 
   it should "produce 1000 rows total from dataset with multiple parts" in {

@@ -281,7 +281,7 @@ trait Table[Row] extends Iterable[Row] {
    * @param rv (implicit) a Validity[Row].
    * @return Table[Row] consisting only of rows which satisfy Validity.
    */
-  def filterValid(implicit rv: Validity[Row]): Table[Row] = filter(r => rv.isValid(r))
+  def filterValid(using rv: Validity[Row]): Table[Row] = filter(r => rv.isValid(r))
 
   /**
    * Method to randomly sample from this Table.
@@ -290,7 +290,7 @@ trait Table[Row] extends Iterable[Row] {
    * @param random an (implicit) Random number generator.
    * @return a new Table[Row] with approximately size/n elements.
    */
-  def sample(n: Int)(implicit random: Random): Table[Row] = processRows(c => c.sample(n))
+  def sample(n: Int)(using random: Random): Table[Row] = processRows(c => c.sample(n))
 
   /**
    * slice (as defined by Iterable).
@@ -330,7 +330,7 @@ trait Table[Row] extends Iterable[Row] {
    * @return a filtered Table[Row].
    */
   def filterByKey[T >: Row : HasKey](p: String => Boolean): Table[Row] =
-    filter(t => p(implicitly[HasKey[T]].key(t)))
+    filter(t => p(summon[HasKey[T]].key(t)))
 
   /**
    * Filter method which operates on the (primary) key of each row.
@@ -340,7 +340,7 @@ trait Table[Row] extends Iterable[Row] {
    * @return a filtered Table[Row].
    */
   def filterNotByKey[T >: Row : HasKey](p: String => Boolean): Table[Row] =
-    filterNot(t => p(implicitly[HasKey[T]].key(t)))
+    filterNot(t => p(summon[HasKey[T]].key(t)))
 
   /**
    * Method to render this Table[T] as a CSV String with (maybe) header.
@@ -350,8 +350,8 @@ trait Table[Row] extends Iterable[Row] {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return a String.
    */
-  def toCSV(implicit rcr: CsvRenderer[Row], rgr: CsvGenerator[Row], csvAttributes: CsvAttributes): Try[String] = {
-    val renderer: CsvTableStringRenderer[Row] = CsvTableStringRenderer[Row]()(rcr, rgr, csvAttributes)
+  def toCSV(using rcr: CsvRenderer[Row], rgr: CsvGenerator[Row], csvAttributes: CsvAttributes): Try[String] = {
+    val renderer: CsvTableStringRenderer[Row] = CsvTableStringRenderer[Row]()(using rcr, rgr, csvAttributes)
     val output: Try[StringBuilder] = renderer.render(this)
     output map (_.toString)
   }
@@ -366,7 +366,7 @@ trait Table[Row] extends Iterable[Row] {
    * @return Unit
    * @throws TableException if the CSV file cannot be written to the specified output path
    */
-  def writeCSVPath(outputPath: Path)(implicit r: CsvRenderer[Row], g: CsvGenerator[Row], ca: CsvAttributes): Unit =
+  def writeCSVPath(outputPath: Path)(using r: CsvRenderer[Row], g: CsvGenerator[Row], ca: CsvAttributes): Unit =
     CsvTableFileRenderer[Row](outputPath).render(this).map(_.close()).getOrElse(throw TableException(s"Failed to write CSV to $outputPath"))
 
   /**
@@ -378,7 +378,7 @@ trait Table[Row] extends Iterable[Row] {
    * @param csvAttributes Implicit parameter containing attributes for customizing the CSV formatting.
    * @return Unit, indicating the operation does not return a value.
    */
-  def writeCSVFile(path: Path)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
+  def writeCSVFile(path: Path)(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableFileRenderer[Row](path).render(this)
 
   /**
@@ -429,7 +429,7 @@ object Table {
    * @return an Try[T]
    */
   def parse[T: TableParser](ws: Iterator[String]): Try[T] =
-    implicitly[TableParser[T]] match {
+    summon[TableParser[T]] match {
       case parser: StringTableParser[T] =>
         parser.parse(ws, parser.headerRowsToRead)
       case x =>
@@ -476,7 +476,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Try[T] =
+  def parse[T: TableParser](u: => URI)(using codec: Codec): Try[T] =
     parse(sourceFromURI(u))
 
   /**
@@ -488,7 +488,7 @@ object Table {
    * @return an Try[T]
    */
   def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parse(u)
   }
 
@@ -500,7 +500,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Try[T] =
+  def parseInputStream[T: TableParser](i: => InputStream)(using codec: Codec): Try[T] =
     parse(sourceFromInputStream(i))
 
   /**
@@ -512,7 +512,7 @@ object Table {
    * @return an Try[T]
    */
   def parseInputStream[T: TableParser](si: Try[InputStream], enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     for (s <- si; t <- parseInputStream(s)) yield t
   }
 
@@ -524,7 +524,7 @@ object Table {
    * @tparam T The type to which the file content will be parsed.
    * @return A Try containing the parsed instance of type T if successful, or a Failure if an error occurs.
    */
-  def parseFile[T: TableParser](path: Path)(implicit codec: Codec): Try[T] =
+  def parseFile[T: TableParser](path: Path)(using codec: Codec): Try[T] =
     parse(sourceFromFile(path.toFile))
 
   /**
@@ -537,7 +537,7 @@ object Table {
    * @return A Try containing the parsed result of type T if successful, or a failure if an error occurs during parsing.
    */
   def parseFile[T: TableParser](path: Path, enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseFile(path)
   }
 
@@ -554,7 +554,7 @@ object Table {
 //   * @tparam T the type of the resulting table.
 //   * @return an Try[T]
 //   */
-//  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Try[T] =
+//  def parseFile[T: TableParser](f: => File)(using codec: Codec): Try[T] =
 //    parse(sourceFromFile(f))
 
 //
@@ -566,7 +566,7 @@ object Table {
 //   * @tparam T the type of the resulting table.
 //   * @return a Try[T]
 //   */
-//  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Try[T] =
+//  def parseFile[T: TableParser](pathname: String)(using codec: Codec): Try[T] =
 //    parse(sourceFromFilename(pathname))
 
   /**
@@ -578,7 +578,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
+  def parseResource[T: TableParser](w: String, clazz: Class[?] = getClass)(using codec: Codec): Try[T] =
     parse(sourceFromClassResource(w, clazz))
 
   /**
@@ -588,13 +588,13 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Try[T] =
+  def parseResource[T: TableParser](u: => URL)(using codec: Codec): Try[T] =
     parse(u.toURI)
 
   /**
    * Method to parse a table from a URL with an explicit encoding.
    *
-   * NOTE: the logic here is different from that of parseResource(u:=>URL)(implicit codec: Codec) above.
+   * NOTE: the logic here is different from that of parseResource(u:=>URL)(using codec: Codec) above.
    *
    * @param u   the URL.
    * @param enc the encoding.
@@ -602,7 +602,7 @@ object Table {
    * @return an Try[T]
    */
   def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseResource(u)
   }
 
@@ -614,7 +614,7 @@ object Table {
    * @return an Try[T]
    */
   def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] = {
-    val tableParser = implicitly[TableParser[T]]
+    val tableParser = summon[TableParser[T]]
     tableParser match {
       case parser: StringsTableParser[T] =>
         parser.parse(wss, 1)
@@ -633,8 +633,8 @@ object Table {
    * @param codec            the character encoding to be used for reading the file
    * @return a `Try` containing the parsed `Table[RawRow]` on success or an exception on failure
    */
-  def parsePathRaw(path: Path, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+  def parsePathRaw(path: Path, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): Try[Table[RawRow]] = {
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](path)
   }
 
@@ -645,8 +645,8 @@ object Table {
    * @param codec    (implicit) the encoding.
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
+  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): Try[Table[RawRow]] = {
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
     parseFile[Table[RawRow]](Paths.get(pathname))
   }
 
@@ -660,8 +660,8 @@ object Table {
    * @param codec            (implicit) the encoding.
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): Try[Table[RawRow]] = {
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 
@@ -672,7 +672,7 @@ object Table {
    * @return an Try of Table of RawRow
    */
   def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[RawTable] = {
-    implicit val z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
+    given z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
   }
 
@@ -698,10 +698,10 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes): Try[String] = {
+  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes): Try[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
-        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         t.toCSV
       case _ =>
         throw TableException("toCSVRow: cannot write this Table to CSV (no header)")
@@ -716,10 +716,10 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def writeCSVFileRow(t: Table[Row], file: File)(implicit csvAttributes: CsvAttributes): Unit =
+  def writeCSVFileRow(t: Table[Row], file: File)(using csvAttributes: CsvAttributes): Unit =
     t.maybeHeader match {
       case Some(hdr) =>
-        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         // CONSIDER this is a bit ugly
         t.writeCSVFile(file.toPath)
       case _ =>
@@ -750,10 +750,10 @@ object Table {
    * @param f a File.
    * @return an Try[Source].
    */
-  private def sourceFromFile(path: Path)(implicit codec: Codec): Try[Source] =
+  private def sourceFromFile(path: Path)(using codec: Codec): Try[Source] =
     sourceFromPath(path)
 
-  private def sourceFromFile(f: => File)(implicit codec: Codec): Try[Source] =
+  private def sourceFromFile(f: => File)(using codec: Codec): Try[Source] =
     Try(Source.fromFile(f))
 
   /**
@@ -764,8 +764,8 @@ object Table {
    * @param codec an implicit codec specifying the character encoding to use
    * @return a `Try` containing the `Source` if successful, or a `Failure` if an error occurs
    */
-  private def sourceFromPath(path: Path)(implicit codec: Codec): Try[Source] = {
-    Try(Source.fromInputStream(Files.newInputStream(path))(codec))
+  private def sourceFromPath(path: Path)(using codec: Codec): Try[Source] = {
+    Try(Source.fromInputStream(Files.newInputStream(path))(using codec))
   }
 
   /**
@@ -774,7 +774,7 @@ object Table {
    * @param filename a File.
    * @return an Try[Source].
    */
-  def sourceFromFilename(filename: => String)(implicit codec: Codec): Try[Source] =
+  def sourceFromFilename(filename: => String)(using codec: Codec): Try[Source] =
     Try(Source.fromFile(filename))
 
   /**
@@ -784,7 +784,7 @@ object Table {
    * @param clazz the class.
    * @return an Try[Source].
    */
-  def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Try[Source] =
+  def sourceFromClassResource(w: String, clazz: Class[?])(using codec: Codec): Try[Source] =
     Try(Source.fromURL(clazz.getResource(w))).recoverWith {
       case _: java.lang.NullPointerException =>
         Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
@@ -822,7 +822,7 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * @tparam O the type of the result.
    * @return an instance of O.
    */
-  def render[O](implicit ev: Renderer[Table[Row], O]): O =
+  def render[O](using ev: Renderer[Table[Row], O]): O =
     ev.render(this)
 
   /**
@@ -833,8 +833,8 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * @tparam O a type which supports Writable (via evidence of type Writable[O])
    * @return a new (or possibly old) instance of O.
    */
-  def renderToWritable[O](implicit z: Writable[O]): O = {
-    val ww = implicitly[Writable[O]]
+  def renderToWritable[O](using z: Writable[O]): O = {
+    val ww = summon[Writable[O]]
     val o1 = ww.unit
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
     val knownSize1 = rows.knownSize
@@ -843,9 +843,9 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
       rows.toSeq else rows.toSeq) map {
       case p: Product =>
         ww.writeRow(o2)(p)
-      case xs: Seq[_] =>
+      case xs: Seq[?] =>
         ww.writeRowElements(o2)(xs) // TESTME
-      case xs: Array[_] =>
+      case xs: Array[?] =>
         ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
       case _ =>
         throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
@@ -865,15 +865,15 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
    * @return a new instance of U which represents this Table as a tree of some sort.
    */
-  def renderHierarchical[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit xr: HierarchicalRenderer[Row]): U = {
+  def renderHierarchical[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(using xr: HierarchicalRenderer[Row]): U = {
     object TableRenderers extends HierarchicalRenderers {
       val rowsRenderer: HierarchicalRenderer[Seq[Row]] = sequenceRenderer[Row]("tbody")
-      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
-      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
+      given headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
+      given optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
     }
-    import TableRenderers._
-    val node: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
-    implicitly[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows.toSeq))))
+    import TableRenderers.{given, *}
+    val node: Node = summon[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
+    summon[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows.toSeq))))
   }
 
   /**
@@ -888,17 +888,17 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
    * @return a new instance of U which represents this Table as a tree of some sort.
    */
-  def renderHierarchicalSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit rr: HierarchicalRenderer[Indexed[Row]]): U = {
+  def renderHierarchicalSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(using rr: HierarchicalRenderer[Indexed[Row]]): U = {
     object TableRenderers extends HierarchicalRenderers {
       val rowsRenderer: HierarchicalRenderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("tbody")
-      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
-      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
+      given headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
+      given optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
     }
-    import TableRenderers._
-    val headerNode: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
+    import TableRenderers.{given, *}
+    val headerNode: Node = summon[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
     val tableNode = Node(style, attributes, headerNode +: Seq(rowsRenderer.render(Indexed.index(rows.toSeq))))
     val trimmed = tableNode.trim
-    implicitly[TreeWriter[U]].evaluate(trimmed)
+    summon[TreeWriter[U]].evaluate(trimmed)
   }
 
   override def toString(): String =
@@ -1139,7 +1139,7 @@ object Header {
    * @return a List of field names.
    */
   def apply[X: ClassTag](): Header =
-    Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList, Nil)
+    Header(Reflection.extractFieldNames(summon[ClassTag[X]]).toList, Nil)
 
   /**
    * Create a Header from a variable list of parameters.

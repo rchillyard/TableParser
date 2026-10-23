@@ -93,7 +93,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case pt@HeadedTable(_, _) =>
         val sht: Table[Partnership] = Player.convertTable(pt)
         implicit val r: Renderer[Table[Partnership], String] = new JsonTableRenderer[Partnership] {}
-        val z: String = implicitly[Renderer[Table[Partnership], String]].render(sht)
+        val z: String = summon[Renderer[Table[Partnership], String]].render(sht)
         z shouldBe "{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"first\", \"last\"]\n}"
     }
   }

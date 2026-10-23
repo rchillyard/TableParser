@@ -47,7 +47,7 @@ import scala.util.{Failure, Success, Try}
  * @note The `FunctionIterator` may use a mutable variable `ry` internally to store the result of the last element processed.
  */
 class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends AbstractIterator[Try[R]] {
-  private val xj = implicitly[Joinable[X]]
+  private val xj = summon[Joinable[X]]
 
   // NOTE: yes, this has to be a var. Don't be too heartbroken--an Iterator is a mutable construct, after all.
   private var ry: Try[R] = Failure(new Exception("FunctionIterator: uninitialized"))
@@ -80,7 +80,7 @@ class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends 
     def inner(xy: Try[X]): Try[R] = invokeFunction(xy) match {
       case Success(y) =>
         Success(y)
-      case Failure(MultiLineException(x: X)) =>
+      case Failure(MultiLineException(x: X @unchecked)) =>
         if (xs.hasNext) {
           val x1 = xs.next()
           val x2: X = xj.join(x, x1)

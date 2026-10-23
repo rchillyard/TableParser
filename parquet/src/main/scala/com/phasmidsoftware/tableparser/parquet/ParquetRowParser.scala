@@ -58,8 +58,8 @@ class StandardParquetRowParser[Row <: Product : ClassTag](
       }
       // Invoke the case class constructor via reflection.
       // NOTE: may fail if there are additional constructors defined for the case class.
-      val ctor = implicitly[ClassTag[Row]].runtimeClass.getConstructors.head
-      ctor.newInstance(values.map(_.asInstanceOf[AnyRef]): _*).asInstanceOf[Row]
+      val ctor = summon[ClassTag[Row]].runtimeClass.getConstructors.head
+      ctor.newInstance(values.map(_.asInstanceOf[AnyRef])*).asInstanceOf[Row]
     }
 }
 
@@ -92,13 +92,13 @@ object StandardParquetRowParser {
                                               converterMap: Map[String, ParquetCellConverter[Any]] = Map.empty
                                       ): StandardParquetRowParser[Row] = {
 
-    val runtimeClass = implicitly[ClassTag[Row]].runtimeClass
+    val runtimeClass = summon[ClassTag[Row]].runtimeClass
     val fieldNames = com.phasmidsoftware.tableparser.core.util.Reflection
-            .extractFieldNames(implicitly[ClassTag[Row]])
+            .extractFieldNames(summon[ClassTag[Row]])
     val declaredFieldMap = runtimeClass.getDeclaredFields.map(f => f.getName -> f).toMap
 
     val converters: Seq[(String, SimpleGroup => Try[Any])] =
-      fieldNames.map { fieldName =>
+      fieldNames.toIndexedSeq.map { fieldName =>
         val field = declaredFieldMap(fieldName)
         val columnName = helper.lookup(None, fieldName)
 
@@ -111,7 +111,7 @@ object StandardParquetRowParser {
               // and reads its own columns by name via its ColumnHelper.
               group => groupedConverter.convert(group, fieldName)
 
-            case None if field.getType == classOf[Option[_]] =>
+            case None if field.getType == classOf[Option[?]] =>
               // Flat optional primitive: use PrimitiveType metadata path.
               val pt = schema.getType(schema.getFieldIndex(columnName)).asPrimitiveType()
               group => ParquetCellConverter.convertOption(group, columnName, pt)

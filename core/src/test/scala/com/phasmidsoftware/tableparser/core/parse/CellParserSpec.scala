@@ -57,65 +57,65 @@ class CellParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "Implicit parsers"
 
   it should "parse String" in {
-    val p = implicitly[CellParser[String]]
+    val p = summon[CellParser[String]]
     p.convertString("") shouldBe Success("")
     p.convertString("Hello") shouldBe Success("Hello")
   }
 
   it should "parse Int" in {
-    val p = implicitly[CellParser[Int]]
+    val p = summon[CellParser[Int]]
     p.convertString("99") shouldBe Success(99)
     p.convertString("") should matchPattern { case Failure(_) => }
   }
 
   it should "parse Boolean" in {
-    val p = implicitly[CellParser[Boolean]]
+    val p = summon[CellParser[Boolean]]
     p.convertString("true") shouldBe Success(true)
     p.convertString("") should matchPattern { case Failure(_) => }
   }
 
   it should "parse Double" in {
-    val p = implicitly[CellParser[Double]]
+    val p = summon[CellParser[Double]]
     p.convertString("3.1415927") shouldBe Success(3.1415927)
     p.convertString("") should matchPattern { case Failure(_) => }
   }
 
   it should "parse File" in {
-    val p = implicitly[CellParser[File]]
+    val p = summon[CellParser[File]]
     p.convertString("/CellParsersSpec.scala") shouldBe Success(new File("/CellParsersSpec.scala"))
     p.convertString("") shouldBe Success(new File(""))
   }
 
   it should "parse option Double" in {
-    val p = implicitly[CellParser[Option[Double]]]
+    val p = summon[CellParser[Option[Double]]]
     p.convertString("3.1415927") shouldBe Success(Some(3.1415927))
     p.convertString("") shouldBe Success(None)
     p.convertString("test") should matchPattern { case Failure(_) => }
   }
 
   it should "parse option Integer" in {
-    val p = implicitly[CellParser[Option[Int]]]
+    val p = summon[CellParser[Option[Int]]]
     p.convertString("99") shouldBe Success(Some(99))
     p.convertString("") shouldBe Success(None)
     p.convertString("test") should matchPattern { case Failure(_) => }
   }
 
   it should "parse option Boolean" in {
-    val p = implicitly[CellParser[Option[Boolean]]]
+    val p = summon[CellParser[Option[Boolean]]]
     p.convertString("true") shouldBe Success(Some(true))
     p.convertString("") shouldBe Success(None)
     p.convertString("test") should matchPattern { case Failure(_) => }
   }
 
   it should "parse option Long" in {
-    val p = implicitly[CellParser[Option[Long]]]
+    val p = summon[CellParser[Option[Long]]]
     p.convertString("9223372036854775807") shouldBe Success(Some(9223372036854775807L))
     p.convertString("") shouldBe Success(None)
     p.convertString("test") should matchPattern { case Failure(_) => }
   }
 
   it should "parse option LocalDate" in {
-    val p = implicitly[CellParser[Option[LocalDate]]]
+    val p = summon[CellParser[Option[LocalDate]]]
 
     p.convertString("2021-05-13") shouldBe Success(Some(LocalDate.parse("2021-05-13")))
     p.convertString("") shouldBe Success(None)
@@ -125,14 +125,14 @@ class CellParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   // CONSIDER moving this into the it directory.
   // TODO why does this take so long?
   it should "parse option URL" in {
-    val p = implicitly[CellParser[Option[URL]]]
+    val p = summon[CellParser[Option[URL]]]
 
     p.convertString("https://google.com") shouldBe Success(Some(new URL("https://google.com")))
     p.convertString("") should matchPattern { case Failure(_) => }
   }
 
   it should "parse option File" in {
-    val p = implicitly[CellParser[Option[File]]]
+    val p = summon[CellParser[Option[File]]]
     p.convertString("/CellParsersSpec.scala") shouldBe Success(Some(new File("/CellParsersSpec.scala")))
     p.convertString("") shouldBe Success(Some(new File("")))
   }

@@ -12,7 +12,7 @@ import spray.json.{JsonFormat, enrichAny}
  *
  * @tparam T the underlying type of the Table (i.e., the Row type) for which there must be evidence of JsonWriter[T].
  */
-abstract class JsonTableRenderer[T]()(implicit tj: JsonFormat[T]) extends Renderer[Table[T], String] {
+abstract class JsonTableRenderer[T]()(using tj: JsonFormat[T]) extends Renderer[Table[T], String] {
 
   /**
    * Renders a Table[T] object into its JSON string representation with optional attributes.
@@ -22,7 +22,7 @@ abstract class JsonTableRenderer[T]()(implicit tj: JsonFormat[T]) extends Render
    * @return a pretty-printed JSON string representation of the table.
    */
   def render(tt: Table[T], attrs: Map[String, String]): String = {
-    implicit val z: JsonFormat[Table[T]] = new TableJsonFormat[T] {}
+    given z: JsonFormat[Table[T]] = new TableJsonFormat[T] {}
     tt.toJson.prettyPrint
   }
 

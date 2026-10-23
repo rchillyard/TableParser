@@ -44,7 +44,7 @@ trait CellParsers {
     override def toString: String = "MultiCellParser: cellParserRepetition"
 
     def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = {
-      def getTryP(i: Int) = implicitly[CellParser[P]].parse(Some(s"$i"), row, columns)
+      def getTryP(i: Int) = summon[CellParser[P]].parse(Some(s"$i"), row, columns)
 
       FP.sequence(LazyList.from(start).map(getTryP).takeWhile(_.isSuccess))
     }
@@ -64,7 +64,7 @@ trait CellParsers {
     override def toString: String = "MultiCellParser: cellParserSeq"
 
     def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = 
-      FP.sequence(for (w <- row.ws) yield implicitly[CellParser[P]].parse(CellValue(w)))
+      FP.sequence(for (w <- row.ws) yield summon[CellParser[P]].parse(CellValue(w)))
   }
 
   /**
@@ -80,7 +80,7 @@ trait CellParsers {
     // XXX used only for debugging
     override def toString: String = s"cellParserOption with $cp"
 
-    private val cp: CellParser[P] = implicitly[CellParser[P]]
+    private val cp: CellParser[P] = summon[CellParser[P]]
 
     def convertString(w: String): Try[Option[P]] = 
       convertToOptionP(cp.parse(CellValue(w)))
@@ -138,10 +138,10 @@ trait CellParsers {
   def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = 
     new SingleCellParser[T] {
     // NOTE used only for debugging
-    override def toString: String = s"SingleCellParser for ${implicitly[ClassTag[T]]}"
+    override def toString: String = s"SingleCellParser for ${summon[ClassTag[T]]}"
 
     def convertString(w: String): Try[T] = 
-      implicitly[CellParser[P]].parse(CellValue(w)).map(construct)
+      summon[CellParser[P]].parse(CellValue(w)).map(construct)
   }
 
   /**
@@ -173,7 +173,7 @@ trait CellParsers {
    * @return a new instance of ColumnHelper[T]
    */
   def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = 
-    columnHelper(identityMapper, maybePrefix, aliases: _*)
+    columnHelper(identityMapper, maybePrefix, aliases*)
 
   /**
    * Method to yield a ColumnHelper[T] based on a column name mapper, and some number of explicit aliases,
@@ -184,7 +184,7 @@ trait CellParsers {
    * @return a new instance of ColumnHelper[T]
    */
   def columnHelper[T](columnNameMapper: String => String, aliases: (String, String)*): ColumnHelper[T] = 
-    columnHelper(columnNameMapper, None, aliases: _*)
+    columnHelper(columnNameMapper, None, aliases*)
 
   /**
    * Method to yield a ColumnHelper[T] based on a column name mapper, an optional prefix, and some number of explicit aliases,
@@ -210,7 +210,7 @@ trait CellParsers {
    * @return a new instance of ColumnHelper[T]
    */
   def columnHelper[T](aliases: (String, String)*): ColumnHelper[T] = 
-    columnHelper(identityMapper, aliases: _*)
+    columnHelper(identityMapper, aliases*)
 }
 
 /**

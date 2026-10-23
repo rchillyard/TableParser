@@ -3,13 +3,12 @@ package com.phasmidsoftware.tableparser.parquet
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper
 import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Table}
 import java.nio.file.{Path, Paths}
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.reflect.ClassTag
 import scala.util.Success
 
-class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
+class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers {
 
   private val taxiParquet: Path =
     Paths.get(getClass.getResource("/taxi_sample.parquet").toURI)
@@ -23,16 +22,16 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAnd
       "fare" -> FareBreakdown.converter.asInstanceOf[ParquetCellConverter[Any]],
       "metrics" -> TripMetrics.converter.asInstanceOf[ParquetCellConverter[Any]]
     )
-    override val groupedHelpers: Map[String, (ClassTag[_], ColumnHelper[_])] = Map(
-      "ids" -> (implicitly[ClassTag[TripIdentifiers]], TripIdentifiers.helper),
-      "timing" -> (implicitly[ClassTag[TripTiming]], TripTiming.helper),
-      "geo" -> (implicitly[ClassTag[TripGeography]], TripGeography.helper),
-      "fare" -> (implicitly[ClassTag[FareBreakdown]], FareBreakdown.helper),
-      "metrics" -> (implicitly[ClassTag[TripMetrics]], TripMetrics.helper)
+    override val groupedHelpers: Map[String, (ClassTag[?], ColumnHelper[?])] = Map(
+      "ids" -> (summon[ClassTag[TripIdentifiers]], TripIdentifiers.helper),
+      "timing" -> (summon[ClassTag[TripTiming]], TripTiming.helper),
+      "geo" -> (summon[ClassTag[TripGeography]], TripGeography.helper),
+      "fare" -> (summon[ClassTag[FareBreakdown]], FareBreakdown.helper),
+      "metrics" -> (summon[ClassTag[TripMetrics]], TripMetrics.helper)
     )
   }
 
-  private var table: Table[YellowTaxiTripGrouped] = _
+  private lazy val table: Table[YellowTaxiTripGrouped] = parser.parseParquet(taxiParquet).get
 
   // The first row in the Parquet file has vendorId=2, puLocationId=75, doLocationId=237.
   // We find it by key rather than relying on ParIterable ordering.
@@ -41,8 +40,6 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAnd
             .find(r => r.geo.puLocationId.contains(75) && r.geo.doLocationId.contains(237))
             .getOrElse(fail("Expected row with puLocationId=75, doLocationId=237 not found"))
 
-  override def beforeAll(): Unit =
-    table = parser.parseParquet(taxiParquet).get
 
   behavior of "ParquetTableParser with grouped YellowTaxiTripGrouped"
 
@@ -53,8 +50,10 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAnd
   it should "produce a table with 19 columns in the header" in {
     val result = parser.parseParquet(taxiParquet)
     result match {
-      case Success(t: HeadedTable[_]) =>
+      case Success(t: HeadedTable[?]) =>
         t.header.size shouldBe 19
+      case x =>
+        fail(s"unexpected result: $x")
     }
   }
 

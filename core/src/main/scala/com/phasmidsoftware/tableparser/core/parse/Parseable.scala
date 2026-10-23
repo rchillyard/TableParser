@@ -62,7 +62,7 @@ object Parseable {
       if (s.isEmpty) Failure(BlankException()) else Success(s)
   }
 
-  implicit object ParseableString extends ParseableString
+  given ParseableString: ParseableString with {}
 
   /**
    * Parser of Boolean.
@@ -81,7 +81,7 @@ object Parseable {
       parseAndRecover(s)(lift(_.toBoolean))(w => s"ParseableBoolean: cannot interpret '$w' as a Boolean")
   }
 
-  implicit object ParseableBoolean extends ParseableBoolean
+  given ParseableBoolean: ParseableBoolean with {}
 
   /**
    * Parser of Byte.
@@ -99,7 +99,7 @@ object Parseable {
       parseAndRecover(s)(lift(_.toByte))(w => s"ParseableByte: cannot interpret '$w' as a Byte")
   }
 
-  implicit object ParseableByte extends ParseableByte
+  given ParseableByte: ParseableByte with {}
 
   /**
    * Parser of Char.
@@ -117,7 +117,7 @@ object Parseable {
       parseAndRecover(s)(lift(_.head))(w => s"ParseableChar: cannot interpret '$w' as a Char")
   }
 
-  implicit object ParseableChar extends ParseableChar
+  given ParseableChar: ParseableChar with {}
 
   /**
    * Parser of Short.
@@ -135,7 +135,7 @@ object Parseable {
       parseAndRecover(s)(lift(_.toShort))(w => s"ParseableShort: cannot interpret '$w' as a Short")
   }
 
-  implicit object ParseableShort extends ParseableShort
+  given ParseableShort: ParseableShort with {}
 
   /**
    * Parser of Int.
@@ -158,7 +158,7 @@ object Parseable {
       parseAndRecover(s)(lift(_.toInt))(w => s"ParseableInt: cannot interpret '$w' as an Int")
   }
 
-  implicit object ParseableInt extends ParseableInt
+  given ParseableInt: ParseableInt with {}
 
   /**
    * Parser of Long.
@@ -176,7 +176,7 @@ object Parseable {
       parseAndRecover(s)(lift(_.toLong))(w => s"ParseableLong: cannot interpret '$w' as a Long")
   }
 
-  implicit object ParseableLong extends ParseableLong
+  given ParseableLong: ParseableLong with {}
 
   /**
    * Parser of BigInt.
@@ -198,7 +198,7 @@ object Parseable {
     }
   }
 
-  implicit object ParseableBigInt extends ParseableBigInt
+  given ParseableBigInt: ParseableBigInt with {}
 
   /**
    * Parser of BigDecimal.
@@ -216,7 +216,7 @@ object Parseable {
       parseAndRecover(s)(lift(BigDecimal.apply))(w => s"ParseableBigDecimal: cannot interpret '$w' as a BigDecimal")
   }
 
-  implicit object ParseableBigDecimal extends ParseableBigDecimal
+  given ParseableBigDecimal: ParseableBigDecimal with {}
 
   /**
    * Parser of Double.
@@ -234,7 +234,7 @@ object Parseable {
       parseAndRecover(s)(lift(_.toDouble))(w => s"ParseableDouble: cannot interpret '$w' as a Double")
   }
 
-  implicit object ParseableDouble extends ParseableDouble
+  given ParseableDouble: ParseableDouble with {}
 
   /**
    * Parser of Float.
@@ -251,7 +251,7 @@ object Parseable {
       parseAndRecover(s)(lift(_.toFloat))(w => s"ParseableFloat: cannot interpret '$w' as a Float")
   }
 
-  implicit object ParseableFloat extends ParseableFloat
+  given ParseableFloat: ParseableFloat with {}
 
   /**
    * Parser of LocalDate.
@@ -270,7 +270,7 @@ object Parseable {
       parseAndRecover(s)(lift(LocalDate.parse))(w => s"ParseableLocalDate: cannot interpret '$w' as a LocalDate")
   }
 
-  implicit object ParseableLocalDate extends ParseableLocalDate
+  given ParseableLocalDate: ParseableLocalDate with {}
 
   /**
    * Parser of URL.
@@ -289,7 +289,7 @@ object Parseable {
       parseAndRecover(s)(lift(new URL(_)))(w => s"ParseableURL: cannot interpret '$w' as an URL")
   }
 
-  implicit object ParseableURL extends ParseableURL
+  given ParseableURL: ParseableURL with {}
 
   /**
    * A trait representing a path that can be parsed from a String.
@@ -306,7 +306,7 @@ object Parseable {
       )
   }
 
-  implicit object ParseablePath extends ParseablePath
+  given ParseablePath: ParseablePath with {}
 
   /**
    * Parser of File.
@@ -328,7 +328,7 @@ object Parseable {
       parseAndRecover(s)(lift(new File(_)))(w => s"ParseableFile: cannot interpret '$w' as a File")
   }
 
-  implicit object ParseableFile extends ParseableFile
+  given ParseableFile: ParseableFile with {}
 
   /**
    * Parser of StringList.
@@ -347,7 +347,7 @@ object Parseable {
       parseAndRecover(s)(split)(w => s"ParseableStringList: cannot interpret '$w' as a StringList")
   }
 
-  implicit object ParseableStringList extends ParseableStringList
+  given ParseableStringList: ParseableStringList with {}
 
   /**
    * Method to split a String into a StringList, parser.list.
@@ -363,8 +363,6 @@ object Parseable {
         Failure(ParseLogicException(s"cannot split string '$w': $msg"))
       case ListParser.Error(msg, _) =>
         Failure(ParseLogicException(s"cannot split string '$w': $msg"))
-      case _ =>
-        Failure(ParseLogicException(s"cannot split string '$w'"))
   }
 
   private def lift[T](f: String => T): String => Try[T] = w => Try(f(w))
@@ -398,7 +396,7 @@ abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
    *         or an error if parsing fails for other exceptions.
    */
   def parse(s: String, optModifier: Option[String]): Try[Option[T]] =
-    implicitly[Parseable[T]].parse(s, optModifier).map(Option(_)).recoverWith {
+    summon[Parseable[T]].parse(s, optModifier).map(Option(_)).recoverWith {
     case _: BlankException => Success(None)
   }
 }
@@ -423,8 +421,8 @@ abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
  * import com.phasmidsoftware.tableparser.core.parse._
  * import ParseableOption._
  *
- * val maybeInt: Try[Option[Int]] = implicitly[Parseable[Option[Int]]].parse("42", None)
- * val maybeNone: Try[Option[Int]] = implicitly[Parseable[Option[Int]]].parse("", None)
+ * val maybeInt: Try[Option[Int]] = summon[Parseable[Option[Int]]].parse("42", None)
+ * val maybeNone: Try[Option[Int]] = summon[Parseable[Option[Int]]].parse("", None)
  * }}}
  *
  * The implicit instances provided:
@@ -444,33 +442,33 @@ abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
  */
 object ParseableOption {
 
-  implicit object ParseableOptionString extends ParseableOption[String]
+  given ParseableOptionString: ParseableOption[String] with {}
 
-  implicit object ParseableOptionBoolean extends ParseableOption[Boolean]
+  given ParseableOptionBoolean: ParseableOption[Boolean] with {}
 
-  implicit object ParseableOptionByte extends ParseableOption[Byte]
+  given ParseableOptionByte: ParseableOption[Byte] with {}
 
-  implicit object ParseableOptionShort extends ParseableOption[Short]
+  given ParseableOptionShort: ParseableOption[Short] with {}
 
-  implicit object ParseableOptionInt extends ParseableOption[Int]
+  given ParseableOptionInt: ParseableOption[Int] with {}
 
-  implicit object ParseableOptionFloat extends ParseableOption[Float]
+  given ParseableOptionFloat: ParseableOption[Float] with {}
 
-  implicit object ParseableOptionDouble extends ParseableOption[Double]
+  given ParseableOptionDouble: ParseableOption[Double] with {}
 
-  implicit object ParseableOptionLong extends ParseableOption[Long]
+  given ParseableOptionLong: ParseableOption[Long] with {}
 
-  implicit object ParseableOptionBigInt extends ParseableOption[BigInt]
+  given ParseableOptionBigInt: ParseableOption[BigInt] with {}
 
-  implicit object ParseableOptionBigDecimal extends ParseableOption[BigDecimal]
+  given ParseableOptionBigDecimal: ParseableOption[BigDecimal] with {}
 
-  implicit object ParseableOptionLocalDate extends ParseableOption[LocalDate]
+  given ParseableOptionLocalDate: ParseableOption[LocalDate] with {}
 
-  implicit object ParseableOptionURL extends ParseableOption[URL]
+  given ParseableOptionURL: ParseableOption[URL] with {}
 
-  implicit object ParseableOptionFile extends ParseableOption[File]
+  given ParseableOptionFile: ParseableOption[File] with {}
 
-  implicit object ParseableOptionPath extends ParseableOption[Path]
+  given ParseableOptionPath: ParseableOption[Path] with {}
 
 }
 

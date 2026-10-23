@@ -67,7 +67,7 @@ object EvaluateZIO {
 //   * @return an IO[Assertion].
 //   */
 //  def checkFailure[Z, X: ClassTag](xio: => Task[Z], x: Throwable): Task[TestResult] = {
-//    assertZIO(xio.exit)(fails(isSubtype[Throwable](Assertion.assertion("matchZIO OK") { z => z == implicitly[ClassTag[X]] })))
+//    assertZIO(xio.exit)(fails(isSubtype[Throwable](Assertion.assertion("matchZIO OK") { z => z == summon[ClassTag[X]] })))
 //
 //    val result: ZIO[Any, Nothing, ZIO[Any, Throwable, TestResult]] = for (z <- xio.exit) yield assertZIO(z)(fails(equalTo(x)))
 //    result.

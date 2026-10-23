@@ -188,7 +188,8 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   lazy val list: Parser[String] =
     getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
 
-  private val regexComponent =
+  // NOTE lazy, because runChecks (in the constructor) uses it before the body has been initialized.
+  private lazy val regexComponent =
     s"""[^,$listSeparator}]+"""
   private lazy val component: Parser[String] =
     regexComponent.r
@@ -247,7 +248,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
         throw ParserException(s"Warning: (LineParser constructor validity check): '$input' did not result in $matchedValue because: $z")
     })
 
-    implicit class Trial(x: Try[Unit]) {
+    extension (x: Try[Unit]) {
       def squawk(): Unit = x match {
         case scala.util.Failure(z) =>
           LineParser.logger.warn(s"squawk: $z")
@@ -255,12 +256,14 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
         // XXX do nothing
       }
 
-      def &&(y: Trial): Trial =
+      def &&(y: Try[Unit]): Try[Unit] =
         if (x.isSuccess) y else x
     }
 
     //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
-    (check(cell, "Hello", "Hello") && check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")).squawk()
+    // NOTE the check only makes sense when an unquoted "Hello" is a valid string (it isn't, e.g., for hexadecimal data).
+    if (string.matches("Hello"))
+      (check(cell, "Hello", "Hello") && check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")).squawk()
   }
 
 }
@@ -281,7 +284,7 @@ object LineParser {
    *          `listSep` (character separating elements in a list), and `quote` (character for quoting strings).
    * @return a new instance of `LineParser`, created with the parameters defined in the provided `RowConfig`.
    */
-  def apply(implicit c: RowConfig): LineParser = {
+  def apply(using c: RowConfig): LineParser = {
     LineParser.logger.info(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
     new LineParser(c.delimiter, c.string, c.listEnclosure, c.listSep, c.quote)
   }

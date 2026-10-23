@@ -25,7 +25,7 @@ import java.nio.file.Paths
 class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   case class IntPair(a: Int, b: Int) {
-    def map(f: Int => Int): IntPair = IntPair(f(a), f(b))
+    infix def map(f: Int => Int): IntPair = IntPair(f(a), f(b))
   }
 
   object IntPair {
@@ -59,7 +59,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -348,17 +348,16 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
     }
 
-    implicit object DummyRenderer$$ extends Renderer[Table[IntPair], String] {
+    implicit object DummyRenderer extends Renderer[Table[IntPair], String] {
       def render(t: Table[IntPair], attrs: Map[String, String]): String =
         t match {
-          case t: RenderableTable[IntPair] => t.renderToWritable(StringBuilderWritable).toString
+          case t: RenderableTable[IntPair] => t.renderToWritable(using StringBuilderWritable).toString
           case _ => throw TableException("render problem")
         }
     }
 
     val wi: Try[String] = Table.parse(Seq("1 2", "42 99")) map {
-      case r: Table[IntPair] => implicitly[Renderer[Table[IntPair], String]].render(r)
-      case _ => fail("cannot render table")
+      case r: Table[IntPair] => summon[Renderer[Table[IntPair], String]].render(r)
     }
     matchTry(wi) {
       case "a|b\n1|2\n42|99\n" => succeed
@@ -391,9 +390,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val fi: Try[FileWriter] = Table.parse(Seq("1 2", "42 99")) map {
       case r: Table[IntPair] =>
-        val z: Renderer[Table[IntPair], FileWriter] = implicitly[Renderer[Table[IntPair], FileWriter]]
+        val z: Renderer[Table[IntPair], FileWriter] = summon[Renderer[Table[IntPair], FileWriter]]
         z.render(r)
-      case _ => fail("cannot render table")
     }
     matchTry(fi) {
       case _ => succeed
@@ -510,7 +508,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "transform"
 
   it should "parse and transform the following rows with pushdown function" in {
-    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.{given, *}
 
     val rows = Seq(
       header,
@@ -529,7 +527,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse and aggregate the following rows with pushdown function" in {
-    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.{given, *}
 
     val rows = Seq(
       header,
@@ -550,7 +548,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "projection"
 
   it should "parse and project the following rows" in {
-    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow._
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.{given, *}
 
     val rows = Seq(
       header,

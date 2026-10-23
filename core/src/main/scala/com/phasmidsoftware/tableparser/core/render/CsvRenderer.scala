@@ -43,29 +43,31 @@ object CsvRenderer extends CsvRenderers {
    * @see CsvRenderer
    * @see Row
    */
-  implicit object CsvRendererRow extends CsvRenderer[Row] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+  given CsvRendererRow: CsvRenderer[Row] with {
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
   }
 
-  implicit val rendererInt: CsvRenderer[Int] = CsvRenderers.CsvRendererInt
-  implicit val rendererLong: CsvRenderer[Long] = CsvRenderers.CsvRendererLong
-  implicit val rendererDouble: CsvRenderer[Double] = CsvRenderers.CsvRendererDouble
-  implicit val rendererFloat: CsvRenderer[Float] = CsvRenderers.CsvRendererFloat
-  implicit val rendererShort: CsvRenderer[Short] = CsvRenderers.CsvRendererShort
-  implicit val rendererByte: CsvRenderer[Byte] = CsvRenderers.CsvRendererByte
-  implicit val stringRenderer: CsvRenderer[String] = CsvRenderers.CsvRendererString
-  implicit val instantRenderer: CsvRenderer[Instant] = CsvRenderers.CsvRendererInstant
-  implicit val rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
-  implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer("no double")
-  implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()
-  implicit val rendererOptionLong: CsvRenderer[Option[Long]] = optionRenderer[Long]()
-  implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer()
-  implicit val rendererOptionFloat: CsvRenderer[Option[Float]] = optionRenderer[Float]()
-  implicit val rendererOptionShort: CsvRenderer[Option[Short]] = optionRenderer[Short]()
-  implicit val rendererOptionByte: CsvRenderer[Option[Byte]] = optionRenderer[Byte]()
-  implicit val rendererOptionInstant: CsvRenderer[Option[Instant]] = optionRenderer[Instant]()
+  given rendererInt: CsvRenderer[Int] = CsvRenderers.CsvRendererInt
+  given rendererLong: CsvRenderer[Long] = CsvRenderers.CsvRendererLong
+  given rendererDouble: CsvRenderer[Double] = CsvRenderers.CsvRendererDouble
+  given rendererFloat: CsvRenderer[Float] = CsvRenderers.CsvRendererFloat
+  given rendererShort: CsvRenderer[Short] = CsvRenderers.CsvRendererShort
+  given rendererByte: CsvRenderer[Byte] = CsvRenderers.CsvRendererByte
+  given stringRenderer: CsvRenderer[String] = CsvRenderers.CsvRendererString
+  given instantRenderer: CsvRenderer[Instant] = CsvRenderers.CsvRendererInstant
+  given rendererBoolean: CsvRenderer[Boolean] = CsvRenderers.CsvRendererBoolean
+  given rendererURL: CsvRenderer[java.net.URL] = CsvRenderers.CsvRendererURL
+  given rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
+  given rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer("no double")
+  given rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()
+  given rendererOptionLong: CsvRenderer[Option[Long]] = optionRenderer[Long]()
+  given rendererOptionString: CsvRenderer[Option[String]] = optionRenderer()
+  given rendererOptionFloat: CsvRenderer[Option[Float]] = optionRenderer[Float]()
+  given rendererOptionShort: CsvRenderer[Option[Short]] = optionRenderer[Short]()
+  given rendererOptionByte: CsvRenderer[Option[Byte]] = optionRenderer[Byte]()
+  given rendererOptionInstant: CsvRenderer[Option[Instant]] = optionRenderer[Instant]()
   /**
    * Method to derive a CsvRenderer for a case class T, so that `case class T(...) derives CsvRenderer` works.
    * This replaces the renderer1 ... renderer19 methods of 1.x, and has no limit on the number of fields.
@@ -92,13 +94,13 @@ object CsvRenderer extends CsvRenderers {
     case m: Mirror.ProductOf[A] => derived[A](using m, summonInline[CsvAttributes])
   }
 
-  implicit val localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+  given localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
   }
 //  implicit val rendererTemporal: CsvRenderer[Temporal] = new CsvRenderer[Temporal] {
-//    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+//    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 //
 //    def render(t: Temporal, attrs: Map[String, String]): String = t.toString
 //  }
@@ -209,7 +211,7 @@ class ProductCsvProduct[T](fieldNames: List[String], fieldRenderers: List[CsvRen
  * @tparam T the type of elements contained within the table; must have implicit evidence for `CsvRenderer` and `CsvGenerator`.
  * @tparam O the type of the writable output; must have implicit evidence for `Writable`.
  */
-abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], z3: Writable[O], ca: CsvAttributes) extends Renderer[Table[T], Try[O]] {
+abstract class CsvTableRenderer[T, O]()(using z1: CsvRenderer[T], z2: CsvGenerator[T], z3: Writable[O], ca: CsvAttributes) extends Renderer[Table[T], Try[O]] {
 
   /**
    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
@@ -219,14 +221,14 @@ abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGene
    * @return an instance of type O.
    */
   def render(t: Table[T], attrs: Map[String, String]): Try[O] = t match {
-    case x: Table[_] =>
-      val sw = implicitly[Writable[O]]
-      val tc = implicitly[CsvRenderer[T]]
-      val tg = implicitly[CsvGenerator[T]]
+    case x: Table[?] =>
+      val sw = summon[Writable[O]]
+      val tc = summon[CsvRenderer[T]]
+      val tg = summon[CsvGenerator[T]]
       val hdr: String = tg match {
-        case _tg: CsvProductGenerator[_] =>
+        case _tg: CsvProductGenerator[?] =>
           _tg.toColumnNames(None, None)
-        case _tg: CsvGenerator[_] =>
+        case _tg: CsvGenerator[?] =>
           _tg.toColumnName(None, "")
       }
       Try(sw.unit) map {
@@ -262,7 +264,7 @@ abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGene
  * @param csvAttributes implicit instance of CsvAttributes.
  * @tparam T the type of object to be rendered; must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
-case class CsvTableStringRenderer[T]()(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, StringBuilder]()(z1, z2, Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote), csvAttributes)
+case class CsvTableStringRenderer[T]()(using z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, StringBuilder]()(using z1, z2, Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote), csvAttributes)
 
 /**
  * Case class to help render a Table to a File in CSV format.
@@ -273,7 +275,7 @@ case class CsvTableStringRenderer[T]()(implicit z1: CsvRenderer[T], z2: CsvGener
  * @param csvAttributes implicit instance of CsvAttributes.
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  */
-case class CsvTableFileRenderer[T](path: Path)(implicit z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(z1, z2, Writable.fileWritable(path.toFile), csvAttributes)
+case class CsvTableFileRenderer[T](path: Path)(using z1: CsvRenderer[T], z2: CsvGenerator[T], csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(using z1, z2, Writable.fileWritable(path.toFile), csvAttributes)
 
 /**
  * Singleton companion object providing a factory method to create instances of `CsvTableFileRenderer`.
@@ -300,6 +302,6 @@ object CsvTableFileRenderer {
    * @return an instance of `CsvTableFileRenderer[T]` configured for rendering tables
    *         to the specified file.
    */
-  def apply[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes): CsvTableFileRenderer[T] =
-    CsvTableFileRenderer(file.toPath)(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], csvAttributes)
+  def apply[T: CsvRenderer : CsvGenerator](file: File)(using csvAttributes: CsvAttributes): CsvTableFileRenderer[T] =
+    CsvTableFileRenderer(file.toPath)(using summon[CsvRenderer[T]], summon[CsvGenerator[T]], csvAttributes)
 }

@@ -44,7 +44,7 @@ object FP {
    * @return an `X => Boolean` function which is always yields false if its input is a failure, otherwise,
    *         it chooses every nth value (approximately).
    */
-  def sampler[X](n: Int)(implicit r: Random): X => Boolean =
+  def sampler[X](n: Int)(using r: Random): X => Boolean =
     _ => r.nextInt(n) == 0
 
   /**
@@ -220,7 +220,7 @@ object FP {
    * @return a `Try[URL]`.
    */
   def resource[C: ClassTag](resourceName: String): Try[URL] =
-    resourceForClass(resourceName, implicitly[ClassTag[C]].runtimeClass)
+    resourceForClass(resourceName, summon[ClassTag[C]].runtimeClass)
 
   /**
    * Method to yield a Try[URL] for a resource name and a given class.
@@ -229,7 +229,7 @@ object FP {
    * @param clazz        the class, relative to which the resource can be found (defaults to the caller's class).
    * @return a Try[URL]
    */
-  def resourceForClass(resourceName: String, clazz: Class[_] = getClass): Try[URL] =
+  def resourceForClass(resourceName: String, clazz: Class[?] = getClass): Try[URL] =
     Option(clazz.getResource(resourceName)) match {
       case Some(u) =>
         Success(u)

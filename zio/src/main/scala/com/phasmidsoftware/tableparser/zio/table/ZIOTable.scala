@@ -28,7 +28,7 @@ object ZIOTable {
 //   * @param generator     implicit value of CsvProductGenerator[Row].
 //   * @param csvAttributes implicit value of CsvAttributes.
 //   */
-//  def writeCSVFileIO(table: Table[Row])(file: File)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
+//  def writeCSVFileIO(table: Table[Row])(file: File)(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
 //    IO.fromTry(CsvTableFileRenderer[Row](file).render(table) map { f => f.flush(); f })
 //
 //  /**
@@ -39,7 +39,7 @@ object ZIOTable {
 //   * @param csvAttributes implicit value of CsvAttributes.
 //   * @return a String.
 //   */
-//  def toCSV[T: CsvRenderer : CsvGenerator](t: Table[T])(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[String] =
+//  def toCSV[T: CsvRenderer : CsvGenerator](t: Table[T])(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[String] =
 //    IO.fromTry(CsvTableStringRenderer[T]().render(t) map (_.toString))
 
   /**
@@ -50,7 +50,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterator[String], n: Int): Task[T] = implicitly[TableParser[T]] match {
+  def parse[T: TableParser](ws: Iterator[String], n: Int): Task[T] = summon[TableParser[T]] match {
     case parser: StringTableParser[T] =>
       ZIO.fromTry(parser.parse(ws, n))
     case x =>
@@ -95,7 +95,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](u: => URI)(implicit codec: Codec): Task[T] = parse(sourceFromURI(u))
+  def parse[T: TableParser](u: => URI)(using codec: Codec): Task[T] = parse(sourceFromURI(u))
 
   /**
    * Method to parse a table from a URI with an explicit encoding.
@@ -106,7 +106,7 @@ object ZIOTable {
    * @return an IO[T]
    */
   def parse[T: TableParser](u: => URI, enc: String): Task[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parse(u)
   }
 
@@ -118,7 +118,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseInputStream[T: TableParser](i: => InputStream)(implicit codec: Codec): Task[T] = parse(sourceFromInputStream(i))
+  def parseInputStream[T: TableParser](i: => InputStream)(using codec: Codec): Task[T] = parse(sourceFromInputStream(i))
 
   /**
    * Method to parse a table from an InputStream with an explicit encoding.
@@ -129,7 +129,7 @@ object ZIOTable {
    * @return an Task[T]
    */
   def parseInputStream[T: TableParser](si: Task[InputStream], enc: String): Task[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     for (s <- si; t <- parseInputStream(s)) yield t
   }
 
@@ -146,7 +146,7 @@ object ZIOTable {
    * @return an Task[T]
    */
   def parseFile[T: TableParser](f: => File, enc: String): Task[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseFile(f)
   }
 
@@ -162,7 +162,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an Task[T]
    */
-  def parseFile[T: TableParser](f: => File)(implicit codec: Codec): Task[T] = parse(sourceFromFile(f))
+  def parseFile[T: TableParser](f: => File)(using codec: Codec): Task[T] = parse(sourceFromFile(f))
 
   /**
    * Method to parse a table from a File.
@@ -173,7 +173,7 @@ object ZIOTable {
    * @return an Task[T]
    */
   def parseFile[T: TableParser](pathname: String, enc: String): Task[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseFile(pathname)
   }
 
@@ -185,7 +185,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return a Task[T]
    */
-  def parseFile[T: TableParser](pathname: String)(implicit codec: Codec): Task[T] = parse(sourceFromFilename(pathname))
+  def parseFile[T: TableParser](pathname: String)(using codec: Codec): Task[T] = parse(sourceFromFilename(pathname))
 
   /**
    * Method to parse a table from an File.
@@ -196,7 +196,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an Task[T]
    */
-  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): Task[T] = parse(sourceFromClassResource(w, clazz))
+  def parseResource[T: TableParser](w: String, clazz: Class[?] = getClass)(using codec: Codec): Task[T] = parse(sourceFromClassResource(w, clazz))
 
   /**
    * Method to parse a table from a URL.
@@ -205,12 +205,12 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an Task[T]
    */
-  def parseResource[T: TableParser](u: => URL)(implicit codec: Codec): Task[T] = parse(u.toURI)
+  def parseResource[T: TableParser](u: => URL)(using codec: Codec): Task[T] = parse(u.toURI)
 
   /**
    * Method to parse a table from a URL with an explicit encoding.
    *
-   * NOTE: the logic here is different from that of parseResource(u:=>URL)(implicit codec: Codec) above.
+   * NOTE: the logic here is different from that of parseResource(u:=>URL)(using codec: Codec) above.
    *
    * @param u   the URL.
    * @param enc the encoding.
@@ -218,7 +218,7 @@ object ZIOTable {
    * @return an Task[T]
    */
   def parseResource[T: TableParser](u: => URL, enc: String): Task[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseResource(u)
   }
 //
@@ -230,7 +230,7 @@ object ZIOTable {
 //   * @return an Task[T]
 //   */
 //  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Task[T] = {
-//    val tableParser = implicitly[TableParser[T]]
+//    val tableParser = summon[TableParser[T]]
 //    tableParser match {
 //      case parser: TableParserIO[T] => parser.parseIO(wss, 1)
 //      case _ => Task.raiseError(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
@@ -246,8 +246,8 @@ object ZIOTable {
    * @param codec            (implicit) the encoding.
    * @return an Task of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(implicit codec: Codec): Task[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): Task[Table[RawRow]] = {
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](f)
   }
 
@@ -258,8 +258,8 @@ object ZIOTable {
    * @param codec    (implicit) the encoding.
    * @return an Task of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(implicit codec: Codec): Task[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
+  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): Task[Table[RawRow]] = {
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
     parseFile[Table[RawRow]](pathname)
   }
 
@@ -273,8 +273,8 @@ object ZIOTable {
    * @param codec            (implicit) the encoding.
    * @return an Task of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Task[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): Task[Table[RawRow]] = {
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 
@@ -285,7 +285,7 @@ object ZIOTable {
    * @return an Task of Table of RawRow
    */
   def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Task[RawTable] = {
-    implicit val z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
+    given z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator, 0)
   }
 
@@ -309,10 +309,10 @@ object ZIOTable {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(implicit csvAttributes: CsvAttributes, renderer: CsvRenderer[Row]): Task[String] = {
+  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes, renderer: CsvRenderer[Row]): Task[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
-        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         import com.phasmidsoftware.tableparser.core.render.CsvRenderer.CsvRendererRow
 //        import Row.CsvRendererRow
         ZIO.fromTry(t.toCSV)
@@ -328,7 +328,7 @@ object ZIOTable {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-//  def writeCSVFileRow(t: Table[Row], file: File)(implicit csvAttributes: CsvAttributes): IO[FileWriter] =
+//  def writeCSVFileRow(t: Table[Row], file: File)(using csvAttributes: CsvAttributes): IO[FileWriter] =
 //    t.maybeHeader match {
 //      case Some(hdr) =>
 //        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
@@ -360,7 +360,7 @@ object ZIOTable {
    * @param f a File.
    * @return an Task[Source].
    */
-  private def sourceFromFile(f: => File)(implicit codec: Codec): Task[Source] = ZIO.succeed(Source.fromFile(f))
+  private def sourceFromFile(f: => File)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromFile(f))
 
   /**
    * Method to open source defined by a File.
@@ -368,7 +368,7 @@ object ZIOTable {
    * @param filename a File.
    * @return an Task[Source].
    */
-  private def sourceFromFilename(filename: => String)(implicit codec: Codec): Task[Source] = ZIO.succeed(Source.fromFile(filename))
+  private def sourceFromFilename(filename: => String)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromFile(filename))
 
   /**
    * Method to open a source defined by a Class and a resource name.
@@ -377,7 +377,7 @@ object ZIOTable {
    * @param clazz the class.
    * @return an Task[Source].
    */
-  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Task[Source] = ZIO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
+  private def sourceFromClassResource(w: String, clazz: Class[?])(using codec: Codec): Task[Source] = ZIO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
     case _: java.lang.NullPointerException => Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
   })
 }

@@ -82,7 +82,7 @@ trait HierarchicalRenderers {
   def sequenceRenderer[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[Seq[T]] = 
     new TaggedHierarchicalRenderer[Seq[T]](style, attrs) {
       override def render(ts: Seq[T], attrs: Map[String, String]): Node =
-        write.Node(this.style, attrs, ts map (implicitly[HierarchicalRenderer[T]].render(_)))
+        write.Node(this.style, attrs, ts map (summon[HierarchicalRenderer[T]].render(_)))
     }
 
   /**
@@ -103,7 +103,7 @@ trait HierarchicalRenderers {
      */
     def render(ti: Indexed[T], attrs: Map[String, String]): Node = {
       val sequence = new TaggedHierarchicalRenderer[Int](indexStyle) {}.render(ti.i)
-      val value = implicitly[HierarchicalRenderer[T]].render(ti.t)
+      val value = summon[HierarchicalRenderer[T]].render(ti.t)
       write.Node(style, attrs, Seq(sequence, value))
     }
 
@@ -124,7 +124,7 @@ trait HierarchicalRenderers {
     new TaggedHierarchicalRenderer[Option[T]](style, attrs) {
     override def render(to: Option[T], attrs: Map[String, String]): Node = to match {
       case Some(t) => 
-        write.Node(this.style, attrs, Seq(implicitly[HierarchicalRenderer[T]].render(t)))
+        write.Node(this.style, attrs, Seq(summon[HierarchicalRenderer[T]].render(t)))
       case None => 
         Node("", None, Map(), Nil)
     }

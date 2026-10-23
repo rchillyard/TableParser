@@ -87,6 +87,6 @@ object ColumnHelper {
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
    */
-  implicit def defaultColumnHelper[T]: ColumnHelper[T] =
+  given defaultColumnHelper[T]: ColumnHelper[T] =
     StdCellParsers.columnHelper[T]()
 }

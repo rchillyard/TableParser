@@ -17,7 +17,7 @@ case class CsvAttributes(delimiter: String, quote: String, newline: String = "\r
  * Provides utility methods and implicit instances for working with CSV attributes.
  */
 object CsvAttributes {
-  implicit val defaultCsvAttributes: CsvAttributes = CsvAttributes(",")
+  given defaultCsvAttributes: CsvAttributes = CsvAttributes(",")
 
   /**
    * Creates a new `CsvAttributes` instance with the specified delimiter and a default quote character.

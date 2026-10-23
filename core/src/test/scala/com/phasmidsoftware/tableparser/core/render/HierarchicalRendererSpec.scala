@@ -29,55 +29,55 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   object Complex1 extends HierarchicalRenderers {
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("complex")
 
-    trait TreeWriterString$ extends TreeWriter[String] {
+    trait TreeWriterString extends TreeWriter[String] {
       def evaluate(node: Node): String = s"""<${node.style}>: "${node.content.getOrElse("")}" ${node.attributes.mkString("(", ",", ")")} ${node.children.map(evaluate).mkString("[", ",", "]")} """
     }
 
-    implicit object TreeWriterString$ extends TreeWriterString$
+    implicit object treeWriterString extends TreeWriterString
 
   }
 
   object Complex2 extends HierarchicalRenderers {
-    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")
+    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")(using HierarchicalRenderer.DoubleHierarchicalRenderer)
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("")
     implicit val indexedRenderer: HierarchicalRenderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th")
 
-    import HTML._
+    import HTML.{given, *}
 
-    trait TreeWriterHTML$ extends TreeWriter[HTML] {
+    trait TreeWriterHTML extends TreeWriter[HTML] {
       def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children.toSeq map evaluate)
     }
 
-    implicit object TreeWriterHTML$ extends TreeWriterHTML$
+    implicit object treeWriterHTML extends TreeWriterHTML
 
   }
 
   object Complex3 extends HierarchicalRenderers {
-    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")
+    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")(using HierarchicalRenderer.DoubleHierarchicalRenderer)
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("tr")
 
 
-    import HTML._
+    import HTML.{given, *}
 
-    trait TreeWriterHTML$ extends TreeWriter[HTML] {
+    trait TreeWriterHTML extends TreeWriter[HTML] {
       def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children.toSeq map evaluate)
     }
 
-    implicit object TreeWriterHTML$ extends TreeWriterHTML$
+    implicit object treeWriterHTML extends TreeWriterHTML
 
   }
 
   object Complicated extends HierarchicalRenderers {
-    implicit val elementRenderer: HierarchicalRenderer[String] = renderer("element")
+    implicit val elementRenderer: HierarchicalRenderer[String] = renderer("element")(using HierarchicalRenderer.StringHierarchicalRenderer)
     implicit val optionLongRenderer: HierarchicalRenderer[Option[Long]] = optionRenderer("", Map())
     implicit val sequenceStringRenderer: HierarchicalRenderer[Seq[String]] = sequenceRenderer("")
     implicit val complicatedRenderer: HierarchicalRenderer[Complicated] = HierarchicalRenderer.derived[Complicated]("x")
 
-    trait TreeWriterHTML$ extends TreeWriter[SimpleHTML] {
+    trait TreeWriterHTML extends TreeWriter[SimpleHTML] {
       def evaluate(node: Node): SimpleHTML = SimpleHTML(node.style, node.content, node.attributes, node.children.toSeq map evaluate)
     }
 
-    implicit object TreeWriterHTML$ extends TreeWriterHTML$
+    implicit object treeWriterHTML extends TreeWriterHTML
 
   }
 
@@ -86,23 +86,23 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   it should "render Complex as sequence of numbers" in {
     import Complex1._
     val z = Complex(0, 1)
-    val node = implicitly[HierarchicalRenderer[Complex]].render(z)
-    implicitly[TreeWriter[String]].evaluate(node) shouldBe "<complex>: \"\" () [<>: \"0.0\" (name -> r) [] ,<>: \"1.0\" (name -> i) [] ] "
+    val node = summon[HierarchicalRenderer[Complex]].render(z)
+    summon[TreeWriter[String]].evaluate(node) shouldBe "<complex>: \"\" () [<>: \"0.0\" (name -> r) [] ,<>: \"1.0\" (name -> i) [] ] "
   }
 
   it should "render Complex as an HTML" in {
     import Complex3._
     val z = Complex(0, 1)
-    import HTML._
-    val node = implicitly[HierarchicalRenderer[Complex]].render(z)
-    implicitly[TreeWriter[HTML]].evaluate(node) shouldBe HTML("tr", Nil, None, List(HTML("td", Seq(Attribute("name" -> "r")), Some("0.0"), Nil), HTML("td", Seq(Attribute("name" -> "i")), Some("1.0"), Nil)))
+    import HTML.{given, *}
+    val node = summon[HierarchicalRenderer[Complex]].render(z)
+    summon[TreeWriter[HTML]].evaluate(node) shouldBe HTML("tr", Nil, None, List(HTML("td", Seq(Attribute("name" -> "r")), Some("0.0"), Nil), HTML("td", Seq(Attribute("name" -> "i")), Some("1.0"), Nil)))
   }
 
   it should "render Complicated as an SimpleHTML" in {
     import Complicated._
     val z = Complicated("strange", 42, open = false, Some(6175551234L), Seq("Tom", "Dick", "Harry"))
-    val node = implicitly[HierarchicalRenderer[Complicated]].render(z)
-    implicitly[TreeWriter[SimpleHTML]].evaluate(node) shouldBe SimpleHTML("x", None, Map.empty, List(SimpleHTML("element", Some("strange"), Map("name" -> "name"), List()), SimpleHTML("", Some("42"), Map("name" -> "count"), List()), SimpleHTML("", Some("false"), Map("name" -> "open"), List()), SimpleHTML("", None, Map("name" -> "maybePhone"), List(SimpleHTML("", Some("6175551234"), Map.empty, List()))), SimpleHTML("", None, Map("name" -> "aliases"), List(SimpleHTML("element", Some("Tom"), Map.empty, List()), SimpleHTML("element", Some("Dick"), Map.empty, List()), SimpleHTML("element", Some("Harry"), Map.empty, List())))))
+    val node = summon[HierarchicalRenderer[Complicated]].render(z)
+    summon[TreeWriter[SimpleHTML]].evaluate(node) shouldBe SimpleHTML("x", None, Map.empty, List(SimpleHTML("element", Some("strange"), Map("name" -> "name"), List()), SimpleHTML("", Some("42"), Map("name" -> "count"), List()), SimpleHTML("", Some("false"), Map("name" -> "open"), List()), SimpleHTML("", None, Map("name" -> "maybePhone"), List(SimpleHTML("", Some("6175551234"), Map.empty, List()))), SimpleHTML("", None, Map("name" -> "aliases"), List(SimpleHTML("element", Some("Tom"), Map.empty, List()), SimpleHTML("element", Some("Dick"), Map.empty, List()), SimpleHTML("element", Some("Harry"), Map.empty, List())))))
   }
 
   it should "render a table of Complexes in HTML without a header" in {

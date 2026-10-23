@@ -15,12 +15,12 @@ import com.phasmidsoftware.tableparser.core.table._
 abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = false, headerRows: Int = 1) extends CellParsers {
   self =>
 
-  override implicit val rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
+  override given rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
 
-  implicit val parser: StandardRowParser[RawRow] = StandardRowParser.create[RawRow]
+  given parser: StandardRowParser[RawRow] = StandardRowParser.create[RawRow]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
-  implicit object RawTableParser extends StringTableParser[RawTable] {
+  given RawTableParser: StringTableParser[RawTable] with {
     type Row = RawRow
 
     override val maybeHeader: Option[Header] = optionalHeader
@@ -33,7 +33,7 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
       new HeadedTable(Content(rows), header)
 
     val rowParser: RowParser[Row, Input] =
-      implicitly[RowParser[Row, String]]
+      summon[RowParser[Row, String]]
   }
 }
 

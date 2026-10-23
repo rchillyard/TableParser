@@ -30,11 +30,11 @@ class TreeWriterSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "TreeWriter"
 
-  import HTML._
+  import HTML.{given, *}
 
   it should "implement node correctly for 1" in {
-    implicitly[TreeWriter[HTML]].evaluate(Node("1")) shouldBe HTML("1")
-    implicitly[TreeWriter[HTML]].evaluate(Node("1", Map("name" -> "x"))) shouldBe HTML("1", None, Map("name" -> "x"))
+    summon[TreeWriter[HTML]].evaluate(Node("1")) shouldBe HTML("1")
+    summon[TreeWriter[HTML]].evaluate(Node("1", Map("name" -> "x"))) shouldBe HTML("1", None, Map("name" -> "x"))
   }
 
 

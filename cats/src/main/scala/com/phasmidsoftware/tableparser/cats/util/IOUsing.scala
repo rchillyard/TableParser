@@ -36,7 +36,7 @@ object IOUsing {
    * @tparam A the underlying type of the result.
    * @return a IO[A]
    */
-  def apply[R: Releasable, A](ri: IO[R])(f: R => IO[A]): IO[A] = Resource.make(ri)(r => IO(implicitly[Releasable[R]].release(r))).use(r => f(r))
+  def apply[R: Releasable, A](ri: IO[R])(f: R => IO[A]): IO[A] = Resource.make(ri)(r => IO(summon[Releasable[R]].release(r))).use(r => f(r))
 
   /**
    * This alternative apply method signature is to allow proper handling of Releasable resources which are themselves wrapped in Try, using IO.

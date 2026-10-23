@@ -4,7 +4,6 @@
 
 package com.phasmidsoftware.tableparser.core.render.tag
 
-import scala.language.implicitConversions
 
 /**
  * Case class defining an attribute.
@@ -79,7 +78,7 @@ sealed trait Tag {
  * @param tags       the children tags.
  * @param rules      an implicit set of rules (like a DTD).
  */
-abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(implicit rules: TagRules) extends Tag {
+abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(using rules: TagRules) extends Tag {
 
   override def toString: String = s"""\n${tagString()}$contentString$tagsString${tagString(true)}"""
 
@@ -106,7 +105,7 @@ object Attribute {
 
   def apply(kv: (String, String)): Attribute = convertFromTuple(kv)
 
-  implicit def convertFromTuple(kv: (String, String)): Attribute = Attribute(kv._1, kv._2)
+  def convertFromTuple(kv: (String, String)): Attribute = Attribute(kv._1, kv._2)
 }
 
 /**

@@ -2,10 +2,8 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.tableparser.core
+package com.phasmidsoftware.tableparser.core.table
 
-package object table {
+// Top-level definitions of this package (formerly its package object).
 
-  type RawTable = Table[RawRow]
-
-}
+type RawTable = Table[RawRow]

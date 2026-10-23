@@ -73,7 +73,7 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
    * @tparam X the underlying type of the result.
    * @return an IO[Assertion].
    */
-  def checkFailure[X](xio: => IO[X])(expected: Class[_]): IO[Assertion] = {
+  def checkFailure[X](xio: => IO[X])(expected: Class[?]): IO[Assertion] = {
     implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
     // TODO eliminate use of unsafe methods
     val af: Future[Assertion] = xio.unsafeToFuture().transform(xy => xy match {

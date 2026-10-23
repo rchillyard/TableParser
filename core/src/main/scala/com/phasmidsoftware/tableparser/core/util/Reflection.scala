@@ -29,7 +29,7 @@ object Reflection {
    * @param classTag rhw class tag.
    * @return an Array of String.
    */
-  def extractFieldNames(classTag: ClassTag[_]): Array[String] = {
+  def extractFieldNames(classTag: ClassTag[?]): Array[String] = {
     val clazz = classTag.runtimeClass
     try {
       // NOTE: copy methods have the form copy$default$N(), we need to sort them in order, but must account for the fact

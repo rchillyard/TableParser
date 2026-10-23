@@ -7,7 +7,7 @@ import scala.util.Try
  * Trait Convertible.
  */
 sealed trait Convertible {
-  def convertTo[T](implicit z: CellParser[T]): Try[T] =
+  def convertTo[T](using z: CellParser[T]): Try[T] =
     cellReader.parse(this)
 }
 

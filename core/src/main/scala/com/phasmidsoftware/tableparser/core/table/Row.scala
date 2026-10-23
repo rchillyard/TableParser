@@ -82,7 +82,7 @@ object Row {
    * @param c   CsvAttributes.
    * @return a new CsvGenerator[T].
    */
-  def csvGenerator[T](hdr: Header)(implicit c: CsvAttributes): CsvGenerator[T] = new CsvGenerator[T] {
+  def csvGenerator[T](hdr: Header)(using c: CsvAttributes): CsvGenerator[T] = new CsvGenerator[T] {
     val csvAttributes: CsvAttributes = c
 
     /**

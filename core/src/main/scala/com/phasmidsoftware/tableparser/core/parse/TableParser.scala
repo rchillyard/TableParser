@@ -78,7 +78,7 @@ object TableParser {
    * @param p a StringTableParser.
    * @tparam Table the (parametric) underlying type of `p` (`Table` will be `Table[_]`).
    */
-  implicit class ImplicitParser[Table](p: StringTableParser[Table]) {
+  extension [Table](p: StringTableParser[Table]) {
 
     /**
      * Method to parse a `Try[Source]` character-by-character.
@@ -87,7 +87,7 @@ object TableParser {
      * @param sy a `Try[Source]`.
      * @return a `Try[Table]`.
      */
-    def parse(sy: Try[Source]): Try[Table] =
+    infix def parse(sy: Try[Source]): Try[Table] =
       TryUsing(sy)(x => doParse(x.getLines()))
 
     /**
@@ -216,8 +216,8 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
 
   type Row = RawRow
 
-  implicit val stringSeqParser: CellParser[Strings] = StdCellParsers.cellParserSeq
-  implicit val rowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
+  given stringSeqParser: CellParser[Strings] = StdCellParsers.cellParserSeq
+  given rowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
 
   val rowParser: RowParser[Row, String] = StandardRowParser.create[Row]
 
@@ -390,7 +390,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    *               which defines how input elements can be combined or validated during processing.
    * @return a `Try` containing a `Table` if the parsing is successful, or an error in case of failure.
    */
-  def doParseRows(ts: Iterator[Input], header: Header, f: ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Try[Table] = {
+  def doParseRows(ts: Iterator[Input], header: Header, f: ((Input, Int)) => Try[Row])(using ev: Joinable[Input]): Try[Table] = {
 
     val inputTransformer = new IndexedInputToRowsAggregator(f, multiline, forgiving, predicate)
 
@@ -477,7 +477,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
  * @tparam T the parametric type of rows in the table.
  * @param rp an implicit `RowParser`, which defines the logic for parsing individual rows of type `T` from strings.
  */
-abstract class HeadedCSVTableParser[T: ClassTag](implicit rp: RowParser[T, String]) extends StringTableParser[Table[T]] {
+abstract class HeadedCSVTableParser[T: ClassTag](using rp: RowParser[T, String]) extends StringTableParser[Table[T]] {
   type Row = T
 
   /**
@@ -497,7 +497,7 @@ abstract class HeadedCSVTableParser[T: ClassTag](implicit rp: RowParser[T, Strin
    *
    * @return a RowParser[Row, Input].
    */
-  val rowParser: RowParser[T, String] = implicitly[RowParser[T, String]]
+  val rowParser: RowParser[T, String] = summon[RowParser[T, String]]
 }
 
 /**
@@ -561,9 +561,9 @@ abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true
    */
   def cellParser: CellParser[X]
 
-  implicit val xp: CellParser[X] = cellParser
+  given xp: CellParser[X] = cellParser
 
-  implicit val ptp: TableParser[Table[X]] =
+  given ptp: TableParser[Table[X]] =
     if (sourceHasHeaderRow) PlainTextHeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)
 }
 

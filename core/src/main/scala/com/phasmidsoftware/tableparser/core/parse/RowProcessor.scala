@@ -101,7 +101,7 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    * @return a `Try` containing an iterator of parsed `Row` objects if the parsing succeeds,
    *         or a failure if any step of the process encounters an error (e.g., invalid header or processing logic).
    */
-  def process(xs: Iterator[Input], n: Int)(implicit ev: Joinable[Input]): Iterator[Row] = maybeHeader match {
+  def process(xs: Iterator[Input], n: Int)(using ev: Joinable[Input]): Iterator[Row] = maybeHeader match {
     case Some(h) =>
       doProcessRows(xs, rowParser.parseIndexed(h))
     case None if n > 0 =>
@@ -136,7 +136,7 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    *               `Joinable` type class, which provides methods to join or validate input elements.
    * @return an iterator of successfully processed rows of type `Row`.
    */
-  private def doProcessRows(ts: Iterator[Input], f: ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Iterator[Row] = {
+  private def doProcessRows(ts: Iterator[Input], f: ((Input, Int)) => Try[Row])(using ev: Joinable[Input]): Iterator[Row] = {
 
     val inputTransformer = new IndexedInputToRowsTransformer(f, multiline)
 
@@ -150,10 +150,10 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
  *
  * @tparam Row the row type.
  */
-abstract class StringRowProcessor[Row](implicit rp: RowParser[Row, String]) extends AbstractRowProcessor[Row] {
+abstract class StringRowProcessor[Row](using rp: RowParser[Row, String]) extends AbstractRowProcessor[Row] {
   type Input = String
 
-  val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+  val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
 
   /**
    * Processes an iterator of input rows with an optional header and parses them into rows.
@@ -178,7 +178,7 @@ abstract class StringRowProcessor[Row](implicit rp: RowParser[Row, String]) exte
    * @return a `Try` containing an iterator of parsed `Row` objects if the parsing succeeds,
    *         or a failure if any step of the process encounters an error (e.g., invalid header or processing logic).
    */
-  override def process(xs: Iterator[String], n: Int)(implicit ev: Joinable[String]): Iterator[Row] = super.process(xs, n)
+  override def process(xs: Iterator[String], n: Int)(using ev: Joinable[String]): Iterator[Row] = super.process(xs, n)
 }
 
 // NOTE: not currently instantiated

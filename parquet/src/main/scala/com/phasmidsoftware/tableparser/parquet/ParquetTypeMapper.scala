@@ -20,7 +20,7 @@ object ParquetTypeMapper {
    * @return Right(Class[_]) if the type is supported,
    *         Left(ParquetParserException) if not.
    */
-  def mapType(pt: ParquetPrimitiveType): Either[ParquetParserException, Class[_]] =
+  def mapType(pt: ParquetPrimitiveType): Either[ParquetParserException, Class[?]] =
     (pt.getPrimitiveTypeName, Option(pt.getLogicalTypeAnnotation)) match {
       case (BOOLEAN, _) => Right(classOf[Boolean])
       case (INT32, Some(_: DateLogicalTypeAnnotation)) => Right(classOf[LocalDate])

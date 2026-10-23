@@ -26,37 +26,37 @@ trait ParquetCellConverter[T] {
 
 object ParquetCellConverter {
 
-  implicit object BooleanConverter extends ParquetCellConverter[Boolean] {
+  given BooleanConverter: ParquetCellConverter[Boolean] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Boolean] =
       Try(group.getBoolean(fieldName, 0))
   }
 
-  implicit object IntConverter extends ParquetCellConverter[Int] {
+  given IntConverter: ParquetCellConverter[Int] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Int] =
       Try(group.getInteger(fieldName, 0))
   }
 
-  implicit object LongConverter extends ParquetCellConverter[Long] {
+  given LongConverter: ParquetCellConverter[Long] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Long] =
       Try(group.getLong(fieldName, 0))
   }
 
-  implicit object FloatConverter extends ParquetCellConverter[Float] {
+  given FloatConverter: ParquetCellConverter[Float] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Float] =
       Try(group.getFloat(fieldName, 0))
   }
 
-  implicit object DoubleConverter extends ParquetCellConverter[Double] {
+  given DoubleConverter: ParquetCellConverter[Double] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Double] =
       Try(group.getDouble(fieldName, 0))
   }
 
-  implicit object StringConverter extends ParquetCellConverter[String] {
+  given StringConverter: ParquetCellConverter[String] with {
     def convert(group: SimpleGroup, fieldName: String): Try[String] =
       Try(group.getBinary(fieldName, 0).toStringUsingUTF8)
   }
 
-  implicit object InstantConverter extends ParquetCellConverter[Instant] {
+  given InstantConverter: ParquetCellConverter[Instant] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Instant] =
       Try {
         val micros = group.getLong(fieldName, 0)
@@ -64,12 +64,12 @@ object ParquetCellConverter {
       }
   }
 
-  implicit object LocalDateConverter extends ParquetCellConverter[LocalDate] {
+  given LocalDateConverter: ParquetCellConverter[LocalDate] with {
     def convert(group: SimpleGroup, fieldName: String): Try[LocalDate] =
       Try(LocalDate.ofEpochDay(group.getInteger(fieldName, 0).toLong))
   }
 
-  implicit object BigDecimalConverter extends ParquetCellConverter[BigDecimal] {
+  given BigDecimalConverter: ParquetCellConverter[BigDecimal] with {
     // NOTE: scale hardcoded to 0 pending access to PrimitiveType metadata.
     def convert(group: SimpleGroup, fieldName: String): Try[BigDecimal] =
       Try {
@@ -86,13 +86,13 @@ object ParquetCellConverter {
    * Converter for Option[T] fields.
    * Returns None if the field has no value in this row, Some(value) otherwise.
    */
-  implicit def optionConverter[T: ParquetCellConverter]: ParquetCellConverter[Option[T]] =
+  given optionConverter[T: ParquetCellConverter]: ParquetCellConverter[Option[T]] =
     new ParquetCellConverter[Option[T]] {
       def convert(group: SimpleGroup, fieldName: String): Try[Option[T]] =
         if (group.getFieldRepetitionCount(fieldName) == 0)
           Success(None)
         else
-          implicitly[ParquetCellConverter[T]].convert(group, fieldName).map(Some(_))
+          summon[ParquetCellConverter[T]].convert(group, fieldName).map(Some(_))
     }
 
   // ── converterN factory methods ──────────────────────────────────────────────
@@ -102,7 +102,7 @@ object ParquetCellConverter {
    * otherwise reflects on the ClassTag. Mirrors CellParsers.fieldNames.
    */
   private def effectiveFieldNames[T: ClassTag](fields: Seq[String]): Array[String] =
-    if (fields.isEmpty) Reflection.extractFieldNames(implicitly[ClassTag[T]])
+    if (fields.isEmpty) Reflection.extractFieldNames(summon[ClassTag[T]])
     else fields.toArray
 
   /**
@@ -124,10 +124,10 @@ object ParquetCellConverter {
       private val f2 = fs(1)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
-          p2 <- implicitly[ParquetCellConverter[P2]].convert(group, h.lookup(None, f2))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p2 <- summon[ParquetCellConverter[P2]].convert(group, h.lookup(None, f2))
         } yield construct(p1, p2)
       }
     }
@@ -150,9 +150,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter2[P2, P3, T](construct(p1, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -177,9 +177,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter3[P2, P3, P4, T](construct(p1, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -205,9 +205,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter4[P2, P3, P4, P5, T](construct(p1, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -234,9 +234,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter5[P2, P3, P4, P5, P6, T](construct(p1, _, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -264,9 +264,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter6[P2, P3, P4, P5, P6, P7, T](construct(p1, _, _, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -295,9 +295,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter7[P2, P3, P4, P5, P6, P7, P8, T](construct(p1, _, _, _, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -339,7 +339,7 @@ object ParquetCellConverter {
   def convertByClass(
                             group: SimpleGroup,
                             columnName: String,
-                            clazz: Class[_]
+                            clazz: Class[?]
                     ): Try[Any] =
     clazz match {
       case c if c == classOf[Boolean] || c == classOf[java.lang.Boolean] => BooleanConverter.convert(group, columnName)

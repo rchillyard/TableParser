@@ -89,7 +89,7 @@ class Rfc4180Spec extends AnyFlatSpec with Matchers {
   )
 
   it should "write each field so that it can be read back as it is, quoting it if necessary (rules 4 to 7)" in {
-    val renderer = implicitly[CsvRenderer[Note]]
+    val renderer = summon[CsvRenderer[Note]]
     awkward map (renderer.render(_)) shouldBe Seq("1,plain", "2,\"a, comma\"", "3,\"a \"\"quote\"\"\"", "4,\"a line\r\nbreak\"", "5,\" spaces \"", "6,")
   }
 

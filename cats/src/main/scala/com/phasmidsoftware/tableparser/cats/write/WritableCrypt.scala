@@ -27,7 +27,7 @@ trait WritableCrypt[O] extends Writable[O] {
    */
   def writeLineEncrypted[A: HexEncryption](o: O)(key: String, plaintext: CharSequence): O = {
     import cats.effect.unsafe.implicits.global
-    val encryption = implicitly[HexEncryption[A]]
+    val encryption = summon[HexEncryption[A]]
     val wBi: IO[(String, String, Boolean)] = encryption.encryptWithRandomKey(plaintext)
 
     // TODO use IO for O

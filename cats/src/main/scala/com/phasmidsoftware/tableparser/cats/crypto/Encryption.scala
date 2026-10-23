@@ -227,7 +227,7 @@ object HexEncryption {
     val hexIndex = 1 // the second (and last) element in the row is the Hex string.
     val f: Int => Option[String] = row.lift
     (for (key <- ko map keyFunction; hex <- f(hexIndex)) yield (key, hex)) match {
-      case Some(key -> hex) => implicitly[HexEncryption[A]].decryptHex(key, hex)
+      case Some(key -> hex) => summon[HexEncryption[A]].decryptHex(key, hex)
       case _ => IO.raiseError(TableParserException(s"Encryption.decryptRow: logic error: row=$row does not include element for hexIndex ($hexIndex)"))
     }
   }
@@ -263,8 +263,8 @@ object EncryptionUTF8AES128CTR extends BaseHexEncryption[AES128CTR] {
   import tsec.cipher.symmetric.{IvGen, PlainText}
   import tsec.common._
 
-  implicit val ctrStrategy: IvGen[IO, AES128CTR] = AES128CTR.defaultIvStrategy[IO]
-  implicit val cachedInstance: JCAPrimitiveCipher[IO, AES128CTR, CTR, NoPadding] = AES128CTR.genEncryptor[IO] //Cache the implicit
+  given ctrStrategy: IvGen[IO, AES128CTR] = AES128CTR.defaultIvStrategy[IO]
+  given cachedInstance: JCAPrimitiveCipher[IO, AES128CTR, CTR, NoPadding] = AES128CTR.genEncryptor[IO] //Cache the implicit
 
 //  val random: Random = new Random()
 

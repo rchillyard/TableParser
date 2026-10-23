@@ -23,8 +23,8 @@ trait CsvRenderers {
    * @param ca the (implicit) CsvAttributes.
    * @return a CsvRenderer[RawRow].
    */
-  def rawRowRenderer(implicit ca: CsvAttributes): CsvRenderer[RawRow] = new CsvRenderer[RawRow] {
-    implicit val z: CsvRenderer[String] = CsvRenderers.CsvRendererString
+  def rawRowRenderer(using ca: CsvAttributes): CsvRenderer[RawRow] = new CsvRenderer[RawRow] {
+    given z: CsvRenderer[String] = CsvRenderers.CsvRendererString
 
     /**
      * Renders a sequence of strings based on the provided `RawRow` and attribute map.
@@ -47,7 +47,7 @@ trait CsvRenderers {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[ Seq[T] ]
    */
-  def sequenceRenderer[T: CsvRenderer](implicit ca: CsvAttributes): CsvRenderer[Seq[T]] = new CsvRenderer[Seq[T]] {
+  def sequenceRenderer[T: CsvRenderer](using ca: CsvAttributes): CsvRenderer[Seq[T]] = new CsvRenderer[Seq[T]] {
 
     /**
      * Renders a sequence of objects into a CSV-formatted string using provided attributes.
@@ -57,7 +57,7 @@ trait CsvRenderers {
      * @return A string representing the sequence `ts` in CSV format, concatenated using the delimiter defined in `csvAttributes`.
      */
     def render(ts: Seq[T], attrs: Map[String, String]): String =
-      (ts map { (t: T) => implicitly[CsvRenderer[T]].render(t) }).mkString(csvAttributes.delimiter)
+      (ts map { (t: T) => summon[CsvRenderer[T]].render(t) }).mkString(csvAttributes.delimiter)
 
     val csvAttributes: CsvAttributes = ca
   }
@@ -69,7 +69,7 @@ trait CsvRenderers {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[ Option[T] ].
    */
-  def optionRenderer[T: CsvRenderer](defaultString: String = "")(implicit ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
+  def optionRenderer[T: CsvRenderer](defaultString: String = "")(using ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
     val csvAttributes: CsvAttributes = ca
 
     /**
@@ -84,7 +84,7 @@ trait CsvRenderers {
      *         the `CsvRenderer[T]`. Otherwise, returns a default string.
      */
     def render(to: Option[T], attrs: Map[String, String]): String =
-      (to map (t => implicitly[CsvRenderer[T]].render(t))).getOrElse(defaultString)
+      (to map (t => summon[CsvRenderer[T]].render(t))).getOrElse(defaultString)
   }
 
   /**
@@ -99,7 +99,7 @@ trait CsvRenderers {
    * @tparam T the underlying type.
    * @return a CsvRenderer[Option[T]].
    */
-  def optionProductRenderer[T](implicit r: CsvRenderer[T], g: CsvGenerator[T], ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
+  def optionProductRenderer[T](using r: CsvRenderer[T], g: CsvGenerator[T], ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
     val csvAttributes: CsvAttributes = ca
 
     // The number of columns of a T.
@@ -121,7 +121,7 @@ trait CsvRenderers {
    * @tparam T the type of the parameter to the render method.
    * @return a CsvRenderer[T].
    */
-  def skipRenderer[T](alignment: Int = 1)(implicit ca: CsvAttributes): CsvRenderer[T] = new CsvRenderer[T] {
+  def skipRenderer[T](alignment: Int = 1)(using ca: CsvAttributes): CsvRenderer[T] = new CsvRenderer[T] {
     val csvAttributes: CsvAttributes = ca
 
     /**
@@ -166,7 +166,7 @@ object CsvRenderers {
    * @tparam T The type of object to be rendered into CSV format.
    */
   abstract class StandardCsvRenderer[T] extends CsvRenderer[T] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     /**
      * Renders an object of type `T` into its string representation.
@@ -195,12 +195,12 @@ object CsvRenderers {
    * Example:
    * {{{
    * // Assuming an implicit `CsvAttributes` in scope
-   * val renderer = implicitly[StandardCsvRenderer[Boolean]]
+   * val renderer = summon[StandardCsvRenderer[Boolean]]
    * val csvValue = renderer.render(true, Map.empty)
    * println(csvValue) // Output: "true"
    * }}}
    */
-  implicit object CsvRendererBoolean extends StandardCsvRenderer[Boolean]
+  given CsvRendererBoolean: StandardCsvRenderer[Boolean] with {}
 
   /**
    * Implicit object `CsvRendererInt` provides a concrete implementation of the `StandardCsvRenderer`
@@ -213,7 +213,7 @@ object CsvRenderers {
    * `StandardCsvRenderer[Int]` is required, enabling seamless integration into systems that
    * rely on type class-based serialization for CSV export.
    */
-  implicit object CsvRendererInt extends StandardCsvRenderer[Int]
+  given CsvRendererInt: StandardCsvRenderer[Int] with {}
 
   /**
    * Implicit object `CsvRendererLong` provides a `StandardCsvRenderer` implementation specifically for the `Long` type.
@@ -235,7 +235,7 @@ object CsvRenderers {
    * Note: Additional attributes passed in the `Map` parameter to the `render` method are supported but not
    * utilized in this implementation.
    */
-  implicit object CsvRendererLong extends StandardCsvRenderer[Long]
+  given CsvRendererLong: StandardCsvRenderer[Long] with {}
 
   /**
    * `CsvRendererDouble` is an implicit object that provides a mechanism to render instances
@@ -264,7 +264,7 @@ object CsvRenderers {
    * @see [[com.phasmidsoftware.tableparser.core.render.StandardCsvRenderer]]
    * @see [[com.phasmidsoftware.tableparser.core.render.Renderer]]
    */
-  implicit object CsvRendererDouble extends StandardCsvRenderer[Double]
+  given CsvRendererDouble: StandardCsvRenderer[Double] with {}
 
   /**
    * Implicit object that provides a CSV renderer for `Float` values by extending the `StandardCsvRenderer`
@@ -277,7 +277,7 @@ object CsvRenderers {
    * This renderer adheres to the base `CsvRenderer` trait interface, enabling consistent rendering
    * of `Float` values in CSV-related operations.
    */
-  implicit object CsvRendererFloat extends StandardCsvRenderer[Float]
+  given CsvRendererFloat: StandardCsvRenderer[Float] with {}
 
   /**
    * Implicit object providing a CSV renderer for the `Short` type.
@@ -291,7 +291,7 @@ object CsvRenderers {
    * converts the given value to its string representation without
    * applying additional attributes or custom processing.
    */
-  implicit object CsvRendererShort extends StandardCsvRenderer[Short]
+  given CsvRendererShort: StandardCsvRenderer[Short] with {}
 
   /**
    * An implicit implementation of the `StandardCsvRenderer` for the `Byte` type.
@@ -300,7 +300,7 @@ object CsvRenderers {
    * by extending the `StandardCsvRenderer` abstract class. This implementation defines the specific
    * rendering behavior for converting `Byte` type data into its CSV-compatible string representation.
    */
-  implicit object CsvRendererByte extends StandardCsvRenderer[Byte]
+  given CsvRendererByte: StandardCsvRenderer[Byte] with {}
 
   /**
    * `CsvRendererString` is an implicit object that extends the `StandardCsvRenderer` class
@@ -324,7 +324,7 @@ object CsvRenderers {
    * @param ca the CsvAttributes (for the delimiter and the quote character).
    * @return the String, quoted if necessary.
    */
-  def quoteIfNecessary(w: String)(implicit ca: CsvAttributes): String = {
+  def quoteIfNecessary(w: String)(using ca: CsvAttributes): String = {
     val quote = ca.quote
     val delimiter = ca.delimiter.trim match {
       case "" => ca.delimiter
@@ -335,7 +335,7 @@ object CsvRenderers {
     if (mustQuote) quote + w.replace(quote, quote + quote) + quote else w
   }
 
-  implicit object CsvRendererString extends StandardCsvRenderer[String] {
+  given CsvRendererString: StandardCsvRenderer[String] with {
     /**
      * Method to render a String as a CSV cell, quoting it (as in RFC 4180) when it has to be quoted to be read back as it is:
      * when it contains the delimiter, the quote character or a line break, or when it starts or ends with whitespace
@@ -346,7 +346,7 @@ object CsvRenderers {
      * @return the String, quoted if necessary.
      */
     override def render(w: String, attrs: Map[String, String]): String =
-      CsvRenderers.quoteIfNecessary(w)(csvAttributes)
+      CsvRenderers.quoteIfNecessary(w)(using csvAttributes)
   }
 
   /**
@@ -363,23 +363,23 @@ object CsvRenderers {
    * Example usage:
    * {{{
    * val url: URL = new URL("https://example.com")
-   * val renderedCsv: String = implicitly[StandardCsvRenderer[URL]].render(url, Map())
+   * val renderedCsv: String = summon[StandardCsvRenderer[URL]].render(url, Map())
    * // renderedCsv would contain "https://example.com"
    * }}}
    *
    * This implicit object allows seamless usage of `URL` type rendering in contexts where `StandardCsvRenderer`
    * is required, such as within collections or for pipeline-based CSV serialization.
    */
-  implicit object CsvRendererURL extends StandardCsvRenderer[URL]
+  given CsvRendererURL: StandardCsvRenderer[URL] with {}
 
-  implicit object CsvRendererInstant extends CsvRenderer[Instant] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+  given CsvRendererInstant: CsvRenderer[Instant] with {
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: Instant, attrs: Map[String, String]): String = t.toString
   }
 
 //  implicit object CsvRendererTemporal extends CsvRenderer[Temporal] {
-//    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+//    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 //    def render(t: Temporal, attrs: Map[String, String]): String = t.toString
 //  }
 }

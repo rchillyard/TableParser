@@ -10,7 +10,7 @@ import spray.json._
 
 class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
 
-  implicit object PartnershipTableRenderer$ extends JsonTableRenderer[Partnership]
+  implicit object PartnershipTableRenderer extends JsonTableRenderer[Partnership]
 
   behavior of "JsonTableRenderer"
 

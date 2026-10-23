@@ -47,20 +47,20 @@ trait CsvGenerator[-T] {
  * - URL values from the `java.net` package (`java.net.URL`), using `CsvGenerators.CsvGeneratorURL`
  */
 object CsvGenerator extends CsvGenerators {
-  implicit val intGenerator: CsvGenerator[Int] = CsvGenerators.CsvGeneratorInt
-  implicit val stringGenerator: CsvGenerator[String] = CsvGenerators.CsvGeneratorString
-  implicit val booleanGenerator: CsvGenerator[Boolean] = CsvGenerators.CsvGeneratorBoolean
-  implicit val doubleGenerator: CsvGenerator[Double] = CsvGenerators.CsvGeneratorDouble
-  implicit val floatGenerator: CsvGenerator[Float] = CsvGenerators.CsvGeneratorFloat
-  implicit val shortGenerator: CsvGenerator[Short] = CsvGenerators.CsvGeneratorShort
-  implicit val byteGenerator: CsvGenerator[Byte] = CsvGenerators.CsvGeneratorByte
-  implicit val bigIntGenerator: CsvGenerator[BigInt] = CsvGenerators.CsvGeneratorBigInt
-  implicit val longGenerator: CsvGenerator[Long] = CsvGenerators.CsvGeneratorLong
-  implicit val urlGenerator: CsvGenerator[java.net.URL] = CsvGenerators.CsvGeneratorURL
-  implicit val localDateGenerator: CsvGenerator[LocalDate] = CsvGenerators.CsvGeneratorLocalDate
-  implicit val instantGenerator: CsvGenerator[Instant] = CsvGenerators.CsvGeneratorInstant
+  given intGenerator: CsvGenerator[Int] = CsvGenerators.CsvGeneratorInt
+  given stringGenerator: CsvGenerator[String] = CsvGenerators.CsvGeneratorString
+  given booleanGenerator: CsvGenerator[Boolean] = CsvGenerators.CsvGeneratorBoolean
+  given doubleGenerator: CsvGenerator[Double] = CsvGenerators.CsvGeneratorDouble
+  given floatGenerator: CsvGenerator[Float] = CsvGenerators.CsvGeneratorFloat
+  given shortGenerator: CsvGenerator[Short] = CsvGenerators.CsvGeneratorShort
+  given byteGenerator: CsvGenerator[Byte] = CsvGenerators.CsvGeneratorByte
+  given bigIntGenerator: CsvGenerator[BigInt] = CsvGenerators.CsvGeneratorBigInt
+  given longGenerator: CsvGenerator[Long] = CsvGenerators.CsvGeneratorLong
+  given urlGenerator: CsvGenerator[java.net.URL] = CsvGenerators.CsvGeneratorURL
+  given localDateGenerator: CsvGenerator[LocalDate] = CsvGenerators.CsvGeneratorLocalDate
+  given instantGenerator: CsvGenerator[Instant] = CsvGenerators.CsvGeneratorInstant
   //  implicit val temporalGenerator: CsvGenerator[Temporal] = CsvGenerators.CsvGeneratorTemporal
-  implicit val generatorStringList: CsvGenerator[StringList] = sequenceGenerator[String]
+  given generatorStringList: CsvGenerator[StringList] = sequenceGenerator[String]
 
   /**
    * Method to derive a CsvGenerator (the column names) for a case class T, so that `case class T(...) derives CsvGenerator` works.
@@ -136,7 +136,7 @@ trait CsvProductGenerator[T] extends CsvGenerator[T] {
  * the configuration for CSV generation.
  * @param ca an implicit instance of `CsvAttributes` which defines the delimiter and quote character.
  */
-class StandardCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T] {
+class StandardCsvGenerator[T](using ca: CsvAttributes) extends CsvGenerator[T] {
   val csvAttributes: CsvAttributes = ca
 
   /**
@@ -150,7 +150,7 @@ class StandardCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T
    *         or just `name` if `po` is `None`.
    */
   def toColumnName(po: Option[String], name: String): String =
-    CsvRenderers.quoteIfNecessary((po map (w => s"$w.")).getOrElse("") + name)(ca)
+    CsvRenderers.quoteIfNecessary((po map (w => s"$w.")).getOrElse("") + name)(using ca)
 
   /**
    * Merges two optional strings into a single optional string.
@@ -191,7 +191,7 @@ class StandardCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T
  * @see `StandardCsvGenerator` for handling standard column name generation.
  * @see `CsvProductGenerator` for field name extraction specific to product types.
  */
-abstract class BaseCsvProductGenerator[T](implicit ca: CsvAttributes) extends StandardCsvGenerator[T] with CsvProductGenerator[T]
+abstract class BaseCsvProductGenerator[T](using ca: CsvAttributes) extends StandardCsvGenerator[T] with CsvProductGenerator[T]
 
 /**
  * The CsvGenerator of a case class T, as derived by CsvGenerator.derived.
