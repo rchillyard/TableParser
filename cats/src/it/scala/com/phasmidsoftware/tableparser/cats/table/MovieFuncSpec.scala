@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.cats.util.IOUsing
+import com.phasmidsoftware.tableparser.core.examples.Movie
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -22,9 +23,9 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
    * TableParser library itself.
    */
   it should "be ingested properly" in {
-    import com.phasmidsoftware.tableparser.core.table.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
 
-    val mti: IO[Table[Movie]] = IO.fromTry(Table.parseResource("movie_metadata.csv"))
+    val mti: IO[Table[Movie]] = IO.fromTry(Table.parseResource("movie_metadata.csv", classOf[Movie]))
     matchIO(mti, Timeout(Span(4, Seconds))) {
       (mt: Table[Movie]) =>
         mt should matchPattern { case HeadedTable(_, _) => }
@@ -36,11 +37,11 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
   }
   
   it should "not be ingested properly" in {
-    import com.phasmidsoftware.tableparser.core.table.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
     var errorString = ""
     val errorFunc: Throwable => IO[Unit] = e => IO{errorString = e.getLocalizedMessage}
 
-    val mti: IO[Table[Movie]] = IO.fromTry(Table.parseResource("movie_metadataX.csv")).onError(errorFunc)
+    val mti: IO[Table[Movie]] = IO.fromTry(Table.parseResource("movie_metadataX.csv")).onError { case e => errorFunc(e) }
     // TODO eliminate use of unsafe
     mti.attempt.unsafeRunSync() should matchPattern { case Left(_) => }
     errorString shouldBe "Table.sourceFromClassResource: cannot find resource 'movie_metadataX.csv' relative to class com.phasmidsoftware.tableparser.core.table.Table$"
@@ -52,12 +53,9 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
    * TableParser library itself.
    */
   it should "be ingested and written out properly" in {
-    import com.phasmidsoftware.tableparser.core.table.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
 
     val mti: IO[Table[Movie]] = IOUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(x => IO.fromTry(Table.parseSource(x)))
-    // TODO create a combined renderer/generator for Movie
-    implicit val csvRenderer: CsvRenderer[Movie] = new CsvRendererMovie
-    implicit val csvGenerator: CsvGenerator[Movie] = Movie.createMovieCvsGenerator
 
     val wi: IO[String] = mti flatMap (mt => IO.fromTry(mt.toCSV)) // for (mt <- mti) yield mt.toCSV
     // TODO eliminate use of unsafe methods
@@ -67,7 +65,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "parse and filter the movies from the IMDB dataset" in {
-    import com.phasmidsoftware.tableparser.core.table.MovieParser._
+    import com.phasmidsoftware.tableparser.core.examples.Movie._
     val mti: IO[Table[Movie]] = IOUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(x => IO.fromTry(Table.parseSource(x)))
     implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
     val wi: IO[Int] = for (mt <- mti) yield mt.filterByKey(_ == "New Zealand").size

@@ -112,6 +112,23 @@ lazy val zio = project.dependsOn(core).settings(
   )
 )
 
+// The integration tests in core/src/it and cats/src/it run against full-size data files (69 MB).
+// They're not aggregated by root, so neither `sbt +test` nor CI runs them: use `sbt integration/test`.
+lazy val integration = (project in file("integration"))
+        .dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test")
+        .settings(
+          name := "tableparser-integration",
+          publish / skip := true,
+          Test / parallelExecution := false,
+          Test / scalacOptions += silence170Deprecations,
+          Test / unmanagedSourceDirectories ++= Seq(
+              (LocalRootProject / baseDirectory).value / "core/src/it/scala"
+            , (LocalRootProject / baseDirectory).value / "cats/src/it/scala"
+          ),
+          Test / unmanagedResourceDirectories += (LocalRootProject / baseDirectory).value / "core/src/it/resources",
+          libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+        )
+
 lazy val root = (project in file("."))
         .aggregate(core, cats, parquet, spark, zio)
         .settings(
@@ -122,7 +139,3 @@ lazy val root = (project in file("."))
         )
 
 Test / parallelExecution := false
-
-// NOTE: if you reinstate these directories, you will need to manage the large crimes file (see code).
-//Test / unmanagedSourceDirectories += baseDirectory.value / "src/it/scala"
-//Test / unmanagedResourceDirectories += baseDirectory.value / "src/it/resources"

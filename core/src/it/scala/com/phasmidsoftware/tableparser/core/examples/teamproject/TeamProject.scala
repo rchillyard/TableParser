@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.examples.teamproject
 
 import com.phasmidsoftware.tableparser.core.parse._
-import com.phasmidsoftware.tableparser.core.table.{Content, HeadedTable, Header, Table}
+import com.phasmidsoftware.tableparser.core.table.{Content, HeadedTable, Header, NonSequential, Table}
 import java.net.URL
 
 /**
@@ -64,15 +64,15 @@ object TeamProjectParser extends CellParsers {
 sealed trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
   type Row = TeamProject
 
-  val maybeHeader: Option[Header] = None
+  override val maybeHeader: Option[Header] = None
 
-  val headerRowsToRead: Int = 2
+  override val headerRowsToRead: Int = 2
 
   override val forgiving: Boolean = true
 
   val rowParser: RowParser[Row, String] = TeamProjectParser.parser
 
-  protected def builder(rows: Iterable[TeamProject], header: Header): Table[Row] = HeadedTable(Content(rows), header)
+  protected def builder(rows: Iterator[TeamProject], header: Header): Table[Row] = HeadedTable(rows, header)
 }
 
 object TeamProjectTableParser extends TeamProjectTableParser

@@ -1,11 +1,22 @@
 package com.phasmidsoftware.tableparser.cats.examples.teamproject
 
+import cats.effect.IO
 import com.phasmidsoftware.tableparser.cats.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
 import com.phasmidsoftware.tableparser.cats.parse.EncryptedHeadedStringTableParser
 import com.phasmidsoftware.tableparser.cats.table.TableCrypt
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.{check, matchIO}
+import com.phasmidsoftware.tableparser.core.examples.teamproject.{Grade, Team, TeamProject, TeamProjectTableParser}
+import com.phasmidsoftware.tableparser.core.parse._
+import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.tableparser.core.table.Table.parseResource
+import com.phasmidsoftware.tableparser.core.table._
+import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import java.io.File
+import org.scalatest.concurrent.{Futures, ScalaFutures}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import tsec.cipher.symmetric.jca.AES128CTR
 
 
 //noinspection SpellCheckingInspection
@@ -188,6 +199,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
 
+    import com.phasmidsoftware.tableparser.core.examples.teamproject.TeamProjectParser.teamProjectParser
     implicit val parser: TableParser[Table[TeamProject]] = EncryptedHeadedStringTableParser[TeamProject, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
     matchIO(IO.fromTry(parseResource("TeamProjectEncrypted.csv", classOf[TeamProject]))) {
       case pt@HeadedTable(_, _) =>
@@ -216,7 +228,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     matchIO(IO.fromTry(parseResource("TeamProjectEncrypted.csv", classOf[TeamProject]))) {
       case pt@HeadedTable(_, _) =>
 //        pt foreach println
-        println(Analysis(pt).showColumnMap)
+        println(Analysis(pt))
         pt.size shouldBe 1
     }
   }
@@ -230,6 +242,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
   }
 
   private def createCsvRendererForTeamProject(function: CsvRenderers => CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
+    import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererURL
     val csvRenderers = new CsvRenderers {}
     implicit val optionStringRenderer: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]()
     implicit val teamRenderer: CsvRenderer[Team] = csvRenderers.renderer5(Team)
