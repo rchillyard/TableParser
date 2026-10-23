@@ -129,7 +129,7 @@ class StandardCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T
    *         or just `name` if `po` is `None`.
    */
   def toColumnName(po: Option[String], name: String): String =
-    (po map (w => s"$w.")).getOrElse("") + name
+    CsvRenderers.quoteIfNecessary((po map (w => s"$w.")).getOrElse("") + name)(ca)
 
   /**
    * Merges two optional strings into a single optional string.

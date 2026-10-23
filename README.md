@@ -101,7 +101,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 1.7.0.
+This version of the README.md file refers to version: 1.7.1.
 
 From version 1.6.0, the core, cats, parquet and zio modules are published for both Scala 2.13 and Scala 3
 (e.g. _tableparser-core_2.13_ and _tableparser-core_3_; the Scala 3 artifacts are built with Scala 3.3 LTS).
@@ -112,14 +112,14 @@ The `%%` operator picks the artifact that matches your project's Scala version:
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "1.7.0"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "1.7.0"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "1.7.0"     // ZIO support
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "1.7.0" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "1.7.1"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "1.7.1"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "1.7.1"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "1.7.1" // Parquet files
 )
 ```
 
-For Spark (Scala 2.13 only), add `"com.phasmidsoftware" %% "tableparser-spark" % "1.7.0"`.
+For Spark (Scala 2.13 only), add `"com.phasmidsoftware" %% "tableparser-spark" % "1.7.1"`.
 
 See release notes below for history.
 
@@ -900,6 +900,15 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.7.0 -> V1.7.1
+* Bug fixes, back-ported from 2.0:
+  * When writing CSV, a String (or a column name) is quoted when it has to be, as in RFC 4180: when it contains the delimiter,
+    a quote or a line break, or starts or ends with whitespace (quotes inside it are doubled).
+    Up to 1.7.0, a String containing a comma or a quote was written as a broken row.
+  * In multiline mode, the line break inside a quoted field is kept (it used to be dropped).
+  * A column whose name matches exactly is preferred to one which differs only in case.
+* New: _CsvRenderers.optionProductRenderer_ and _CsvGenerators.optionProductGenerator_, for an optional field with several columns
+  (e.g. a case class): None is written as the right number of empty cells.
 V1.6.0 -> V1.7.0
 * The last release planned for Scala 2.13. 2.0.0 will be for Scala 3 only (see [the plan](docs/code-review-2026.md));
   the spark module stays on the 1.x line.

@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "1.7.0"
+ThisBuild / version := "1.7.1"
 
 // Build Scala 3 with the oldest supported LTS so that the artifacts are usable from any later Scala 3 version.
 // CircleCI also runs the tests on the current LTS (3.9).

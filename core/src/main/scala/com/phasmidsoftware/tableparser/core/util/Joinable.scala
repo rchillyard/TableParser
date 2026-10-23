@@ -72,8 +72,13 @@ object Joinable {
      * @param t2 The second string to be joined.
      * @return A single string resulting from the concatenation of `t1` and `t2`.
      */
+    /**
+     * Method to join two lines of input, which are parts of the same record (in multiline mode),
+     * keeping the line break between them, which belongs to the value of a quoted field.
+     * (Up to 1.7.0, the line break was dropped.)
+     */
     def join(t1: String, t2: String): String =
-      t1 + t2
+      if (t1.isEmpty) t2 else t1 + "\n" + t2
 
     /**
      * Represents the zero (identity) value for the `String` type in the context of
