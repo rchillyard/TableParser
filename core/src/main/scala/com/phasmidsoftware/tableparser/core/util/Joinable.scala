@@ -77,7 +77,7 @@ object Joinable {
    * This enables strings to be combined using the `join` method, defines a zero value for
    * strings, and validates non-empty strings.
    */
-  implicit object JoinableString extends Joinable[String] {
+  given JoinableString: Joinable[String] with {
     /**
      * Concatenates two strings into a single string.
      *
@@ -122,7 +122,7 @@ object Joinable {
    * This enables sequences of strings to be combined, defines a zero value for sequences, and validates
    * non-empty sequences.
    */
-  implicit object JoinableStrings extends Joinable[Seq[String]] {
+  given JoinableStrings: Joinable[Seq[String]] with {
     /**
      * Combines two sequences of strings into a single sequence by appending the elements of the second sequence
      * to the elements of the first sequence.

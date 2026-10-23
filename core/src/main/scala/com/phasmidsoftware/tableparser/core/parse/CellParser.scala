@@ -80,7 +80,7 @@ trait MultiCellParser[T] extends CellParser[T] {
 
 object CellParser {
 
-  implicit object BooleanCellParser extends SingleCellParser[Boolean] {
+  given BooleanCellParser: SingleCellParser[Boolean] with {
     def convertString(w: String): Try[Boolean] =
       summon[Parseable[Boolean]].parse(w)
 
@@ -88,7 +88,7 @@ object CellParser {
     override def toString: String = "BooleanCellParser"
   }
 
-  implicit object CharCellParser extends SingleCellParser[Char] {
+  given CharCellParser: SingleCellParser[Char] with {
     def convertString(w: String): Try[Char] =
       summon[Parseable[Char]].parse(w)
 
@@ -96,7 +96,7 @@ object CellParser {
     override def toString: String = "CharCellParser"
   }
 
-  implicit object ByteCellParser extends SingleCellParser[Byte] {
+  given ByteCellParser: SingleCellParser[Byte] with {
     def convertString(w: String): Try[Byte] =
       summon[Parseable[Byte]].parse(w)
 
@@ -104,7 +104,7 @@ object CellParser {
     override def toString: String = "ByteCellParser"
   }
 
-  implicit object ShortCellParser extends SingleCellParser[Short] {
+  given ShortCellParser: SingleCellParser[Short] with {
     def convertString(w: String): Try[Short] =
       summon[Parseable[Short]].parse(w)
 
@@ -112,7 +112,7 @@ object CellParser {
     override def toString: String = "ShortCellParser"
   }
 
-  implicit object IntCellParser extends SingleCellParser[Int] {
+  given IntCellParser: SingleCellParser[Int] with {
     def convertString(w: String): Try[Int] =
       summon[Parseable[Int]].parse(w)
 
@@ -120,7 +120,7 @@ object CellParser {
     override def toString: String = "IntCellParser"
   }
 
-  implicit object LongCellParser extends SingleCellParser[Long] {
+  given LongCellParser: SingleCellParser[Long] with {
     def convertString(w: String): Try[Long] =
       summon[Parseable[Long]].parse(w)
 
@@ -128,7 +128,7 @@ object CellParser {
     override def toString: String = "LongCellParser"
   }
 
-  implicit object BigIntCellParser extends SingleCellParser[BigInt] {
+  given BigIntCellParser: SingleCellParser[BigInt] with {
     def convertString(w: String): Try[BigInt] =
       summon[Parseable[BigInt]].parse(w)
 
@@ -136,7 +136,7 @@ object CellParser {
     override def toString: String = "BigIntCellParser"
   }
 
-  implicit object FloatCellParser extends SingleCellParser[Float] {
+  given FloatCellParser: SingleCellParser[Float] with {
     def convertString(w: String): Try[Float] =
       summon[Parseable[Float]].parse(w)
 
@@ -144,7 +144,7 @@ object CellParser {
     override def toString: String = "FloatCellParser"
   }
 
-  implicit object DoubleCellParser extends SingleCellParser[Double] {
+  given DoubleCellParser: SingleCellParser[Double] with {
     def convertString(w: String): Try[Double] =
       summon[Parseable[Double]].parse(w)
 
@@ -152,7 +152,7 @@ object CellParser {
     override def toString: String = "DoubleCellParser"
   }
 
-  implicit object BigDecimalCellParser extends SingleCellParser[BigDecimal] {
+  given BigDecimalCellParser: SingleCellParser[BigDecimal] with {
     def convertString(w: String): Try[BigDecimal] =
       summon[Parseable[BigDecimal]].parse(w)
 
@@ -163,14 +163,14 @@ object CellParser {
   /**
    * This parser succeeds on empty strings.
    */
-  implicit object StringCellParser extends SingleCellParser[String] {
+  given StringCellParser: SingleCellParser[String] with {
     def convertString(w: String): Try[String] = Success(w)
 
     // NOTE used only for debugging
     override def toString: String = "StringCellParser"
   }
 
-  implicit object LocalDateParser extends SingleCellParser[LocalDate] {
+  given LocalDateParser: SingleCellParser[LocalDate] with {
     def convertString(w: String): Try[LocalDate] =
       summon[Parseable[LocalDate]].parse(w)
 
@@ -178,7 +178,7 @@ object CellParser {
     override def toString: String = "LocalDateParser"
   }
 
-  implicit object URLParser extends SingleCellParser[URL] {
+  given URLParser: SingleCellParser[URL] with {
     def convertString(w: String): Try[URL] =
       summon[Parseable[URL]].parse(w)
 
@@ -186,7 +186,7 @@ object CellParser {
     override def toString: String = "URLParser"
   }
 
-  implicit object FileParser extends SingleCellParser[File] {
+  given FileParser: SingleCellParser[File] with {
     def convertString(w: String): Try[File] =
       summon[Parseable[File]].parse(w)
 
@@ -203,19 +203,19 @@ object CellParser {
     }
   }
 
-  implicit object BooleanOptionParser extends OptionParser[Boolean]
+  given BooleanOptionParser: OptionParser[Boolean] with {}
 
-  implicit object IntOptionParser extends OptionParser[Int]
+  given IntOptionParser: OptionParser[Int] with {}
 
-  implicit object LongOptionParser extends OptionParser[Long]
+  given LongOptionParser: OptionParser[Long] with {}
 
-  implicit object DoubleOptionParser extends OptionParser[Double]
+  given DoubleOptionParser: OptionParser[Double] with {}
 
-  implicit object LocalDateOptionParser extends OptionParser[LocalDate]
+  given LocalDateOptionParser: OptionParser[LocalDate] with {}
 
-  implicit object URLOptionParser extends OptionParser[URL]
+  given URLOptionParser: OptionParser[URL] with {}
 
-  implicit object FileOptionParser extends OptionParser[File]
+  given FileOptionParser: OptionParser[File] with {}
 
   /**
    * Method to derive a CellParser[T] for a case class T, so that `case class T(...) derives CellParser` works.

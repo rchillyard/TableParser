@@ -35,7 +35,7 @@ case class HTML(name: String, attributes: Seq[Attribute], content: Option[String
  */
 object HTML {
 
-  implicit object HtmlRules extends TagRules
+  given HtmlRules: TagRules with {}
 
   // TESTME
   def apply(name: String, attributes: Map[String, String], content: Option[String]): HTML = apply(defaultName(name), for (attr <- attributes.toSeq) yield Attribute(attr), content, Nil)

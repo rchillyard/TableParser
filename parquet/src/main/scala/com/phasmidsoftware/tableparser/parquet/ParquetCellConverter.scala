@@ -26,37 +26,37 @@ trait ParquetCellConverter[T] {
 
 object ParquetCellConverter {
 
-  implicit object BooleanConverter extends ParquetCellConverter[Boolean] {
+  given BooleanConverter: ParquetCellConverter[Boolean] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Boolean] =
       Try(group.getBoolean(fieldName, 0))
   }
 
-  implicit object IntConverter extends ParquetCellConverter[Int] {
+  given IntConverter: ParquetCellConverter[Int] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Int] =
       Try(group.getInteger(fieldName, 0))
   }
 
-  implicit object LongConverter extends ParquetCellConverter[Long] {
+  given LongConverter: ParquetCellConverter[Long] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Long] =
       Try(group.getLong(fieldName, 0))
   }
 
-  implicit object FloatConverter extends ParquetCellConverter[Float] {
+  given FloatConverter: ParquetCellConverter[Float] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Float] =
       Try(group.getFloat(fieldName, 0))
   }
 
-  implicit object DoubleConverter extends ParquetCellConverter[Double] {
+  given DoubleConverter: ParquetCellConverter[Double] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Double] =
       Try(group.getDouble(fieldName, 0))
   }
 
-  implicit object StringConverter extends ParquetCellConverter[String] {
+  given StringConverter: ParquetCellConverter[String] with {
     def convert(group: SimpleGroup, fieldName: String): Try[String] =
       Try(group.getBinary(fieldName, 0).toStringUsingUTF8)
   }
 
-  implicit object InstantConverter extends ParquetCellConverter[Instant] {
+  given InstantConverter: ParquetCellConverter[Instant] with {
     def convert(group: SimpleGroup, fieldName: String): Try[Instant] =
       Try {
         val micros = group.getLong(fieldName, 0)
@@ -64,12 +64,12 @@ object ParquetCellConverter {
       }
   }
 
-  implicit object LocalDateConverter extends ParquetCellConverter[LocalDate] {
+  given LocalDateConverter: ParquetCellConverter[LocalDate] with {
     def convert(group: SimpleGroup, fieldName: String): Try[LocalDate] =
       Try(LocalDate.ofEpochDay(group.getInteger(fieldName, 0).toLong))
   }
 
-  implicit object BigDecimalConverter extends ParquetCellConverter[BigDecimal] {
+  given BigDecimalConverter: ParquetCellConverter[BigDecimal] with {
     // NOTE: scale hardcoded to 0 pending access to PrimitiveType metadata.
     def convert(group: SimpleGroup, fieldName: String): Try[BigDecimal] =
       Try {

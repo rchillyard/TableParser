@@ -200,7 +200,7 @@ object CsvRenderers {
    * println(csvValue) // Output: "true"
    * }}}
    */
-  implicit object CsvRendererBoolean extends StandardCsvRenderer[Boolean]
+  given CsvRendererBoolean: StandardCsvRenderer[Boolean] with {}
 
   /**
    * Implicit object `CsvRendererInt` provides a concrete implementation of the `StandardCsvRenderer`
@@ -213,7 +213,7 @@ object CsvRenderers {
    * `StandardCsvRenderer[Int]` is required, enabling seamless integration into systems that
    * rely on type class-based serialization for CSV export.
    */
-  implicit object CsvRendererInt extends StandardCsvRenderer[Int]
+  given CsvRendererInt: StandardCsvRenderer[Int] with {}
 
   /**
    * Implicit object `CsvRendererLong` provides a `StandardCsvRenderer` implementation specifically for the `Long` type.
@@ -235,7 +235,7 @@ object CsvRenderers {
    * Note: Additional attributes passed in the `Map` parameter to the `render` method are supported but not
    * utilized in this implementation.
    */
-  implicit object CsvRendererLong extends StandardCsvRenderer[Long]
+  given CsvRendererLong: StandardCsvRenderer[Long] with {}
 
   /**
    * `CsvRendererDouble` is an implicit object that provides a mechanism to render instances
@@ -264,7 +264,7 @@ object CsvRenderers {
    * @see [[com.phasmidsoftware.tableparser.core.render.StandardCsvRenderer]]
    * @see [[com.phasmidsoftware.tableparser.core.render.Renderer]]
    */
-  implicit object CsvRendererDouble extends StandardCsvRenderer[Double]
+  given CsvRendererDouble: StandardCsvRenderer[Double] with {}
 
   /**
    * Implicit object that provides a CSV renderer for `Float` values by extending the `StandardCsvRenderer`
@@ -277,7 +277,7 @@ object CsvRenderers {
    * This renderer adheres to the base `CsvRenderer` trait interface, enabling consistent rendering
    * of `Float` values in CSV-related operations.
    */
-  implicit object CsvRendererFloat extends StandardCsvRenderer[Float]
+  given CsvRendererFloat: StandardCsvRenderer[Float] with {}
 
   /**
    * Implicit object providing a CSV renderer for the `Short` type.
@@ -291,7 +291,7 @@ object CsvRenderers {
    * converts the given value to its string representation without
    * applying additional attributes or custom processing.
    */
-  implicit object CsvRendererShort extends StandardCsvRenderer[Short]
+  given CsvRendererShort: StandardCsvRenderer[Short] with {}
 
   /**
    * An implicit implementation of the `StandardCsvRenderer` for the `Byte` type.
@@ -300,7 +300,7 @@ object CsvRenderers {
    * by extending the `StandardCsvRenderer` abstract class. This implementation defines the specific
    * rendering behavior for converting `Byte` type data into its CSV-compatible string representation.
    */
-  implicit object CsvRendererByte extends StandardCsvRenderer[Byte]
+  given CsvRendererByte: StandardCsvRenderer[Byte] with {}
 
   /**
    * `CsvRendererString` is an implicit object that extends the `StandardCsvRenderer` class
@@ -335,7 +335,7 @@ object CsvRenderers {
     if (mustQuote) quote + w.replace(quote, quote + quote) + quote else w
   }
 
-  implicit object CsvRendererString extends StandardCsvRenderer[String] {
+  given CsvRendererString: StandardCsvRenderer[String] with {
     /**
      * Method to render a String as a CSV cell, quoting it (as in RFC 4180) when it has to be quoted to be read back as it is:
      * when it contains the delimiter, the quote character or a line break, or when it starts or ends with whitespace
@@ -370,9 +370,9 @@ object CsvRenderers {
    * This implicit object allows seamless usage of `URL` type rendering in contexts where `StandardCsvRenderer`
    * is required, such as within collections or for pipeline-based CSV serialization.
    */
-  implicit object CsvRendererURL extends StandardCsvRenderer[URL]
+  given CsvRendererURL: StandardCsvRenderer[URL] with {}
 
-  implicit object CsvRendererInstant extends CsvRenderer[Instant] {
+  given CsvRendererInstant: CsvRenderer[Instant] with {
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: Instant, attrs: Map[String, String]): String = t.toString

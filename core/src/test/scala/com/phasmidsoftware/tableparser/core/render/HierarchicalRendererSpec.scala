@@ -42,7 +42,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("")
     implicit val indexedRenderer: HierarchicalRenderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th")
 
-    import HTML._
+    import HTML.{given, *}
 
     trait TreeWriterHTML extends TreeWriter[HTML] {
       def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children.toSeq map evaluate)
@@ -57,7 +57,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("tr")
 
 
-    import HTML._
+    import HTML.{given, *}
 
     trait TreeWriterHTML extends TreeWriter[HTML] {
       def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children.toSeq map evaluate)
@@ -93,7 +93,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   it should "render Complex as an HTML" in {
     import Complex3._
     val z = Complex(0, 1)
-    import HTML._
+    import HTML.{given, *}
     val node = summon[HierarchicalRenderer[Complex]].render(z)
     summon[TreeWriter[HTML]].evaluate(node) shouldBe HTML("tr", Nil, None, List(HTML("td", Seq(Attribute("name" -> "r")), Some("0.0"), Nil), HTML("td", Seq(Attribute("name" -> "i")), Some("1.0"), Nil)))
   }

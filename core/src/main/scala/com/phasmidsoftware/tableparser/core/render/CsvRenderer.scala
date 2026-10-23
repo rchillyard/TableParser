@@ -43,7 +43,7 @@ object CsvRenderer extends CsvRenderers {
    * @see CsvRenderer
    * @see Row
    */
-  implicit object CsvRendererRow extends CsvRenderer[Row] {
+  given CsvRendererRow: CsvRenderer[Row] with {
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
@@ -57,6 +57,8 @@ object CsvRenderer extends CsvRenderers {
   given rendererByte: CsvRenderer[Byte] = CsvRenderers.CsvRendererByte
   given stringRenderer: CsvRenderer[String] = CsvRenderers.CsvRendererString
   given instantRenderer: CsvRenderer[Instant] = CsvRenderers.CsvRendererInstant
+  given rendererBoolean: CsvRenderer[Boolean] = CsvRenderers.CsvRendererBoolean
+  given rendererURL: CsvRenderer[java.net.URL] = CsvRenderers.CsvRendererURL
   given rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
   given rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer("no double")
   given rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()

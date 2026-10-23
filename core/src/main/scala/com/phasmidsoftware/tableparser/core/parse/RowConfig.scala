@@ -75,7 +75,7 @@ trait DefaultRowConfig extends RowConfig {
 object RowConfig {
 
   // CONSIDER removing this default row configuration. It might be better to have the compiler issue a warning when it's missing.
-  implicit object defaultRowConfig extends DefaultRowConfig
+  given defaultRowConfig: DefaultRowConfig with {}
 
   /**
    * A RowConfig which, like 1.x's default, ignores any spaces next to a comma (so that "a, b" has the fields "a" and "b").

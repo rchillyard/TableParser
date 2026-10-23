@@ -20,7 +20,7 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
   given parser: StandardRowParser[RawRow] = StandardRowParser.create[RawRow]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
-  implicit object RawTableParser extends StringTableParser[RawTable] {
+  given RawTableParser: StringTableParser[RawTable] with {
     type Row = RawRow
 
     override val maybeHeader: Option[Header] = optionalHeader
