@@ -891,12 +891,17 @@ Apart from CSV, there is currently only one implementation of _String_ rendering
 and that is _Json_ rendering.
 Although JSON is indeed a hierarchical serialization format,
 the manner of creating a JSON string masks the hierarchical aspects.
-The implemented JSON reader/writer is "Spray Json" but that could easily be changed in the future.
+
+JSON support is in its own module, _tableparser-json_, which uses [circe](https://circe.github.io/circe/),
+so that _tableparser-core_ doesn't depend on a JSON library.
+(1.x used spray-json, in core.)
 
 Although this section is concerned with rendering, it is also true, of course,
 to say that tables can be read from Json strings.
+_TableCodecs_ provides a circe _Encoder_ and _Decoder_ for _Table[T]_, given an _Encoder_ (or _Decoder_) for _T_.
+A table is a JSON object with a "rows" array and, if the table has a header, a "header" array of column names.
 
-The following example from _JsonRendererSpec.scala_ shows how we can take the following steps
+The following example from _JsonTableRendererSpec.scala_ (in the json module) shows how we can take the following steps
 (for the definitions of _Player_, _Partnership_, please see the spec file itself):
 * read a table of players from a list of _Strings_
   * (there are, as shown above, other signatures of parse for files, URLs, etc.);
@@ -905,12 +910,19 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 * check the accuracy of the Json string;
 * check that we can read the string back in as a table.
 
+    import com.phasmidsoftware.tableparser.json.render.JsonTableRenderer
+    import com.phasmidsoftware.tableparser.json.table.TableCodecs.given
+    import io.circe.Codec
+    import io.circe.parser.decode
 
-    val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
-    val wy: IO[String] = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).asInstanceOf[Renderable[Partnership]].render
-    wy should matchPattern { case Success("{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"playerA\", \"playerB\"]\n}") => }
-    implicit val r: JsonFormat[Table[Partnership]] = new TableJsonFormat[Partnership] {}
-    wy.map(p => p.parseJson.convertTo[Table[Partnership]]) should matchPattern { case Success(HeadedTable(_, _)) => }
+    case class Partnership(playerA: String, playerB: String) derives Codec.AsObject
+
+    given Renderer[Table[Partnership], String] = new JsonTableRenderer[Partnership]
+
+    val strings = List("First,Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
+    val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).asInstanceOf[TableRenderable[Partnership]].render
+    wy shouldBe Success(partnershipsJson("playerA", "playerB"))
+    wy.map(p => decode[Table[Partnership]](p)) should matchPattern { case Success(Right(HeadedTable(_, _))) => }
 
 Release Notes
 =============

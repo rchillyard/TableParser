@@ -34,11 +34,11 @@ val logbackVersion = "1.5.38"
 val slf4jVersion = "2.0.20"
 val parquetVersion = "1.18.1"
 val hadoopVersion = "3.4.3"
+val circeVersion = "0.14.17"
 
 lazy val core = project.settings(
   name := "tableparser-core",
   libraryDependencies ++= Seq(
-    "io.spray" %% "spray-json" % "1.3.6",
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
     "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
@@ -66,6 +66,17 @@ lazy val crypto = project.dependsOn(core % "compile->compile;test->test", cats %
     "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
     "org.typelevel" %% "cats-effect" % catsVersion,
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
+    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
+    "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+  )
+)
+
+// Reading and writing tables as JSON, using circe.
+lazy val json = project.dependsOn(core % "compile->compile;test->test").settings(
+  name := "tableparser-json",
+  libraryDependencies ++= Seq(
+    "io.circe" %% "circe-core" % circeVersion,
+    "io.circe" %% "circe-parser" % circeVersion,
     "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
@@ -115,7 +126,7 @@ lazy val integration = (project in file("integration"))
         )
 
 lazy val root = (project in file("."))
-        .aggregate(core, cats, crypto, parquet, zio)
+        .aggregate(core, cats, crypto, json, parquet, zio)
         .settings(
           name := "TableParser",
           publish / skip := true

@@ -4,13 +4,11 @@
 
 package com.phasmidsoftware.tableparser.core.parse
 
-import com.phasmidsoftware.tableparser.core.render.{JsonTableRenderer, Renderer}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.util.Try
-import spray.json.{DefaultJsonProtocol, RootJsonFormat, enrichAny}
 
 /**
  * This tests one aspect of TableParserHelper which cannot be conveniently tested in the same module as the other.
@@ -46,31 +44,12 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
     def asArray: Array[String] = Array(playerA, playerB)
   }
 
-  object Partnership extends DefaultJsonProtocol {
-    implicit val partnershipFormat: RootJsonFormat[Partnership] = jsonFormat2(apply)
-
+  object Partnership {
     def apply(players: Iterable[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
   }
 
   case class Partnerships(partners: Array[Array[String]]) {
     def size: Int = partners.length
-
-    /**
-     * Method to output these Partnerships as a Json String.
-     *
-     * @return a String with some embedded newlines.
-     */
-    def prettyPrint: String = Partnerships.prettyPrint(this)
-  }
-
-
-  /**
-   * Companion object for Partnerships.
-   */
-  object Partnerships extends DefaultJsonProtocol {
-    implicit val partnershipsFormat: RootJsonFormat[Partnerships] = jsonFormat1(apply)
-
-    def prettyPrint(p: Partnerships): String = p.toJson.prettyPrint
   }
 
   it should "support fixed header" in {
@@ -83,18 +62,6 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
         partnerships.size shouldBe 2
         partnerships.partners.head shouldBe Array("Adam S", "Amy A")
         partnerships.partners.last shouldBe Array("Ann P", "Barbara G")
-    }
-  }
-
-  it should "support fixed header and write to Json" in {
-    val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
-    val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
-    matchTry(pty) {
-      case pt@HeadedTable(_, _) =>
-        val sht: Table[Partnership] = Player.convertTable(pt)
-        implicit val r: Renderer[Table[Partnership], String] = new JsonTableRenderer[Partnership] {}
-        val z: String = summon[Renderer[Table[Partnership], String]].render(sht)
-        z shouldBe "{\n  \"rows\": [{\n    \"playerA\": \"Adam S\",\n    \"playerB\": \"Amy A\"\n  }, {\n    \"playerA\": \"Ann P\",\n    \"playerB\": \"Barbara G\"\n  }],\n  \"header\": [\"first\", \"last\"]\n}"
     }
   }
 }

@@ -121,7 +121,7 @@ These decide what can change without notice, and what needs a migration path.
    - Report coverage in CI, so that 2.0 can be measured against it.
 3. **Decided** (October 23, 2026):
    - **Spark** stays on the 1.x line. 2.0 is Scala 3 only, and Spark isn't published for Scala 3. `tableparser-spark` (203 lines) and TableParserApps stay on 1.x.
-   - **JSON:** replace spray-json with circe in 2.0.
+   - **JSON:** replace spray-json with circe in 2.0, in a new module, tableparser-json, so that core has no JSON dependency.
    - **Encryption** moves out of cats into its own module, so that the cats module depends on nothing but cats-effect.
    - **`FP`** stays in TableParser, since CSYE7200 uses it. Anything useful from LaScala's `FP` is copied in, not depended on, because LaScala is being retired. Start from the `FP` functions that CSYE7200 actually uses.
    - **Branches:** after the last 1.x release, a long-lived `1.x` branch is cut from `master` for spark and any 1.x fixes. `master` then becomes 2.x.
@@ -145,7 +145,7 @@ These decide what can change without notice, and what needs a migration path.
    4. **RFC 4180** (#74, merged into #73): reading and writing CSV as RFC 4180 defines it, by default.
    5. **Scala 3 idioms** (#76): `given`/`using`, extension methods, enums, top-level definitions, `infix def`.
    6. **Core types:** `Content` sequential by default, `Table.scala` split, casts and `ClassTag`s removed (in core, cats and zio; `Header[X]()` uses a new `FieldNames` type class instead of reflection).
-   7. **Dependencies:** circe for spray-json, an encryption module, `java.time` for Joda-Time; and parquet's mapping of columns to case-class fields from the `Mirror` (it still uses `Reflection` and `ClassTag`s).
+   7. **Dependencies:** circe for spray-json (tableparser-json), an encryption module (tableparser-crypto), `java.time` for Joda-Time; and parquet's mapping of columns to case-class fields from the `Mirror` (it still uses `Reflection` and `ClassTag`s).
    8. **Finish:** `-Wunused:all`, the indentation-syntax rewrite, coverage, the README with a migration table, and the release.
 
    (The earliest PRs used an older numbering: "stage 3" was derivation for parsing, "stage 4" derivation for rendering, and "stage 2" the idioms.)

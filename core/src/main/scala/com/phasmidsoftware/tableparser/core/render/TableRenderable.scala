@@ -24,7 +24,7 @@ trait TableRenderable[X] {
   /**
    * Method to render this TableRenderable to serialized type O without any constraint on O.
    *
-   * NOTE this is currently used only by JsonTableRendererSpec
+   * NOTE this is currently used only by the json module's JsonTableRendererSpec
    *
    * CONSIDER combining this with renderToWritable.
    *
