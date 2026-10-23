@@ -66,9 +66,11 @@ object CsvGenerator extends CsvGenerators {
    * Method to derive a CsvGenerator (the column names) for a case class T, so that `case class T(...) derives CsvGenerator` works.
    * This replaces the generator1 ... generator19 methods of 1.x, and has no limit on the number of fields.
    *
-   * The column name of each field is its name as mapped by ColumnHelper[T] (the same mapping that parsing uses,
-   * so that a table which is written can be read back), preceded by the names of its enclosing fields (if any),
-   * separated by ".". Without a ColumnHelper of its own, a field's column name is its name.
+   * The column name of each field is exactly the name that CellParser.derived looks for when it reads that field:
+   * ColumnHelper[T].lookup of the field's name, given the column name of the enclosing field (if any).
+   * So a table which is written can be read back. For example, if ColumnHelper[Principal] has the prefix "$x_$c",
+   * the name field of a Principal field called director is in the column director_name.
+   * Without a ColumnHelper of its own, a field's column name is its name.
    * A field whose type is itself a case class, and which has no CsvGenerator of its own, is derived in turn.
    *
    * NOTE: for a case class defined inside a method, see the NOTE on CellParser.derived.
@@ -79,19 +81,7 @@ object CsvGenerator extends CsvGenerators {
    * @return a CsvProductGenerator[T].
    */
   inline def derived[T](using m: Mirror.ProductOf[T], ca: CsvAttributes): CsvProductGenerator[T] =
-    new ProductCsvGenerator[T](columnNames[T, m.MirroredElemLabels], fieldGenerators[m.MirroredElemTypes])
-
-  /**
-   * Method to get the column names of the fields of T: their names, as mapped by ColumnHelper[T] (without any prefix).
-   *
-   * @tparam T  the case class.
-   * @tparam Ls the MirroredElemLabels of T.
-   * @return the column names, in declaration order.
-   */
-  private[render] inline def columnNames[T, Ls <: Tuple]: List[String] = {
-    val helper = summonInline[ColumnHelper[T]]
-    Derivation.fieldNames[Ls] map (helper.lookup(None, _))
-  }
+    new ProductCsvGenerator[T](Derivation.fieldNames[m.MirroredElemLabels], fieldGenerators[m.MirroredElemTypes])(using ca, summonInline[ColumnHelper[T]])
 
   private[render] inline def fieldGenerators[Ts <: Tuple](using CsvAttributes): List[CsvGenerator[?]] = inline erasedValue[Ts] match {
     case _: EmptyTuple => Nil
@@ -206,14 +196,21 @@ abstract class BaseCsvProductGenerator[T](implicit ca: CsvAttributes) extends St
 /**
  * The CsvGenerator of a case class T, as derived by CsvGenerator.derived.
  *
- * @param columnNames     the column names of the fields of T, in declaration order.
+ * @param fieldNames      the names of the fields of T, in declaration order.
  * @param fieldGenerators the CsvGenerators of the fields of T, in the same order.
  * @param ca              the CsvAttributes.
+ * @param helper          the ColumnHelper[T], which gives the column name of each field.
  * @tparam T the type of the case class.
  */
-class ProductCsvGenerator[T](columnNames: List[String], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes) extends BaseCsvProductGenerator[T] {
+class ProductCsvGenerator[T](fieldNames: List[String], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes, helper: ColumnHelper[T]) extends BaseCsvProductGenerator[T] {
+  /**
+   * Method to generate the column names of the fields of T.
+   * The name of the enclosing field (if any) is no (or po, if that is all there is):
+   * each field's column name is then helper.lookup(that name, field name), as in CellParser.derived.
+   * A field which is itself a case class is given its column name as the name of its enclosing field.
+   */
   def toColumnNames(po: Option[String], no: Option[String]): String = {
     val wo = merge(po, no)
-    (columnNames zip fieldGenerators) map ((name, generator) => generator.toColumnName(wo, name)) mkString ca.delimiter
+    (fieldNames zip fieldGenerators) map ((name, generator) => generator.toColumnName(None, helper.lookup(wo, name))) mkString ca.delimiter
   }
 }

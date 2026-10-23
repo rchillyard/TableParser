@@ -44,6 +44,22 @@ trait CsvGenerators {
 //  implicit val optionTemporalGenerator: CsvGenerator[Option[Temporal]] = optionGenerator
 
   /**
+   * Method to return a CsvGenerator[Option[T]] whose columns are those of T.
+   * Use this for an optional field whose type has several columns (e.g. a case class),
+   * together with CsvRenderers.optionProductRenderer.
+   * (optionGenerator gives an Option just one column.)
+   *
+   * @param g the CsvGenerator[T].
+   * @tparam T the underlying type.
+   * @return a CsvGenerator[Option[T]].
+   */
+  def optionProductGenerator[T](implicit g: CsvGenerator[T]): CsvGenerator[Option[T]] = new CsvGenerator[Option[T]] {
+    val csvAttributes: CsvAttributes = g.csvAttributes
+
+    def toColumnName(po: Option[String], name: String): String = g.toColumnName(po, name)
+  }
+
+  /**
    * Method to return a CsvGenerator[T] which does not output a column header for at all.
    *
    * @tparam T the type of the column objects.

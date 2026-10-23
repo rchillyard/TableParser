@@ -1,6 +1,6 @@
 package com.phasmidsoftware.tableparser.core.render
 
-import com.phasmidsoftware.tableparser.core.parse.{StringList, Strings}
+import com.phasmidsoftware.tableparser.core.parse.{ColumnHelper, StringList, Strings}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.Writable
 import java.io.{File, FileWriter}
@@ -129,7 +129,7 @@ object CsvProduct {
    * @return a CsvProduct[T].
    */
   inline def derived[T](using m: Mirror.ProductOf[T], ca: CsvAttributes): CsvProduct[T] =
-    new ProductCsvProduct[T](CsvGenerator.columnNames[T, m.MirroredElemLabels], CsvRenderer.fieldRenderers[m.MirroredElemTypes], CsvGenerator.fieldGenerators[m.MirroredElemTypes])
+    new ProductCsvProduct[T](Derivation.fieldNames[m.MirroredElemLabels], CsvRenderer.fieldRenderers[m.MirroredElemTypes], CsvGenerator.fieldGenerators[m.MirroredElemTypes])(using ca, summonInline[ColumnHelper[T]])
 }
 
 /**
@@ -188,13 +188,14 @@ object ProductCsvRenderer {
 /**
  * The CsvProduct of a case class T, as derived by CsvProduct.derived: a ProductCsvGenerator which is also a CsvRenderer.
  *
- * @param columnNames     the column names of the fields of T (see CsvGenerator.derived), in declaration order.
+ * @param fieldNames      the names of the fields of T, in declaration order.
  * @param fieldRenderers  the CsvRenderers of the fields of T, in the same order.
  * @param fieldGenerators the CsvGenerators of the fields of T, in the same order.
  * @param ca              the CsvAttributes.
+ * @param helper          the ColumnHelper[T].
  * @tparam T the type of the case class.
  */
-class ProductCsvProduct[T](columnNames: List[String], fieldRenderers: List[CsvRenderer[?]], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes) extends ProductCsvGenerator[T](columnNames, fieldGenerators) with BaseCsvRenderer[T] with CsvProduct[T] {
+class ProductCsvProduct[T](fieldNames: List[String], fieldRenderers: List[CsvRenderer[?]], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes, helper: ColumnHelper[T]) extends ProductCsvGenerator[T](fieldNames, fieldGenerators) with BaseCsvRenderer[T] with CsvProduct[T] {
   def elements(t: T): Strings = ProductCsvRenderer.elements(t, fieldRenderers)
 }
 

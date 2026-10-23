@@ -88,6 +88,30 @@ trait CsvRenderers {
   }
 
   /**
+   * Method to return a CsvRenderer[Option[T]] for a T which has several columns (e.g. a case class).
+   * None is rendered as the right number of empty cells, so that the columns which follow stay aligned.
+   * Use this together with CsvGenerators.optionProductGenerator.
+   * (optionRenderer renders None as just one cell.)
+   *
+   * @param r  the CsvRenderer[T].
+   * @param g  the CsvGenerator[T], which determines how many columns a T has.
+   * @param ca the CsvAttributes.
+   * @tparam T the underlying type.
+   * @return a CsvRenderer[Option[T]].
+   */
+  def optionProductRenderer[T](implicit r: CsvRenderer[T], g: CsvGenerator[T], ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
+    val csvAttributes: CsvAttributes = ca
+
+    // The number of columns of a T.
+    private lazy val columns: Int = g.toColumnName(None, "x").split(java.util.regex.Pattern.quote(ca.delimiter)).length
+
+    def render(to: Option[T], attrs: Map[String, String]): String = to match {
+      case Some(t) => r.render(t, attrs)
+      case None => ca.delimiter * (columns - 1)
+    }
+  }
+
+  /**
    * Method to return a CsvRenderer[T] which does not output a T at all, only a number of delimiters according to the value of alignment.
    *
    * @param alignment (defaults to 1): one more than the number of delimiters to output.
@@ -291,7 +315,27 @@ object CsvRenderers {
    *   val csvString: String = CsvRendererString.render("example")
    * }}}
    */
-  implicit object CsvRendererString extends StandardCsvRenderer[String]
+  implicit object CsvRendererString extends StandardCsvRenderer[String] {
+    /**
+     * Method to render a String as a CSV cell, quoting it (as in RFC 4180) when it has to be quoted to be read back as it is:
+     * when it contains the delimiter, the quote character or a line break, or when it starts or ends with whitespace
+     * (which would otherwise be taken as part of the delimiter). Any quote characters inside it are doubled.
+     *
+     * @param w     the String.
+     * @param attrs (unused) attributes.
+     * @return the String, quoted if necessary.
+     */
+    override def render(w: String, attrs: Map[String, String]): String = {
+      val quote = csvAttributes.quote
+      val delimiter = csvAttributes.delimiter.trim match {
+        case "" => csvAttributes.delimiter
+        case d => d
+      }
+      val mustQuote = quote.nonEmpty && w.nonEmpty &&
+              (w.contains(delimiter) || w.contains(quote) || w.exists(c => c == '\n' || c == '\r') || w.head.isWhitespace || w.last.isWhitespace)
+      if (mustQuote) quote + w.replace(quote, quote + quote) + quote else w
+    }
+  }
 
   /**
    * Provides an implicit instance of `StandardCsvRenderer` for the type `java.net.URL`.

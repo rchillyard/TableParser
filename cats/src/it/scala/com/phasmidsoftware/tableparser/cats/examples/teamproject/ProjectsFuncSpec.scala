@@ -150,9 +150,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
         IO.fromTry(pt.toCSV)
     }
     EvaluateIO(resultIO) shouldBe
-            """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
+            """number,member_1,member_2,member_3,member_4,totalScore,onTime,scopeScale,planningPresentation,presentation,idea,useCases,acceptanceCriteria,teamExecution,code,unitTests,repo,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-              |2,Ringo Starr,George Harrison,Paul McCartney,,83.5,8.5,10.0,5.0,9.0,5.0,4.0,6.0,3.0,22.0,7.0,4.0,Presentation quite confused. Part of project not achieved. ,https://github.com/PhoenixMay/MovieRecommendation
+              |2,Ringo Starr,George Harrison,Paul McCartney,,83.5,8.5,10.0,5.0,9.0,5.0,4.0,6.0,3.0,22.0,7.0,4.0,"Presentation quite confused. Part of project not achieved. ",https://github.com/PhoenixMay/MovieRecommendation
               |3,Pablo Picasso,Joan Miro,,,92.0,11.0,10.0,5.0,10.0,5.0,4.0,7.0,4.0,23.0,9.0,4.0,Presentation OK. What did they do about these challenges.,https://github.com/jianghanw/CSYE7200_Team_Project_Team3
               |4,Ludwig van Beethoven,Wolfgang Amadeus Mozart,,,88.5,11.0,10.0,6.0,10.5,5.0,3.5,6.0,4.0,21.5,7.0,4.0,A/C not clearly defined (planning pres?),https://github.com/Essexwwz/heart-health-indicator
               |5,Winston Churchill,Clement Attlee,Harold McMillan,,88.5,11.0,9.5,5.0,11.0,5.0,4.0,7.0,2.0,22.0,7.0,5.0,Presentation long and detailed.  Project excellent overall. A/C not shown clearly.,https://github.com/CSYE7200-21FALL-TEAM6
@@ -172,7 +172,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
         IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
-            """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
+            """number,member_1,member_2,member_3,member_4,totalScore,onTime,scopeScale,planningPresentation,presentation,idea,useCases,acceptanceCriteria,teamExecution,code,unitTests,repo,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
               |""".stripMargin
   }
@@ -189,7 +189,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
         IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
-            """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
+            """number,member_1,member_2,member_3,member_4,,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
               |""".stripMargin
   }

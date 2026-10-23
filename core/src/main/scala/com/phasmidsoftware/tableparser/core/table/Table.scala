@@ -1037,13 +1037,19 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
     xs.length
 
   /**
-   * Get the index of w in this Header, ignoring case.
+   * Get the index of w in this Header.
+   * A column whose name is exactly w is preferred; only if there is none is case ignored.
+   * So, if two columns differ only in case, the exact one is found, and a table which TableParser writes
+   * (with exact column names) is read back exactly.
    *
    * @param w the String to find, a column name.
    * @return the index wrapped in Try.
    */
   def getIndex(w: String): Try[Int] =
-    indexFound(w, xs.indexWhere(x => x.compareToIgnoreCase(w) == 0))
+    indexFound(w, xs.indexOf(w) match {
+      case -1 => xs.indexWhere(x => x.compareToIgnoreCase(w) == 0)
+      case i => i
+    })
 
   /**
    * Concatenate this Header with other.

@@ -96,56 +96,56 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Onesy(x: Int)
     implicit val onesyGenerator: CsvGenerator[Onesy] = CsvGenerator.derived[Onesy]
-    onesyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.x"
+    onesyGenerator.toColumnName(Some("x"), "y") shouldBe "x"
   }
 
   it should "render 6-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Sixsy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int)
     implicit val sixsyGenerator: CsvGenerator[Sixsy] = CsvGenerator.derived[Sixsy]
-    sixsyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f"
+    sixsyGenerator.toColumnName(Some("x"), "y") shouldBe "a, b, c, d, e, f"
   }
 
   it should "render 7-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Sevensy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int)
     implicit val sevensyGenerator: CsvGenerator[Sevensy] = CsvGenerator.derived[Sevensy]
-    sevensyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g"
+    sevensyGenerator.toColumnName(Some("x"), "y") shouldBe "a, b, c, d, e, f, g"
   }
 
   it should "render 8-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Eightsy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int)
     implicit val EightsyGenerator: CsvGenerator[Eightsy] = CsvGenerator.derived[Eightsy]
-    EightsyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h"
+    EightsyGenerator.toColumnName(Some("x"), "y") shouldBe "a, b, c, d, e, f, g, h"
   }
 
   it should "render 9-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Ninesy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int)
     implicit val NinesyGenerator: CsvGenerator[Ninesy] = CsvGenerator.derived[Ninesy]
-    NinesyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h, x.y.i"
+    NinesyGenerator.toColumnName(Some("x"), "y") shouldBe "a, b, c, d, e, f, g, h, i"
   }
 
   it should "render 10-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Tensy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int, j: Int)
     implicit val TensyGenerator: CsvGenerator[Tensy] = CsvGenerator.derived[Tensy]
-    TensyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h, x.y.i, x.y.j"
+    TensyGenerator.toColumnName(Some("x"), "y") shouldBe "a, b, c, d, e, f, g, h, i, j"
   }
 
   it should "render 11-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Elevensy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int, j: Int, k: Int)
     implicit val ElevensyGenerator: CsvGenerator[Elevensy] = CsvGenerator.derived[Elevensy]
-    ElevensyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h, x.y.i, x.y.j, x.y.k"
+    ElevensyGenerator.toColumnName(Some("x"), "y") shouldBe "a, b, c, d, e, f, g, h, i, j, k"
   }
 
   it should "render 12-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Twelvesy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int, j: Int, k: Int, l: Int)
     implicit val TwelvesyGenerator: CsvGenerator[Twelvesy] = CsvGenerator.derived[Twelvesy]
-    TwelvesyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h, x.y.i, x.y.j, x.y.k, x.y.l"
+    TwelvesyGenerator.toColumnName(Some("x"), "y") shouldBe "a, b, c, d, e, f, g, h, i, j, k, l"
   }
 
 
@@ -327,7 +327,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         rt.toCSV
     }
     val expected =
-      """date, weather, hawks.bw, hawks.rt
+      """date, weather, bw, rt
         |2018-09-12, Dense Fog/Light Rain, 0, 0
         |2018-09-13, Fog/Overcast, 79, 0
         |2018-09-14, Drizzle/Fog/Overcast, 1, 0
@@ -415,7 +415,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         rt.take(1).toCSV
     }
     matchTry(wy) {
-      case "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n" => succeed
+      case "date, weather, bw, rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n" => succeed
       case _ => fail("didn't match")
     }
   }
