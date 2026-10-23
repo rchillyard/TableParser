@@ -87,9 +87,6 @@ object ColumnHelper {
    * @tparam T the underlying type of the resulting ColumnHelper
    * @return a new instance of ColumnHelper[T]
    */
-  implicit def defaultColumnHelper[T]: ColumnHelper[T] = new ColumnHelper[T] {
-    val _maybePrefix: Option[String] = None
-    val _aliases: Seq[(String, String)] = Nil
-    val _columnNameMapper: String => String = identityMapper
-  }
+  implicit def defaultColumnHelper[T]: ColumnHelper[T] =
+    StdCellParsers.columnHelper[T]()
 }
