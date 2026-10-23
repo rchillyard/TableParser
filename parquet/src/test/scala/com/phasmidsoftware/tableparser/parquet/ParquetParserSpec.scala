@@ -1,23 +1,23 @@
 package com.phasmidsoftware.tableparser.parquet
 
-import scala.compiletime.uninitialized
-
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapper
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
 import com.phasmidsoftware.tableparser.core.table.Table
 import java.nio.file.{Path, Paths}
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.util.{Success, Try}
 
-class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with BeforeAndAfterAll {
+class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
 
   // Path to the committed test fixture
   private val samplePath: Path =
     Paths.get(getClass.getResource("/taxi_sample.parquet").toURI)
 
-  private var table: Table[YellowTaxiTrip] = uninitialized
+  private lazy val table: Table[YellowTaxiTrip] = {
+    import YellowTaxiTrip.helper
+    ParquetParser.parse[YellowTaxiTrip](samplePath).get
+  }
 
   // The first row in the Parquet file has vendorId=2, puLocationId=75, doLocationId=237.
   // We find it by key rather than relying on ParIterable ordering.
@@ -25,11 +25,6 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
     table.content.toSeq
             .find(r => r.puLocationId.contains(75) && r.doLocationId.contains(237))
             .getOrElse(fail("Expected row with puLocationId=75, doLocationId=237 not found"))
-
-  override def beforeAll(): Unit = {
-    import YellowTaxiTrip.helper
-    table = ParquetParser.parse[YellowTaxiTrip](samplePath).get
-  }
 
   behavior of "YellowTaxiTrip model"
 

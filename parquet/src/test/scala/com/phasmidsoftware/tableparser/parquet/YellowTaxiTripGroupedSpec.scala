@@ -1,17 +1,14 @@
 package com.phasmidsoftware.tableparser.parquet
 
-import scala.compiletime.uninitialized
-
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper
 import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Table}
 import java.nio.file.{Path, Paths}
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.reflect.ClassTag
 import scala.util.Success
 
-class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
+class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers {
 
   private val taxiParquet: Path =
     Paths.get(getClass.getResource("/taxi_sample.parquet").toURI)
@@ -34,7 +31,7 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAnd
     )
   }
 
-  private var table: Table[YellowTaxiTripGrouped] = uninitialized
+  private lazy val table: Table[YellowTaxiTripGrouped] = parser.parseParquet(taxiParquet).get
 
   // The first row in the Parquet file has vendorId=2, puLocationId=75, doLocationId=237.
   // We find it by key rather than relying on ParIterable ordering.
@@ -43,8 +40,6 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAnd
             .find(r => r.geo.puLocationId.contains(75) && r.geo.doLocationId.contains(237))
             .getOrElse(fail("Expected row with puLocationId=75, doLocationId=237 not found"))
 
-  override def beforeAll(): Unit =
-    table = parser.parseParquet(taxiParquet).get
 
   behavior of "ParquetTableParser with grouped YellowTaxiTripGrouped"
 
