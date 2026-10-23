@@ -6,9 +6,10 @@ package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.identityMapper
 import com.phasmidsoftware.tableparser.core.table.{Header, RawRow, Row}
-import com.phasmidsoftware.tableparser.core.util.{FP, Reflection}
+import com.phasmidsoftware.tableparser.core.util.FP
+import scala.compiletime.constValue
+import scala.deriving.Mirror
 import scala.reflect.ClassTag
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -144,63 +145,6 @@ trait CellParsers {
   }
 
   /**
-   * Method to return a CellParser[T] where T is a 1-ary Product and which is based on a function to convert a P1 into a T.
-   *
-   * NOTE: be careful using this method it only applies where T is a 1-tuple (e.g. a case class with one field).
-   * It probably shouldn't ever be used in practice. It can cause strange initialization errors!
-   * This note may be irrelevant now that we have overridden convertString to fix issue #1.
-   *
-   * @param construct a function P1 => T, usually the apply method of a case class.
-   * @tparam P1 the type of the (single) field of the Product type T.
-   * @tparam T  the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts a String from a Row into the field type P1 and thence into a T
-   */
-  def cellParser1[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T, fields: Strings = Nil): CellParser[T] = {
-
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser1 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          // CONSIDER renaming f1 as f0 in all of theses cellParserN methods.
-          case f1 :: Nil => 
-            readCell[T, P1](wo, row, columns)(f1).map(construct)
-          case _ => 
-            Failure(ParseLogicException("non-unique field name"))
-        }
-
-      override def convertString(w: String): Try[T] = 
-        implicitly[CellParser[P1]].convertString(w).map(construct)
-    }
-  }
-
-  /**
-   * Method to return a CellParser[T] where T is a 2-ary Product and which is based on a function to convert a (P1,P2) into a T.
-   *
-   * @param construct a function (P1,P2) => T, usually the apply method of a case class.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam T  the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1 and P2 and thence into a T
-   */
-  def cellParser2[P1: CellParser, P2: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String = s"MultiCellParser: cellParser2 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser1(construct.curried(p1), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-
-  /**
    * Method to return a `CellParser[T]` where `T` is a 2-ary `Product` and which is based on a function to convert a `(K,P)` into a `T`.
    * This method differs from `cellParser2` in that the parser of `P` (a `CellParser[P]`) is not found implicitly, but rather is looked up
    * dynamically depending on the value of the first parameter (of type `K`).
@@ -211,383 +155,14 @@ trait CellParsers {
    * @tparam K the type of the conditional lookup key, which is also the type of the first field of `T`.
    *           Typically, this will be a `String`, but it could also be an Int or something more exotic.
    * @tparam P the type of the second field of the Product type `T`.
-   * @tparam T the underlying type of the result, a `Product`.
+   * @param m         the Mirror of T, from which the field names come.
+   * @param helper    the ColumnHelper[T].
+   * @tparam T the underlying type of the result, a case class with two fields.
    * @return a `MultiCellParser` which converts Strings from a Row into the field types `K` and `P` and thence into a `T`.
    */
-  def cellParser2Conditional[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map[K, CellParser[P]], fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      // NOTE used only for debugging
-      override def toString: String = 
-        s"MultiCellParser: cellParser2 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case Seq(f1, f2) =>
-            for {
-              k <- readCell[T, K](wo, row, columns)(f1)
-              p <- readCell[T, P](wo, row, columns)(f2)(implicitly[ClassTag[T]], implicitly[ColumnHelper[T]], parsers(k))
-            } yield construct(k, p)
-          case _ => 
-            Failure(ParseLogicException("incorrect number of field names (should be 2)"))
-        }
-    }
-
-  /**
-   * Method to return a CellParser[T] where T is a 3-ary Product and which is based on a function to convert a (P1,P2,P3) into a T.
-   *
-   * @param construct a function (P1,P2,P3) => T, usually the apply method of a case class.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam T  the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2 and P3 and thence into a T
-   */
-  def cellParser3[P1: CellParser, P2: CellParser, P3: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser3 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser2[P2, P3, T](construct(p1, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-
-  /**
-   * Method to return a CellParser[T] where T is a 4-ary Product and which is based on a function to convert a (P1,P2,P3,P4) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4) => T, usually the apply method of a case class.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam T  the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3 and P4 and thence into a T
-   */
-  def cellParser4[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser4 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser3[P2, P3, P4, T](construct(p1, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-
-  /**
-   * Method to return a CellParser[T] where T is a 5-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5) => T, usually the apply method of a case class.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam T  the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4 and P5 and thence into a T
-   */
-  def cellParser5[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser5 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser4[P2, P3, P4, P5, T](construct(p1, _, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-
-  /**
-   * Method to return a CellParser[T] where T is a 6-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6) => T, usually the apply method of a case class.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam T  the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5 and P6 and thence into a T
-   */
-  def cellParser6[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6) => T, fields: Strings = Nil): CellParser[T] = {
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser6 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser5[P2, P3, P4, P5, P6, T](construct(p1, _, _, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
+  inline def cellParser2Conditional[K, P, T](construct: (K, P) => T, parsers: Map[K, CellParser[P]])(using kp: CellParser[K], m: Mirror.ProductOf[T], helper: ColumnHelper[T]): CellParser[T] = {
+    new ConditionalCellParser[K, P, T](constValue[m.MirroredLabel], CellParser.fieldNames[m.MirroredElemLabels], construct, parsers)
   }
-
-  /**
-   * Method to return a CellParser[T] where T is a 7-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7) => T, usually the apply method of a case class.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam P7 the type of the seventh field of the Product type T.
-   * @tparam T  the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6 and P7 and thence into a T
-   */
-  def cellParser7[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7) => T, fields: Strings = Nil): CellParser[T] = {
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser7 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser6[P2, P3, P4, P5, P6, P7, T](construct(p1, _, _, _, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-  }
-
-  /**
-   * Method to return a CellParser[T] where T is an 8-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8) => T, usually the apply method of a case class.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam P7 the type of the seventh field of the Product type T.
-   * @tparam P8 the type of the eighth field of the Product type T.
-   * @tparam T  the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7 and P8 and thence into a T
-   */
-  def cellParser8[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser8 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser7[P2, P3, P4, P5, P6, P7, P8, T](construct(p1, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-
-  /**
-   * Method to return a CellParser[T] where T is a 9-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9) => T, usually the apply method of a case class.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam P7 the type of the seventh field of the Product type T.
-   * @tparam P8 the type of the eighth field of the Product type T.
-   * @tparam P9 the type of the ninth field of the Product type T.
-   * @tparam T  the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8 and P9 and thence into a T
-   */
-  def cellParser9[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser9 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser8[P2, P3, P4, P5, P6, P7, P8, P9, T](construct(p1, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-
-  /**
-   * Method to return a CellParser[T] where T is a 10-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10) => T, usually the apply method of a case class.
-   * @tparam P1  the type of the first field of the Product type T.
-   * @tparam P2  the type of the second field of the Product type T.
-   * @tparam P3  the type of the third field of the Product type T.
-   * @tparam P4  the type of the fourth field of the Product type T.
-   * @tparam P5  the type of the fifth field of the Product type T.
-   * @tparam P6  the type of the sixth field of the Product type T.
-   * @tparam P7  the type of the seventh field of the Product type T.
-   * @tparam P8  the type of the eighth field of the Product type T.
-   * @tparam P9  the type of the ninth field of the Product type T.
-   * @tparam P10 the type of the tenth field of the Product type T.
-   * @tparam T   the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9 and P10 and thence into a T
-   */
-  def cellParser10[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser10 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser9[P2, P3, P4, P5, P6, P7, P8, P9, P10, T](construct(p1, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-
-  /**
-   * Method to return a `CellParser[T]` where `T` is an 11-ary `Product` and which is based on a function to convert a `(P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11)` into a `T`.
-   *
-   * @param construct a function `(P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11) => T`, usually the apply method of a case class.
-   * @tparam P1  the type of the first field of the Product type T.
-   * @tparam P2  the type of the second field of the Product type T.
-   * @tparam P3  the type of the third field of the Product type T.
-   * @tparam P4  the type of the fourth field of the Product type T.
-   * @tparam P5  the type of the fifth field of the Product type T.
-   * @tparam P6  the type of the sixth field of the Product type T.
-   * @tparam P7  the type of the seventh field of the Product type T.
-   * @tparam P8  the type of the eighth field of the Product type T.
-   * @tparam P9  the type of the ninth field of the Product type T.
-   * @tparam P10 the type of the tenth field of the Product type T.
-   * @tparam P11 the type of the eleventh field of the Product type T.
-   * @tparam T   the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9, P10 and P11 and thence into a T
-   */
-  def cellParser11[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser11 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser10[P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, T](construct(p1, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-
-  /**
-   * Method to return a CellParser[T] where T is a 12-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) into a T.
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12) => T, usually the apply method of a case class.
-   * @tparam P1  the type of the first field of the Product type T.
-   * @tparam P2  the type of the second field of the Product type T.
-   * @tparam P3  the type of the third field of the Product type T.
-   * @tparam P4  the type of the fourth field of the Product type T.
-   * @tparam P5  the type of the fifth field of the Product type T.
-   * @tparam P6  the type of the sixth field of the Product type T.
-   * @tparam P7  the type of the seventh field of the Product type T.
-   * @tparam P8  the type of the eighth field of the Product type T.
-   * @tparam P9  the type of the ninth field of the Product type T.
-   * @tparam P10 the type of the tenth field of the Product type T.
-   * @tparam P11 the type of the eleventh field of the Product type T.
-   * @tparam P12 the type of the twelfth field of the Product type T.
-   * @tparam T   the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11 and P12 and thence into a T
-   */
-  def cellParser12[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, P12: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String = 
-        s"MultiCellParser: cellParser12 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser11[P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, T](construct(p1, _, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ => 
-            Failure(ParseLogicException("no field names"))
-        }
-    }
-
-  /**
-   * Method to return a CellParser[T] where T is a 13-ary Product and which is based on a function to convert a (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13) into a T.
-   * If only I'd had the AI Assistant when I was first writing these ;)
-   *
-   * @author IntelliJ AI Assistant
-   *
-   * @param construct a function (P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13) => T, usually the apply method of a case class.
-   * @tparam P1  the type of the first field of the Product type T.
-   * @tparam P2  the type of the second field of the Product type T.
-   * @tparam P3  the type of the third field of the Product type T.
-   * @tparam P4  the type of the fourth field of the Product type T.
-   * @tparam P5  the type of the fifth field of the Product type T.
-   * @tparam P6  the type of the sixth field of the Product type T.
-   * @tparam P7  the type of the seventh field of the Product type T.
-   * @tparam P8  the type of the eighth field of the Product type T.
-   * @tparam P9  the type of the ninth field of the Product type T.
-   * @tparam P10 the type of the tenth field of the Product type T.
-   * @tparam P11 the type of the eleventh field of the Product type T.
-   * @tparam P12 the type of the twelfth field of the Product type T.
-   * @tparam P13 the type of the thirteenth field of the Product type T.
-   * @tparam T   the underlying type of the result, a Product.
-   * @return a MultiCellParser which converts Strings from a Row into the field types P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12 and P13 and thence into a T
-   */
-  def cellParser13[P1: CellParser, P2: CellParser, P3: CellParser, P4: CellParser, P5: CellParser, P6: CellParser, P7: CellParser, P8: CellParser, P9: CellParser, P10: CellParser, P11: CellParser, P12: CellParser, P13: CellParser, T <: Product : ClassTag : ColumnHelper](construct: (P1, P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13) => T, fields: Strings = Nil): CellParser[T] =
-    new MultiCellParser[T] {
-      override def toString: String =
-        s"MultiCellParser: cellParser13 for ${implicitly[ClassTag[T]]}"
-
-      def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
-        fieldNames(fields) match {
-          case f1 :: fs =>
-            for {
-              p1 <- readCell[T, P1](wo, row, columns)(f1)
-              t <- cellParser12[P2, P3, P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, T](construct(p1, _, _, _, _, _, _, _, _, _, _, _, _), fs).parse(wo, row, columns)
-            } yield t
-          case _ =>
-            Failure(ParseLogicException("no field names"))
-        }
-    }
 
   /**
    * Method to yield a ColumnHelper[T] based on an optional prefix, and some number of explicit aliases,
@@ -636,53 +211,36 @@ trait CellParsers {
    */
   def columnHelper[T](aliases: (String, String)*): ColumnHelper[T] = 
     columnHelper(identityMapper, aliases: _*)
-
-  /**
-   * A default column mapper which will work for any underlying type T and which provides no column name mapping at all.
-   * This is suitable for the usual case where the names of, e.g., CSV columns, are the same as the names of the case class parameters.
-   *
-   * @tparam T the underlying type of the resulting ColumnHelper
-   * @return a new instance of ColumnHelper[T]
-   */
-  implicit def defaultColumnHelper[T]: ColumnHelper[T] = 
-    columnHelper()
-
-  // CONSIDER inlining readCellWithHeader
-  private def readCell[T <: Product, P](wo: Option[String], row: Row, columns: Header)(p: String)(implicit z1: ClassTag[T], z2: ColumnHelper[T], z3: CellParser[P]): Try[P] = // if (columns.exists)
-    readCellWithHeader(wo, row, columns, p)
-
-  /**
-   * Return the field names as `Seq[String]`, from either the `fields` parameter or by reflection into `T`.
-   * Note that fields takes precedence and `ClassTag[T]` is ignored if `fields` is used.
-   *
-   * @param fields a list of field names to be used instead of the reflected fields of T.
-   * @tparam T the type (typically a case class) from which we will use reflection to get the field names (referred to only if fields is Nil)
-   * @return the field names to be used.
-   */
-  private def fieldNames[T: ClassTag](fields: Strings) = fields match {
-    case Nil => 
-      Reflection.extractFieldNames(implicitly[ClassTag[T]]).toList
-    case ps => 
-      ps
-  }
-
-  private def readCellWithHeader[P: CellParser, T <: Product : ClassTag : ColumnHelper](wo: Option[String], row: Row, header: Header, p: String) = {
-    val columnNames = header.xs
-    val columnName = implicitly[ColumnHelper[T]].lookup(wo, p)
-    val cellParser = implicitly[CellParser[P]]
-    val idx = row.getIndex(columnName)
-    if (idx >= 0) for (w <- row(idx); z <- cellParser.parse(CellValue(w)).recoverWith {
-      case NonFatal(e) => 
-        Failure(InvalidParseException(s"Problem parsing '$w' as ${implicitly[ClassTag[T]].runtimeClass} from $columnName at index $idx of $row", e))
-    }) yield z
-    else cellParser.parse(Some(columnName), row, header).recoverWith {
-      case _: UnsupportedOperationException =>
-        Failure(ParserException(s"readCellWithHeader: where original name is based on $wo and $p, unable to find value for column '$columnName' in '$columnNames'"))
-    }
-  }
 }
 
 /**
  * TODO resolve the naming issue here.
  */
 object StdCellParsers extends CellParsers
+
+/**
+ * The CellParser made by CellParsers.cellParser2Conditional.
+ *
+ * @param typeName  the name of T (used in error messages).
+ * @param fields    the names of the two fields of T.
+ * @param construct a function (K,P) => T.
+ * @param parsers   the parser of P to use for each value of K.
+ * @tparam K the type of the first field of T.
+ * @tparam P the type of the second field of T.
+ * @tparam T the type of the result.
+ */
+class ConditionalCellParser[K, P, T](typeName: String, fields: List[String], construct: (K, P) => T, parsers: Map[K, CellParser[P]])(using kp: CellParser[K], helper: ColumnHelper[T]) extends MultiCellParser[T] {
+  // NOTE used only for debugging
+  override def toString: String = s"MultiCellParser: cellParser2Conditional for $typeName"
+
+  def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
+    fields match {
+      case Seq(f1, f2) =>
+        for {
+          k <- ProductCellParser.readCell[T, K](typeName, kp, wo, row, columns, f1)
+          p <- ProductCellParser.readCell[T, P](typeName, parsers(k), wo, row, columns, f2)
+        } yield construct(k, p)
+      case _ =>
+        Failure(ParseLogicException("incorrect number of field names (should be 2)"))
+    }
+}

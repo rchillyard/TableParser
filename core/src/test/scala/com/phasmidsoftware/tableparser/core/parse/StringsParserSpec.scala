@@ -17,7 +17,7 @@ class StringsParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val header: Header = Header.create("species", "count") // TODO do we need this?
 
     implicit val hawkCountColumnHelper: ColumnHelper[HawkCount] = columnHelper()
-    implicit val hawkCountParser: CellParser[HawkCount] = cellParser2(HawkCount)
+    implicit val hawkCountParser: CellParser[HawkCount] = CellParser.derived[HawkCount]
   }
 
   behavior of "RowParser"

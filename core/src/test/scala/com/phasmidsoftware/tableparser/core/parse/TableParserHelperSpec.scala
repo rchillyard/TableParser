@@ -24,7 +24,7 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   object Player extends TableParserHelper[Player](false) {
-    lazy val cellParser: CellParser[Player] = cellParser2(apply)
+    lazy val cellParser: CellParser[Player] = CellParser.derived[Player]
 
     /**
      * Method to transform a Table[Player] into a Table[Partnership].

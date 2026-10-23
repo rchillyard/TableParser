@@ -99,7 +99,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] =
         columnHelper()
       implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] =
-        cellParser4(DailyRaptorReport.apply)
+        CellParser.derived[DailyRaptorReport]
     }
 
     import DailyRaptorReportParser._
@@ -205,7 +205,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] =
         columnHelper()
       implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] =
-        cellParser4(DailyRaptorReport.apply)
+        CellParser.derived[DailyRaptorReport]
     }
 
     import DailyRaptorReportParser._
@@ -259,7 +259,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
       implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
-      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser4(DailyRaptorReport.apply)
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = CellParser.derived[DailyRaptorReport]
     }
 
     import DailyRaptorReportParser._
@@ -307,7 +307,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   object Submission extends CellParsers {
     implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, Some("$c $x"))
-    implicit val submissionParser: CellParser[Submission] = cellParser4(apply)
+    implicit val submissionParser: CellParser[Submission] = CellParser.derived[Submission]
     implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
 
     implicit object TableParser extends StringsTableParser[Table[Submission]] {
@@ -338,7 +338,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     private val mapper: String => String = _.replaceAll("(_)", " ")
     implicit val helper: ColumnHelper[Question] = columnHelper(mapper, Some("$c $x"), "questionId" -> "question_ID")
     implicit val optParserString: CellParser[Option[String]] = cellParserOption
-    implicit val parser: CellParser[Question] = cellParser6(apply)
+    implicit val parser: CellParser[Question] = CellParser.derived[Question]
     implicit val seqParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
   }
 
@@ -380,7 +380,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace)
     implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
-    implicit val submissionParser: CellParser[Submission] = cellParser4(Submission.apply)
+    implicit val submissionParser: CellParser[Submission] = CellParser.derived[Submission]
 
     implicit object SubmissionConfig extends DefaultRowConfig {
       override val string: Regex = """[^\t]*""".r
@@ -427,7 +427,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   object Player extends TableParserHelper[Player]() {
-    def cellParser: CellParser[Player] = cellParser2(apply)
+    def cellParser: CellParser[Player] = CellParser.derived[Player]
 
     /**
      * Method to transform a Table[Player] into a Table[Partnership].

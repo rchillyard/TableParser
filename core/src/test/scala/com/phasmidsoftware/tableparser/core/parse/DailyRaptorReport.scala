@@ -40,7 +40,7 @@ object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerator
   implicit val csvAttributes: CsvAttributes =
     CsvAttributes(", ")
   implicit val cellParser: CellParser[DailyRaptorReport] =
-    cellParser3(apply)
+    CellParser.derived[DailyRaptorReport]
   implicit val renderer: CsvRenderer[DailyRaptorReport] =
     renderer3(apply)
   implicit val csvGenerator: CsvProductGenerator[DailyRaptorReport] =
@@ -91,7 +91,7 @@ case class Hawks(bw: Int, rt: Int) {
 object Hawks extends CsvRenderers with CellParsers with CsvGenerators {
 
   implicit val parser: CellParser[Hawks] =
-    cellParser2(Hawks.apply)
+    CellParser.derived[Hawks]
   implicit val csvAttributes: CsvAttributes =
     CsvAttributes(", ")
   implicit val renderer: CsvRenderer[Hawks] =

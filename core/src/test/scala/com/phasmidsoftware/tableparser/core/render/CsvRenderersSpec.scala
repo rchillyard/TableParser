@@ -286,8 +286,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
       implicit val dailyRaptorReportColumnHelper: ColumnHelper[DailyRaptorReport] = columnHelper()
-      implicit val hawksCellParser: CellParser[Hawks] = cellParser2(Hawks.apply)
-      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = cellParser3(DailyRaptorReport.apply)
+      implicit val hawksCellParser: CellParser[Hawks] = CellParser.derived[Hawks]
+      implicit val dailyRaptorReportParser: CellParser[DailyRaptorReport] = CellParser.derived[DailyRaptorReport]
     }
 
     import DailyRaptorReportParser._
@@ -370,9 +370,9 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate)
       implicit val dailyRaptorReportColumnHelper: ColumnHelper[NestedRaptorReport] = columnHelper()
-      implicit val hawksCellParser: CellParser[Hawks] = cellParser2(Hawks.apply)
-      implicit val weatherHawksCellParser: CellParser[WeatherHawks] = cellParser2(WeatherHawks.apply)
-      implicit val dailyRaptorReportParser: CellParser[NestedRaptorReport] = cellParser2(NestedRaptorReport.apply)
+      implicit val hawksCellParser: CellParser[Hawks] = CellParser.derived[Hawks]
+      implicit val weatherHawksCellParser: CellParser[WeatherHawks] = CellParser.derived[WeatherHawks]
+      implicit val dailyRaptorReportParser: CellParser[NestedRaptorReport] = CellParser.derived[NestedRaptorReport]
     }
 
     import NestedRaptorReportParser._
