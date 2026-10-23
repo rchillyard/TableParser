@@ -30,17 +30,17 @@ trait CsvGenerators {
    */
   def optionGenerator[T](using ca: CsvAttributes): CsvGenerator[Option[T]] = new StandardCsvGenerator[Option[T]]
 
-  implicit val optionIntGenerator: CsvGenerator[Option[Int]] = optionGenerator
-  implicit val optionDoubleGenerator: CsvGenerator[Option[Double]] = optionGenerator
-  implicit val optionStringGenerator: CsvGenerator[Option[String]] = optionGenerator
-  implicit val optionBooleanGenerator: CsvGenerator[Option[Boolean]] = optionGenerator
-  implicit val optionLocalDateGenerator: CsvGenerator[Option[LocalDate]] = optionGenerator
-  implicit val optionLongGenerator: CsvGenerator[Option[Long]] = optionGenerator
-  implicit val optionBigIntGenerator: CsvGenerator[Option[BigInt]] = optionGenerator
-  implicit val optionFloatGenerator: CsvGenerator[Option[Float]] = optionGenerator
-  implicit val optionShortGenerator: CsvGenerator[Option[Short]] = optionGenerator
-  implicit val optionByteGenerator: CsvGenerator[Option[Byte]] = optionGenerator
-  implicit val optionInstantGenerator: CsvGenerator[Option[Instant]] = optionGenerator
+  given optionIntGenerator: CsvGenerator[Option[Int]] = optionGenerator
+  given optionDoubleGenerator: CsvGenerator[Option[Double]] = optionGenerator
+  given optionStringGenerator: CsvGenerator[Option[String]] = optionGenerator
+  given optionBooleanGenerator: CsvGenerator[Option[Boolean]] = optionGenerator
+  given optionLocalDateGenerator: CsvGenerator[Option[LocalDate]] = optionGenerator
+  given optionLongGenerator: CsvGenerator[Option[Long]] = optionGenerator
+  given optionBigIntGenerator: CsvGenerator[Option[BigInt]] = optionGenerator
+  given optionFloatGenerator: CsvGenerator[Option[Float]] = optionGenerator
+  given optionShortGenerator: CsvGenerator[Option[Short]] = optionGenerator
+  given optionByteGenerator: CsvGenerator[Option[Byte]] = optionGenerator
+  given optionInstantGenerator: CsvGenerator[Option[Instant]] = optionGenerator
 //  implicit val optionTemporalGenerator: CsvGenerator[Option[Temporal]] = optionGenerator
 
   /**

@@ -24,7 +24,7 @@ trait CsvRenderers {
    * @return a CsvRenderer[RawRow].
    */
   def rawRowRenderer(using ca: CsvAttributes): CsvRenderer[RawRow] = new CsvRenderer[RawRow] {
-    implicit val z: CsvRenderer[String] = CsvRenderers.CsvRendererString
+    given z: CsvRenderer[String] = CsvRenderers.CsvRendererString
 
     /**
      * Renders a sequence of strings based on the provided `RawRow` and attribute map.

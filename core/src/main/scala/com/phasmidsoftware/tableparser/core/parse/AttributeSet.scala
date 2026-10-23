@@ -48,14 +48,14 @@ object AttributeSet extends CellParsers with CsvGenerators with CsvRenderers {
 
   val none: AttributeSet = AttributeSet(Nil)
 
-  implicit val parser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
+  given parser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
   // An AttributeSet is written in one cell, its attributes separated by "|" (the default listSep of RowConfig),
   // which is how it is read (see LineParser), e.g. Action|Adventure|Fantasy.
-  implicit val renderer: CsvRenderer[AttributeSet] = new CsvRenderer[AttributeSet] {
+  given renderer: CsvRenderer[AttributeSet] = new CsvRenderer[AttributeSet] {
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(a: AttributeSet, attrs: Map[String, String]): String = a.xs mkString "|"
   }
-  implicit val generator: CsvGenerator[AttributeSet] = new StandardCsvGenerator[AttributeSet]
+  given generator: CsvGenerator[AttributeSet] = new StandardCsvGenerator[AttributeSet]
 }
 

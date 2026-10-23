@@ -104,7 +104,7 @@ object IOTable {
    * @return an IO[T]
    */
   def parse[T: TableParser](u: => URI, enc: String): IO[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parse(u)
   }
 
@@ -127,7 +127,7 @@ object IOTable {
    * @return an IO[T]
    */
   def parseInputStream[T: TableParser](si: IO[InputStream], enc: String): IO[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     for (s <- si; t <- parseInputStream(s)) yield t
   }
 
@@ -144,7 +144,7 @@ object IOTable {
    * @return an IO[T]
    */
   def parseFile[T: TableParser](f: => File, enc: String): IO[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseFile(f)
   }
 
@@ -171,7 +171,7 @@ object IOTable {
    * @return an IO[T]
    */
   def parseFile[T: TableParser](pathname: String, enc: String): IO[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseFile(pathname)
   }
 
@@ -216,7 +216,7 @@ object IOTable {
    * @return an IO[T]
    */
   def parseResource[T: TableParser](u: => URL, enc: String): IO[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseResource(u)
   }
 //
@@ -245,7 +245,7 @@ object IOTable {
    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): IO[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](f)
   }
 
@@ -257,7 +257,7 @@ object IOTable {
    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): IO[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
     parseFile[Table[RawRow]](pathname)
   }
 
@@ -272,7 +272,7 @@ object IOTable {
    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): IO[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 
@@ -283,7 +283,7 @@ object IOTable {
    * @return an IO of Table of RawRow
    */
   def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): IO[RawTable] = {
-    implicit val z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
+    given z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator, 0)
   }
 
@@ -310,7 +310,7 @@ object IOTable {
   def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes, renderer: CsvRenderer[Row]): IO[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
-        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         import com.phasmidsoftware.tableparser.core.render.CsvRenderer.CsvRendererRow
 //        import Row.CsvRendererRow
         IO.fromTry(t.toCSV)
@@ -329,7 +329,7 @@ object IOTable {
   def writeCSVFileRow(t: Table[Row], file: File)(using csvAttributes: CsvAttributes): IO[FileWriter] =
     t.maybeHeader match {
       case Some(hdr) =>
-        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         // CONSIDER this is a bit ugly
         val q: IO[FileWriter] = IOTable.writeCSVFileIO(t)(file)
         q map { f => f.close(); f }

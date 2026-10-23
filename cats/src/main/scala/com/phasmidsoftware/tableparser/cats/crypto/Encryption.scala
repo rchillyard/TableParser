@@ -263,8 +263,8 @@ object EncryptionUTF8AES128CTR extends BaseHexEncryption[AES128CTR] {
   import tsec.cipher.symmetric.{IvGen, PlainText}
   import tsec.common._
 
-  implicit val ctrStrategy: IvGen[IO, AES128CTR] = AES128CTR.defaultIvStrategy[IO]
-  implicit val cachedInstance: JCAPrimitiveCipher[IO, AES128CTR, CTR, NoPadding] = AES128CTR.genEncryptor[IO] //Cache the implicit
+  given ctrStrategy: IvGen[IO, AES128CTR] = AES128CTR.defaultIvStrategy[IO]
+  given cachedInstance: JCAPrimitiveCipher[IO, AES128CTR, CTR, NoPadding] = AES128CTR.genEncryptor[IO] //Cache the implicit
 
 //  val random: Random = new Random()
 

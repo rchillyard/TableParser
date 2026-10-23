@@ -9,7 +9,7 @@ package object parquet {
    * Implicit single-file analyzer factory implementation.
    * In scope when you `import com.phasmidsoftware.tableparser.parquet._`
    */
-  implicit val singleFileFactory: SingleFileAnalyzerFactory = new SingleFileAnalyzerFactory {
+  given singleFileFactory: SingleFileAnalyzerFactory = new SingleFileAnalyzerFactory {
     def apply(path: Path): Analyzer =
       ParquetAnalyzer[Nothing](path).asInstanceOf[Analyzer]
   }
@@ -18,7 +18,7 @@ package object parquet {
    * Implicit dataset analyzer factory implementation.
    * In scope when you `import com.phasmidsoftware.tableparser.parquet._`
    */
-  implicit val datasetFactory: DatasetAnalyzerFactory = new DatasetAnalyzerFactory {
+  given datasetFactory: DatasetAnalyzerFactory = new DatasetAnalyzerFactory {
     def apply(path: Path): Analyzer =
       ParquetDatasetAnalyzer[Nothing](path).asInstanceOf[Analyzer]
   }
@@ -28,6 +28,6 @@ package object parquet {
    * Allows Column.statisticsFrom(path, columnName) to work on Parquet files and datasets.
    * In scope when you `import com.phasmidsoftware.tableparser.parquet._`
    */
-  implicit val parquetColumnStatisticsProvider: ColumnStatisticsProvider =
+  given parquetColumnStatisticsProvider: ColumnStatisticsProvider =
     ParquetColumnStatisticsProvider
 }

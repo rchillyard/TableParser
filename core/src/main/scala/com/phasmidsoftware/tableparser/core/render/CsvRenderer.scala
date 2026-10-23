@@ -49,23 +49,23 @@ object CsvRenderer extends CsvRenderers {
     def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
   }
 
-  implicit val rendererInt: CsvRenderer[Int] = CsvRenderers.CsvRendererInt
-  implicit val rendererLong: CsvRenderer[Long] = CsvRenderers.CsvRendererLong
-  implicit val rendererDouble: CsvRenderer[Double] = CsvRenderers.CsvRendererDouble
-  implicit val rendererFloat: CsvRenderer[Float] = CsvRenderers.CsvRendererFloat
-  implicit val rendererShort: CsvRenderer[Short] = CsvRenderers.CsvRendererShort
-  implicit val rendererByte: CsvRenderer[Byte] = CsvRenderers.CsvRendererByte
-  implicit val stringRenderer: CsvRenderer[String] = CsvRenderers.CsvRendererString
-  implicit val instantRenderer: CsvRenderer[Instant] = CsvRenderers.CsvRendererInstant
-  implicit val rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
-  implicit val rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer("no double")
-  implicit val rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()
-  implicit val rendererOptionLong: CsvRenderer[Option[Long]] = optionRenderer[Long]()
-  implicit val rendererOptionString: CsvRenderer[Option[String]] = optionRenderer()
-  implicit val rendererOptionFloat: CsvRenderer[Option[Float]] = optionRenderer[Float]()
-  implicit val rendererOptionShort: CsvRenderer[Option[Short]] = optionRenderer[Short]()
-  implicit val rendererOptionByte: CsvRenderer[Option[Byte]] = optionRenderer[Byte]()
-  implicit val rendererOptionInstant: CsvRenderer[Option[Instant]] = optionRenderer[Instant]()
+  given rendererInt: CsvRenderer[Int] = CsvRenderers.CsvRendererInt
+  given rendererLong: CsvRenderer[Long] = CsvRenderers.CsvRendererLong
+  given rendererDouble: CsvRenderer[Double] = CsvRenderers.CsvRendererDouble
+  given rendererFloat: CsvRenderer[Float] = CsvRenderers.CsvRendererFloat
+  given rendererShort: CsvRenderer[Short] = CsvRenderers.CsvRendererShort
+  given rendererByte: CsvRenderer[Byte] = CsvRenderers.CsvRendererByte
+  given stringRenderer: CsvRenderer[String] = CsvRenderers.CsvRendererString
+  given instantRenderer: CsvRenderer[Instant] = CsvRenderers.CsvRendererInstant
+  given rendererStringList: CsvRenderer[StringList] = sequenceRenderer[String]
+  given rendererOptionDouble: CsvRenderer[Option[Double]] = optionRenderer("no double")
+  given rendererOptionInt: CsvRenderer[Option[Int]] = optionRenderer()
+  given rendererOptionLong: CsvRenderer[Option[Long]] = optionRenderer[Long]()
+  given rendererOptionString: CsvRenderer[Option[String]] = optionRenderer()
+  given rendererOptionFloat: CsvRenderer[Option[Float]] = optionRenderer[Float]()
+  given rendererOptionShort: CsvRenderer[Option[Short]] = optionRenderer[Short]()
+  given rendererOptionByte: CsvRenderer[Option[Byte]] = optionRenderer[Byte]()
+  given rendererOptionInstant: CsvRenderer[Option[Instant]] = optionRenderer[Instant]()
   /**
    * Method to derive a CsvRenderer for a case class T, so that `case class T(...) derives CsvRenderer` works.
    * This replaces the renderer1 ... renderer19 methods of 1.x, and has no limit on the number of fields.
@@ -92,7 +92,7 @@ object CsvRenderer extends CsvRenderers {
     case m: Mirror.ProductOf[A] => derived[A](using m, summonInline[CsvAttributes])
   }
 
-  implicit val localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
+  given localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: LocalDate, attrs: Map[String, String]): String = t.toString

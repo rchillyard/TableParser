@@ -86,7 +86,7 @@ object ParquetCellConverter {
    * Converter for Option[T] fields.
    * Returns None if the field has no value in this row, Some(value) otherwise.
    */
-  implicit def optionConverter[T: ParquetCellConverter]: ParquetCellConverter[Option[T]] =
+  given optionConverter[T: ParquetCellConverter]: ParquetCellConverter[Option[T]] =
     new ParquetCellConverter[Option[T]] {
       def convert(group: SimpleGroup, fieldName: String): Try[Option[T]] =
         if (group.getFieldRepetitionCount(fieldName) == 0)

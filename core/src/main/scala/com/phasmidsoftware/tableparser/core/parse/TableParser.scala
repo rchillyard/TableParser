@@ -216,8 +216,8 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
 
   type Row = RawRow
 
-  implicit val stringSeqParser: CellParser[Strings] = StdCellParsers.cellParserSeq
-  implicit val rowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
+  given stringSeqParser: CellParser[Strings] = StdCellParsers.cellParserSeq
+  given rowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
 
   val rowParser: RowParser[Row, String] = StandardRowParser.create[Row]
 
@@ -561,9 +561,9 @@ abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true
    */
   def cellParser: CellParser[X]
 
-  implicit val xp: CellParser[X] = cellParser
+  given xp: CellParser[X] = cellParser
 
-  implicit val ptp: TableParser[Table[X]] =
+  given ptp: TableParser[Table[X]] =
     if (sourceHasHeaderRow) PlainTextHeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)
 }
 

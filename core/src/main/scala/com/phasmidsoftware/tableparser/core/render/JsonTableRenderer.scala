@@ -22,7 +22,7 @@ abstract class JsonTableRenderer[T]()(using tj: JsonFormat[T]) extends Renderer[
    * @return a pretty-printed JSON string representation of the table.
    */
   def render(tt: Table[T], attrs: Map[String, String]): String = {
-    implicit val z: JsonFormat[Table[T]] = new TableJsonFormat[T] {}
+    given z: JsonFormat[Table[T]] = new TableJsonFormat[T] {}
     tt.toJson.prettyPrint
   }
 

@@ -17,7 +17,7 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
 
   override implicit val rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
 
-  implicit val parser: StandardRowParser[RawRow] = StandardRowParser.create[RawRow]
+  given parser: StandardRowParser[RawRow] = StandardRowParser.create[RawRow]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
   implicit object RawTableParser extends StringTableParser[RawTable] {

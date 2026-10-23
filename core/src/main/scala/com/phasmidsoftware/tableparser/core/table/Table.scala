@@ -488,7 +488,7 @@ object Table {
    * @return an Try[T]
    */
   def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parse(u)
   }
 
@@ -512,7 +512,7 @@ object Table {
    * @return an Try[T]
    */
   def parseInputStream[T: TableParser](si: Try[InputStream], enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     for (s <- si; t <- parseInputStream(s)) yield t
   }
 
@@ -537,7 +537,7 @@ object Table {
    * @return A Try containing the parsed result of type T if successful, or a failure if an error occurs during parsing.
    */
   def parseFile[T: TableParser](path: Path, enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseFile(path)
   }
 
@@ -602,7 +602,7 @@ object Table {
    * @return an Try[T]
    */
   def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = {
-    implicit val codec: Codec = Codec(enc)
+    given codec: Codec = Codec(enc)
     parseResource(u)
   }
 
@@ -634,7 +634,7 @@ object Table {
    * @return a `Try` containing the parsed `Table[RawRow]` on success or an exception on failure
    */
   def parsePathRaw(path: Path, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](path)
   }
 
@@ -646,7 +646,7 @@ object Table {
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
     parseFile[Table[RawRow]](Paths.get(pathname))
   }
 
@@ -661,7 +661,7 @@ object Table {
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): Try[Table[RawRow]] = {
-    implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 
@@ -672,7 +672,7 @@ object Table {
    * @return an Try of Table of RawRow
    */
   def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[RawTable] = {
-    implicit val z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
+    given z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
   }
 
@@ -701,7 +701,7 @@ object Table {
   def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes): Try[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
-        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         t.toCSV
       case _ =>
         throw TableException("toCSVRow: cannot write this Table to CSV (no header)")
@@ -719,7 +719,7 @@ object Table {
   def writeCSVFileRow(t: Table[Row], file: File)(using csvAttributes: CsvAttributes): Unit =
     t.maybeHeader match {
       case Some(hdr) =>
-        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         // CONSIDER this is a bit ugly
         t.writeCSVFile(file.toPath)
       case _ =>
@@ -868,10 +868,10 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
   def renderHierarchical[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(using xr: HierarchicalRenderer[Row]): U = {
     object TableRenderers extends HierarchicalRenderers {
       val rowsRenderer: HierarchicalRenderer[Seq[Row]] = sequenceRenderer[Row]("tbody")
-      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
-      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
+      given headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = false)(renderer("th", Map()))
+      given optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
     }
-    import TableRenderers._
+    import TableRenderers.{given, *}
     val node: Node = summon[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
     summon[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows.toSeq))))
   }
@@ -891,10 +891,10 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
   def renderHierarchicalSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(using rr: HierarchicalRenderer[Indexed[Row]]): U = {
     object TableRenderers extends HierarchicalRenderers {
       val rowsRenderer: HierarchicalRenderer[Seq[Indexed[Row]]] = sequenceRenderer[Indexed[Row]]("tbody")
-      implicit val headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
-      implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
+      given headerRenderer: HierarchicalRenderer[Header] = headerRenderer("tr", sequenced = true)(renderer("th", Map()))
+      given optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
     }
-    import TableRenderers._
+    import TableRenderers.{given, *}
     val headerNode: Node = summon[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
     val tableNode = Node(style, attributes, headerNode +: Seq(rowsRenderer.render(Indexed.index(rows.toSeq))))
     val trimmed = tableNode.trim
