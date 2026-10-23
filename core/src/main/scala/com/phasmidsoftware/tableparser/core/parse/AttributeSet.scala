@@ -48,8 +48,7 @@ object AttributeSet extends CellParsers with CsvGenerators with CsvRenderers {
   val none: AttributeSet = AttributeSet(Nil)
 
   implicit val parser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
-  val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
-  implicit val renderer: CsvRenderer[AttributeSet] = renderer1(fAttributeSet)
-  implicit val generator: CsvGenerator[AttributeSet] = generator1(fAttributeSet)
+  implicit val renderer: CsvRenderer[AttributeSet] = CsvRenderer.derived[AttributeSet]
+  implicit val generator: CsvGenerator[AttributeSet] = CsvGenerator.derived[AttributeSet]
 }
 

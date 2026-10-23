@@ -6,7 +6,7 @@ package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.identityMapper
 import com.phasmidsoftware.tableparser.core.table.{Header, RawRow, Row}
-import com.phasmidsoftware.tableparser.core.util.FP
+import com.phasmidsoftware.tableparser.core.util.{Derivation, FP}
 import scala.compiletime.constValue
 import scala.deriving.Mirror
 import scala.reflect.ClassTag
@@ -161,7 +161,7 @@ trait CellParsers {
    * @return a `MultiCellParser` which converts Strings from a Row into the field types `K` and `P` and thence into a `T`.
    */
   inline def cellParser2Conditional[K, P, T](construct: (K, P) => T, parsers: Map[K, CellParser[P]])(using kp: CellParser[K], m: Mirror.ProductOf[T], helper: ColumnHelper[T]): CellParser[T] = {
-    new ConditionalCellParser[K, P, T](constValue[m.MirroredLabel], CellParser.fieldNames[m.MirroredElemLabels], construct, parsers)
+    new ConditionalCellParser[K, P, T](constValue[m.MirroredLabel], Derivation.fieldNames[m.MirroredElemLabels], construct, parsers)
   }
 
   /**

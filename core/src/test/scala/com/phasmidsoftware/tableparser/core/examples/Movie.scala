@@ -87,8 +87,8 @@ object Movie extends CellParsers with CsvGenerators with CsvRenderers {
     "title" -> "movie_title",
     "imdb" -> "movie_imdb_link")
   implicit val parser: CellParser[Movie] = CellParser.derived[Movie]
-  implicit val renderer: CsvRenderer[Movie] = renderer11(apply)
-  implicit val generator: CsvGenerator[Movie] = generator11(apply)
+  implicit val renderer: CsvRenderer[Movie] = CsvRenderer.derived[Movie]
+  implicit val generator: CsvGenerator[Movie] = CsvGenerator.derived[Movie]
 
   /**
    * An implicit object extending `DefaultRowConfig`, used for customizing the configuration settings
@@ -231,11 +231,11 @@ object Format extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Format = Format("", "", None, None)
   implicit val helper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper)
   implicit val parser: CellParser[Format] = CellParser.derived[Format]
-  implicit val renderer: CsvRenderer[Format] = renderer4(apply)
+  implicit val renderer: CsvRenderer[Format] = CsvRenderer.derived[Format]
   implicit val generatorOptInt: CsvGenerator[Option[Int]] = optionGenerator
   implicit val generatorOptDouble: CsvGenerator[Option[Double]] = optionGenerator
   implicit val generatorOptString: CsvGenerator[Option[String]] = optionGenerator
-  implicit val generator: CsvGenerator[Format] = generator4(apply)
+  implicit val generator: CsvGenerator[Format] = CsvGenerator.derived[Format]
 }
 
 /**
@@ -283,8 +283,8 @@ object Production extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Production = Production("", None, None, None)
   implicit val helper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper)
   implicit val parser: CellParser[Production] = CellParser.derived[Production]
-  implicit val renderer: CsvRenderer[Production] = renderer4(apply)
-  implicit val generator: CsvGenerator[Production] = generator4(apply)
+  implicit val renderer: CsvRenderer[Production] = CsvRenderer.derived[Production]
+  implicit val generator: CsvGenerator[Production] = CsvGenerator.derived[Production]
 }
 
 /**
@@ -317,8 +317,8 @@ object Reviews extends CellParsers with CsvGenerators with CsvRenderers {
     "numCriticReviews" -> "num_critic_for_reviews",
     "totalFacebookLikes" -> "cast_total_facebook_likes")
   implicit val parser: CellParser[Reviews] = CellParser.derived[Reviews]
-  implicit val renderer: CsvRenderer[Reviews] = renderer7(apply)
-  implicit val generator: CsvGenerator[Reviews] = generator7(apply)
+  implicit val renderer: CsvRenderer[Reviews] = CsvRenderer.derived[Reviews]
+  implicit val generator: CsvGenerator[Reviews] = CsvGenerator.derived[Reviews]
 }
 /**
  * Represents a principal entity involved in a production. This entity is characterized by its name
@@ -371,9 +371,9 @@ object Principal extends CellParsers with CsvGenerators with CsvRenderers {
   implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
   implicit val parser: CellParser[Principal] = CellParser.derived[Principal]
   implicit val parserOpt: CellParser[Option[Principal]] = cellParserOption
-  implicit val renderer: CsvRenderer[Principal] = renderer2(apply)
+  implicit val renderer: CsvRenderer[Principal] = CsvRenderer.derived[Principal]
   implicit val rendererOpt: CsvRenderer[Option[Principal]] = optionRenderer()
-  implicit val generator: CsvGenerator[Principal] = generator2(apply)
+  implicit val generator: CsvGenerator[Principal] = CsvGenerator.derived[Principal]
   implicit val generatorOpt: CsvGenerator[Option[Principal]] = optionGenerator
 }
 
@@ -476,8 +476,8 @@ object Name extends CellParsers with CsvGenerators with CsvRenderers {
 
   val nemo: Name = Name("ne mo")
   implicit val parser: CellParser[Name] = cellParser(apply)
-  implicit val renderer: CsvRenderer[Name] = renderer4(apply)
-  implicit val generator: CsvGenerator[Name] = generator4(apply)
+  implicit val renderer: CsvRenderer[Name] = CsvRenderer.derived[Name]
+  implicit val generator: CsvGenerator[Name] = CsvGenerator.derived[Name]
 }
 
 /**
@@ -518,7 +518,7 @@ object Rating extends CellParsers with CsvGenerators with CsvRenderers {
     }
 
   implicit val parser: CellParser[Rating] = cellParser(apply)
-  implicit val renderer: CsvRenderer[Rating] = renderer2(apply)
-  implicit val generator: CsvGenerator[Rating] = generator2(apply)
+  implicit val renderer: CsvRenderer[Rating] = CsvRenderer.derived[Rating]
+  implicit val generator: CsvGenerator[Rating] = CsvGenerator.derived[Rating]
   private val rRating = """^(\w*)(-(\d\d))?$""".r
 }

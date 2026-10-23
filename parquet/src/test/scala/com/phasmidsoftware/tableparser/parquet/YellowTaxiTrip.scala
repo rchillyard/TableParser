@@ -2,7 +2,7 @@ package com.phasmidsoftware.tableparser.parquet
 
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapperLower
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
-import com.phasmidsoftware.tableparser.core.render.{CsvGenerators, CsvProductGenerator, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators, CsvProductGenerator, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import java.time.Instant
 
@@ -43,8 +43,8 @@ object YellowTaxiTrip extends CellParsers with CsvRenderers with CsvGenerators {
   implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
 
   implicit val renderer: CsvRenderer[YellowTaxiTrip] =
-    renderer19(YellowTaxiTrip.apply)
+    CsvRenderer.derived[YellowTaxiTrip]
 
   implicit val csvGenerator: CsvProductGenerator[YellowTaxiTrip] =
-    generator19(YellowTaxiTrip.apply)
+    CsvGenerator.derived[YellowTaxiTrip]
 }

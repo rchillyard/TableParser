@@ -4,6 +4,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.table.{Header, Row}
+import com.phasmidsoftware.tableparser.core.util.Derivation
 import java.io.File
 import java.net.URL
 import org.joda.time.LocalDate
@@ -239,21 +240,10 @@ object CellParser {
   inline def derived[T](using m: Mirror.ProductOf[T]): CellParser[T] =
     new ProductCellParser[T](
       constValue[m.MirroredLabel],
-      fieldNames[m.MirroredElemLabels],
+      Derivation.fieldNames[m.MirroredElemLabels],
       fieldParsers[m.MirroredElemTypes],
       xs => m.fromProduct(Tuple.fromArray(xs.toArray))
     )(using summonInline[ColumnHelper[T]])
-
-  /**
-   * Method to get the names of the fields of a case class from its Mirror's MirroredElemLabels.
-   *
-   * @tparam Ls the MirroredElemLabels.
-   * @return the field names, in declaration order.
-   */
-  inline def fieldNames[Ls <: Tuple]: List[String] = inline erasedValue[Ls] match {
-    case _: EmptyTuple => Nil
-    case _: (l *: ls) => constValue[l].asInstanceOf[String] :: fieldNames[ls]
-  }
 
   private inline def fieldParsers[Ts <: Tuple]: List[CellParser[?]] = inline erasedValue[Ts] match {
     case _: EmptyTuple => Nil

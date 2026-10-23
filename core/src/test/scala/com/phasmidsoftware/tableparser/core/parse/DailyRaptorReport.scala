@@ -1,6 +1,6 @@
 package com.phasmidsoftware.tableparser.core.parse
 
-import com.phasmidsoftware.tableparser.core.render.{CsvGenerators, CsvProductGenerator, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators, CsvProductGenerator, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.tableparser.core.table._
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
@@ -42,9 +42,9 @@ object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerator
   implicit val cellParser: CellParser[DailyRaptorReport] =
     CellParser.derived[DailyRaptorReport]
   implicit val renderer: CsvRenderer[DailyRaptorReport] =
-    renderer3(apply)
+    CsvRenderer.derived[DailyRaptorReport]
   implicit val csvGenerator: CsvProductGenerator[DailyRaptorReport] =
-    generator3(apply)
+    CsvGenerator.derived[DailyRaptorReport]
 
   trait DailyRaptorReportConfig extends DefaultRowConfig {
     override val string: Regex = """[\w/\- ]+""".r
@@ -95,9 +95,9 @@ object Hawks extends CsvRenderers with CellParsers with CsvGenerators {
   implicit val csvAttributes: CsvAttributes =
     CsvAttributes(", ")
   implicit val renderer: CsvRenderer[Hawks] =
-    renderer2(Hawks.apply)
+    CsvRenderer.derived[Hawks]
   implicit val csvGenerator: CsvProductGenerator[Hawks] =
-    generator2(Hawks.apply)
+    CsvGenerator.derived[Hawks]
 
   // CONSIDER why do we need this when we have parser (above)
   object HawksParser extends JavaTokenParsers {

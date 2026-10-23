@@ -2,10 +2,11 @@ package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.parse.StringList
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
-import com.phasmidsoftware.tableparser.core.util.Reflection
+import com.phasmidsoftware.tableparser.core.util.Derivation
 import java.time.Instant
 import org.joda.time.LocalDate
-import scala.reflect.ClassTag
+import scala.compiletime.{erasedValue, summonFrom, summonInline}
+import scala.deriving.Mirror
 
 /**
  * Trait (typeclass) for generating headers for CSV output.
@@ -60,6 +61,34 @@ object CsvGenerator extends CsvGenerators {
   implicit val instantGenerator: CsvGenerator[Instant] = CsvGenerators.CsvGeneratorInstant
   //  implicit val temporalGenerator: CsvGenerator[Temporal] = CsvGenerators.CsvGeneratorTemporal
   implicit val generatorStringList: CsvGenerator[StringList] = sequenceGenerator[String]
+
+  /**
+   * Method to derive a CsvGenerator (the column names) for a case class T, so that `case class T(...) derives CsvGenerator` works.
+   * This replaces the generator1 ... generator19 methods of 1.x, and has no limit on the number of fields.
+   *
+   * The column name of each field is its name, preceded by the names of its enclosing fields (if any), separated by ".".
+   * A field whose type is itself a case class, and which has no CsvGenerator of its own, is derived in turn.
+   *
+   * NOTE: for a case class defined inside a method, see the NOTE on CellParser.derived.
+   *
+   * @param m  the Mirror of T.
+   * @param ca the CsvAttributes.
+   * @tparam T a case class.
+   * @return a CsvProductGenerator[T].
+   */
+  inline def derived[T](using m: Mirror.ProductOf[T], ca: CsvAttributes): CsvProductGenerator[T] =
+    new ProductCsvGenerator[T](Derivation.fieldNames[m.MirroredElemLabels], fieldGenerators[m.MirroredElemTypes])
+
+  private[render] inline def fieldGenerators[Ts <: Tuple](using CsvAttributes): List[CsvGenerator[?]] = inline erasedValue[Ts] match {
+    case _: EmptyTuple => Nil
+    case _: (t *: ts) => fieldGenerator[t] :: fieldGenerators[ts]
+  }
+
+  // Prefer a field type's own CsvGenerator; otherwise, if it is a case class, derive one.
+  private inline def fieldGenerator[A](using CsvAttributes): CsvGenerator[A] = summonFrom {
+    case g: CsvGenerator[A] => g
+    case m: Mirror.ProductOf[A] => derived[A](using m, summonInline[CsvAttributes])
+  }
 }
 
 /**
@@ -70,18 +99,6 @@ object CsvGenerator extends CsvGenerators {
  * @tparam T the type of the objects to be rendered by CSV.
  */
 trait CsvProductGenerator[T] extends CsvGenerator[T] {
-  /**
-   * Extracts the names of the fields for the type `T` using runtime reflection.
-   * This method is useful for generating field names for case classes or other types
-   * in the context of CSV generation.
-   *
-   * @param tc An implicit `ClassTag` for the type `T`, which is used to access
-   *           runtime type information about the type.
-   * @return An array of strings, where each string corresponds to the name of a field in the type `T`.
-   */
-  def fieldNames(implicit tc: ClassTag[T]): Array[String] =
-    Reflection.extractFieldNames(tc)
-
   /**
    * Method to generate a list of appropriate column names for a value of t.
    *
@@ -171,3 +188,18 @@ class StandardCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T
  * @see `CsvProductGenerator` for field name extraction specific to product types.
  */
 abstract class BaseCsvProductGenerator[T](implicit ca: CsvAttributes) extends StandardCsvGenerator[T] with CsvProductGenerator[T]
+
+/**
+ * The CsvGenerator of a case class T, as derived by CsvGenerator.derived.
+ *
+ * @param fieldNames      the names of the fields of T, in declaration order.
+ * @param fieldGenerators the CsvGenerators of the fields of T, in the same order.
+ * @param ca              the CsvAttributes.
+ * @tparam T the type of the case class.
+ */
+class ProductCsvGenerator[T](fieldNames: List[String], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes) extends BaseCsvProductGenerator[T] {
+  def toColumnNames(po: Option[String], no: Option[String]): String = {
+    val wo = merge(po, no)
+    (fieldNames zip fieldGenerators) map ((name, generator) => generator.toColumnName(wo, name)) mkString ca.delimiter
+  }
+}

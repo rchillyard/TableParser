@@ -15,6 +15,9 @@ import java.nio.file.Paths
 
 
 //noinspection SpellCheckingInspection
+// Top-level, so that it can use `derives`: 20 fields, more than the 19 that 1.x's rendererN and generatorN supported.
+case class Twentysy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int, j: Int, k: Int, l: Int, m: Int, n: Int, o: Int, p: Int, q: Int, r: Int, s: Int, t: String) derives CsvProduct
+
 class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
   case class IntPair(a: Int, b: Int) {
@@ -92,56 +95,56 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   it should "render 1-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Onesy(x: Int)
-    implicit val onesyGenerator: CsvGenerator[Onesy] = new CsvGenerators {}.generator1(Onesy)
+    implicit val onesyGenerator: CsvGenerator[Onesy] = CsvGenerator.derived[Onesy]
     onesyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.x"
   }
 
   it should "render 6-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Sixsy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int)
-    implicit val sixsyGenerator: CsvGenerator[Sixsy] = new CsvGenerators {}.generator6(Sixsy)
+    implicit val sixsyGenerator: CsvGenerator[Sixsy] = CsvGenerator.derived[Sixsy]
     sixsyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f"
   }
 
   it should "render 7-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Sevensy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int)
-    implicit val sevensyGenerator: CsvGenerator[Sevensy] = new CsvGenerators {}.generator7(Sevensy)
+    implicit val sevensyGenerator: CsvGenerator[Sevensy] = CsvGenerator.derived[Sevensy]
     sevensyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g"
   }
 
   it should "render 8-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Eightsy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int)
-    implicit val EightsyGenerator: CsvGenerator[Eightsy] = new CsvGenerators {}.generator8(Eightsy)
+    implicit val EightsyGenerator: CsvGenerator[Eightsy] = CsvGenerator.derived[Eightsy]
     EightsyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h"
   }
 
   it should "render 9-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Ninesy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int)
-    implicit val NinesyGenerator: CsvGenerator[Ninesy] = new CsvGenerators {}.generator9(Ninesy)
+    implicit val NinesyGenerator: CsvGenerator[Ninesy] = CsvGenerator.derived[Ninesy]
     NinesyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h, x.y.i"
   }
 
   it should "render 10-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Tensy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int, j: Int)
-    implicit val TensyGenerator: CsvGenerator[Tensy] = new CsvGenerators {}.generator10(Tensy)
+    implicit val TensyGenerator: CsvGenerator[Tensy] = CsvGenerator.derived[Tensy]
     TensyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h, x.y.i, x.y.j"
   }
 
   it should "render 11-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Elevensy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int, j: Int, k: Int)
-    implicit val ElevensyGenerator: CsvGenerator[Elevensy] = new CsvGenerators {}.generator11(Elevensy)
+    implicit val ElevensyGenerator: CsvGenerator[Elevensy] = CsvGenerator.derived[Elevensy]
     ElevensyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h, x.y.i, x.y.j, x.y.k"
   }
 
   it should "render 12-tuple" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Twelvesy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int, j: Int, k: Int, l: Int)
-    implicit val TwelvesyGenerator: CsvGenerator[Twelvesy] = new CsvGenerators {}.generator12(Twelvesy)
+    implicit val TwelvesyGenerator: CsvGenerator[Twelvesy] = CsvGenerator.derived[Twelvesy]
     TwelvesyGenerator.toColumnName(Some("x"), "y") shouldBe "x.y.a, x.y.b, x.y.c, x.y.d, x.y.e, x.y.f, x.y.g, x.y.h, x.y.i, x.y.j, x.y.k, x.y.l"
   }
 
@@ -174,14 +177,14 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Onesy(x: Int)
-    implicit val onesyCsvRenderer: CsvRenderer[Onesy] = new CsvRenderers {}.renderer1(Onesy)
+    implicit val onesyCsvRenderer: CsvRenderer[Onesy] = CsvRenderer.derived[Onesy]
     onesyCsvRenderer.render(Onesy(42)) shouldBe "42"
   }
 
   it should "render an IntPair" in {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
-    implicit val intPairCsvRenderer: CsvRenderer[IntPair] = new CsvRenderers {}.renderer2(IntPair.apply)
+    implicit val intPairCsvRenderer: CsvRenderer[IntPair] = CsvRenderer.derived[IntPair]
     val intPair = IntPair(42, 99)
     intPairCsvRenderer.render(intPair) shouldBe "42, 99"
   }
@@ -190,10 +193,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Sixsy(a: Boolean, b: Boolean, c: Boolean, d: Boolean, e: Boolean, f: Boolean)
-    object Sixsy extends CsvRenderers {
-      implicit val renderer: CsvRenderer[Sixsy] = renderer6(Sixsy.apply)
-    }
-    import Sixsy._
+    implicit val renderer: CsvRenderer[Sixsy] = CsvRenderer.derived[Sixsy]
     val sixsy = Sixsy(a = true, b = false, c = true, d = false, e = true, f = false)
     implicitly[CsvRenderer[Sixsy]].render(sixsy) shouldBe "true, false, true, false, true, false"
   }
@@ -202,10 +202,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Sevensy(a: Double, b: Double, c: Double, d: Double, e: Double, f: Double, g: Double)
-    object Sevensy extends CsvRenderers {
-      implicit val renderer: CsvRenderer[Sevensy] = renderer7(Sevensy.apply)
-    }
-    import Sevensy._
+    implicit val renderer: CsvRenderer[Sevensy] = CsvRenderer.derived[Sevensy]
 
     val sevensy = Sevensy(1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2)
     implicitly[CsvRenderer[Sevensy]].render(sevensy) shouldBe "1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2"
@@ -215,10 +212,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Eightsy(a: URL, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int)
-    object Eightsy extends CsvRenderers {
-      implicit val renderer: CsvRenderer[Eightsy] = renderer8(Eightsy.apply)
-    }
-    import Eightsy._
+    implicit val renderer: CsvRenderer[Eightsy] = CsvRenderer.derived[Eightsy]
 
     val eightsy = Eightsy(new URL("https://google.com"), 2, 3, 4, 5, 6, 7, 8)
     implicitly[CsvRenderer[Eightsy]].render(eightsy) shouldBe "https://google.com, 2, 3, 4, 5, 6, 7, 8"
@@ -228,7 +222,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Ninesy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, j: Int)
-    implicit val intPairCsvRenderer: CsvRenderer[Ninesy] = new CsvRenderers {}.renderer9(Ninesy)
+    implicit val intPairCsvRenderer: CsvRenderer[Ninesy] = CsvRenderer.derived[Ninesy]
 
     intPairCsvRenderer.render(Ninesy(1, 2, 3, 4, 5, 6, 7, 8, 9)) shouldBe "1, 2, 3, 4, 5, 6, 7, 8, 9"
   }
@@ -237,7 +231,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Tensy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, j: Int, k: Int)
-    implicit val intPairCsvRenderer: CsvRenderer[Tensy] = new CsvRenderers {}.renderer10(Tensy)
+    implicit val intPairCsvRenderer: CsvRenderer[Tensy] = CsvRenderer.derived[Tensy]
 
     intPairCsvRenderer.render(Tensy(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) shouldBe "1, 2, 3, 4, 5, 6, 7, 8, 9, 10"
   }
@@ -246,7 +240,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     case class Elevensy(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, j: Int, k: Int, l: Int)
-    implicit val intPairCsvRenderer: CsvRenderer[Elevensy] = new CsvRenderers {}.renderer11(Elevensy)
+    implicit val intPairCsvRenderer: CsvRenderer[Elevensy] = CsvRenderer.derived[Elevensy]
 
     intPairCsvRenderer.render(Elevensy(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)) shouldBe "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11"
   }
@@ -259,8 +253,8 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     val csvGenerators = new CsvGenerators {}
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     // NOTE that these are used (ignore what the Analyzer might say)
-    implicit val intPairCsvRenderer: CsvRenderer[IntPair] = csvRenderers.renderer2(IntPair.apply)
-    implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = csvGenerators.generator2(IntPair.apply)
+    implicit val intPairCsvRenderer: CsvRenderer[IntPair] = CsvRenderer.derived[IntPair]
+    implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = CsvGenerator.derived[IntPair]
     import IntPair._
     val ity = Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))
     val sby = ity flatMap {
@@ -406,23 +400,31 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         rt.content.size shouldBe 13
         import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
         implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
-        implicit val hawksCsvRenderer: CsvRenderer[Hawks] = new CsvRenderers {}.renderer2(Hawks.apply)
-        implicit val hawksCsvGenerator: CsvProductGenerator[Hawks] = new CsvGenerators {}.generator2(Hawks.apply)
-        implicit val weatherHawksCsvRenderer: CsvRenderer[WeatherHawks] = new CsvRenderers {}.renderer2(WeatherHawks.apply)
-        implicit val weatherHawksCsvGenerator: CsvProductGenerator[WeatherHawks] = new CsvGenerators {}.generator2(WeatherHawks.apply)
+        implicit val hawksCsvRenderer: CsvRenderer[Hawks] = CsvRenderer.derived[Hawks]
+        implicit val hawksCsvGenerator: CsvProductGenerator[Hawks] = CsvGenerator.derived[Hawks]
+        implicit val weatherHawksCsvRenderer: CsvRenderer[WeatherHawks] = CsvRenderer.derived[WeatherHawks]
+        implicit val weatherHawksCsvGenerator: CsvProductGenerator[WeatherHawks] = CsvGenerator.derived[WeatherHawks]
         implicit val dateCsvRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
           val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
 
           def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
         }
         implicit val dateCsvGenerator: CsvGenerator[LocalDate] = new StandardCsvGenerator[LocalDate]
-        implicit val DRRCsvRenderer: CsvRenderer[NestedRaptorReport] = new CsvRenderers {}.renderer2(NestedRaptorReport.apply)
-        implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = new CsvGenerators {}.generator2(NestedRaptorReport.apply)
+        implicit val DRRCsvRenderer: CsvRenderer[NestedRaptorReport] = CsvRenderer.derived[NestedRaptorReport]
+        implicit val DRRCsvGenerator: CsvProductGenerator[NestedRaptorReport] = CsvGenerator.derived[NestedRaptorReport]
         rt.take(1).toCSV
     }
     matchTry(wy) {
       case "date, weatherHawks.weather, weatherHawks.hawks.bw, weatherHawks.hawks.rt\n2018-09-12, Dense Fog/Light Rain, 0, 0\n" => succeed
       case _ => fail("didn't match")
     }
+  }
+
+  behavior of "CsvProduct.derived"
+
+  it should "render, and generate the header for, a case class that derives CsvProduct, with more than 19 fields" in {
+    val product = implicitly[CsvProduct[Twentysy]]
+    product.render(Twentysy(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, "twenty")) shouldBe "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,twenty"
+    product.asInstanceOf[CsvProductGenerator[Twentysy]].toColumnNames(None, None) shouldBe "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t"
   }
 }

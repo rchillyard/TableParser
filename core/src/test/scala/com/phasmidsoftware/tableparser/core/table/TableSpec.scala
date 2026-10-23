@@ -328,7 +328,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter
 
-    implicit val intPairRenderer: HierarchicalRenderer[IntPair] = renderer2("IntPair")(IntPair.apply)
+    implicit val intPairRenderer: HierarchicalRenderer[IntPair] = HierarchicalRenderer.derived[IntPair]("IntPair")
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
   }
 

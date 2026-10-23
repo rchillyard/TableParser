@@ -49,9 +49,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         pt.writeCSVFile(Paths.get("TeamProjectOutput.csv"))
         succeed
     }
@@ -65,9 +65,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         implicit val hasKey: HasKey[TeamProject] = (t: TeamProject) => t.team.number.toString
         // TODO this integration test occasionally fails
         TableCrypt.writeCSVFileEncrypted(pt)(Paths.get("TeamProjectOutputEncrypted.csv"))
@@ -83,9 +83,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.toCSV)
       case x => throw ParserException(s"Expected HeadedTable but got ${x.getClass}")
     }
@@ -103,9 +103,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.take(1).toCSV)
     }
     check(resultIO) {
@@ -125,9 +125,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer(12))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.skipRenderer[Grade](12))
         IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
@@ -144,9 +144,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
       case pt@HeadedTable(_, _) =>
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
-          case _ => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case _ => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.toCSV)
     }
     EvaluateIO(resultIO) shouldBe
@@ -166,9 +166,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
       case pt@HeadedTable(_, _) =>
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
-          case _ => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case _ => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
@@ -183,9 +183,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     val resultIO = tableIO flatMap {
       case pt@HeadedTable(_, _) =>
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
-          case _ => createCsvGeneratorFromTeamProject(_.skipGenerator)
+          case _ => createCsvGeneratorFromTeamProject(CsvGenerator.skipGenerator[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer())
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.skipRenderer[Grade]())
         IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
@@ -234,20 +234,20 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     }
   }
 
-  private def createCsvGeneratorFromTeamProject(function: CsvGenerators => CsvGenerator[Grade]): CsvGenerator[TeamProject] = {
+  private def createCsvGeneratorFromTeamProject(gradeGenerator: CsvGenerator[Grade]): CsvGenerator[TeamProject] = {
     val csvGenerators = new CsvGenerators {}
     implicit val optionStringGenerator: CsvGenerator[Option[String]] = csvGenerators.optionGenerator[String]
-    implicit val teamGenerator: CsvGenerator[Team] = csvGenerators.generator5(Team)
-    implicit val gradeGenerator: CsvGenerator[Grade] = function(csvGenerators)
-    csvGenerators.generator4(TeamProject.apply)
+    implicit val teamGenerator: CsvGenerator[Team] = CsvGenerator.derived[Team]
+    implicit val g: CsvGenerator[Grade] = gradeGenerator
+    CsvGenerator.derived[TeamProject]
   }
 
-  private def createCsvRendererForTeamProject(function: CsvRenderers => CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
+  private def createCsvRendererForTeamProject(gradeRenderer: CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererURL
     val csvRenderers = new CsvRenderers {}
     implicit val optionStringRenderer: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]()
-    implicit val teamRenderer: CsvRenderer[Team] = csvRenderers.renderer5(Team)
-    implicit val gradeRenderer: CsvRenderer[Grade] = function(csvRenderers)
-    csvRenderers.renderer4(TeamProject.apply)
+    implicit val teamRenderer: CsvRenderer[Team] = CsvRenderer.derived[Team]
+    implicit val g: CsvRenderer[Grade] = gradeRenderer
+    CsvRenderer.derived[TeamProject]
   }
 }

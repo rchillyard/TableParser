@@ -7,7 +7,9 @@ import java.io.{File, FileWriter}
 import java.nio.file.Path
 import java.time.Instant
 import org.joda.time.LocalDate
-import scala.reflect.ClassTag
+import com.phasmidsoftware.tableparser.core.util.Derivation
+import scala.compiletime.{erasedValue, summonFrom, summonInline}
+import scala.deriving.Mirror
 import scala.util.Try
 
 /**
@@ -64,6 +66,32 @@ object CsvRenderer extends CsvRenderers {
   implicit val rendererOptionShort: CsvRenderer[Option[Short]] = optionRenderer[Short]()
   implicit val rendererOptionByte: CsvRenderer[Option[Byte]] = optionRenderer[Byte]()
   implicit val rendererOptionInstant: CsvRenderer[Option[Instant]] = optionRenderer[Instant]()
+  /**
+   * Method to derive a CsvRenderer for a case class T, so that `case class T(...) derives CsvRenderer` works.
+   * This replaces the renderer1 ... renderer19 methods of 1.x, and has no limit on the number of fields.
+   * A field whose type is itself a case class, and which has no CsvRenderer of its own, is derived in turn.
+   *
+   * NOTE: for a case class defined inside a method, see the NOTE on CellParser.derived.
+   *
+   * @param m  the Mirror of T.
+   * @param ca the CsvAttributes.
+   * @tparam T a case class.
+   * @return a CsvRenderer[T].
+   */
+  inline def derived[T](using m: Mirror.ProductOf[T], ca: CsvAttributes): CsvRenderer[T] =
+    new ProductCsvRenderer[T](fieldRenderers[m.MirroredElemTypes])
+
+  private[render] inline def fieldRenderers[Ts <: Tuple](using CsvAttributes): List[CsvRenderer[?]] = inline erasedValue[Ts] match {
+    case _: EmptyTuple => Nil
+    case _: (t *: ts) => fieldRenderer[t] :: fieldRenderers[ts]
+  }
+
+  // Prefer a field type's own CsvRenderer; otherwise, if it is a case class, derive one.
+  private inline def fieldRenderer[A](using CsvAttributes): CsvRenderer[A] = summonFrom {
+    case r: CsvRenderer[A] => r
+    case m: Mirror.ProductOf[A] => derived[A](using m, summonInline[CsvAttributes])
+  }
+
   implicit val localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
     val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
 
@@ -83,6 +111,26 @@ object CsvRenderer extends CsvRenderers {
  * @tparam T the contravariant type of object to be rendered.
  */
 trait CsvProduct[-T] extends CsvRenderer[T] with CsvGenerator[T]
+
+/**
+ * Companion object for CsvProduct, which renders a case class and generates its column names.
+ */
+object CsvProduct {
+  /**
+   * Method to derive a CsvProduct (both a CsvRenderer and a CsvGenerator) for a case class T,
+   * so that `case class T(...) derives CsvProduct` works.
+   * This replaces the rendererGenerator1 ... rendererGenerator19 methods of 1.x.
+   *
+   * NOTE: for a case class defined inside a method, see the NOTE on CellParser.derived.
+   *
+   * @param m  the Mirror of T.
+   * @param ca the CsvAttributes.
+   * @tparam T a case class.
+   * @return a CsvProduct[T].
+   */
+  inline def derived[T](using m: Mirror.ProductOf[T], ca: CsvAttributes): CsvProduct[T] =
+    new ProductCsvProduct[T](Derivation.fieldNames[m.MirroredElemLabels], CsvRenderer.fieldRenderers[m.MirroredElemTypes], CsvGenerator.fieldGenerators[m.MirroredElemTypes])
+}
 
 /**
  * Trait `BaseCsvRenderer[-T]` which extends CsvRenderer[T]  to render, as CSV, an instance of Product (typically a case class).
@@ -110,12 +158,45 @@ trait BaseCsvRenderer[-T] extends CsvRenderer[T] {
 }
 
 /**
- * Abstract class `ProductCsvRenderer[T]` which extends `BaseCsvRenderer[T]` and `CsvGenerator[T]` and `CsvProduct[T]` to render, as CSV, an instance of Product (typically a case class).
+ * The CsvRenderer of a case class T, as derived by CsvRenderer.derived.
+ * Each field is rendered by its own CsvRenderer, and the results are separated by the delimiter.
  *
- * @param c (implicit) CsvAttributes
- * @tparam T the contravariant type of object to be rendered.
+ * @param fieldRenderers the CsvRenderers of the fields of T, in declaration order.
+ * @param ca             the CsvAttributes.
+ * @tparam T the type of the case class.
  */
-abstract class ProductCsvRenderer[T <: Product : ClassTag](implicit c: CsvAttributes) extends BaseCsvProductGenerator[T] with BaseCsvRenderer[T] with CsvProduct[T]
+class ProductCsvRenderer[T](fieldRenderers: List[CsvRenderer[?]])(using ca: CsvAttributes) extends BaseCsvRenderer[T] {
+  val csvAttributes: CsvAttributes = ca
+
+  def elements(t: T): Strings = ProductCsvRenderer.elements(t, fieldRenderers)
+}
+
+object ProductCsvRenderer {
+  /**
+   * Method to render each field of a case class with its own CsvRenderer.
+   *
+   * NOTE the casts: t is a case class (it has a Mirror.ProductOf), and each renderer is the one for its field.
+   *
+   * @param t              an instance of a case class.
+   * @param fieldRenderers the CsvRenderers of the fields of t, in declaration order.
+   * @return the rendered fields.
+   */
+  def elements(t: Any, fieldRenderers: List[CsvRenderer[?]]): Strings =
+    (t.asInstanceOf[Product].productIterator zip fieldRenderers map ((x, r) => r.asInstanceOf[CsvRenderer[Any]].render(x))).toSeq
+}
+
+/**
+ * The CsvProduct of a case class T, as derived by CsvProduct.derived: a ProductCsvGenerator which is also a CsvRenderer.
+ *
+ * @param fieldNames      the names of the fields of T, in declaration order.
+ * @param fieldRenderers  the CsvRenderers of the fields of T, in the same order.
+ * @param fieldGenerators the CsvGenerators of the fields of T, in the same order.
+ * @param ca              the CsvAttributes.
+ * @tparam T the type of the case class.
+ */
+class ProductCsvProduct[T](fieldNames: List[String], fieldRenderers: List[CsvRenderer[?]], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes) extends ProductCsvGenerator[T](fieldNames, fieldGenerators) with BaseCsvRenderer[T] with CsvProduct[T] {
+  def elements(t: T): Strings = ProductCsvRenderer.elements(t, fieldRenderers)
+}
 
 /**
  * Abstract class for rendering a tabular representation of type `Table[T]` to a sequentially writable format `O`,

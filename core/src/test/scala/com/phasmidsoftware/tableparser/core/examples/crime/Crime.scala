@@ -96,7 +96,7 @@ object CrimeRenderer extends CsvRenderers {
   implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator[BigInt]
   implicit val geoRenderer: CsvRenderer[Option[Double]] = optionRenderer[Double]()
   implicit val geoGenerator: CsvGenerator[Option[Double]] = generators.optionGenerator[Double]
-  implicit val crimeRenderer: CsvProduct[Crime] = rendererGenerator12(Crime.apply)
+  implicit val crimeRenderer: CsvProduct[Crime] = CsvProduct.derived[Crime]
 }
 
 object CrimeLocationRenderer extends CsvRenderers {
@@ -112,6 +112,6 @@ object CrimeLocationRenderer extends CsvRenderers {
   }
   implicit val crimeIdRenderer: CsvRenderer[Option[BigInt]] = optionRenderer[BigInt]("unidentified")
   implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator
-  implicit val crimeRenderer: CsvProduct[CrimeLocation] = rendererGenerator3(CrimeLocation.apply)
+  implicit val crimeRenderer: CsvProduct[CrimeLocation] = CsvProduct.derived[CrimeLocation]
 }
 
