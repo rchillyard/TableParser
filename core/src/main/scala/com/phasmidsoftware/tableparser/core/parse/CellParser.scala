@@ -227,9 +227,10 @@ object CellParser {
    * A field whose type is itself a case class, and which has no CellParser of its own, is derived in turn.
    *
    * NOTE: for a case class, the Mirror is its companion object. So, for a case class defined locally (inside a method),
-   * don't derive its CellParser inside a companion object that you define for it: initializing that object would
-   * refer to itself and never finish. Define the given alongside the case class instead.
-   * Top-level case classes (the usual case) can derive inside their companion objects, or use `derives`.
+   * don't derive its CellParser inside a companion object that you write for it: initializing that object would
+   * refer to itself and never finish (a StackOverflowError). Use `derives CellParser`, or define the given alongside
+   * the case class: both work for local case classes. Case classes that are not local can also derive inside
+   * their companion objects.
    *
    * @param m the Mirror of T.
    * @tparam T a case class.
