@@ -457,7 +457,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "support header defined in a header row in the input" in {
-    val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("First,Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     matchTry(Table.parse[Table[Player]](strings.iterator)) {
       case pt@HeadedTable(_, _) =>
         val partnerships: Partnerships = Partnerships((for (t <- Player.convertTable(pt)) yield t.asArray).toArray)

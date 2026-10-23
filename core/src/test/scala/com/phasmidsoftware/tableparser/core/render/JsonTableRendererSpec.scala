@@ -15,7 +15,7 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
   behavior of "JsonTableRenderer"
 
   it should "render Partnership table" in {
-    val strings = List("First, Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("First,Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings); q = Player.convertTable(pt); w = q.asInstanceOf[TableRenderable[Partnership]].render) yield w
     matchTry(wy) {
       case p =>

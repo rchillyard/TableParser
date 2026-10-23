@@ -121,9 +121,30 @@ trait InputPreprocessor[Input, Row] {
    */
   def mapTsToRows(xs: Iterator[Input])(multiline: Boolean)(g: ((Input, Int)) => Try[Row])(implicit ev: Joinable[(Input, Int)]): Iterator[Try[Row]] =
     if (multiline)
-      for (ry <- new FunctionIterator[(Input, Int), Row](g)(xs.zipWithIndex)) yield ry
+      for (ry <- new FunctionIterator[(Input, Int), Row](g)(joinIncomplete(xs.zipWithIndex))) yield ry
     else
-      for (ry <- xs.zipWithIndex) yield g(ry)
+      for (ry <- joinIncomplete(xs.zipWithIndex)) yield g(ry)
+
+  /**
+   * Method to join each incomplete input (see Joinable.incomplete) to the input(s) that follow it,
+   * so that, for example, a quoted field of CSV may contain line breaks (as RFC 4180 allows).
+   * The index of a joined input is that of its first part.
+   *
+   * @param xs the inputs, with their indices.
+   * @param ev the Joinable of (Input, Int).
+   * @return the inputs, with each incomplete one joined to what follows it.
+   */
+  private def joinIncomplete(xs: Iterator[(Input, Int)])(implicit ev: Joinable[(Input, Int)]): Iterator[(Input, Int)] = new Iterator[(Input, Int)] {
+    def hasNext: Boolean = xs.hasNext
+
+    def next(): (Input, Int) = {
+      @scala.annotation.tailrec
+      def inner(x: (Input, Int)): (Input, Int) =
+        if (ev.incomplete(x) && xs.hasNext) inner(ev.join(x, xs.next())) else x
+
+      inner(xs.next())
+    }
+  }
 }
 
 /**

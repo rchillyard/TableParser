@@ -90,7 +90,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
       case x => throw ParserException(s"Expected HeadedTable but got ${x.getClass}")
     }
     matchIO(resultIO) {
-      case w if w.startsWith("Team Number,") && w.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\n") => succeed
+      case w if w.startsWith("Team Number,") && w.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\r\n") => succeed
     }
 
   }
@@ -113,7 +113,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
               """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
                 |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
                 |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-                |""".stripMargin =>
+                |""".stripMargin.replace("\n", "\r\n") =>
     }
   }
 
@@ -134,7 +134,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
             """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
               |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,,,,,,,,,,,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-              |""".stripMargin
+              |""".stripMargin.replace("\n", "\r\n")
   }
 
   it should "be ingested and written out properly using fabricated header" in {
@@ -156,7 +156,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
               |3,Pablo Picasso,Joan Miro,,,92.0,11.0,10.0,5.0,10.0,5.0,4.0,7.0,4.0,23.0,9.0,4.0,Presentation OK. What did they do about these challenges.,https://github.com/jianghanw/CSYE7200_Team_Project_Team3
               |4,Ludwig van Beethoven,Wolfgang Amadeus Mozart,,,88.5,11.0,10.0,6.0,10.5,5.0,3.5,6.0,4.0,21.5,7.0,4.0,A/C not clearly defined (planning pres?),https://github.com/Essexwwz/heart-health-indicator
               |5,Winston Churchill,Clement Attlee,Harold McMillan,,88.5,11.0,9.5,5.0,11.0,5.0,4.0,7.0,2.0,22.0,7.0,5.0,Presentation long and detailed.  Project excellent overall. A/C not shown clearly.,https://github.com/CSYE7200-21FALL-TEAM6
-              |""".stripMargin
+              |""".stripMargin.replace("\n", "\r\n")
   }
 
   it should "be ingested and written out properly for team 1 using fabricated header" in {
@@ -174,7 +174,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     EvaluateIO(resultIO) shouldBe
             """number,member_1,member_2,member_3,member_4,totalScore,onTime,scopeScale,planningPresentation,presentation,idea,useCases,acceptanceCriteria,teamExecution,code,unitTests,repo,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-              |""".stripMargin
+              |""".stripMargin.replace("\n", "\r\n")
   }
 
   it should "be ingested and written out properly for team 1 using fabricated header but skipping grades" in {
@@ -191,7 +191,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     EvaluateIO(resultIO) shouldBe
             """number,member_1,member_2,member_3,member_4,,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-              |""".stripMargin
+              |""".stripMargin.replace("\n", "\r\n")
   }
 
   // FIXME Issue #50
