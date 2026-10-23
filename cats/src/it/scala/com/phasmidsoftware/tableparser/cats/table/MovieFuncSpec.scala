@@ -52,6 +52,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
    * These are application-specific and are not indicative of any bugs in the
    * TableParser library itself.
    */
+  // NOTE: the header has each type's ColumnHelper names (e.g. movie_title for title), so that what is written can be read back.
   it should "be ingested and written out properly" in {
     import com.phasmidsoftware.tableparser.core.examples.Movie._
 
@@ -60,7 +61,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
     val wi: IO[String] = mti flatMap (mt => IO.fromTry(mt.toCSV)) // for (mt <- mti) yield mt.toCSV
     // TODO eliminate use of unsafe methods
     wi.unsafeRunSync().startsWith(
-      """title,format.color,format.language,format.aspectRatio,format.duration,production.country,production.budget,production.gross,production.titleYear,reviews.imdbScore,reviews.facebookLikes,reviews.contentRating.code,reviews.contentRating.age,reviews.numUsersReview,reviews.numUsersVoted,reviews.numCriticReviews,reviews.totalFacebookLikes,director.name.first,director.name.middle,director.name.last,director.name.suffix,director.facebookLikes,actor1.name.first,actor1.name.middle,actor1.name.last,actor1.name.suffix,actor1.facebookLikes,actor2.name.first,actor2.name.middle,actor2.name.last,actor2.name.suffix,actor2.facebookLikes,actor3,genres.xs,plotKeywords.xs,imdb
+      """movie_title,format.color,format.language,format.aspect_Ratio,format.duration,production.country,production.budget,production.gross,production.title_Year,reviews.imdb_Score,reviews.movie_facebook_likes,reviews.content_Rating.code,reviews.content_Rating.age,reviews.num_user_for_reviews,reviews.num_voted_users,reviews.num_critic_for_reviews,reviews.cast_total_facebook_likes,director.name.first,director.name.middle,director.name.last,director.name.suffix,director.facebook_Likes,actor_1.name.first,actor_1.name.middle,actor_1.name.last,actor_1.name.suffix,actor_1.facebook_Likes,actor_2.name.first,actor_2.name.middle,actor_2.name.last,actor_2.name.suffix,actor_2.facebook_Likes,actor_3,genres.xs,plot_Keywords.xs,movie_imdb_link
         |Avatar,Color,English,1.78,178,USA,237000000,760505847,2009,7.9,33000,PG,13,3054,886204,723,4834,James,,Cameron,,0,CCH,,Pounder,,1000,Joel,David,Moore,,936,Wes,,Studi,,855,Action,Adventure,Fantasy,Sci-Fi,avatar,future,marine,native,paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1""".stripMargin) shouldBe true
   }
 

@@ -38,9 +38,8 @@ class UnstructuredMovieSpec extends AnyFlatSpec with Matchers {
     }
   }
 
-  it should "generate a header with all 28 field names" in {
-    val names = implicitly[CsvProduct[UnstructuredMovie]].asInstanceOf[CsvProductGenerator[UnstructuredMovie]].toColumnNames(None, None)
-    names.split(",").length shouldBe 28
-    names should startWith("color,directorName,numCriticForReviews,duration,")
+  it should "generate the header of the file it was read from" in {
+    // The column names come from the field names, mapped by the same ColumnHelper that parsing uses.
+    implicitly[CsvProduct[UnstructuredMovie]].asInstanceOf[CsvProductGenerator[UnstructuredMovie]].toColumnNames(None, None) shouldBe header
   }
 }
