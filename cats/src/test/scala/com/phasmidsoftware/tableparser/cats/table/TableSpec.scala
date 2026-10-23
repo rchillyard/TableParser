@@ -17,6 +17,7 @@ import org.scalatest.matchers.should
 import scala.annotation.unused
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
+import java.nio.file.Paths
 
 class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
@@ -66,8 +67,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse table from file" in {
     import IntPair._
-    val z1 = IO.fromTry(Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", "UTF-8"))
-    val z2 = IO.fromTry(Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))
+    val z1 = IO.fromTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"), "UTF-8"))
+    val z2 = IO.fromTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv")))
     matchIO(z1 product z2) {
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) => a.size shouldBe 2; b.size shouldBe 2
     }
@@ -76,7 +77,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   // NOTE: this test can be flaky. Perhaps we should just use zip instead of parProduct.
   // NOTE: actually the problem (on CircleCI) is with creating the new File.
   ignore should "parse table from raw file" in {
-    val z1: IO[Table[RawRow]] = IO.fromTry(Table.parseFileRaw(new File("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))))
+    val z1: IO[Table[RawRow]] = IO.fromTry(Table.parsePathRaw(Paths.get("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))))
     val z2: IO[Table[RawRow]] = IO.fromTry(Table.parseFileRaw("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", TableParser.includeAll))
     matchIO(z1 product z2) {
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) =>

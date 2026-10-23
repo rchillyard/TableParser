@@ -17,6 +17,7 @@ import org.scalatest.concurrent.{Futures, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import tsec.cipher.symmetric.jca.AES128CTR
+import java.nio.file.Paths
 
 
 //noinspection SpellCheckingInspection
@@ -51,7 +52,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
           case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
         }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
-        pt.writeCSVFile(new File("TeamProjectOutput.csv"))
+        pt.writeCSVFile(Paths.get("TeamProjectOutput.csv"))
         succeed
     }
   }
@@ -69,7 +70,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
         implicit val hasKey: HasKey[TeamProject] = (t: TeamProject) => t.team.number.toString
         // TODO this integration test occasionally fails
-        TableCrypt.writeCSVFileEncrypted(pt)(new File("TeamProjectOutputEncrypted.csv"))
+        TableCrypt.writeCSVFileEncrypted(pt)(Paths.get("TeamProjectOutputEncrypted.csv"))
         succeed
     }
   }

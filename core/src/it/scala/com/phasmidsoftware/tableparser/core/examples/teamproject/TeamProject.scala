@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.examples.teamproject
 
 import com.phasmidsoftware.tableparser.core.parse._
-import com.phasmidsoftware.tableparser.core.table.{Content, HeadedTable, Header, NonSequential, Table}
+import com.phasmidsoftware.tableparser.core.table.{Content, HeadedTable, Header, Table}
 import java.net.URL
 
 /**
@@ -32,7 +32,7 @@ import java.net.URL
 case class TeamProject(team: Team, grade: Grade, remarks: String, repository: URL)
 
 object TeamProject {
-  implicit val orderingTeamProject: Ordering[TeamProject] = NonSequential.ordering[TeamProject, Int](p => p.team.number)
+  implicit val orderingTeamProject: Ordering[TeamProject] = Ordering.by[TeamProject, Int](p => p.team.number)
 }
 
 case class Team(number: Int, member_1: String, member_2: Option[String], member_3: Option[String], member_4: Option[String])

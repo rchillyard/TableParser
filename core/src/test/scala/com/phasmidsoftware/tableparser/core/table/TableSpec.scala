@@ -20,6 +20,7 @@ import scala.annotation.unused
 import scala.io.Source
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
+import java.nio.file.Paths
 
 class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
@@ -111,7 +112,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse from File" in {
     import IntPair._
 
-    matchTry(Table.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
+    matchTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
     }
   }
@@ -415,7 +416,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
-    matchTry(Table.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
+    matchTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
         matchTry(ws) {
@@ -440,7 +441,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
     }
 
-    matchTry(Table.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
+    matchTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
         matchTry(ws) {
