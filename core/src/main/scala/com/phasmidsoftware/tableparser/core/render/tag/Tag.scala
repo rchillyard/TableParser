@@ -4,7 +4,6 @@
 
 package com.phasmidsoftware.tableparser.core.render.tag
 
-import scala.language.implicitConversions
 
 /**
  * Case class defining an attribute.
@@ -106,7 +105,7 @@ object Attribute {
 
   def apply(kv: (String, String)): Attribute = convertFromTuple(kv)
 
-  implicit def convertFromTuple(kv: (String, String)): Attribute = Attribute(kv._1, kv._2)
+  def convertFromTuple(kv: (String, String)): Attribute = Attribute(kv._1, kv._2)
 }
 
 /**

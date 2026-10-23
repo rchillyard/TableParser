@@ -15,7 +15,7 @@ import com.phasmidsoftware.tableparser.core.table._
 abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = false, headerRows: Int = 1) extends CellParsers {
   self =>
 
-  override implicit val rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
+  override given rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
 
   given parser: StandardRowParser[RawRow] = StandardRowParser.create[RawRow]
 

@@ -78,7 +78,7 @@ object TableParser {
    * @param p a StringTableParser.
    * @tparam Table the (parametric) underlying type of `p` (`Table` will be `Table[_]`).
    */
-  implicit class ImplicitParser[Table](p: StringTableParser[Table]) {
+  extension [Table](p: StringTableParser[Table]) {
 
     /**
      * Method to parse a `Try[Source]` character-by-character.

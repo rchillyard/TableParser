@@ -4,7 +4,6 @@
 
 package com.phasmidsoftware.tableparser.core.render.tag
 
-import scala.language.implicitConversions
 
 /**
  * Case class to model an HTML document.

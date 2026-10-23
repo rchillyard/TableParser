@@ -248,7 +248,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
         throw ParserException(s"Warning: (LineParser constructor validity check): '$input' did not result in $matchedValue because: $z")
     })
 
-    implicit class Trial(x: Try[Unit]) {
+    extension (x: Try[Unit]) {
       def squawk(): Unit = x match {
         case scala.util.Failure(z) =>
           LineParser.logger.warn(s"squawk: $z")
@@ -256,7 +256,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
         // XXX do nothing
       }
 
-      def &&(y: Trial): Trial =
+      def &&(y: Try[Unit]): Try[Unit] =
         if (x.isSuccess) y else x
     }
 
