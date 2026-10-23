@@ -101,7 +101,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 1.6.0.
+This version of the README.md file refers to version: 1.7.0.
 
 From version 1.6.0, the core, cats, parquet and zio modules are published for both Scala 2.13 and Scala 3
 (e.g. _tableparser-core_2.13_ and _tableparser-core_3_; the Scala 3 artifacts are built with Scala 3.3 LTS).
@@ -112,14 +112,14 @@ The `%%` operator picks the artifact that matches your project's Scala version:
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "1.6.0"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "1.6.0"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "1.6.0"     // ZIO support
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "1.6.0" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "1.7.0"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "1.7.0"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "1.7.0"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "1.7.0" // Parquet files
 )
 ```
 
-For Spark (Scala 2.13 only), add `"com.phasmidsoftware" %% "tableparser-spark" % "1.6.0"`.
+For Spark (Scala 2.13 only), add `"com.phasmidsoftware" %% "tableparser-spark" % "1.7.0"`.
 
 See release notes below for history.
 
@@ -900,6 +900,17 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.6.0 -> V1.7.0
+* The last release planned for Scala 2.13. 2.0.0 will be for Scala 3 only (see [the plan](docs/code-review-2026.md));
+  the spark module stays on the 1.x line.
+* Logging: the library no longer depends on logback or ships a _logback.xml_. It logs through SLF4J,
+  so add the SLF4J backend of your choice (for example, logback-classic) to your own project if you want to see its logs.
+* Deprecated, to leave the library in 2.0.0: the examples (_Movie_ and the crime example), _table.Main_,
+  _Sequential_ (and _Sequence_, _NonSequential_, _OrderingWithZero_), and the zio module's _EvaluateZIO_.
+* The zio module no longer depends on zio-http, which it didn't use.
+* Dependency updates: Scala 2.13.18, cats-effect 3.7.1 (with tsec 0.6.0), zio 2.1.27, Parquet 1.18.1, Spark 4.0.4,
+  and others.
+* The integration tests (against full-size data files) run again, separately: `sbt +integration/test`.
 V1.5.2 -> V1.6.0
 * Cross-built for Scala 2.13 and Scala 3 (except for the spark module, which is 2.13 only). No API changes,
   except that a few context bounds became explicit implicit parameter lists (so that callers may pass them explicitly on Scala 3.6+)

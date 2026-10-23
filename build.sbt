@@ -1,9 +1,9 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "1.6.0"
+ThisBuild / version := "1.7.0"
 
 // Build Scala 3 with the oldest supported LTS so that the artifacts are usable from any later Scala 3 version.
 // CircleCI also runs the tests on the current LTS (3.9).
-val scala213 = "2.13.17"
+val scala213 = "2.13.18"
 val scala3 = "3.3.8"
 
 ThisBuild / scalaVersion := scala213
@@ -28,36 +28,45 @@ Global / excludeLintKeys ++= Set(pomIncludeRepository, publishMavenStyle)
 ThisBuild / resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
 
 // Shared versions
-val scalaTestVersion = "3.2.19"
-val scalaParserCombinatorsVersion = "2.4.0"
-val nScalaTimeVersion = "3.0.0"
-val tsecVersion_core = "0.4.0"
-val tsecVersion_cats = "0.5.0"
-val catsVersion = "3.6.3" // NOTE 3.7.0 appears to be missing the encryption classes that we need.
-val zioVersion = "2.1.22" // NOTE 2.1.24 is broken for some reason.
-val zioHttpVersion = "3.4.0" // NOTE 3.10.1 causes a dependency conflict.
-val sparkVersion = "4.0.1"
+val scalaTestVersion = "3.2.20"
+val scalaParserCombinatorsVersion = "2.5.0"
+val nScalaTimeVersion = "3.2.0"
+val tsecVersion = "0.6.0"
+val catsVersion = "3.7.1"
+val zioVersion = "2.1.27"
+val logbackVersion = "1.5.38"
+val slf4jVersion = "2.0.20"
+val parquetVersion = "1.18.1"
+val hadoopVersion = "3.4.3"
+val sparkVersion = "4.0.4"
+
+// The examples, Main, Sequential and EvaluateZIO are deprecated in 1.7.0 and leave the library in 2.0.0.
+// The tests (and spark, which stays on 1.x) still use them, so silence just those deprecation warnings there.
+val silence170Deprecations = "-Wconf:cat=deprecation&msg=1\\.7\\.0:s"
 
 lazy val core = project.settings(
   name := "tableparser-core",
+  Test / scalacOptions += silence170Deprecations,
   libraryDependencies ++= Seq(
     "io.spray" %% "spray-json" % "1.3.6",
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
     "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
     "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
-    "ch.qos.logback" % "logback-classic" % "1.5.32" % Runtime,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
-    "org.slf4j" % "slf4j-simple" % "2.0.17" % Test,
+    "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
+    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
 )
 
 lazy val cats = project.dependsOn(core).settings(
   name := "tableparser-cats",
+  Test / scalacOptions += silence170Deprecations,
   libraryDependencies ++= Seq(
-    "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion_cats,
+    "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
     "org.typelevel" %% "cats-effect" % catsVersion,
-    "org.slf4j" % "slf4j-simple" % "2.0.17" % Test,
+    "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
+    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
 )
@@ -67,10 +76,10 @@ lazy val parquet = project.dependsOn(core).settings(
   // The test resources include two ~50MB Parquet files: don't publish them in tests jars.
   Test / publishArtifact := false,
   libraryDependencies ++= Seq(
-    "org.apache.parquet" % "parquet-column" % "1.15.2",
-    "org.apache.parquet" % "parquet-hadoop" % "1.15.2",
-    "org.apache.hadoop"  % "hadoop-common"  % "3.4.1" % "provided",
-    "org.apache.hadoop"  % "hadoop-mapreduce-client-core" % "3.4.1" % Test,
+    "org.apache.parquet" % "parquet-column" % parquetVersion,
+    "org.apache.parquet" % "parquet-hadoop" % parquetVersion,
+    "org.apache.hadoop"  % "hadoop-common"  % hadoopVersion % "provided",
+    "org.apache.hadoop"  % "hadoop-mapreduce-client-core" % hadoopVersion % Test,
     "org.scalatest"     %% "scalatest"      % scalaTestVersion % Test
   )
 )
@@ -78,27 +87,47 @@ lazy val parquet = project.dependsOn(core).settings(
 // NOTE: Spark is not published for Scala 3, so this module is built for Scala 2.13 only.
 lazy val spark = project.dependsOn(core).settings(
   name := "tableparser-spark",
+  scalacOptions += silence170Deprecations,
   crossScalaVersions := Seq(scala213),
   libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-    "org.slf4j" % "slf4j-simple" % "2.0.17" % Test,
+    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
 )
 
 lazy val zio = project.dependsOn(core).settings(
   name := "tableparser-zio",
+  Test / scalacOptions += silence170Deprecations,
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio" % zioVersion,
-    "dev.zio" %% "zio-http" % zioHttpVersion,
+    // NOTE: needed in compile scope only by EvaluateZIO, which is deprecated: make it Test only in 2.0.
     "dev.zio" %% "zio-test-junit" % zioVersion,
+    "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
     "dev.zio" %% "zio-test" % zioVersion % Test,
     "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
     "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
-    "org.slf4j" % "slf4j-simple" % "2.0.17" % Test,
+    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
 )
+
+// The integration tests in core/src/it and cats/src/it run against full-size data files (69 MB).
+// They're not aggregated by root, so neither `sbt +test` nor CI runs them: use `sbt integration/test`.
+lazy val integration = (project in file("integration"))
+        .dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test")
+        .settings(
+          name := "tableparser-integration",
+          publish / skip := true,
+          Test / parallelExecution := false,
+          Test / scalacOptions += silence170Deprecations,
+          Test / unmanagedSourceDirectories ++= Seq(
+              (LocalRootProject / baseDirectory).value / "core/src/it/scala"
+            , (LocalRootProject / baseDirectory).value / "cats/src/it/scala"
+          ),
+          Test / unmanagedResourceDirectories += (LocalRootProject / baseDirectory).value / "core/src/it/resources",
+          libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+        )
 
 lazy val root = (project in file("."))
         .aggregate(core, cats, parquet, spark, zio)
@@ -110,7 +139,3 @@ lazy val root = (project in file("."))
         )
 
 Test / parallelExecution := false
-
-// NOTE: if you reinstate these directories, you will need to manage the large crimes file (see code).
-//Test / unmanagedSourceDirectories += baseDirectory.value / "src/it/scala"
-//Test / unmanagedResourceDirectories += baseDirectory.value / "src/it/resources"

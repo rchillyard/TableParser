@@ -26,6 +26,7 @@ import scala.util.Try
  * @param plotKeywords The set of plot-related keywords for the movie, represented as an `AttributeSet`. Keywords provide insights into the movie's storyline.
  * @param imdb         The unique IMDb identifier for the movie, represented as a string.
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 case class Movie(title: String, format: Format, production: Production, reviews: Reviews, director: Principal, actor1: Principal, actor2: Principal, actor3: Option[Principal], genres: AttributeSet, plotKeywords: AttributeSet, imdb: String)
 
 /**
@@ -80,6 +81,7 @@ case class Movie(title: String, format: Format, production: Production, reviews:
  *   val csvRepresentation = movieCsvGenerator.generate(movie)
  * }}}
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object Movie extends CellParsers with CsvGenerators with CsvRenderers {
   val missing: Movie = apply("", Format.none, Production.none, Reviews.none, Principal.nemo, Principal.nemo, Principal.nemo, None, AttributeSet.none, AttributeSet.none, "")
   val header = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
@@ -213,6 +215,7 @@ object Movie extends CellParsers with CsvGenerators with CsvRenderers {
  * println(defaultFormat) // Outputs: ,,,None,None
  * }}}
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 case class Format(color: String, language: String, aspectRatio: Option[Double], duration: Option[Int]) {
   override def toString: String =
     s"$color,$language,$aspectRatio,$duration"
@@ -227,6 +230,7 @@ case class Format(color: String, language: String, aspectRatio: Option[Double], 
  *
  * @see Format The case class representing the format attributes such as color, language, aspect ratio, and duration.
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object Format extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Format = Format("", "", None, None)
   implicit val helper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper)
@@ -261,6 +265,7 @@ object Format extends CellParsers with CsvGenerators with CsvRenderers {
  * println(production2.isKiwi) // Output: false
  * }}}
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 case class Production(country: String, budget: Option[Int], gross: Option[Int], titleYear: Option[Int]) {
   def isKiwi: Boolean = this match {
     case Production("New Zealand", _, _, _) => true
@@ -279,6 +284,7 @@ case class Production(country: String, budget: Option[Int], gross: Option[Int], 
  *
  * @see [[Production]] case class for the associated data structure and detailed behavior.
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object Production extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Production = Production("", None, None, None)
   implicit val helper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper)
@@ -300,6 +306,7 @@ object Production extends CellParsers with CsvGenerators with CsvRenderers {
  * @param numCriticReviews   An `Option` representing the number of critic reviews submitted for the movie. A value of `None` indicates an unknown or unavailable count.
  * @param totalFacebookLikes The total combined Facebook likes of the movie's cast and crew, providing a broader measure of social media presence.
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating, numUsersReview: Option[Int], numUsersVoted: Int, numCriticReviews: Option[Int], totalFacebookLikes: Int)
 
 /**
@@ -308,6 +315,7 @@ case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating,
  * This object is primarily used to define default or placeholder instances of `Reviews`, such as the `none` value,
  * which represents a `Reviews` instance with default or empty data.
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object Reviews extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Reviews = Reviews(0, 0, Rating(""), None, 0, None, 0)
   implicit val helper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapper,
@@ -339,6 +347,7 @@ object Reviews extends CellParsers with CsvGenerators with CsvRenderers {
  *       Additionally, a default instance of `Principal` may be provided in an accompanying
  *       companion object for known default values.
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 case class Principal(name: Name, facebookLikes: Int) {
   override def toString = s"$name ($facebookLikes likes)"
 }
@@ -366,6 +375,7 @@ case class Principal(name: Name, facebookLikes: Int) {
  *          Works in conjunction with the `Principal` case class and is associated with other models in parsing, processing,
  *          and rendering movie-related data structures.
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object Principal extends CellParsers with CsvGenerators with CsvRenderers {
   val nemo: Principal = Principal(Name.nemo, 0)
   implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
@@ -399,6 +409,7 @@ object Principal extends CellParsers with CsvGenerators with CsvRenderers {
  * println(simpleName.toString) // Output: "Jane Smith"
  * }}}
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 case class Name(first: String, middle: Option[String], last: String, suffix: Option[String]) {
   override def toString: String = {
     case class Result(r: StringBuffer) {
@@ -456,6 +467,7 @@ case class Name(first: String, middle: Option[String], last: String, suffix: Opt
  *  - Rendering movie-related data via `CsvRendererMovie` involves the `rendererName` generator, built around `Name`.
  * @note The `Name` case class has a corresponding custom `toString` implementation for formatted string representation.
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object Name extends CellParsers with CsvGenerators with CsvRenderers {
   // NOTE: this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
   private val rName =
@@ -489,6 +501,7 @@ object Name extends CellParsers with CsvGenerators with CsvRenderers {
  * @param age  An optional integer specifying the age restriction for the content, if applicable
  *             (e.g., a value of `13` for "PG-13").
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 case class Rating(code: String, age: Option[Int]) {
   override def toString: String = code + (age match {
     case Some(x) => "-" + x
@@ -500,6 +513,7 @@ case class Rating(code: String, age: Option[Int]) {
  * Companion object for the `Rating` case class.
  * This object provides utility methods to construct `Rating` instances and to parse rating strings into `Rating`.
  */
+@deprecated("Example code: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object Rating extends CellParsers with CsvGenerators with CsvRenderers {
   /**
    * Alternative apply method for the Rating class such that a single String is decoded

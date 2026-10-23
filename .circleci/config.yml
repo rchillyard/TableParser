@@ -41,6 +41,16 @@ jobs:
           name: Test (Scala 3.9)
           command: sbt "++3.9.0!" core/test cats/test parquet/test zio/test
 
+      # Coverage on 2.13 (all modules), as the baseline for 2.0. It's reported, not enforced.
+      # It starts with clean, because the earlier steps' classes aren't instrumented.
+      - run:
+          name: Coverage (2.13)
+          command: sbt clean coverage test coverageAggregate
+
+      - store_artifacts:
+          path: target/scala-2.13/scoverage-report
+          destination: coverage
+
 workflows:
   version: 2
   build-and-test:
