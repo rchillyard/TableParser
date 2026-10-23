@@ -64,6 +64,8 @@ lazy val cats = project.dependsOn(core).settings(
 
 lazy val parquet = project.dependsOn(core).settings(
   name := "tableparser-parquet",
+  // The test resources include two ~50MB Parquet files: don't publish them in tests jars.
+  Test / publishArtifact := false,
   libraryDependencies ++= Seq(
     "org.apache.parquet" % "parquet-column" % "1.15.2",
     "org.apache.parquet" % "parquet-hadoop" % "1.15.2",

@@ -1,5 +1,6 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/app/scalaprof/TableParser?utm_source=github.com&utm_medium=referral&utm_content=rchillyard/TableParser&utm_campaign=Badge_Grade_Settings)
-[![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_2.13.svg?color=blue)](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_2.13)
+[![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_2.13.svg?color=blue&label=maven-central%20(2.13))](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_2.13)
+[![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_3.svg?color=blue&label=maven-central%20(3))](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_3)
 ![GitHub Top Languages](https://img.shields.io/github/languages/top/rchillyard/TableParser)
 ![GitHub](https://img.shields.io/github/license/rchillyard/TableParser)
 ![GitHub last commit](https://img.shields.io/github/last-commit/rchillyard/TableParser)
@@ -8,7 +9,8 @@
 
 # Introduction to TableParser
 
-Full Scaladoc is available via [javadoc.io](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13).
+Full Scaladoc is available via javadoc.io, for [Scala 2.13](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13)
+and [Scala 3](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_3).
 
 A functional parser of tables, implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.
@@ -104,6 +106,20 @@ This version of the README.md file refers to version: 1.6.0.
 From version 1.6.0, the core, cats, parquet and zio modules are published for both Scala 2.13 and Scala 3
 (e.g. _tableparser-core_2.13_ and _tableparser-core_3_; the Scala 3 artifacts are built with Scala 3.3 LTS).
 The spark module remains Scala 2.13 only, because Spark is not published for Scala 3.
+
+To use it, add the modules you need to your _build.sbt_.
+The `%%` operator picks the artifact that matches your project's Scala version:
+
+```scala
+libraryDependencies ++= Seq(
+    "com.phasmidsoftware" %% "tableparser-core" % "1.6.0"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "1.6.0"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "1.6.0"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "1.6.0" // Parquet files
+)
+```
+
+For Spark (Scala 2.13 only), add `"com.phasmidsoftware" %% "tableparser-spark" % "1.6.0"`.
 
 See release notes below for history.
 
@@ -889,6 +905,15 @@ V1.5.2 -> V1.6.0
   except that a few context bounds became explicit implicit parameter lists (so that callers may pass them explicitly on Scala 3.6+)
   and `Main` (in core/table/Analysis.scala) no longer extends `App`.
 * The unused dependency on flog has been removed.
+V1.5.1 -> V1.5.2 (not published separately: its changes are first released in 1.6.0)
+* Merged the old Indexed branch (2023) with 1.5.1.
+* New _Validity_ trait, and _Table.filterValid_ to keep only the rows that are valid.
+* New _Table.sample_ and _Content.sample_ to take a random sample of rows.
+* New _Sequential_ module (_Sequential_, _Sequence_, _OrderingWithZero_) for tables whose rows carry a sequence number;
+  it is not yet used elsewhere in the library.
+* The crime example was reworked (_Crime_ and _CrimeLocation_).
+V1.5.0 -> V1.5.1
+* Removed debug print statements.
 V1.4.1 -> V1.5.0
 Implemented column-grouping of flat Parquet files (13. Grouped Case Class Mapping)
 See [TableParserParquetDesign](TableParserParquetDesign.md)
