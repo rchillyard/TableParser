@@ -8,7 +8,7 @@ import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.util.FP._
-import com.phasmidsoftware.tableparser.core.util.{Reflection, TryUsing}
+import com.phasmidsoftware.tableparser.core.util.{FieldNames, TryUsing}
 import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
@@ -938,10 +938,10 @@ case class UnheadedTable[Row](content: Content[Row]) extends RenderableTable[Row
 
 object UnheadedTable {
 
-  def apply[Row: ClassTag](rows: Iterable[Row]): Table[Row] =
+  def apply[Row](rows: Iterable[Row]): Table[Row] =
     new UnheadedTable(Content(rows))
 
-  def apply[Row: ClassTag](rows: Iterator[Row]): Table[Row] =
+  def apply[Row](rows: Iterator[Row]): Table[Row] =
     UnheadedTable(rows.to(List))
 
 }
@@ -1007,16 +1007,16 @@ case class HeadedTable[Row](content: Content[Row], header: Header) extends Rende
  */
 object HeadedTable {
 
-  def apply[Row: ClassTag](rows: Iterable[Row], header: Header): RenderableTable[Row] =
+  def apply[Row](rows: Iterable[Row], header: Header): RenderableTable[Row] =
     new HeadedTable(Content(rows), header)
 
-  def apply[Row: ClassTag](rows: Iterable[Row]): RenderableTable[Row] =
+  def apply[Row: FieldNames](rows: Iterable[Row]): RenderableTable[Row] =
     HeadedTable(rows, Header[Row]())
 
-  def apply[Row: ClassTag](rows: Iterator[Row], header: Header): RenderableTable[Row] =
+  def apply[Row](rows: Iterator[Row], header: Header): RenderableTable[Row] =
     HeadedTable(rows.to(List), header)
 
-  def apply[Row: ClassTag](rows: Iterator[Row]): RenderableTable[Row] =
+  def apply[Row: FieldNames](rows: Iterator[Row]): RenderableTable[Row] =
     HeadedTable(rows, Header[Row]())
 
 }
@@ -1129,17 +1129,18 @@ object Header {
     Header(numbers map intToString(letters) take length toList, Nil)
 
   /**
-   * This method constructs a new Header based on the fields of the class X.
+   * This method constructs a new Header from the names of the fields of the case class X.
    * It should not be considered to be the normal method of generating the header for a table.
    * It is mainly used by unit tests.
    *
    * NOTE: this method does NOT recurse into any fields which happen also to be a class with fields.
    *
-   * @tparam X a class X which is not necessarily a Product.
-   * @return a List of field names.
+   * @param fieldNames the FieldNames of X (derived from its Mirror).
+   * @tparam X a case class.
+   * @return a Header with the field names of X.
    */
-  def apply[X: ClassTag](): Header =
-    Header(Reflection.extractFieldNames(summon[ClassTag[X]]).toList, Nil)
+  def apply[X]()(using fieldNames: FieldNames[X]): Header =
+    Header(fieldNames.names, Nil)
 
   /**
    * Create a Header from a variable list of parameters.
