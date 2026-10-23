@@ -135,10 +135,10 @@ trait CellParsers {
    * @tparam T the underlying type of the result.
    * @return a SingleCellParser which converts a String into the intermediate type P and thence into a T
    */
-  def cellParser[P: CellParser, T: ClassTag](construct: P => T): CellParser[T] = 
+  def cellParser[P: CellParser, T](construct: P => T): CellParser[T] = 
     new SingleCellParser[T] {
     // NOTE used only for debugging
-    override def toString: String = s"SingleCellParser for ${summon[ClassTag[T]]}"
+    override def toString: String = "SingleCellParser (from a construct function)"
 
     def convertString(w: String): Try[T] = 
       summon[CellParser[P]].parse(CellValue(w)).map(construct)

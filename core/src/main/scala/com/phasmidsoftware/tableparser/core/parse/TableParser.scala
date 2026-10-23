@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.{Joinable, TeeIterator, TryUsing}
+import com.phasmidsoftware.tableparser.core.util.{FieldNames, Joinable, TeeIterator, TryUsing}
 import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.implicitNotFound
 import scala.io.Source
@@ -263,7 +263,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
  * @see HeadedStringTableParser#create
  * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
  */
-case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+case class PlainTextHeadedStringTableParser[X: CellParser](override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
         extends HeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead) {
 
   def setHeader(header: Header): PlainTextHeadedStringTableParser[X] =
@@ -312,7 +312,7 @@ case class PlainTextHeadedStringTableParser[X: CellParser : ClassTag](override v
  * @see HeadedStringTableParser#create
  * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
  */
-abstract class HeadedStringTableParser[X: CellParser : ClassTag](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+abstract class HeadedStringTableParser[X: CellParser](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
         extends StringTableParser[Table[X]] with CopyableTableParser[X, String, Table[X]] {
 
   type Row = X
@@ -333,7 +333,7 @@ object HeadedStringTableParser {
    * @tparam X the underlying type. There must be evidence of CellParser[X] and ClassTag[X].
    * @return a HeadedStringTableParser[X].
    */
-  def create[X: CellParser : ClassTag](forgiving: Boolean): HeadedStringTableParser[X] =
+  def create[X: CellParser : FieldNames](forgiving: Boolean): HeadedStringTableParser[X] =
     PlainTextHeadedStringTableParser[X](Some(Header.apply[X]()), forgiving, 0)
 }
 
@@ -477,7 +477,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
  * @tparam T the parametric type of rows in the table.
  * @param rp an implicit `RowParser`, which defines the logic for parsing individual rows of type `T` from strings.
  */
-abstract class HeadedCSVTableParser[T: ClassTag](using rp: RowParser[T, String]) extends StringTableParser[Table[T]] {
+abstract class HeadedCSVTableParser[T](using rp: RowParser[T, String]) extends StringTableParser[Table[T]] {
   type Row = T
 
   /**
@@ -551,7 +551,7 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
  *                           are logged but otherwise do not affect the success of the overall parsing.
  * @tparam X the type for which we require a TableParser[X].
  */
-abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true, forgiving: Boolean = false) extends CellParsers {
+abstract class TableParserHelper[X](sourceHasHeaderRow: Boolean = true, forgiving: Boolean = false)(using fieldNames: => FieldNames[X]) extends CellParsers {
 
   /**
    * Abstract method which will return a CellParser[X].
@@ -564,7 +564,7 @@ abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true
   given xp: CellParser[X] = cellParser
 
   given ptp: TableParser[Table[X]] =
-    if (sourceHasHeaderRow) PlainTextHeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)
+    if (sourceHasHeaderRow) PlainTextHeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)(using xp, fieldNames)
 }
 
 // NOTE: not currently instantiated

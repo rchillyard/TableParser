@@ -33,9 +33,9 @@ import scala.util.Try
  * @param headerRowsToRead      the number of header rows expected in the input file
  *                              defaults to 1.
  * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
- * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
+ * @tparam X the underlying row type for which there must be evidence of a CellParser.
  */
-case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncryption](encryptedRowPredicate: String => Boolean, keyFunction: String => String, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](encryptedRowPredicate: String => Boolean, keyFunction: String => String, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
         extends HeadedStringTableParser[X](None, false, headerRowsToRead) {
 
   private val phase2Parser: PlainTextHeadedStringTableParser[X] = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
