@@ -555,8 +555,7 @@ abstract class TableParserHelper[X: ClassTag](sourceHasHeaderRow: Boolean = true
 
   /**
    * Abstract method which will return a CellParser[X].
-   * NOTE that a typical definition will be something like cellParser2(Player.apply) where, in this case, the number
-   * is 2 corresponding to the number of parameters in Player.
+   * NOTE that a typical definition will be `CellParser.derived[Player]`.
    *
    * @return
    */

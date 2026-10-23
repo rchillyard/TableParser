@@ -7,7 +7,10 @@ import com.phasmidsoftware.tableparser.core.table.{Header, Row}
 import java.io.File
 import java.net.URL
 import org.joda.time.LocalDate
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, tailrec}
+import scala.compiletime.{constValue, erasedValue, summonFrom, summonInline}
+import scala.deriving.Mirror
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -215,4 +218,119 @@ object CellParser {
 
   implicit object FileOptionParser extends OptionParser[File]
 
+  /**
+   * Method to derive a CellParser[T] for a case class T, so that `case class T(...) derives CellParser` works.
+   * This replaces the cellParser1 ... cellParser13 methods of 1.x, and has no limit on the number of fields.
+   *
+   * Each field is read from the column whose name is given by ColumnHelper[T] for that field's name.
+   * The field names come from the Mirror (at compile time), in declaration order.
+   * A field whose type is itself a case class, and which has no CellParser of its own, is derived in turn.
+   *
+   * NOTE: for a case class, the Mirror is its companion object. So, for a case class defined locally (inside a method),
+   * don't derive its CellParser inside a companion object that you define for it: initializing that object would
+   * refer to itself and never finish. Define the given alongside the case class instead.
+   * Top-level case classes (the usual case) can derive inside their companion objects, or use `derives`.
+   *
+   * @param m the Mirror of T.
+   * @tparam T a case class.
+   * @return a CellParser[T].
+   */
+  inline def derived[T](using m: Mirror.ProductOf[T]): CellParser[T] =
+    new ProductCellParser[T](
+      constValue[m.MirroredLabel],
+      fieldNames[m.MirroredElemLabels],
+      fieldParsers[m.MirroredElemTypes],
+      xs => m.fromProduct(Tuple.fromArray(xs.toArray))
+    )(using summonInline[ColumnHelper[T]])
+
+  /**
+   * Method to get the names of the fields of a case class from its Mirror's MirroredElemLabels.
+   *
+   * @tparam Ls the MirroredElemLabels.
+   * @return the field names, in declaration order.
+   */
+  inline def fieldNames[Ls <: Tuple]: List[String] = inline erasedValue[Ls] match {
+    case _: EmptyTuple => Nil
+    case _: (l *: ls) => constValue[l].asInstanceOf[String] :: fieldNames[ls]
+  }
+
+  private inline def fieldParsers[Ts <: Tuple]: List[CellParser[?]] = inline erasedValue[Ts] match {
+    case _: EmptyTuple => Nil
+    case _: (t *: ts) => fieldParser[t] :: fieldParsers[ts]
+  }
+
+  // Prefer a field type's own CellParser; otherwise, if it is a case class, derive one.
+  private inline def fieldParser[A]: CellParser[A] = summonFrom {
+    case p: CellParser[A] => p
+    case m: Mirror.ProductOf[A] => derived[A](using m)
+  }
+}
+
+/**
+ * The CellParser of a case class T, as derived by CellParser.derived.
+ *
+ * @param typeName     the name of T (used in error messages).
+ * @param fieldNames   the names of the fields of T, in declaration order.
+ * @param fieldParsers the CellParsers of the fields of T, in the same order.
+ * @param construct    a function to construct a T from the values of its fields.
+ * @param helper       the ColumnHelper[T] which maps field names to column names.
+ * @tparam T the type of the result.
+ */
+class ProductCellParser[T](typeName: String, fieldNames: List[String], fieldParsers: List[CellParser[?]], construct: Seq[Any] => T)(using helper: ColumnHelper[T]) extends MultiCellParser[T] {
+
+  // NOTE used only for debugging
+  override def toString: String = s"MultiCellParser for $typeName"
+
+  def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+    // The fields are read in order, stopping at the first failure.
+    @tailrec
+    def inner(fs: List[(String, CellParser[?])], xs: List[Any]): Try[List[Any]] = fs match {
+      case Nil => Success(xs.reverse)
+      case (f, p) :: tail => ProductCellParser.readCell[T, Any](typeName, p, wo, row, columns, f) match {
+        case Success(x) => inner(tail, x :: xs)
+        case Failure(e) => Failure(e)
+      }
+    }
+
+    inner(fieldNames zip fieldParsers, Nil) map construct
+  }
+
+  /**
+   * A case class with just one field can also be parsed from a single String (see issue #1).
+   */
+  override def convertString(w: String): Try[T] = fieldParsers match {
+    case p :: Nil => p.convertString(w) map (x => construct(Seq(x)))
+    case _ => Failure(new UnsupportedOperationException)
+  }
+}
+
+object ProductCellParser {
+  /**
+   * Method to read the value of one field of a case class T from a Row.
+   * The column is the one named by helper for the field (and the prefix wo, if any).
+   * If there is no such column, the field's parser is given the whole row (for a field which is itself a case class).
+   *
+   * @param typeName   the name of T (used in error messages).
+   * @param cellParser the CellParser of the field.
+   * @param wo         an optional prefix (the name of the enclosing field, if any).
+   * @param row        the Row.
+   * @param header     the Header.
+   * @param field      the name of the field.
+   * @param helper     the ColumnHelper[T].
+   * @tparam T the type of the case class.
+   * @tparam A the type of the field.
+   * @return the value of the field, wrapped in Try.
+   */
+  def readCell[T, A](typeName: String, cellParser: CellParser[A], wo: Option[String], row: Row, header: Header, field: String)(using helper: ColumnHelper[T]): Try[A] = {
+    val columnName = helper.lookup(wo, field)
+    val idx = row.getIndex(columnName)
+    if (idx >= 0) for (w <- row(idx); z <- cellParser.parse(CellValue(w)).recoverWith {
+      case NonFatal(e) =>
+        Failure(InvalidParseException(s"Problem parsing '$w' as $typeName from $columnName at index $idx of $row", e))
+    }) yield z
+    else cellParser.parse(Some(columnName), row, header).recoverWith {
+      case _: UnsupportedOperationException =>
+        Failure(ParserException(s"$typeName: where original name is based on $wo and $field, unable to find value for column '$columnName' in '${header.xs}'"))
+    }
+  }
 }

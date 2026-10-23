@@ -30,7 +30,7 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers {
   }
 
   object Player extends TableParserHelper[Player]() with DefaultJsonProtocol {
-    def cellParser: CellParser[Player] = cellParser2(apply)
+    def cellParser: CellParser[Player] = CellParser.derived[Player]
 
     implicit val playerFormat: RootJsonFormat[Player] = jsonFormat2(apply)
 

@@ -78,4 +78,18 @@ object ColumnHelper {
 
   val camelToSnakeCaseColumnNameMapperLower: String => String =
     camelToSnakeCaseColumnNameMapper andThen (_.toLowerCase)
+
+  /**
+   * A default ColumnHelper which will work for any underlying type T and which provides no column name mapping at all.
+   * This is suitable for the usual case where the names of, e.g., CSV columns, are the same as the names of the case class parameters.
+   * Any ColumnHelper[T] defined for a particular T takes precedence over this one.
+   *
+   * @tparam T the underlying type of the resulting ColumnHelper
+   * @return a new instance of ColumnHelper[T]
+   */
+  implicit def defaultColumnHelper[T]: ColumnHelper[T] = new ColumnHelper[T] {
+    val _maybePrefix: Option[String] = None
+    val _aliases: Seq[(String, String)] = Nil
+    val _columnNameMapper: String => String = identityMapper
+  }
 }

@@ -59,7 +59,7 @@ object CrimeParser extends CellParsers {
     "crimeID" -> "Crime ID")
 
   implicit val crimeIdParser: CellParser[Option[BigInt]] = cellParserOption[BigInt]
-  implicit val movieParser: CellParser[Crime] = cellParser12(Crime.apply)
+  implicit val movieParser: CellParser[Crime] = CellParser.derived[Crime]
 
   implicit object CrimeConfig extends DefaultRowConfig {
     override val listEnclosure: String = ""

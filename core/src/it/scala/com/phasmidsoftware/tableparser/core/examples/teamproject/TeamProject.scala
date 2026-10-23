@@ -49,10 +49,10 @@ object TeamProjectParser extends CellParsers {
   implicit val gradeColumnHelper: ColumnHelper[Grade] = columnHelper(identifierToCapitalizedWordColumnNameMapper)
   implicit val teamColumnHelper: ColumnHelper[Team] = columnHelper(identifierToCapitalizedWordColumnNameMapper, Some("$x $c"))
   implicit val optionalStringParser: CellParser[Option[String]] = cellParserOption
-  implicit val teamParser: CellParser[Team] = cellParser5(Team)
-  implicit val gradeParser: CellParser[Grade] = cellParser12(Grade)
+  implicit val teamParser: CellParser[Team] = CellParser.derived[Team]
+  implicit val gradeParser: CellParser[Grade] = CellParser.derived[Grade]
   implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
-  implicit val teamProjectParser: CellParser[TeamProject] = cellParser4(TeamProject.apply)
+  implicit val teamProjectParser: CellParser[TeamProject] = CellParser.derived[TeamProject]
 
   implicit object TeamProjectConfig extends DefaultRowConfig {
     override val listEnclosure: String = ""

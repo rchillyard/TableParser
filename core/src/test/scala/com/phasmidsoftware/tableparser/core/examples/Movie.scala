@@ -86,7 +86,7 @@ object Movie extends CellParsers with CsvGenerators with CsvRenderers {
   implicit val helper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper,
     "title" -> "movie_title",
     "imdb" -> "movie_imdb_link")
-  implicit val parser: CellParser[Movie] = cellParser11(apply)
+  implicit val parser: CellParser[Movie] = CellParser.derived[Movie]
   implicit val renderer: CsvRenderer[Movie] = renderer11(apply)
   implicit val generator: CsvGenerator[Movie] = generator11(apply)
 
@@ -230,7 +230,7 @@ case class Format(color: String, language: String, aspectRatio: Option[Double], 
 object Format extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Format = Format("", "", None, None)
   implicit val helper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapper)
-  implicit val parser: CellParser[Format] = cellParser4(apply)
+  implicit val parser: CellParser[Format] = CellParser.derived[Format]
   implicit val renderer: CsvRenderer[Format] = renderer4(apply)
   implicit val generatorOptInt: CsvGenerator[Option[Int]] = optionGenerator
   implicit val generatorOptDouble: CsvGenerator[Option[Double]] = optionGenerator
@@ -282,7 +282,7 @@ case class Production(country: String, budget: Option[Int], gross: Option[Int], 
 object Production extends CellParsers with CsvGenerators with CsvRenderers {
   val none: Production = Production("", None, None, None)
   implicit val helper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapper)
-  implicit val parser: CellParser[Production] = cellParser4(apply)
+  implicit val parser: CellParser[Production] = CellParser.derived[Production]
   implicit val renderer: CsvRenderer[Production] = renderer4(apply)
   implicit val generator: CsvGenerator[Production] = generator4(apply)
 }
@@ -316,7 +316,7 @@ object Reviews extends CellParsers with CsvGenerators with CsvRenderers {
     "numUsersVoted" -> "num_voted_users",
     "numCriticReviews" -> "num_critic_for_reviews",
     "totalFacebookLikes" -> "cast_total_facebook_likes")
-  implicit val parser: CellParser[Reviews] = cellParser7(apply)
+  implicit val parser: CellParser[Reviews] = CellParser.derived[Reviews]
   implicit val renderer: CsvRenderer[Reviews] = renderer7(apply)
   implicit val generator: CsvGenerator[Reviews] = generator7(apply)
 }
@@ -369,7 +369,7 @@ case class Principal(name: Name, facebookLikes: Int) {
 object Principal extends CellParsers with CsvGenerators with CsvRenderers {
   val nemo: Principal = Principal(Name.nemo, 0)
   implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
-  implicit val parser: CellParser[Principal] = cellParser2(apply)
+  implicit val parser: CellParser[Principal] = CellParser.derived[Principal]
   implicit val parserOpt: CellParser[Option[Principal]] = cellParserOption
   implicit val renderer: CsvRenderer[Principal] = renderer2(apply)
   implicit val rendererOpt: CsvRenderer[Option[Principal]] = optionRenderer()
