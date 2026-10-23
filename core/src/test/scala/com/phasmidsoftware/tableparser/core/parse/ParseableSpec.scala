@@ -6,7 +6,7 @@ package com.phasmidsoftware.tableparser.core.parse
 
 import java.io.File
 import java.net.URL
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.util.{Failure, Success}

@@ -5,8 +5,8 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.table.{Header, Row}
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.util.{Failure, Success}
@@ -67,7 +67,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   object DailyRaptorReport extends CellParsers {
 
-    def parseDate(w: String): LocalDate = LocalDate.parse(w, DateTimeFormat.forPattern("MM/dd/yyyy"))
+    def parseDate(w: String): LocalDate = LocalDate.parse(w, DateTimeFormatter.ofPattern("MM/dd/yyyy"))
 
     implicit val dateParser: CellParser[LocalDate] = cellParser(parseDate) // Overrides the standard date parser
     implicit val helper: ColumnHelper[DailyRaptorReport] = columnHelper()
@@ -128,14 +128,14 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "convertTo DailyRaptorReport" in {
     val r = RowValues(Row(Seq("09/16/2018", partlyCloudy, "3308", "5"), Header.create("Date", "Weather", "BW", "RT"), 0))
     // TODO fix deprecation here and 7 lines down.
-    val date = new LocalDate(2018, 9, 16)
+    val date = LocalDate.of(2018, 9, 16)
     r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(date, partlyCloudy, 3308, 5))
   }
 
   it should "convertTo DailyRaptorReport in ISO date parse" in {
     val r = RowValues(Row(Seq("2018-09-16", partlyCloudy, "3308", "5"), Header.create("Date", "Weather", "BW", "RT"), 0))
     import DailyRaptorReportParserISO._
-    val date = new LocalDate(2018, 9, 16)
+    val date = LocalDate.of(2018, 9, 16)
     r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(date, partlyCloudy, 3308, 5))
   }
 

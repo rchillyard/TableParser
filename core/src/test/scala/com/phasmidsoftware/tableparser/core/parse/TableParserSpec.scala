@@ -10,8 +10,8 @@ import com.phasmidsoftware.tableparser.core.table.Table.{parseSequence, sourceFr
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import com.phasmidsoftware.tableparser.core.util.TryUsing
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.io.{Codec, Source}
@@ -89,7 +89,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     object DailyRaptorReportParser extends CellParsers {
 
       private val raptorReportDateFormatter =
-        DateTimeFormat.forPattern("MM/dd/yyyy")
+        DateTimeFormatter.ofPattern("MM/dd/yyyy")
 
       def parseDate(w: String): LocalDate =
         LocalDate.parse(w, raptorReportDateFormatter)
@@ -155,7 +155,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
         rt.content.size shouldBe 13
         // TODO fix deprecation. Also in two other places in this module.
         //noinspection ScalaDeprecation
-        val date = new LocalDate(2018, 9, 12)
+        val date = LocalDate.of(2018, 9, 12)
         rt.content.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
     }
   }
@@ -170,7 +170,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case rt@HeadedTable(_, _) =>
         rt.content.size shouldBe 2
         //noinspection ScalaDeprecation
-        val date = new LocalDate(2018, 9, 16)
+        val date = LocalDate.of(2018, 9, 16)
         rt.content.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
     }
   }
@@ -196,7 +196,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     object DailyRaptorReportParser extends CellParsers {
 
-      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+      private val raptorReportDateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
 
       def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 
@@ -243,7 +243,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case rt@HeadedTable(_, _) =>
         rt.content.size shouldBe 2
         //noinspection ScalaDeprecation
-        val date = new LocalDate(2018, 9, 16)
+        val date = LocalDate.of(2018, 9, 16)
         rt.content.head shouldBe DailyRaptorReport(date, partlyCloudy, 3308, 5)
     }
   }
@@ -252,7 +252,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val header: Seq[String] = Seq("Date", "Weather", "Wnd Dir", "Wnd Spd", "BV", "TV", "UV", "OS", "BE", "NH", "SS", "CH", "GO", "UA", "RS", "BW", "RT", "RL", "UB", "GE", "UE", "AK", "M", "P", "UF", "UR", "Oth", "Tot")
 
     object DailyRaptorReportParser extends CellParsers {
-      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+      private val raptorReportDateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
 
       def parseDate(w: String): LocalDate =
         LocalDate.parse(w, raptorReportDateFormatter)
@@ -298,7 +298,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case rt@HeadedTable(_, _) =>
         rt.content.size shouldBe 13
         // TODO fix deprecation. Also in two other places in this module.
-        val date = new LocalDate(2018, 9, 12)
+        val date = LocalDate.of(2018, 9, 12)
         rt.content.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
     }
   }

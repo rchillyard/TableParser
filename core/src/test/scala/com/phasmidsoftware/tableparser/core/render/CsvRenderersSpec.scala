@@ -4,8 +4,8 @@ import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
 import java.net.URL
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import scala.util.matching.Regex
@@ -274,7 +274,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val dailyRaptorReportOrdering: Ordering[DailyRaptorReport] = Ordering.by[DailyRaptorReport, LocalDate](c => c.date)
 
     object DailyRaptorReportParser extends CellParsers {
-      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+      private val raptorReportDateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
 
       def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 
@@ -358,7 +358,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val nestedRaptorReportOrdering: Ordering[NestedRaptorReport] = Ordering.by[NestedRaptorReport, LocalDate](c => c.date)
 
     object NestedRaptorReportParser extends CellParsers {
-      private val raptorReportDateFormatter = DateTimeFormat.forPattern("MM/dd/yyyy")
+      private val raptorReportDateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
 
       def parseDate(w: String): LocalDate = LocalDate.parse(w, raptorReportDateFormatter)
 

@@ -7,7 +7,7 @@ import com.phasmidsoftware.tableparser.core.table.{Header, Row}
 import com.phasmidsoftware.tableparser.core.util.Derivation
 import java.io.File
 import java.net.URL
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.compiletime.{constValue, erasedValue, summonFrom, summonInline}
 import scala.deriving.Mirror

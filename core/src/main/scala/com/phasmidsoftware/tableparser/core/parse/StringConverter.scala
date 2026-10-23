@@ -2,7 +2,7 @@ package com.phasmidsoftware.tableparser.core.parse
 
 import java.io.File
 import java.net.URL
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import scala.util.{Success, Try}
 
 trait StringConverter[+T] {

@@ -27,7 +27,6 @@ ThisBuild / resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typ
 // Shared versions
 val scalaTestVersion = "3.2.20"
 val scalaParserCombinatorsVersion = "2.5.0"
-val nScalaTimeVersion = "3.2.0"
 val tsecVersion = "0.6.0"
 val catsVersion = "3.7.1"
 val zioVersion = "2.1.27"
@@ -42,7 +41,6 @@ lazy val core = project.settings(
     "io.spray" %% "spray-json" % "1.3.6",
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
     "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
-    "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
     "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,

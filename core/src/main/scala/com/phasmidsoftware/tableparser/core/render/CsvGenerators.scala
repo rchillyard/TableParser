@@ -3,7 +3,7 @@ package com.phasmidsoftware.tableparser.core.render
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import java.net.URL
 import java.time.Instant
-import org.joda.time.LocalDate
+import java.time.LocalDate
 
 /**
  * The `CsvGenerators` class provides factory methods for creating `CsvGenerator` instances for different types of data structures.
