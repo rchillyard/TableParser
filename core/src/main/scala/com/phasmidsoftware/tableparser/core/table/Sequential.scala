@@ -2,7 +2,6 @@ package com.phasmidsoftware.tableparser.core.table
 
 import com.phasmidsoftware.tableparser.core.parse.CellParser
 import com.phasmidsoftware.tableparser.core.render.CsvProduct
-import com.phasmidsoftware.tableparser.core.table.Sequence.SequenceOrdering
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -13,21 +12,25 @@ import scala.util.{Failure, Success, Try}
  *
  * NOTE none of this modules is currently used.
  */
+@deprecated("Not used by TableParser: it will be removed in 2.0.0", "1.7.0")
 trait Sequential {
   val sequence: Sequence
 }
 
+@deprecated("Not used by TableParser: it will be removed in 2.0.0", "1.7.0")
 object Sequential {
   def ordering[T <: Sequential]: Ordering[T] = (x: T, y: T) =>
-    SequenceOrdering.compare(x.sequence, y.sequence)
+    Sequence.SequenceOrdering.compare(x.sequence, y.sequence)
 }
 
+@deprecated("Not used by TableParser: it will be removed in 2.0.0", "1.7.0")
 class Sequence(val n: Long) extends AnyVal {
   def next: Sequence = new Sequence(n + 1)
 
   override def toString: String = n.toString
 }
 
+@deprecated("Not used by TableParser: it will be removed in 2.0.0", "1.7.0")
 object Sequence {
   // NOTE this is unashamedly using a var.
   // CONSIDER alternative strategies to avoid use of var.
@@ -61,6 +64,7 @@ object Sequence {
   }
 }
 
+@deprecated("Not used by TableParser: it will be removed in 2.0.0", "1.7.0")
 object NonSequential {
 
   /**
@@ -124,10 +128,12 @@ object NonSequential {
 
 }
 
+@deprecated("Not used by TableParser: it will be removed in 2.0.0", "1.7.0")
 trait OrderingWithZero[X] extends Ordering[X] {
   def zero: X
 }
 
+@deprecated("Not used by TableParser: it will be removed in 2.0.0", "1.7.0")
 object OrderingWithZero {
 
   implicit object OrderingWithZeroString extends OrderingWithZero[String] {

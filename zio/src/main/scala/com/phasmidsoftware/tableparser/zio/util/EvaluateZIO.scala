@@ -8,6 +8,7 @@ import zio.test._
  * TODO eliminate use of unsafe methods.
  * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
  */
+@deprecated("A test helper: it moves into the tests in 2.0.0, when zio-test-junit becomes a Test dependency", "1.7.0")
 object EvaluateZIO {
 //
 //  /**

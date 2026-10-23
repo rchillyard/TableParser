@@ -376,6 +376,7 @@ object Statistics {
  * To analyze a specific dataset, update the `crimeFile` variable with the correct
  * resource file path before running the application.
  */
+@deprecated("Example program: it moves out of the library, into the tests, in 2.0.0", "1.7.0")
 object Main {
   // NOTE: not `extends App`: in Scala 3, the body of an App runs when the object is initialized
   // (e.g. by a call of doMain), and its parallel foreach then deadlocks on that initialization.

@@ -40,8 +40,13 @@ val parquetVersion = "1.18.1"
 val hadoopVersion = "3.4.3"
 val sparkVersion = "4.0.4"
 
+// The examples, Main, Sequential and EvaluateZIO are deprecated in 1.7.0 and leave the library in 2.0.0.
+// The tests (and spark, which stays on 1.x) still use them, so silence just those deprecation warnings there.
+val silence170Deprecations = "-Wconf:cat=deprecation&msg=1\\.7\\.0:s"
+
 lazy val core = project.settings(
   name := "tableparser-core",
+  Test / scalacOptions += silence170Deprecations,
   libraryDependencies ++= Seq(
     "io.spray" %% "spray-json" % "1.3.6",
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
@@ -56,6 +61,7 @@ lazy val core = project.settings(
 
 lazy val cats = project.dependsOn(core).settings(
   name := "tableparser-cats",
+  Test / scalacOptions += silence170Deprecations,
   libraryDependencies ++= Seq(
     "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
     "org.typelevel" %% "cats-effect" % catsVersion,
@@ -81,6 +87,7 @@ lazy val parquet = project.dependsOn(core).settings(
 // NOTE: Spark is not published for Scala 3, so this module is built for Scala 2.13 only.
 lazy val spark = project.dependsOn(core).settings(
   name := "tableparser-spark",
+  scalacOptions += silence170Deprecations,
   crossScalaVersions := Seq(scala213),
   libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
@@ -91,6 +98,7 @@ lazy val spark = project.dependsOn(core).settings(
 
 lazy val zio = project.dependsOn(core).settings(
   name := "tableparser-zio",
+  Test / scalacOptions += silence170Deprecations,
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio" % zioVersion,
     // NOTE: needed in compile scope only by EvaluateZIO, which is deprecated: make it Test only in 2.0.
