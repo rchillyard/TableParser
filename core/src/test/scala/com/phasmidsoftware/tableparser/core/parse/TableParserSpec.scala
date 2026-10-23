@@ -57,7 +57,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override val headerRowsToRead: Int = 0
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -118,7 +118,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       type Row = DailyRaptorReport
 
       val rowParser: RowParser[Row, String] =
-        implicitly[RowParser[Row, String]]
+        summon[RowParser[Row, String]]
 
       protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] =
         HeadedTable(rows, header)
@@ -135,7 +135,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse regex string" in {
     import DailyRaptorReport._
 
-    val rowParser = implicitly[RowParser[DailyRaptorReport, String]]
+    val rowParser = summon[RowParser[DailyRaptorReport, String]]
     val firstRow = headerRaptors
     val row = "09/16/2018\t" + partlyCloudy + "\tSE\t6-12\t0\t0\t0\t4\t19\t3\t30\t2\t0\t0\t2\t3308\t5\t0\t0\t0\t0\t27\t8\t1\t0\t1\t0\t3410"
     matchTry(rowParser.parseHeader(Seq(firstRow))) {
@@ -224,7 +224,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       type Row = DailyRaptorReport
 
       val rowParser: RowParser[Row, Seq[String]] =
-        implicitly[RowParser[Row, Seq[String]]]
+        summon[RowParser[Row, Seq[String]]]
 
       protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] =
         HeadedTable(rows, header)
@@ -283,7 +283,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[DailyRaptorReport] =
         HeadedTable(rows, header)
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
     }
 
     implicit object DailyRaptorReportTableParser extends DailyRaptorReportTableParser
@@ -328,7 +328,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override val forgiving: Boolean = false
 
-      val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+      val rowParser: RowParser[Row, Seq[String]] = summon[RowParser[Row, Seq[String]]]
     }
   }
 
@@ -395,7 +395,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
       protected def builder(rows: Iterator[Row], header: Header): Table[Submission] = HeadedTable(rows, header)
 
       override val forgiving: Boolean = true
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
     }
   }
 
@@ -514,7 +514,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "MovieRowProcessor"
 
   it should "process the movies from the IMDB dataset" in {
-    val movieRowProcessor: MovieRowProcessor = implicitly[RowProcessor[Movie]].asInstanceOf[MovieRowProcessor]
+    val movieRowProcessor: MovieRowProcessor = summon[RowProcessor[Movie]].asInstanceOf[MovieRowProcessor]
     val z: Try[Source] = sourceFromClassResource("movie_metadata.csv", classOf[Movie])
     matchTry(z) {
       case source: Source =>

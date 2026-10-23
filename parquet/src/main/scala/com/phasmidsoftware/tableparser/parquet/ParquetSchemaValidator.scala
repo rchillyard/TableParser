@@ -49,7 +49,7 @@ object ParquetSchemaValidator {
               .collect { case pt: ParquetPrimitiveType => pt.getName -> pt }
               .toMap
 
-    val ct = implicitly[ClassTag[Row]]
+    val ct = summon[ClassTag[Row]]
     val fieldNames = Reflection.extractFieldNames(ct)
     val fieldMap = ct.runtimeClass.getDeclaredFields.map(f => f.getName -> f).toMap
 

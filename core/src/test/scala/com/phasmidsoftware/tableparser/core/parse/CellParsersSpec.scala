@@ -148,34 +148,34 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "CellParsers"
 
   it should "parse Int" in {
-    implicitly[CellParser[Int]].convertString("1") shouldBe Success(1)
+    summon[CellParser[Int]].convertString("1") shouldBe Success(1)
   }
 
   it should "parse Double" in {
-    implicitly[CellParser[Double]].convertString("1") shouldBe Success(1.0)
+    summon[CellParser[Double]].convertString("1") shouldBe Success(1.0)
   }
 
   it should "parse Long" in {
-    implicitly[CellParser[Long]].convertString("99") shouldBe Success(99L)
+    summon[CellParser[Long]].convertString("99") shouldBe Success(99L)
   }
 
   it should "parse BigInt" in {
-    implicitly[CellParser[BigInt]].convertString("999999999999") shouldBe Success(BigInt("999999999999"))
+    summon[CellParser[BigInt]].convertString("999999999999") shouldBe Success(BigInt("999999999999"))
   }
 
   it should "parse Option[Int]" in {
-    implicitly[CellParser[Option[Int]]].convertString("") should matchPattern { case Success(None) => }
-    implicitly[CellParser[Option[Int]]].convertString("1") shouldBe Success(Some(1))
+    summon[CellParser[Option[Int]]].convertString("") should matchPattern { case Success(None) => }
+    summon[CellParser[Option[Int]]].convertString("1") shouldBe Success(Some(1))
   }
 
   it should "parse optional MyNumber as None" in {
     import MyNumber._
 
-    implicitly[CellParser[Option[MyNumber]]].convertString("") should matchPattern { case Success(None) => }
+    summon[CellParser[Option[MyNumber]]].convertString("") should matchPattern { case Success(None) => }
   }
 
   it should "parse optional MyNumber(1)" in {
-    val cellParser = implicitly[CellParser[Option[MyNumber]]]
+    val cellParser = summon[CellParser[Option[MyNumber]]]
     cellParser.convertString("1") shouldBe Success(Some(MyNumber(1)))
   }
 
@@ -214,7 +214,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser1" in {
     case class T(a: Int)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a")
     val row = Row(Seq("1"), header, 0)
@@ -224,7 +224,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser2" in {
     case class T(a: Int, b: Double)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b")
     val row = Row(Seq("1", "2"), header, 0)
@@ -234,7 +234,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser3" in {
     case class T(a: Int, b: Double, c: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c")
     val row = Row(Seq("1", "2", "true"), header, 0)
@@ -244,7 +244,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser4" in {
     case class T(a: Int, b: Double, c: String, d: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d")
     val row = Row(Seq("1", "2", "x", "true"), header, 0)
@@ -254,7 +254,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser5" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d", "e")
     val row = Row(Seq("1", "2", "x", "128", "true"), header, 0)
@@ -264,7 +264,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser6" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d", "e", "f")
     val row = Row(Seq("1", "2", "x", "128", "7", "true"), header, 0)
@@ -274,7 +274,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser7" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "true"), header, 0)
@@ -284,7 +284,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser8" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "true"), header, 0)
@@ -294,7 +294,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser9" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "true"), header, 0)
@@ -304,7 +304,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser10" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Int, j: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "99", "true"), header, 0)
@@ -314,7 +314,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser11" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Int, j: Char, k: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "99", "a", "true"), header, 0)
@@ -324,7 +324,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser12" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Int, j: Char, k: Double, l: Boolean)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "99", "a", "3.1415927", "true"), header, 0)
@@ -334,7 +334,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse with cellParser13" in {
     case class T(a: Int, b: Double, c: String, d: Short, e: Byte, f: Float, g: BigInt, h: BigDecimal, i: Int, j: Char, k: Double, l: Boolean, m: Int)
     implicit val tParser: CellParser[T] = CellParser.derived[T]
-    val parser = implicitly[CellParser[T]]
+    val parser = summon[CellParser[T]]
     parser.toString shouldBe "MultiCellParser for T"
     val header = Header.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m")
     val row = Row(Seq("1", "2", "x", "128", "7", "3.14", "1000000", "3.1415927", "99", "a", "3.1415927", "true", "42"), header, 0)
@@ -350,7 +350,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "CellParser.derived"
 
   it should "parse a case class that derives CellParser, with more than 13 fields" in {
-    val parser = implicitly[CellParser[Wide]]
+    val parser = summon[CellParser[Wide]]
     parser.toString shouldBe "MultiCellParser for Wide"
     val header = Header.create("o", "n", "m", "l", "k", "j", "i", "h", "g", "f", "e", "d", "c", "b", "a")
     val row = Row(Seq("fifteen", "14", "13", "12", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"), header, 0)
@@ -360,6 +360,6 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse a case class with public lazy vals (which needed the fields parameter in 1.x)" in {
     val header = Header.create("rating", "name")
     val row = Row(Seq("1500", "Robin"), header, 0)
-    implicitly[CellParser[WithLazyVals]].parse(None, row, header) shouldBe Success(WithLazyVals("Robin", 1500))
+    summon[CellParser[WithLazyVals]].parse(None, row, header) shouldBe Success(WithLazyVals("Robin", 1500))
   }
 }

@@ -330,7 +330,7 @@ trait Table[Row] extends Iterable[Row] {
    * @return a filtered Table[Row].
    */
   def filterByKey[T >: Row : HasKey](p: String => Boolean): Table[Row] =
-    filter(t => p(implicitly[HasKey[T]].key(t)))
+    filter(t => p(summon[HasKey[T]].key(t)))
 
   /**
    * Filter method which operates on the (primary) key of each row.
@@ -340,7 +340,7 @@ trait Table[Row] extends Iterable[Row] {
    * @return a filtered Table[Row].
    */
   def filterNotByKey[T >: Row : HasKey](p: String => Boolean): Table[Row] =
-    filterNot(t => p(implicitly[HasKey[T]].key(t)))
+    filterNot(t => p(summon[HasKey[T]].key(t)))
 
   /**
    * Method to render this Table[T] as a CSV String with (maybe) header.
@@ -429,7 +429,7 @@ object Table {
    * @return an Try[T]
    */
   def parse[T: TableParser](ws: Iterator[String]): Try[T] =
-    implicitly[TableParser[T]] match {
+    summon[TableParser[T]] match {
       case parser: StringTableParser[T] =>
         parser.parse(ws, parser.headerRowsToRead)
       case x =>
@@ -614,7 +614,7 @@ object Table {
    * @return an Try[T]
    */
   def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] = {
-    val tableParser = implicitly[TableParser[T]]
+    val tableParser = summon[TableParser[T]]
     tableParser match {
       case parser: StringsTableParser[T] =>
         parser.parse(wss, 1)
@@ -834,7 +834,7 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
    * @return a new (or possibly old) instance of O.
    */
   def renderToWritable[O](implicit z: Writable[O]): O = {
-    val ww = implicitly[Writable[O]]
+    val ww = summon[Writable[O]]
     val o1 = ww.unit
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
     val knownSize1 = rows.knownSize
@@ -872,8 +872,8 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
       implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
     }
     import TableRenderers._
-    val node: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
-    implicitly[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows.toSeq))))
+    val node: Node = summon[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
+    summon[TreeWriter[U]].evaluate(Node(style, attributes, node +: Seq(rowsRenderer.render(rows.toSeq))))
   }
 
   /**
@@ -895,10 +895,10 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
       implicit val optionRenderer: HierarchicalRenderer[Option[Header]] = optionRenderer[Header]("thead", Map())
     }
     import TableRenderers._
-    val headerNode: Node = implicitly[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
+    val headerNode: Node = summon[HierarchicalRenderer[Option[Header]]].render(maybeHeader)
     val tableNode = Node(style, attributes, headerNode +: Seq(rowsRenderer.render(Indexed.index(rows.toSeq))))
     val trimmed = tableNode.trim
-    implicitly[TreeWriter[U]].evaluate(trimmed)
+    summon[TreeWriter[U]].evaluate(trimmed)
   }
 
   override def toString(): String =
@@ -1139,7 +1139,7 @@ object Header {
    * @return a List of field names.
    */
   def apply[X: ClassTag](): Header =
-    Header(Reflection.extractFieldNames(implicitly[ClassTag[X]]).toList, Nil)
+    Header(Reflection.extractFieldNames(summon[ClassTag[X]]).toList, Nil)
 
   /**
    * Create a Header from a variable list of parameters.

@@ -92,7 +92,7 @@ object ParquetCellConverter {
         if (group.getFieldRepetitionCount(fieldName) == 0)
           Success(None)
         else
-          implicitly[ParquetCellConverter[T]].convert(group, fieldName).map(Some(_))
+          summon[ParquetCellConverter[T]].convert(group, fieldName).map(Some(_))
     }
 
   // ── converterN factory methods ──────────────────────────────────────────────
@@ -102,7 +102,7 @@ object ParquetCellConverter {
    * otherwise reflects on the ClassTag. Mirrors CellParsers.fieldNames.
    */
   private def effectiveFieldNames[T: ClassTag](fields: Seq[String]): Array[String] =
-    if (fields.isEmpty) Reflection.extractFieldNames(implicitly[ClassTag[T]])
+    if (fields.isEmpty) Reflection.extractFieldNames(summon[ClassTag[T]])
     else fields.toArray
 
   /**
@@ -124,10 +124,10 @@ object ParquetCellConverter {
       private val f2 = fs(1)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
-          p2 <- implicitly[ParquetCellConverter[P2]].convert(group, h.lookup(None, f2))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p2 <- summon[ParquetCellConverter[P2]].convert(group, h.lookup(None, f2))
         } yield construct(p1, p2)
       }
     }
@@ -150,9 +150,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter2[P2, P3, T](construct(p1, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -177,9 +177,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter3[P2, P3, P4, T](construct(p1, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -205,9 +205,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter4[P2, P3, P4, P5, T](construct(p1, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -234,9 +234,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter5[P2, P3, P4, P5, P6, T](construct(p1, _, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -264,9 +264,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter6[P2, P3, P4, P5, P6, P7, T](construct(p1, _, _, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }
@@ -295,9 +295,9 @@ object ParquetCellConverter {
       private val f1 = fs(0)
 
       def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = implicitly[ColumnHelper[T]]
+        val h = summon[ColumnHelper[T]]
         for {
-          p1 <- implicitly[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
+          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
           t <- converter7[P2, P3, P4, P5, P6, P7, P8, T](construct(p1, _, _, _, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
         } yield t
       }

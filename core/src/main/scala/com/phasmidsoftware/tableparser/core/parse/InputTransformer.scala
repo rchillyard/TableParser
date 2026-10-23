@@ -201,7 +201,7 @@ class IndexedInputToRowsAggregator[Input: Joinable, Row](f: ((Input, Int)) => Tr
    * @see [[JoinableTInt]] for its detailed trait definition.
    */
   implicit object JoinableTInt extends JoinableTInt[Input] {
-    def tj: Joinable[Input] = implicitly[Joinable[Input]]
+    def tj: Joinable[Input] = summon[Joinable[Input]]
   }
 
   /**
@@ -273,7 +273,7 @@ class IndexedInputToRowsTransformer[Input: Joinable, Row](f: ((Input, Int)) => T
    *
    */
   implicit object JoinableTInt extends JoinableTInt[Input] {
-    def tj: Joinable[Input] = implicitly[Joinable[Input]]
+    def tj: Joinable[Input] = summon[Joinable[Input]]
   }
 
   /**

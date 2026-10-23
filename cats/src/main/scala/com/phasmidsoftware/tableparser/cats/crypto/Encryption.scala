@@ -227,7 +227,7 @@ object HexEncryption {
     val hexIndex = 1 // the second (and last) element in the row is the Hex string.
     val f: Int => Option[String] = row.lift
     (for (key <- ko map keyFunction; hex <- f(hexIndex)) yield (key, hex)) match {
-      case Some(key -> hex) => implicitly[HexEncryption[A]].decryptHex(key, hex)
+      case Some(key -> hex) => summon[HexEncryption[A]].decryptHex(key, hex)
       case _ => IO.raiseError(TableParserException(s"Encryption.decryptRow: logic error: row=$row does not include element for hexIndex ($hexIndex)"))
     }
   }

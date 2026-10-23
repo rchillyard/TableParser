@@ -50,7 +50,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterator[String], n: Int): Task[T] = implicitly[TableParser[T]] match {
+  def parse[T: TableParser](ws: Iterator[String], n: Int): Task[T] = summon[TableParser[T]] match {
     case parser: StringTableParser[T] =>
       ZIO.fromTry(parser.parse(ws, n))
     case x =>
@@ -230,7 +230,7 @@ object ZIOTable {
 //   * @return an Task[T]
 //   */
 //  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Task[T] = {
-//    val tableParser = implicitly[TableParser[T]]
+//    val tableParser = summon[TableParser[T]]
 //    tableParser match {
 //      case parser: TableParserIO[T] => parser.parseIO(wss, 1)
 //      case _ => Task.raiseError(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))

@@ -57,7 +57,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -67,29 +67,29 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   behavior of "CsvGenerators"
 
   it should "generate header for an Int" in {
-    implicitly[CsvGenerator[Int]].toColumnName(None, "x") shouldBe "x"
-    implicitly[CsvGenerator[Int]].toColumnName(Some("x"), "y") shouldBe "x.y"
+    summon[CsvGenerator[Int]].toColumnName(None, "x") shouldBe "x"
+    summon[CsvGenerator[Int]].toColumnName(Some("x"), "y") shouldBe "x.y"
   }
 
   it should "generate header for a Long, URL, Double, Boolean" in {
-    implicitly[CsvGenerator[Long]].toColumnName(None, "x") shouldBe "x"
-    implicitly[CsvGenerator[URL]].toColumnName(Some("x"), "y") shouldBe "x.y"
-    implicitly[CsvGenerator[Double]].toColumnName(None, "x") shouldBe "x"
-    implicitly[CsvGenerator[Boolean]].toColumnName(Some("x"), "y") shouldBe "x.y"
+    summon[CsvGenerator[Long]].toColumnName(None, "x") shouldBe "x"
+    summon[CsvGenerator[URL]].toColumnName(Some("x"), "y") shouldBe "x.y"
+    summon[CsvGenerator[Double]].toColumnName(None, "x") shouldBe "x"
+    summon[CsvGenerator[Boolean]].toColumnName(Some("x"), "y") shouldBe "x.y"
   }
 
   it should "generate header for an Option[Int]" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicit val optionIntGenerator: CsvGenerator[Option[Int]] = new CsvGenerators {}.optionGenerator
     optionIntGenerator.toColumnName(None, "x") shouldBe "x"
-    implicitly[CsvGenerator[Option[Int]]].toColumnName(Some("x"), "y") shouldBe "x.y"
+    summon[CsvGenerator[Option[Int]]].toColumnName(Some("x"), "y") shouldBe "x.y"
   }
 
   it should "generate header for Sequence" in {
     implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
     implicit val seqIntGenerator: CsvGenerator[Seq[Int]] = new CsvGenerators {}.sequenceGenerator
     seqIntGenerator.toColumnName(None, "x") shouldBe "x"
-    implicitly[CsvGenerator[Seq[Int]]].toColumnName(Some("x"), "y") shouldBe "x.y"
+    summon[CsvGenerator[Seq[Int]]].toColumnName(Some("x"), "y") shouldBe "x.y"
   }
 
   it should "render 1-tuple" in {
@@ -195,7 +195,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     case class Sixsy(a: Boolean, b: Boolean, c: Boolean, d: Boolean, e: Boolean, f: Boolean)
     implicit val renderer: CsvRenderer[Sixsy] = CsvRenderer.derived[Sixsy]
     val sixsy = Sixsy(a = true, b = false, c = true, d = false, e = true, f = false)
-    implicitly[CsvRenderer[Sixsy]].render(sixsy) shouldBe "true, false, true, false, true, false"
+    summon[CsvRenderer[Sixsy]].render(sixsy) shouldBe "true, false, true, false, true, false"
   }
 
   it should "render 7-tuple" in {
@@ -205,7 +205,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val renderer: CsvRenderer[Sevensy] = CsvRenderer.derived[Sevensy]
 
     val sevensy = Sevensy(1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2)
-    implicitly[CsvRenderer[Sevensy]].render(sevensy) shouldBe "1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2"
+    summon[CsvRenderer[Sevensy]].render(sevensy) shouldBe "1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2"
   }
 
   it should "render 8-tuple" in {
@@ -215,7 +215,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     implicit val renderer: CsvRenderer[Eightsy] = CsvRenderer.derived[Eightsy]
 
     val eightsy = Eightsy(new URL("https://google.com"), 2, 3, 4, 5, 6, 7, 8)
-    implicitly[CsvRenderer[Eightsy]].render(eightsy) shouldBe "https://google.com, 2, 3, 4, 5, 6, 7, 8"
+    summon[CsvRenderer[Eightsy]].render(eightsy) shouldBe "https://google.com, 2, 3, 4, 5, 6, 7, 8"
   }
 
   it should "render 9-tuple" in {
@@ -302,7 +302,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
       override val headerRowsToRead: Int = 1
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
 
       /**
        * Method to construct a Table based on the given iterator of rows and the given header.
@@ -383,7 +383,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     trait NestedRaptorReportTableParser extends StringTableParser[Table[NestedRaptorReport]] {
       type Row = NestedRaptorReport
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
 
       protected def builder(rows: Iterator[NestedRaptorReport], header: Header): Table[Row] = HeadedTable(rows, header)
     }
@@ -405,7 +405,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
         implicit val weatherHawksCsvRenderer: CsvRenderer[WeatherHawks] = CsvRenderer.derived[WeatherHawks]
         implicit val weatherHawksCsvGenerator: CsvProductGenerator[WeatherHawks] = CsvGenerator.derived[WeatherHawks]
         implicit val dateCsvRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
-          val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+          val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
           def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
         }
@@ -423,7 +423,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
   behavior of "CsvProduct.derived"
 
   it should "render, and generate the header for, a case class that derives CsvProduct, with more than 19 fields" in {
-    val product = implicitly[CsvProduct[Twentysy]]
+    val product = summon[CsvProduct[Twentysy]]
     product.render(Twentysy(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, "twenty")) shouldBe "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,twenty"
     product.asInstanceOf[CsvProductGenerator[Twentysy]].toColumnNames(None, None) shouldBe "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t"
   }

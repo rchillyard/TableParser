@@ -153,7 +153,7 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
 abstract class StringRowProcessor[Row](implicit rp: RowParser[Row, String]) extends AbstractRowProcessor[Row] {
   type Input = String
 
-  val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+  val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
 
   /**
    * Processes an iterator of input rows with an optional header and parses them into rows.

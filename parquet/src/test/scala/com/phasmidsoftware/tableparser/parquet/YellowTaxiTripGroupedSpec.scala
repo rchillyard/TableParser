@@ -26,11 +26,11 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAnd
       "metrics" -> TripMetrics.converter.asInstanceOf[ParquetCellConverter[Any]]
     )
     override val groupedHelpers: Map[String, (ClassTag[?], ColumnHelper[?])] = Map(
-      "ids" -> (implicitly[ClassTag[TripIdentifiers]], TripIdentifiers.helper),
-      "timing" -> (implicitly[ClassTag[TripTiming]], TripTiming.helper),
-      "geo" -> (implicitly[ClassTag[TripGeography]], TripGeography.helper),
-      "fare" -> (implicitly[ClassTag[FareBreakdown]], FareBreakdown.helper),
-      "metrics" -> (implicitly[ClassTag[TripMetrics]], TripMetrics.helper)
+      "ids" -> (summon[ClassTag[TripIdentifiers]], TripIdentifiers.helper),
+      "timing" -> (summon[ClassTag[TripTiming]], TripTiming.helper),
+      "geo" -> (summon[ClassTag[TripGeography]], TripGeography.helper),
+      "fare" -> (summon[ClassTag[FareBreakdown]], FareBreakdown.helper),
+      "metrics" -> (summon[ClassTag[TripMetrics]], TripMetrics.helper)
     )
   }
 

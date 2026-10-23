@@ -396,7 +396,7 @@ abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
    *         or an error if parsing fails for other exceptions.
    */
   def parse(s: String, optModifier: Option[String]): Try[Option[T]] =
-    implicitly[Parseable[T]].parse(s, optModifier).map(Option(_)).recoverWith {
+    summon[Parseable[T]].parse(s, optModifier).map(Option(_)).recoverWith {
     case _: BlankException => Success(None)
   }
 }
@@ -421,8 +421,8 @@ abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
  * import com.phasmidsoftware.tableparser.core.parse._
  * import ParseableOption._
  *
- * val maybeInt: Try[Option[Int]] = implicitly[Parseable[Option[Int]]].parse("42", None)
- * val maybeNone: Try[Option[Int]] = implicitly[Parseable[Option[Int]]].parse("", None)
+ * val maybeInt: Try[Option[Int]] = summon[Parseable[Option[Int]]].parse("42", None)
+ * val maybeNone: Try[Option[Int]] = summon[Parseable[Option[Int]]].parse("", None)
  * }}}
  *
  * The implicit instances provided:

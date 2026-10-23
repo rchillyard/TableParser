@@ -451,7 +451,7 @@ object HierarchicalRenderer {
    * import LocalDateHierarchicalRenderer._
    *
    * val localDate: LocalDate = LocalDate.of(2023, 10, 15)
-   * val rendered = implicitly[LocalDateHierarchicalRenderer].render(localDate, Map.empty)
+   * val rendered = summon[LocalDateHierarchicalRenderer].render(localDate, Map.empty)
    * println(rendered) // Outputs the hierarchical representation of the LocalDate
    * }}}
    */// TESTME

@@ -220,7 +220,7 @@ object FP {
    * @return a `Try[URL]`.
    */
   def resource[C: ClassTag](resourceName: String): Try[URL] =
-    resourceForClass(resourceName, implicitly[ClassTag[C]].runtimeClass)
+    resourceForClass(resourceName, summon[ClassTag[C]].runtimeClass)
 
   /**
    * Method to yield a Try[URL] for a resource name and a given class.

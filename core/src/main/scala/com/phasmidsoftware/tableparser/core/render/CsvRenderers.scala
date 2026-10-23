@@ -57,7 +57,7 @@ trait CsvRenderers {
      * @return A string representing the sequence `ts` in CSV format, concatenated using the delimiter defined in `csvAttributes`.
      */
     def render(ts: Seq[T], attrs: Map[String, String]): String =
-      (ts map { (t: T) => implicitly[CsvRenderer[T]].render(t) }).mkString(csvAttributes.delimiter)
+      (ts map { (t: T) => summon[CsvRenderer[T]].render(t) }).mkString(csvAttributes.delimiter)
 
     val csvAttributes: CsvAttributes = ca
   }
@@ -84,7 +84,7 @@ trait CsvRenderers {
      *         the `CsvRenderer[T]`. Otherwise, returns a default string.
      */
     def render(to: Option[T], attrs: Map[String, String]): String =
-      (to map (t => implicitly[CsvRenderer[T]].render(t))).getOrElse(defaultString)
+      (to map (t => summon[CsvRenderer[T]].render(t))).getOrElse(defaultString)
   }
 
   /**
@@ -166,7 +166,7 @@ object CsvRenderers {
    * @tparam T The type of object to be rendered into CSV format.
    */
   abstract class StandardCsvRenderer[T] extends CsvRenderer[T] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     /**
      * Renders an object of type `T` into its string representation.
@@ -195,7 +195,7 @@ object CsvRenderers {
    * Example:
    * {{{
    * // Assuming an implicit `CsvAttributes` in scope
-   * val renderer = implicitly[StandardCsvRenderer[Boolean]]
+   * val renderer = summon[StandardCsvRenderer[Boolean]]
    * val csvValue = renderer.render(true, Map.empty)
    * println(csvValue) // Output: "true"
    * }}}
@@ -363,7 +363,7 @@ object CsvRenderers {
    * Example usage:
    * {{{
    * val url: URL = new URL("https://example.com")
-   * val renderedCsv: String = implicitly[StandardCsvRenderer[URL]].render(url, Map())
+   * val renderedCsv: String = summon[StandardCsvRenderer[URL]].render(url, Map())
    * // renderedCsv would contain "https://example.com"
    * }}}
    *
@@ -373,13 +373,13 @@ object CsvRenderers {
   implicit object CsvRendererURL extends StandardCsvRenderer[URL]
 
   implicit object CsvRendererInstant extends CsvRenderer[Instant] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: Instant, attrs: Map[String, String]): String = t.toString
   }
 
 //  implicit object CsvRendererTemporal extends CsvRenderer[Temporal] {
-//    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+//    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 //    def render(t: Temporal, attrs: Map[String, String]): String = t.toString
 //  }
 }

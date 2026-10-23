@@ -44,7 +44,7 @@ object CsvRenderer extends CsvRenderers {
    * @see Row
    */
   implicit object CsvRendererRow extends CsvRenderer[Row] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
   }
@@ -93,12 +93,12 @@ object CsvRenderer extends CsvRenderers {
   }
 
   implicit val localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
   }
 //  implicit val rendererTemporal: CsvRenderer[Temporal] = new CsvRenderer[Temporal] {
-//    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+//    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 //
 //    def render(t: Temporal, attrs: Map[String, String]): String = t.toString
 //  }
@@ -220,9 +220,9 @@ abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGene
    */
   def render(t: Table[T], attrs: Map[String, String]): Try[O] = t match {
     case x: Table[?] =>
-      val sw = implicitly[Writable[O]]
-      val tc = implicitly[CsvRenderer[T]]
-      val tg = implicitly[CsvGenerator[T]]
+      val sw = summon[Writable[O]]
+      val tc = summon[CsvRenderer[T]]
+      val tg = summon[CsvGenerator[T]]
       val hdr: String = tg match {
         case _tg: CsvProductGenerator[?] =>
           _tg.toColumnNames(None, None)
@@ -301,5 +301,5 @@ object CsvTableFileRenderer {
    *         to the specified file.
    */
   def apply[T: CsvRenderer : CsvGenerator](file: File)(implicit csvAttributes: CsvAttributes): CsvTableFileRenderer[T] =
-    CsvTableFileRenderer(file.toPath)(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], csvAttributes)
+    CsvTableFileRenderer(file.toPath)(summon[CsvRenderer[T]], summon[CsvGenerator[T]], csvAttributes)
 }

@@ -33,7 +33,7 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
       new HeadedTable(Content(rows), header)
 
     val rowParser: RowParser[Row, Input] =
-      implicitly[RowParser[Row, String]]
+      summon[RowParser[Row, String]]
   }
 }
 

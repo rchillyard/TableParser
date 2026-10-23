@@ -61,7 +61,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override val forgiving: Boolean = false
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
 
       protected def builder(rows: Iterator[Movie], header: Header): Table[Row] =
         HeadedTable(rows, header)
@@ -87,7 +87,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override val forgiving: Boolean = false
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
     }
 
     val movies = Seq(
@@ -110,7 +110,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       override val forgiving: Boolean = false
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
     }
 
     val movies = Seq(
@@ -131,8 +131,8 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   behavior of "Name"
   it should "parse Philip Michael Thomas" in {
-    implicitly[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", None, "Thomas", None))
-    implicitly[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Michael Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", Some("Michael"), "Thomas", None))
+    summon[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", None, "Thomas", None))
+    summon[CellParser[com.phasmidsoftware.tableparser.core.examples.Name]].convertString("Philip Michael Thomas") shouldBe Success(com.phasmidsoftware.tableparser.core.examples.Name("Philip", Some("Michael"), "Thomas", None))
 
   }
 

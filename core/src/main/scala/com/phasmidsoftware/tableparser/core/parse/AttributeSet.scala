@@ -52,7 +52,7 @@ object AttributeSet extends CellParsers with CsvGenerators with CsvRenderers {
   // An AttributeSet is written in one cell, its attributes separated by "|" (the default listSep of RowConfig),
   // which is how it is read (see LineParser), e.g. Action|Adventure|Fantasy.
   implicit val renderer: CsvRenderer[AttributeSet] = new CsvRenderer[AttributeSet] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(a: AttributeSet, attrs: Map[String, String]): String = a.xs mkString "|"
   }

@@ -34,12 +34,12 @@ class UnstructuredMovieSpec extends AnyFlatSpec with Matchers {
   it should "render a movie as it was read" in {
     matchTry(Table.parseResource[Table[UnstructuredMovie]]("movie_metadata.csv", classOf[UnstructuredMovie])) {
       case mt@HeadedTable(_, _) =>
-        mt.find(_.movieTitle.startsWith("Avatar")) map (implicitly[CsvProduct[UnstructuredMovie]].render(_)) shouldBe Some(avatar)
+        mt.find(_.movieTitle.startsWith("Avatar")) map (summon[CsvProduct[UnstructuredMovie]].render(_)) shouldBe Some(avatar)
     }
   }
 
   it should "generate the header of the file it was read from" in {
     // The column names come from the field names, mapped by the same ColumnHelper that parsing uses.
-    implicitly[CsvProduct[UnstructuredMovie]].asInstanceOf[CsvProductGenerator[UnstructuredMovie]].toColumnNames(None, None) shouldBe header
+    summon[CsvProduct[UnstructuredMovie]].asInstanceOf[CsvProductGenerator[UnstructuredMovie]].toColumnNames(None, None) shouldBe header
   }
 }

@@ -51,7 +51,7 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterator[String], n: Int): IO[T] = implicitly[TableParser[T]] match {
+  def parse[T: TableParser](ws: Iterator[String], n: Int): IO[T] = summon[TableParser[T]] match {
     case parser: StringTableParser[T] => IO.fromTry(parser.parse(ws, n))
     case x => IO.raiseError(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
   }
@@ -228,7 +228,7 @@ object IOTable {
 //   * @return an IO[T]
 //   */
 //  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): IO[T] = {
-//    val tableParser = implicitly[TableParser[T]]
+//    val tableParser = summon[TableParser[T]]
 //    tableParser match {
 //      case parser: TableParserIO[T] => parser.parseIO(wss, 1)
 //      case _ => IO.raiseError(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))

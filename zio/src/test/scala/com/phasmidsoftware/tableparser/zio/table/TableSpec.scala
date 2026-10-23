@@ -54,7 +54,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
       protected def builder(rows: Iterator[IntPair], header: Header): Table[IntPair] = HeadedTable(rows, Header[IntPair]())
 
-      val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+      val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
     }
 
     implicit object IntPairTableParser extends IntPairTableParser
@@ -256,7 +256,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
 
     val wi: Task[String] = ZIOTable.parse(Seq("1 2", "42 99")) map {
-      case r: Table[IntPair] => implicitly[Renderer[Table[IntPair], String]].render(r)
+      case r: Table[IntPair] => summon[Renderer[Table[IntPair], String]].render(r)
     }
     matchZIO(wi) {
       case "a|b\n1|2\n42|99\n" => true
@@ -289,7 +289,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val fi: Task[FileWriter] = ZIOTable.parse(Seq("1 2", "42 99")) map {
       case r: Table[IntPair] =>
-        val z: Renderer[Table[IntPair], FileWriter] = implicitly[Renderer[Table[IntPair], FileWriter]]
+        val z: Renderer[Table[IntPair], FileWriter] = summon[Renderer[Table[IntPair], FileWriter]]
         z.render(r)
     }
     matchZIO(fi) {

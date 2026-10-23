@@ -60,7 +60,7 @@ object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerator
     type Row = DailyRaptorReport
 
     val rowParser: RowParser[Row, String] =
-      implicitly[RowParser[Row, String]]
+      summon[RowParser[Row, String]]
 
     protected def builder(rows: Iterator[DailyRaptorReport], header: Header): Table[Row] =
       HeadedTable(rows, header)
@@ -132,7 +132,7 @@ object Hawks extends CsvRenderers with CellParsers with CsvGenerators {
     override val headerRowsToRead: Int =
       0
     val rowParser: RowParser[Row, String] =
-      implicitly[RowParser[Row, String]]
+      summon[RowParser[Row, String]]
 
     protected def builder(rows: Iterator[Hawks], header: Header): Table[Hawks] =
       HeadedTable(rows, Header[Hawks]())

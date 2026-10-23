@@ -497,7 +497,7 @@ abstract class HeadedCSVTableParser[T: ClassTag](implicit rp: RowParser[T, Strin
    *
    * @return a RowParser[Row, Input].
    */
-  val rowParser: RowParser[T, String] = implicitly[RowParser[T, String]]
+  val rowParser: RowParser[T, String] = summon[RowParser[T, String]]
 }
 
 /**

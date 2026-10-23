@@ -86,23 +86,23 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   it should "render Complex as sequence of numbers" in {
     import Complex1._
     val z = Complex(0, 1)
-    val node = implicitly[HierarchicalRenderer[Complex]].render(z)
-    implicitly[TreeWriter[String]].evaluate(node) shouldBe "<complex>: \"\" () [<>: \"0.0\" (name -> r) [] ,<>: \"1.0\" (name -> i) [] ] "
+    val node = summon[HierarchicalRenderer[Complex]].render(z)
+    summon[TreeWriter[String]].evaluate(node) shouldBe "<complex>: \"\" () [<>: \"0.0\" (name -> r) [] ,<>: \"1.0\" (name -> i) [] ] "
   }
 
   it should "render Complex as an HTML" in {
     import Complex3._
     val z = Complex(0, 1)
     import HTML._
-    val node = implicitly[HierarchicalRenderer[Complex]].render(z)
-    implicitly[TreeWriter[HTML]].evaluate(node) shouldBe HTML("tr", Nil, None, List(HTML("td", Seq(Attribute("name" -> "r")), Some("0.0"), Nil), HTML("td", Seq(Attribute("name" -> "i")), Some("1.0"), Nil)))
+    val node = summon[HierarchicalRenderer[Complex]].render(z)
+    summon[TreeWriter[HTML]].evaluate(node) shouldBe HTML("tr", Nil, None, List(HTML("td", Seq(Attribute("name" -> "r")), Some("0.0"), Nil), HTML("td", Seq(Attribute("name" -> "i")), Some("1.0"), Nil)))
   }
 
   it should "render Complicated as an SimpleHTML" in {
     import Complicated._
     val z = Complicated("strange", 42, open = false, Some(6175551234L), Seq("Tom", "Dick", "Harry"))
-    val node = implicitly[HierarchicalRenderer[Complicated]].render(z)
-    implicitly[TreeWriter[SimpleHTML]].evaluate(node) shouldBe SimpleHTML("x", None, Map.empty, List(SimpleHTML("element", Some("strange"), Map("name" -> "name"), List()), SimpleHTML("", Some("42"), Map("name" -> "count"), List()), SimpleHTML("", Some("false"), Map("name" -> "open"), List()), SimpleHTML("", None, Map("name" -> "maybePhone"), List(SimpleHTML("", Some("6175551234"), Map.empty, List()))), SimpleHTML("", None, Map("name" -> "aliases"), List(SimpleHTML("element", Some("Tom"), Map.empty, List()), SimpleHTML("element", Some("Dick"), Map.empty, List()), SimpleHTML("element", Some("Harry"), Map.empty, List())))))
+    val node = summon[HierarchicalRenderer[Complicated]].render(z)
+    summon[TreeWriter[SimpleHTML]].evaluate(node) shouldBe SimpleHTML("x", None, Map.empty, List(SimpleHTML("element", Some("strange"), Map("name" -> "name"), List()), SimpleHTML("", Some("42"), Map("name" -> "count"), List()), SimpleHTML("", Some("false"), Map("name" -> "open"), List()), SimpleHTML("", None, Map("name" -> "maybePhone"), List(SimpleHTML("", Some("6175551234"), Map.empty, List()))), SimpleHTML("", None, Map("name" -> "aliases"), List(SimpleHTML("element", Some("Tom"), Map.empty, List()), SimpleHTML("element", Some("Dick"), Map.empty, List()), SimpleHTML("element", Some("Harry"), Map.empty, List())))))
   }
 
   it should "render a table of Complexes in HTML without a header" in {

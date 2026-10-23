@@ -52,7 +52,7 @@ object CrimeParser extends CellParsers {
   private val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", " $1")
 
   implicit object BigIntCellParser extends SingleCellParser[BigInt] {
-    def convertString(w: String): Try[BigInt] = implicitly[Parseable[BigInt]].parse(w, Some("16"))
+    def convertString(w: String): Try[BigInt] = summon[Parseable[BigInt]].parse(w, Some("16"))
   }
 
   implicit val movieColumnHelper: ColumnHelper[Crime] = columnHelper(camelToSnakeCaseColumnNameMapper,
@@ -72,7 +72,7 @@ object CrimeParser extends CellParsers {
 
     override val forgiving: Boolean = true
 
-    val rowParser: RowParser[Row, String] = implicitly[RowParser[Row, String]]
+    val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
 
     protected def builder(rows: Iterator[Crime], header: Header): Table[Row] =
       HeadedTable(Content(rows), header)
@@ -88,7 +88,7 @@ object CrimeRenderer extends CsvRenderers {
   private val generators = new CsvGenerators {}
 
   implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: BigInt, attrs: Map[String, String]): String = t.toString(16)
   }
@@ -106,7 +106,7 @@ object CrimeLocationRenderer extends CsvRenderers {
   private val generators = new CsvGenerators {}
 
   implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt] {
-    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: BigInt, attrs: Map[String, String]): String = t.toString(16)
   }
