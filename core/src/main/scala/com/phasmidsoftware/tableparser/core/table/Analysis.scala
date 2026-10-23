@@ -255,34 +255,35 @@ object Column {
  * Eager statistics are computed upfront (from Parquet metadata).
  * Lazy statistics are deferred as a thunk (computed on demand).
  */
-sealed trait MaybeStatistics {
+enum MaybeStatistics {
+  /**
+   * Eager statistics, computed upfront (typically from Parquet metadata).
+   *
+   * @param stats the computed Statistics.
+   */
+  case EagerStatistics(stats: Statistics)
+
+  /**
+   * Lazy statistics, deferred as a thunk for later evaluation.
+   * Useful for expensive computations (e.g., column scan) that you may not need.
+   *
+   * @param compute a function that computes the Statistics when called.
+   */
+  case LazyStatistics(compute: () => Option[Statistics])
+
   /**
    * Force evaluation of statistics.
    * If eager, returns immediately. If lazy, executes the thunk.
    *
    * @return an optional Statistics (None if computation fails or thunk returns None).
    */
-  def getStatistics(): Option[Statistics]
+  def getStatistics(): Option[Statistics] = this match {
+    case EagerStatistics(stats) => Some(stats)
+    case LazyStatistics(compute) => compute()
+  }
 }
 
-/**
- * Eager statistics, computed upfront (typically from Parquet metadata).
- *
- * @param stats the computed Statistics.
- */
-case class EagerStatistics(stats: Statistics) extends MaybeStatistics {
-  def getStatistics(): Option[Statistics] = Some(stats)
-}
-
-/**
- * Lazy statistics, deferred as a thunk for later evaluation.
- * Useful for expensive computations (e.g., column scan) that you may not need.
- *
- * @param compute a function that computes the Statistics when called.
- */
-case class LazyStatistics(compute: () => Option[Statistics]) extends MaybeStatistics {
-  def getStatistics(): Option[Statistics] = compute()
-}
+export MaybeStatistics.{EagerStatistics, LazyStatistics}
 
 /**
  * Class to represent the statistics of a column.
