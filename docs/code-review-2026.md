@@ -1,0 +1,151 @@
+# TableParser: code review and plan for 2.0 (October 2026)
+
+This is a review of TableParser's code as it stands at 1.6.0, the first release cross-built for Scala 2.13 and Scala 3. It isn't a review of that migration, which followed the Comparer playbook (`docs/scala3-playbook.md` in Comparer).
+
+It has three parts:
+- an assessment of the code's quality
+- the dependencies and what has changed around them since TableParser was written
+- a plan: what to do in 1.x, what to decide, and what 2.0.0 (Scala 3 only) should be
+
+The figures are for the main code at the 1.6.0 release (`master` at `0dcdfd3`), in all five modules unless a module is named. The library versions are the latest on Maven Central in October 2026, and each one was checked there.
+
+---
+
+## 1. Summary
+
+TableParser is **useful and well tested, but heavy**. The central idea is sound: you describe a row as a case class, and get a fully typed table, with raw rows to fall back on while you're still learning the data.
+
+Much of the weight comes from what Scala 2 couldn't do:
+- one helper per field count, up to 13 or 19 fields
+- field names read by reflection
+- `ClassTag`s and casts to get from run time back to compile time
+
+Scala 3 does all of that directly, with `Mirror` and `derives`. So 2.0.0 isn't just a port. It's a chance to remove about a third of core and most of its casts.
+
+The rest is housekeeping: example programs and a logging backend in the library jar, a parallel collection where a sequential one would be safer, and a few dependencies that are pinned, unused or in the wrong scope.
+
+---
+
+## 2. Strengths
+
+- **The design is right at the top level.** `Table[Row]` with a `TableParser` type class and implicit `CellParser`s gives a typed result from very little code, and the README's examples show it.
+- **The modules are split sensibly.** Core has no effect system, cats and zio add `IO` and `ZIO`, and the heavy dependencies (Parquet, Spark) are in their own modules. That split is what made the cross-build manageable.
+- **The tests are substantial:** about 6,400 lines and 415 tests on 2.13 (414 on Scala 3, where spark isn't built). They passed unchanged on 2.13, 3.3 and 3.9.
+- **It handles real data.** Multi-line cells, quoted delimiters, headers spread over several rows, `Option` cells, column-name mapping, and grouped Parquet columns all have tests against real files (AirBNB, crime and NYC taxi data).
+- **It has very little unfinished code:** no `???`, two `var`s, and only four ignored tests.
+
+## 3. Weaknesses
+
+| Measure (main code: 69 files, 14,816 lines; core 47 files, 11,875 lines) | Count |
+|---|---|
+| `asInstanceOf` casts | 156 |
+| `ClassTag` mentions | 205 |
+| `implicit val`/`object` definitions | 319 |
+| `TODO` / `CHECK` / `XXX` / `CONSIDER` / `FIXME` comments | 95 |
+| `@deprecated` members (since 1.3.0 or 1.4.0) | 8 |
+| Ignored tests | 4 |
+| Statement / branch coverage (2.13, all modules) | 62.6% / 64.9% |
+
+- **Arity families make up about a third of core.** Each helper exists once per number of fields:
+
+  | File | Lines | Families |
+  |---|---|---|
+  | `render/CsvRenderers.scala` | 1,586 | `renderer1`…`renderer19`, `rendererGenerator1`…`19` |
+  | `render/CsvGenerators.scala` | 851 | `generator1`…`generator19` |
+  | `parse/CellParsers.scala` | 688 | `cellParser1`…`cellParser13` |
+  | `render/HierarchicalRenderers.scala` | 580 | `renderer1`…`renderer13` |
+
+  That's 3,705 lines. It also sets limits: the helpers stop at 13 fields for parsing and hierarchical rendering, and at 19 for CSV, so a wider case class has to be split into nested ones.
+- **Field names come from reflection.** `util/Reflection.extractFieldNames` works out a case class's fields from its `copy$default$N` methods and declared fields. It's used in `CellParsers`, 13 times in `HierarchicalRenderers`, in `CsvGenerator` and `Table`, and in three parquet classes. It works, but it depends on how the compiler encodes case classes, which is exactly what can change between Scala versions. Scala 3's `MirroredElemLabels` gives the names at compile time.
+- **Types often give way at run time.** There are 156 casts and 205 `ClassTag`s. Some are inherent in parsing text, but many exist only to get back a type that the arity families lost. Even the README's JSON example needs `.asInstanceOf[Renderable[Partnership]]`.
+- **`Content` is parallel by default.** `Content.apply` wraps every table's rows in a `ParVector` (`table/Content.scala:281`), so row order isn't guaranteed unless you sort, as `Table`'s own Scaladoc notes. It also caused the one real Scala 3 bug in the migration: `Main` in `Analysis.scala` ran a parallel `foreach` during object initialization and deadlocked. For a parsing library, being sequential and deterministic by default is the safer choice, with parallelism something callers ask for.
+- **Core's main sources contain things that aren't library code:**
+  - the `Movie` and crime examples, in `core/examples`
+  - the `Main` program in `table/Analysis.scala`
+  - `table/TableWorksheet.sc`
+  - `table/Sequential.scala`, whose own comment says none of it is used yet
+- **Some dependencies are in the wrong scope:**
+  - core depends on `logback-classic` at run time, which imposes a logging backend on every user. A library should depend only on the SLF4J API, which `scala-logging` already brings.
+  - zio depends on `zio-http`, but nothing imports it.
+  - zio depends on `zio-test-junit` at compile time, because `zio/util/EvaluateZIO.scala` (in main) imports `zio.test._`. So test libraries end up on every user's classpath.
+- **`Table.scala` does too much.** It's 1,240 lines: the `Table` trait (which extends `Iterable`), its companion with the parse methods, `RenderableTable`, `HeadedTable`, `UnheadedTable`, `Header`, `HasKey` and `TableException`.
+- **Some of the build has been left behind.**
+  - The integration tests in `src/it` (six files) aren't compiled or run; the lines that would include them are commented out in `build.sbt`.
+  - cats-effect is pinned at 3.6.3 ("3.7.0 appears to be missing the encryption classes that we need"), and zio at 2.1.22 ("2.1.24 is broken for some reason").
+  - Until 1.6.0, parquet published two 50 MB test data files in its tests jars.
+
+---
+
+## 4. Dependencies
+
+**Key:**
+- **Keep:** no change needed.
+- **Update:** keep it, but move to the current version.
+- **Replace:** move to the alternative, in 2.0 if it changes the API.
+- **Decide:** there's a real choice to make first.
+
+| Dependency (module) | Used for | Status (October 2026) | Recommendation |
+|---|---|---|---|
+| `scala-parallel-collections` 1.2.0 (core) | `Content`'s `ParVector` | Maintained | **Replace** in 2.0: make `Content` sequential by default, and let callers opt in to parallel processing. |
+| `scala-parser-combinators` 2.4.0 (core) | `LineParser`, `Parseable` | 2.5.0 is current. **cats-parse** `cats-parse_3` 1.1.0 is the Typelevel alternative. | **Update.** Rewriting the line parser in cats-parse isn't worth it unless it's rewritten for other reasons. |
+| `spray-json` 1.3.6 (core) | `JsonTableRenderer`, `TableJsonFormat` | No release since 1.3.6. **circe** `circe-core_3` 0.14.17 and **jsoniter-scala** `jsoniter-scala-core_3` 2.41.7 are maintained, and both derive codecs with Scala 3. | **Decide.** Either replace it with circe (or jsoniter-scala) in 2.0, or move JSON support into its own small module, so that core doesn't depend on a JSON library at all. |
+| `nscala-time` 3.0.0 (core) | Joda-Time `DateTime`/`LocalDate` cells, in 7 files | Joda-Time recommends `java.time`, which core already uses in 6 files. nscala-time 3.2.0 is current. | **Replace** with `java.time` in 2.0. Keep the Joda parsers in 1.x. |
+| `logback-classic` (core, `Runtime`) | Logging backend | — | **Replace** now: make it `Test` only. Users choose their own backend. |
+| `scala-logging` 3.9.6 (core) | Logging | Maintained | **Keep.** Flog (`flog_3` 1.0.15) is yours, but it's for debugging, not logging. |
+| `tsec-cipher-jca` 0.5.0 (cats) | `Encryption` (AES for encrypted CSV columns), in one file | **0.6.0 was published in September 2026**, so tsec is still maintained. | **Update** to 0.6.0, and see whether that lets cats-effect move off 3.6.3. |
+| `cats-effect` 3.6.3 (cats) | `IO`, `Resource` | 3.7.1 is current. | **Update**, once tsec allows it. |
+| `zio` 2.1.22 (zio) | `ZIO` tables | 2.1.27 is current. | **Update**, and find out what broke in 2.1.24. |
+| `zio-http` 3.4.0 (zio) | Nothing | — | **Remove.** |
+| `zio-test-junit` (zio, compile scope) | `EvaluateZIO`, a test helper in main | — | **Replace:** move `EvaluateZIO` to the tests (deprecating it in 1.x), and make `zio-test-junit` `Test` only. |
+| `parquet-column`, `parquet-hadoop` 1.15.2 (parquet) | Reading Parquet | 1.18.1 is current. | **Update.** |
+| `spark-sql` 4.0.1 (spark, `provided`) | `DatasetParser` (203 lines) | Spark isn't published for Scala 3 (`spark-sql_3` doesn't exist); `spark-sql_2.13` 4.2.0 is in preview. | **Decide** (see §6, step 3). |
+
+---
+
+## 5. Known users
+
+These decide what can change without notice, and what needs a migration path.
+
+- **CSYE7200** (and `CSYE7200_Fall2026`, which is derived from it) uses `tableparser-core`, `tableparser-spark` and `tableparser-parquet` 1.5.1 (`Versions.tableParser2`). It imports `FP`, `ColumnHelper` (including `camelToSnakeCaseColumnNameMapperLower`), `CellParser`, `Table`, `TableParser` and `CsvAttributes`. Two assignments name `tableparser-core_2.13` explicitly, "Needed for FP object". CSYE7200's modules use Scala 2.12, 2.13 and 3.3.8.
+- **TableParserApps** uses `tableparser-spark` 1.2.3, on Scala 2.13.17.
+- **LaScala** will retire its own CSV readers (`ProductStream`, `CSV`, `TupleStream`, `Ingest`) in favour of TableParser now that it's on Scala 3 (LaScala's `docs/code-review-2026.md`, §4.4). 1.6.0 makes that possible.
+
+## 6. Plan
+
+1. **1.6.0**: cross-built for 2.13 and 3.3 (PR #68). Released. The follow-up branch `1_6_0_readme` fixes the README and stops parquet publishing its tests jars.
+2. **1.7.0 (cross-built, no API breaks)**: housekeeping, and deprecations that point to 2.0.
+   - Make `logback-classic` `Test` only, remove `zio-http`, and deprecate `EvaluateZIO`.
+   - Deprecate the examples, `Main`, `TableWorksheet.sc` and `Sequential` in core, with a message saying where they'll go.
+   - Update tsec to 0.6.0, and then cats-effect, zio and parquet, as far as the pins allow.
+   - Either reinstate the `src/it` tests or delete them.
+   - Report coverage in CI, so that 2.0 can be measured against it.
+3. **Decide**, before 2.0:
+   - **Spark.** 2.0 is Scala 3 only, and Spark isn't. Either keep `tableparser-spark` on the 1.x line (and TableParserApps with it), or drop it. I'd keep it on 1.x: it's 203 lines, and its users are on 2.13 anyway.
+   - **JSON.** Replace spray-json with circe, or move JSON into its own module.
+   - **Encryption.** Keep it in cats (with tsec 0.6.0), or move it into its own module, so that the cats module depends on nothing but cats-effect.
+   - **`FP`.** CSYE7200 uses `core.util.FP` for its own sake, which suggests it's a general-purpose utility living in the wrong library. Keep it, or point CSYE7200 elsewhere.
+4. **2.0.0 (Scala 3 only)**: give TableParser the Comparer treatment.
+   - **Derivation:** replace the four arity families and `Reflection` with `derives`, using `Mirror.ProductOf` for the field types and `MirroredElemLabels` for their names (playbook §6–7). This removes the 13- and 19-field limits as well as about 3,700 lines.
+   - `given`/`using` throughout, with no implicit conversions or primitive givens.
+   - Remove the casts that derivation makes unnecessary, and the `ClassTag`s with them.
+   - Make `Content` sequential by default.
+   - Move the examples and `Main` into the tests, or into TableParserApps.
+   - Split `Table.scala` into the trait, the parse methods, the concrete tables and `Header`.
+   - Remove everything deprecated, including the 8 members deprecated since 1.3.0 and 1.4.0.
+   - Replace Joda-Time with `java.time`, and apply step 3's decisions.
+   - Enums for the sealed hierarchies, the indentation-syntax rewrite, and `-Wunused:all`.
+   - Raise coverage well above 62%; Comparer aims for 100%.
+   - Migrate CSYE7200 (in CSYE7200, from which `CSYE7200_Fall2026` is derived) and LaScala to it.
+5. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
+
+## Appendix: how the figures were measured
+
+All were measured in `*/src/main/scala` at the 1.6.0 release, unless noted:
+- **Casts:** `grep -rhoE 'asInstanceOf'`
+- **`ClassTag`s:** `grep -rhoE 'ClassTag'`
+- **Implicit definitions:** `grep -rhoE 'implicit (lazy )?(val|object)'`
+- **Comment markers:** `grep -rhoE '\b(TODO|CHECK|XXX|CONSIDER|FIXME)\b'`
+- **Ignored tests:** `ignore should` in `*/src/test`
+- **Arity families:** `grep -hoE 'def [a-zA-Z]+[0-9]+\b'` in the four files named in §3
+- **Coverage:** `sbt coverage test coverageAggregate` on 2.13.17, during the migration
+- **Versions:** the `<release>` in each artifact's `maven-metadata.xml` on Maven Central, except circe, where that is a milestone (0.15.0-M1) and the latest stable release is given instead
