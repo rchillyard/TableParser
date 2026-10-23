@@ -390,7 +390,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    *               which defines how input elements can be combined or validated during processing.
    * @return a `Try` containing a `Table` if the parsing is successful, or an error in case of failure.
    */
-  def doParseRows(ts: Iterator[Input], header: Header, f: ((Input, Int)) => Try[Row])(implicit ev: Joinable[Input]): Try[Table] = {
+  def doParseRows(ts: Iterator[Input], header: Header, f: ((Input, Int)) => Try[Row])(using ev: Joinable[Input]): Try[Table] = {
 
     val inputTransformer = new IndexedInputToRowsAggregator(f, multiline, forgiving, predicate)
 
@@ -477,7 +477,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
  * @tparam T the parametric type of rows in the table.
  * @param rp an implicit `RowParser`, which defines the logic for parsing individual rows of type `T` from strings.
  */
-abstract class HeadedCSVTableParser[T: ClassTag](implicit rp: RowParser[T, String]) extends StringTableParser[Table[T]] {
+abstract class HeadedCSVTableParser[T: ClassTag](using rp: RowParser[T, String]) extends StringTableParser[Table[T]] {
   type Row = T
 
   /**

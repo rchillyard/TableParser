@@ -119,7 +119,7 @@ trait InputPreprocessor[Input, Row] {
    *         - In multiline mode, elements may span across multiple lines, joined using the logic provided by the `Joinable` type class.
    *         - In single-line mode, each input element is processed individually.
    */
-  def mapTsToRows(xs: Iterator[Input])(multiline: Boolean)(g: ((Input, Int)) => Try[Row])(implicit ev: Joinable[(Input, Int)]): Iterator[Try[Row]] =
+  def mapTsToRows(xs: Iterator[Input])(multiline: Boolean)(g: ((Input, Int)) => Try[Row])(using ev: Joinable[(Input, Int)]): Iterator[Try[Row]] =
     if (multiline)
       for (ry <- new FunctionIterator[(Input, Int), Row](g)(joinIncomplete(xs.zipWithIndex))) yield ry
     else
@@ -134,7 +134,7 @@ trait InputPreprocessor[Input, Row] {
    * @param ev the Joinable of (Input, Int).
    * @return the inputs, with each incomplete one joined to what follows it.
    */
-  private def joinIncomplete(xs: Iterator[(Input, Int)])(implicit ev: Joinable[(Input, Int)]): Iterator[(Input, Int)] = new Iterator[(Input, Int)] {
+  private def joinIncomplete(xs: Iterator[(Input, Int)])(using ev: Joinable[(Input, Int)]): Iterator[(Input, Int)] = new Iterator[(Input, Int)] {
     def hasNext: Boolean = xs.hasNext
 
     def next(): (Input, Int) = {

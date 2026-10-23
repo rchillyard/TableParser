@@ -130,7 +130,7 @@ object Analysis {
    * @param tableParser the RawTableParser to use. Defaults to RawTableParser().
    * @return a ColumnStatistics object.
    */
-  def forCsv(path: Path)(implicit tableParser: RawTableParser = RawTableParser()): ColumnStatistics =
+  def forCsv(path: Path)(using tableParser: RawTableParser = RawTableParser()): ColumnStatistics =
     tableParser.parse(Try(Source.fromFile(path.toFile))) match {
       case Success(rawTable: RawTable) =>
         CsvAnalyzer(rawTable).analyze()
@@ -148,7 +148,7 @@ object Analysis {
    * @param singleFileFactory implicit single-file analyzer factory from parquet module.
    * @return a ColumnStatistics object.
    */
-  def forParquet[Row <: Product](path: Path)(implicit singleFileFactory: SingleFileAnalyzerFactory): ColumnStatistics =
+  def forParquet[Row <: Product](path: Path)(using singleFileFactory: SingleFileAnalyzerFactory): ColumnStatistics =
     singleFileFactory(path).analyze()
 
   /**
@@ -161,7 +161,7 @@ object Analysis {
    * @param datasetFactory implicit dataset analyzer factory from parquet module.
    * @return a ColumnStatistics object.
    */
-  def forParquetDataset[Row <: Product](path: Path)(implicit datasetFactory: DatasetAnalyzerFactory): ColumnStatistics =
+  def forParquetDataset[Row <: Product](path: Path)(using datasetFactory: DatasetAnalyzerFactory): ColumnStatistics =
     datasetFactory(path).analyze()
 }
 
@@ -246,7 +246,7 @@ object Column {
    * @param provider        the ColumnStatisticsProvider, usually implicit.
    * @return an optional Column with statistics computed (eager or lazy).
    */
-  def statisticsFrom(path: Path, columnName: String, useMetadataOnly: Boolean = true)(implicit provider: ColumnStatisticsProvider): Option[Column] =
+  def statisticsFrom(path: Path, columnName: String, useMetadataOnly: Boolean = true)(using provider: ColumnStatisticsProvider): Option[Column] =
     provider.computeStatistics(path, columnName, useMetadataOnly)
 }
 

@@ -39,7 +39,7 @@ object ParquetParser {
    */
   def parse[Row <: Product : ClassTag](
                                               path: Path
-                                      )(implicit helper: ColumnHelper[Row]): Try[Table[Row]] = {
+                                      )(using helper: ColumnHelper[Row]): Try[Table[Row]] = {
 
     val capturedHelper = helper  // capture before entering anonymous class
 
@@ -62,7 +62,7 @@ object ParquetParser {
    */
   def parseDataset[Row <: Product : ClassTag](
                                                      path: Path
-                                             )(implicit helper: ColumnHelper[Row]): Try[Table[Row]] = {
+                                             )(using helper: ColumnHelper[Row]): Try[Table[Row]] = {
 
     val capturedHelper = helper  // capture before entering anonymous class
 

@@ -20,7 +20,7 @@ trait CsvGenerators {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[ Seq[T] ]
    */
-  def sequenceGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Seq[T]] = new StandardCsvGenerator[Seq[T]]
+  def sequenceGenerator[T](using ca: CsvAttributes): CsvGenerator[Seq[T]] = new StandardCsvGenerator[Seq[T]]
 
   /**
    * Method to return a CsvGenerator[ Option[T] ].
@@ -28,7 +28,7 @@ trait CsvGenerators {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvGenerator[ Option[T] ].
    */
-  def optionGenerator[T](implicit ca: CsvAttributes): CsvGenerator[Option[T]] = new StandardCsvGenerator[Option[T]]
+  def optionGenerator[T](using ca: CsvAttributes): CsvGenerator[Option[T]] = new StandardCsvGenerator[Option[T]]
 
   implicit val optionIntGenerator: CsvGenerator[Option[Int]] = optionGenerator
   implicit val optionDoubleGenerator: CsvGenerator[Option[Double]] = optionGenerator
@@ -53,7 +53,7 @@ trait CsvGenerators {
    * @tparam T the underlying type.
    * @return a CsvGenerator[Option[T]].
    */
-  def optionProductGenerator[T](implicit g: CsvGenerator[T]): CsvGenerator[Option[T]] = new CsvGenerator[Option[T]] {
+  def optionProductGenerator[T](using g: CsvGenerator[T]): CsvGenerator[Option[T]] = new CsvGenerator[Option[T]] {
     val csvAttributes: CsvAttributes = g.csvAttributes
 
     def toColumnName(po: Option[String], name: String): String = g.toColumnName(po, name)
@@ -65,7 +65,7 @@ trait CsvGenerators {
    * @tparam T the type of the column objects.
    * @return a CsvGenerator[T].
    */
-  def skipGenerator[T](implicit ca: CsvAttributes): CsvGenerator[T] = new CsvProductGenerator[T] {
+  def skipGenerator[T](using ca: CsvAttributes): CsvGenerator[T] = new CsvProductGenerator[T] {
     val csvAttributes: CsvAttributes = ca
 
     override def toColumnName(po: Option[String], name: String): String = ""

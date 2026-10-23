@@ -65,7 +65,7 @@ class EncryptedHeadedStringTableParserSpec extends flatspec.AnyFlatSpec with sho
 
     val parser = EncryptedHeadedStringTableParser[Int, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 1)
     val rowConfig = RowConfig.defaultEncryptedRowConfig
-    val lineParser: LineParser = LineParser.apply(rowConfig)
+    val lineParser: LineParser = LineParser.apply(using rowConfig)
     parser.setRowParser(StandardRowParser[Int](lineParser)) shouldBe PlainTextHeadedStringTableParser[Int](None, forgiving = false, 1)
   }
 

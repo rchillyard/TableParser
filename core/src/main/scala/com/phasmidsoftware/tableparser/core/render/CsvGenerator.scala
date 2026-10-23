@@ -136,7 +136,7 @@ trait CsvProductGenerator[T] extends CsvGenerator[T] {
  * the configuration for CSV generation.
  * @param ca an implicit instance of `CsvAttributes` which defines the delimiter and quote character.
  */
-class StandardCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T] {
+class StandardCsvGenerator[T](using ca: CsvAttributes) extends CsvGenerator[T] {
   val csvAttributes: CsvAttributes = ca
 
   /**
@@ -150,7 +150,7 @@ class StandardCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T
    *         or just `name` if `po` is `None`.
    */
   def toColumnName(po: Option[String], name: String): String =
-    CsvRenderers.quoteIfNecessary((po map (w => s"$w.")).getOrElse("") + name)(ca)
+    CsvRenderers.quoteIfNecessary((po map (w => s"$w.")).getOrElse("") + name)(using ca)
 
   /**
    * Merges two optional strings into a single optional string.
@@ -191,7 +191,7 @@ class StandardCsvGenerator[T](implicit ca: CsvAttributes) extends CsvGenerator[T
  * @see `StandardCsvGenerator` for handling standard column name generation.
  * @see `CsvProductGenerator` for field name extraction specific to product types.
  */
-abstract class BaseCsvProductGenerator[T](implicit ca: CsvAttributes) extends StandardCsvGenerator[T] with CsvProductGenerator[T]
+abstract class BaseCsvProductGenerator[T](using ca: CsvAttributes) extends StandardCsvGenerator[T] with CsvProductGenerator[T]
 
 /**
  * The CsvGenerator of a case class T, as derived by CsvGenerator.derived.

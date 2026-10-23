@@ -25,6 +25,6 @@ object TableCrypt {
    * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
    * @param csvAttributes implicit value of CsvAttributes.
    */
-  def writeCSVFileEncrypted[A: HexEncryption, Row](table: Table[Row])(path: Path)(implicit renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
+  def writeCSVFileEncrypted[A: HexEncryption, Row](table: Table[Row])(path: Path)(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableEncryptedFileRenderer[Row, A](path.toFile).render(table)
 }

@@ -131,7 +131,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
     val encryptionHeader: Header = Header(Seq("key", "value"), Nil)
     val rowConfig = RowConfig.defaultEncryptedRowConfig
     implicit val rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
-    val lineParser: LineParser = LineParser.apply(rowConfig)
+    val lineParser: LineParser = LineParser.apply(using rowConfig)
     RawTableParser(rawPredicate, Some(encryptionHeader), forgiving = false, multiline = false, headerRowsToRead).setRowParser(StandardRowParser[RawRow](lineParser))
   }
 

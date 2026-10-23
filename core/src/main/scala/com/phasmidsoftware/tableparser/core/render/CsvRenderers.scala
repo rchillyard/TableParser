@@ -23,7 +23,7 @@ trait CsvRenderers {
    * @param ca the (implicit) CsvAttributes.
    * @return a CsvRenderer[RawRow].
    */
-  def rawRowRenderer(implicit ca: CsvAttributes): CsvRenderer[RawRow] = new CsvRenderer[RawRow] {
+  def rawRowRenderer(using ca: CsvAttributes): CsvRenderer[RawRow] = new CsvRenderer[RawRow] {
     implicit val z: CsvRenderer[String] = CsvRenderers.CsvRendererString
 
     /**
@@ -47,7 +47,7 @@ trait CsvRenderers {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[ Seq[T] ]
    */
-  def sequenceRenderer[T: CsvRenderer](implicit ca: CsvAttributes): CsvRenderer[Seq[T]] = new CsvRenderer[Seq[T]] {
+  def sequenceRenderer[T: CsvRenderer](using ca: CsvAttributes): CsvRenderer[Seq[T]] = new CsvRenderer[Seq[T]] {
 
     /**
      * Renders a sequence of objects into a CSV-formatted string using provided attributes.
@@ -69,7 +69,7 @@ trait CsvRenderers {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[ Option[T] ].
    */
-  def optionRenderer[T: CsvRenderer](defaultString: String = "")(implicit ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
+  def optionRenderer[T: CsvRenderer](defaultString: String = "")(using ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
     val csvAttributes: CsvAttributes = ca
 
     /**
@@ -99,7 +99,7 @@ trait CsvRenderers {
    * @tparam T the underlying type.
    * @return a CsvRenderer[Option[T]].
    */
-  def optionProductRenderer[T](implicit r: CsvRenderer[T], g: CsvGenerator[T], ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
+  def optionProductRenderer[T](using r: CsvRenderer[T], g: CsvGenerator[T], ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
     val csvAttributes: CsvAttributes = ca
 
     // The number of columns of a T.
@@ -121,7 +121,7 @@ trait CsvRenderers {
    * @tparam T the type of the parameter to the render method.
    * @return a CsvRenderer[T].
    */
-  def skipRenderer[T](alignment: Int = 1)(implicit ca: CsvAttributes): CsvRenderer[T] = new CsvRenderer[T] {
+  def skipRenderer[T](alignment: Int = 1)(using ca: CsvAttributes): CsvRenderer[T] = new CsvRenderer[T] {
     val csvAttributes: CsvAttributes = ca
 
     /**
@@ -324,7 +324,7 @@ object CsvRenderers {
    * @param ca the CsvAttributes (for the delimiter and the quote character).
    * @return the String, quoted if necessary.
    */
-  def quoteIfNecessary(w: String)(implicit ca: CsvAttributes): String = {
+  def quoteIfNecessary(w: String)(using ca: CsvAttributes): String = {
     val quote = ca.quote
     val delimiter = ca.delimiter.trim match {
       case "" => ca.delimiter
@@ -346,7 +346,7 @@ object CsvRenderers {
      * @return the String, quoted if necessary.
      */
     override def render(w: String, attrs: Map[String, String]): String =
-      CsvRenderers.quoteIfNecessary(w)(csvAttributes)
+      CsvRenderers.quoteIfNecessary(w)(using csvAttributes)
   }
 
   /**

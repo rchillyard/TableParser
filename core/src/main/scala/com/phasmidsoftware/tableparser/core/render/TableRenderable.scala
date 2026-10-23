@@ -34,7 +34,7 @@ trait TableRenderable[X] {
    * @tparam O the type of the result.
    * @return an instance of O.
    */
-  def render[O](implicit ev: Renderer[Table[X], O]): O
+  def render[O](using ev: Renderer[Table[X], O]): O
 
   /**
    * NOTE this is never used
@@ -46,7 +46,7 @@ trait TableRenderable[X] {
    * @tparam O a type which supports Writable (via evidence of type Writable[O])
    * @return a new (or possibly old) instance of O.
    */
-  def renderToWritable[O](implicit z: Writable[O]): O
+  def renderToWritable[O](using z: Writable[O]): O
 
   /**
    * Method to render a table in a hierarchical fashion.
@@ -62,7 +62,7 @@ trait TableRenderable[X] {
    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
    * @return a new instance of U which represents this Table as a tree of some sort.
    */
-  def renderHierarchical[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit xr: HierarchicalRenderer[X]): U
+  def renderHierarchical[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(using xr: HierarchicalRenderer[X]): U
 
   /**
    * Method to render a table in a hierarchical fashion.
@@ -78,5 +78,5 @@ trait TableRenderable[X] {
    * @tparam U a class which supports TreeWriter (i.e. there is evidence of TreeWriter[U]).
    * @return a new instance of U which represents this Table as a tree of some sort.
    */
-  def renderHierarchicalSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(implicit xr: HierarchicalRenderer[Indexed[X]]): U
+  def renderHierarchicalSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(using xr: HierarchicalRenderer[Indexed[X]]): U
 }

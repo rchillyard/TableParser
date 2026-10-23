@@ -44,7 +44,7 @@ object FP {
    * @return an `X => Boolean` function which is always yields false if its input is a failure, otherwise,
    *         it chooses every nth value (approximately).
    */
-  def sampler[X](n: Int)(implicit r: Random): X => Boolean =
+  def sampler[X](n: Int)(using r: Random): X => Boolean =
     _ => r.nextInt(n) == 0
 
   /**

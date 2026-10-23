@@ -284,7 +284,7 @@ object LineParser {
    *          `listSep` (character separating elements in a list), and `quote` (character for quoting strings).
    * @return a new instance of `LineParser`, created with the parameters defined in the provided `RowConfig`.
    */
-  def apply(implicit c: RowConfig): LineParser = {
+  def apply(using c: RowConfig): LineParser = {
     LineParser.logger.info(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
     new LineParser(c.delimiter, c.string, c.listEnclosure, c.listSep, c.quote)
   }

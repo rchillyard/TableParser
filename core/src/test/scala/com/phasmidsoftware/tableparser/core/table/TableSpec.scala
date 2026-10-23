@@ -351,7 +351,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit object DummyRenderer extends Renderer[Table[IntPair], String] {
       def render(t: Table[IntPair], attrs: Map[String, String]): String =
         t match {
-          case t: RenderableTable[IntPair] => t.renderToWritable(StringBuilderWritable).toString
+          case t: RenderableTable[IntPair] => t.renderToWritable(using StringBuilderWritable).toString
           case _ => throw TableException("render problem")
         }
     }

@@ -17,7 +17,7 @@ import scala.language.implicitConversions
  * @param tags       the child tags.
  * @param rules      the "rules" (currently ignored) but useful in the future to validate documents.
  */
-case class HTML(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(implicit rules: TagRules) extends BaseTag(name, attributes, content, tags) {
+case class HTML(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(using rules: TagRules) extends BaseTag(name, attributes, content, tags) {
 
   /**
    * Method to add a child to this Tag

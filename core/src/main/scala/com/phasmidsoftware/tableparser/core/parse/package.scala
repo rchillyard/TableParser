@@ -17,6 +17,6 @@ package object parse {
   type Strings = Seq[String]
 
   // CONSIDER moving this definition and renaming it
-  def cellReader[T](implicit cellParser: CellParser[T]): CellParser[T] = cellParser
+  def cellReader[T](using cellParser: CellParser[T]): CellParser[T] = cellParser
 
 }

@@ -111,7 +111,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "convertTo PhoneNumber (alt)" in {
     val r = RowValues(Row(Seq("Robin", "6171234567"), Header.create("name", "x"), 0))
-    r.convertTo[PhoneNumber](PhoneNumber.phoneNumberParserAlt) shouldBe Success(PhoneNumber("Robin", 6171234567L))
+    r.convertTo[PhoneNumber](using PhoneNumber.phoneNumberParserAlt) shouldBe Success(PhoneNumber("Robin", 6171234567L))
   }
 
   it should "convertTo MyDate" in {

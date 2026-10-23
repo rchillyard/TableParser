@@ -483,7 +483,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val parser = RawTableParser(TableParser.includeAll, None).setPredicate(TableParser.sampler(2))
     val rowConfig = RowConfig.defaultEncryptedRowConfig
     import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.rawRowCellParser
-    val lineParser: LineParser = LineParser.apply(rowConfig)
+    val lineParser: LineParser = LineParser.apply(using rowConfig)
     parser.setRowParser(StandardRowParser[RawRow](lineParser)) shouldBe parser
   }
 
@@ -507,7 +507,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "it should set row parser of PlainTextHeadedStringTableParser" in {
     val parser = PlainTextHeadedStringTableParser[Int](None, forgiving = false, 1).setMultiline(true)
     val rowConfig = RowConfig.defaultEncryptedRowConfig
-    val lineParser: LineParser = LineParser.apply(rowConfig)
+    val lineParser: LineParser = LineParser.apply(using rowConfig)
     parser.setRowParser(StandardRowParser[Int](lineParser)) shouldBe parser
   }
 
