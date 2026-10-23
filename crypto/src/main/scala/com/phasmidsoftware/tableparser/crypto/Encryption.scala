@@ -1,7 +1,7 @@
-package com.phasmidsoftware.tableparser.cats.crypto
+package com.phasmidsoftware.tableparser.crypto
 
 import cats.effect.IO
-import com.phasmidsoftware.tableparser.cats.crypto.Encryption.syncRandomLetter
+import com.phasmidsoftware.tableparser.crypto.Encryption.syncRandomLetter
 import com.phasmidsoftware.tableparser.core.parse.TableParserException
 import java.util.Base64
 import scala.util.Random

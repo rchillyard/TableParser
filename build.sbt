@@ -52,6 +52,17 @@ lazy val core = project.settings(
 lazy val cats = project.dependsOn(core % "compile->compile;test->test").settings(
   name := "tableparser-cats",
   libraryDependencies ++= Seq(
+    "org.typelevel" %% "cats-effect" % catsVersion,
+    "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
+    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
+    "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+  )
+)
+
+// Encryption of tables (e.g. of the rows of a CSV file), using tsec, with cats-effect IO.
+lazy val crypto = project.dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test").settings(
+  name := "tableparser-crypto",
+  libraryDependencies ++= Seq(
     "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
     "org.typelevel" %% "cats-effect" % catsVersion,
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
@@ -90,7 +101,7 @@ lazy val zio = project.dependsOn(core % "compile->compile;test->test").settings(
 // The integration tests in core/src/it and cats/src/it run against full-size data files (69 MB).
 // They're not aggregated by root, so neither `sbt test` nor CI runs them: use `sbt integration/test`.
 lazy val integration = (project in file("integration"))
-        .dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test")
+        .dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test", crypto % "compile->compile;test->test")
         .settings(
           name := "tableparser-integration",
           publish / skip := true,
@@ -104,7 +115,7 @@ lazy val integration = (project in file("integration"))
         )
 
 lazy val root = (project in file("."))
-        .aggregate(core, cats, parquet, zio)
+        .aggregate(core, cats, crypto, parquet, zio)
         .settings(
           name := "TableParser",
           publish / skip := true

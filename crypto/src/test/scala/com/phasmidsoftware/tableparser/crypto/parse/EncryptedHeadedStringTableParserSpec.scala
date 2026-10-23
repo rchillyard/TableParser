@@ -1,6 +1,6 @@
-package com.phasmidsoftware.tableparser.cats.parse
+package com.phasmidsoftware.tableparser.crypto.parse
 
-import com.phasmidsoftware.tableparser.cats.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
+import com.phasmidsoftware.tableparser.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.table.Header
 import org.scalatest.flatspec
