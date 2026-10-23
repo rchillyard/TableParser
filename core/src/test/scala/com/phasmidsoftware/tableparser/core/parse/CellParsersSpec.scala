@@ -14,6 +14,13 @@ import scala.util.{Failure, Success}
 // Top-level, so that it can use `derives`: 15 fields, more than the 13 that 1.x's cellParserN supported.
 case class Wide(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int, j: Int, k: Int, l: Int, m: Int, n: Int, o: String) derives CellParser
 
+// Public lazy vals made 1.x's reflection get the field names wrong, which is why cellParserN had a `fields` parameter.
+// The Mirror has just the constructor parameters, in order.
+case class WithLazyVals(name: String, rating: Int) derives CellParser {
+  lazy val initial: Char = name.head
+  lazy val doubled: Int = rating * 2
+}
+
 class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   case class MyNumber(x: Int)
@@ -348,5 +355,11 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val header = Header.create("o", "n", "m", "l", "k", "j", "i", "h", "g", "f", "e", "d", "c", "b", "a")
     val row = Row(Seq("fifteen", "14", "13", "12", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"), header, 0)
     parser.parse(None, row, header) shouldBe Success(Wide(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, "fifteen"))
+  }
+
+  it should "parse a case class with public lazy vals (which needed the fields parameter in 1.x)" in {
+    val header = Header.create("rating", "name")
+    val row = Row(Seq("1500", "Robin"), header, 0)
+    implicitly[CellParser[WithLazyVals]].parse(None, row, header) shouldBe Success(WithLazyVals("Robin", 1500))
   }
 }
