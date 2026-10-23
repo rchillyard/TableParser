@@ -2,7 +2,7 @@ package com.phasmidsoftware.tableparser.parquet
 
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapperLower
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
-import com.phasmidsoftware.tableparser.core.render.{CsvGenerators, CsvProductGenerator, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators, CsvProductGenerator, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import java.time.Instant
 
@@ -21,9 +21,9 @@ object TripIdentifiers extends CellParsers with CsvRenderers with CsvGenerators 
   implicit val converter: ParquetCellConverter[TripIdentifiers] =
     ParquetCellConverter.converter3(TripIdentifiers.apply)
   implicit val renderer: CsvRenderer[TripIdentifiers] =
-    renderer3(TripIdentifiers.apply)
+    CsvRenderer.derived[TripIdentifiers]
   implicit val generator: CsvProductGenerator[TripIdentifiers] =
-    generator3(TripIdentifiers.apply)
+    CsvGenerator.derived[TripIdentifiers]
 }
 
 case class TripTiming(tpepPickupDatetime: Option[Instant], tpepDropoffDatetime: Option[Instant])
@@ -35,9 +35,9 @@ object TripTiming extends CellParsers with CsvRenderers with CsvGenerators {
   implicit val converter: ParquetCellConverter[TripTiming] =
     ParquetCellConverter.converter2(TripTiming.apply)
   implicit val renderer: CsvRenderer[TripTiming] =
-    renderer2(TripTiming.apply)
+    CsvRenderer.derived[TripTiming]
   implicit val generator: CsvProductGenerator[TripTiming] =
-    generator2(TripTiming.apply)
+    CsvGenerator.derived[TripTiming]
 }
 
 case class TripGeography(puLocationId: Option[Int], doLocationId: Option[Int])
@@ -53,9 +53,9 @@ object TripGeography extends CellParsers with CsvRenderers with CsvGenerators {
   implicit val converter: ParquetCellConverter[TripGeography] =
     ParquetCellConverter.converter2(TripGeography.apply)
   implicit val renderer: CsvRenderer[TripGeography] =
-    renderer2(TripGeography.apply)
+    CsvRenderer.derived[TripGeography]
   implicit val generator: CsvProductGenerator[TripGeography] =
-    generator2(TripGeography.apply)
+    CsvGenerator.derived[TripGeography]
 }
 
 case class FareBreakdown(
@@ -79,9 +79,9 @@ object FareBreakdown extends CellParsers with CsvRenderers with CsvGenerators {
   implicit val converter: ParquetCellConverter[FareBreakdown] =
     ParquetCellConverter.converter8(FareBreakdown.apply)
   implicit val renderer: CsvRenderer[FareBreakdown] =
-    renderer8(FareBreakdown.apply)
+    CsvRenderer.derived[FareBreakdown]
   implicit val generator: CsvProductGenerator[FareBreakdown] =
-    generator8(FareBreakdown.apply)
+    CsvGenerator.derived[FareBreakdown]
 }
 
 case class TripMetrics(
@@ -98,9 +98,9 @@ object TripMetrics extends CellParsers with CsvRenderers with CsvGenerators {
   implicit val converter: ParquetCellConverter[TripMetrics] =
     ParquetCellConverter.converter4(TripMetrics.apply)
   implicit val renderer: CsvRenderer[TripMetrics] =
-    renderer4(TripMetrics.apply)
+    CsvRenderer.derived[TripMetrics]
   implicit val generator: CsvProductGenerator[TripMetrics] =
-    generator4(TripMetrics.apply)
+    CsvGenerator.derived[TripMetrics]
 }
 
 // ── Top-level grouped case class ──────────────────────────────────────────────
@@ -117,7 +117,7 @@ object YellowTaxiTripGrouped extends CellParsers with CsvRenderers with CsvGener
   implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
   implicit val helper: ColumnHelper[YellowTaxiTripGrouped] = columnHelper()
   implicit val renderer: CsvRenderer[YellowTaxiTripGrouped] =
-    renderer5(YellowTaxiTripGrouped.apply)
+    CsvRenderer.derived[YellowTaxiTripGrouped]
   implicit val generator: CsvProductGenerator[YellowTaxiTripGrouped] =
-    generator5(YellowTaxiTripGrouped.apply)
+    CsvGenerator.derived[YellowTaxiTripGrouped]
 }

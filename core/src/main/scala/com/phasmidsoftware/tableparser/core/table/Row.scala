@@ -95,7 +95,7 @@ object Row {
      * @param name The actual column name to be processed.
      * @return A string representing the fully qualified column name based on the header and delimiter configuration.
      */
-    def toColumnName(po: Option[String], name: String): String = ((hdr.xs +: hdr.xss) map (_.mkString(c.delimiter))).mkString("\n")
+    def toColumnName(po: Option[String], name: String): String = ((hdr.xs +: hdr.xss) map (_.mkString(c.delimiter))).mkString(c.newline)
   }
 }
 

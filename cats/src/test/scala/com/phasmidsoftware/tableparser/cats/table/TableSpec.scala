@@ -231,7 +231,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter
 
-    implicit val intPairRenderer: HierarchicalRenderer[IntPair] = renderer2("IntPair")(IntPair.apply)
+    implicit val intPairRenderer: HierarchicalRenderer[IntPair] = HierarchicalRenderer.derived[IntPair]("IntPair")
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
   }
 
@@ -322,7 +322,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     matchIO(IOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = IO.fromTry(iIt.toCSV)
-        EvaluateIO(ws) shouldBe "a, b\n1, 2\n42, 99\n"
+        EvaluateIO(ws) shouldBe "a, b\r\n1, 2\r\n42, 99\r\n"
     }
   }
 
@@ -345,7 +345,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     matchIO(IOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))) {
       case iIt@HeadedTable(_, _) =>
         val ws = IO.fromTry(iIt.toCSV)
-        EvaluateIO(ws) shouldBe "a|b\n1|2\n42|99\n"
+        EvaluateIO(ws) shouldBe "a|b\r\n1|2\r\n42|99\r\n"
     }
   }
 
@@ -401,6 +401,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
-    EvaluateIO(IO.fromTry(Table.toCSVRow(table))) shouldBe "a,b\n1,2\n"
+    EvaluateIO(IO.fromTry(Table.toCSVRow(table))) shouldBe "a,b\r\n1,2\r\n"
   }
 }

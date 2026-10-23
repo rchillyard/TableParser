@@ -227,7 +227,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     implicit object HTMLTreeWriter extends HTMLTreeWriter
 
-    implicit val intPairRenderer: HierarchicalRenderer[IntPair] = renderer2("IntPair")(IntPair.apply)
+    implicit val intPairRenderer: HierarchicalRenderer[IntPair] = HierarchicalRenderer.derived[IntPair]("IntPair")
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
   }
 
@@ -319,7 +319,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case iIt@HeadedTable(_, _) =>
         val ws: Task[String] = ZIO.fromTry(iIt.toCSV)
         matchZIO(ws) {
-          case "a, b\n1, 2\n42, 99\n" => true // Any checking happen here?
+          case "a, b\r\n1, 2\r\n42, 99\r\n" => true // Any checking happen here?
         }
         true
     }
@@ -345,7 +345,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case iIt@HeadedTable(_, _) =>
         val ws = ZIO.fromTry(iIt.toCSV)
         matchZIO(ws) {
-          case "a|b\n1|2\n42|99\n" => true
+          case "a|b\r\n1|2\r\n42|99\r\n" => true
         }
         true
     }
@@ -404,7 +404,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
     matchZIO(ZIO.fromTry(Table.toCSVRow(table))) {
-      case "a,b\n1,2\n" => true
+      case "a,b\r\n1,2\r\n" => true
     }
     true
   }

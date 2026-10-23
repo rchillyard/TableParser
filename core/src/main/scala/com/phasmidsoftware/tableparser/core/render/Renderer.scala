@@ -7,7 +7,9 @@ package com.phasmidsoftware.tableparser.core.render
 import com.phasmidsoftware.tableparser.core.write.Node
 import org.joda.time.LocalDate
 import scala.annotation.implicitNotFound
-import scala.reflect.ClassTag
+import com.phasmidsoftware.tableparser.core.util.Derivation
+import scala.compiletime.{erasedValue, summonInline}
+import scala.deriving.Mirror
 
 /**
  * Definition of trait Renderer for the purpose of serializing objects of type T as an object of type O.
@@ -126,10 +128,25 @@ abstract class TaggedHierarchicalRenderer[T](val style: String, override val bas
  * @param baseAttrs baseAttrs (a Map[String, String]
  * @tparam T the type of object to be rendered.
  */
-abstract class ProductHierarchicalRenderer[T <: Product : ClassTag](val style: String, override val baseAttrs: Map[String, String] = Map()) extends HierarchicalRenderer[T] {
+abstract class ProductHierarchicalRenderer[T](val style: String, override val baseAttrs: Map[String, String] = Map()) extends HierarchicalRenderer[T] {
   def render(t: T, attrs: Map[String, String]): Node = Node(style, attrs, nodes(t))
 
   protected def nodes(t: T): Seq[Node]
+}
+
+/**
+ * The HierarchicalRenderer of a case class T, as derived by HierarchicalRenderer.derived.
+ *
+ * @param style          the style of the node for a T.
+ * @param attrs          the base attributes of the node for a T.
+ * @param fieldNames     the names of the fields of T, in declaration order.
+ * @param fieldRenderers the HierarchicalRenderers of the fields of T, in the same order.
+ * @tparam T the type of the case class.
+ */
+class ProductFieldsHierarchicalRenderer[T](style: String, attrs: Map[String, String], fieldNames: List[String], fieldRenderers: List[HierarchicalRenderer[?]]) extends ProductHierarchicalRenderer[T](style, attrs) {
+  // NOTE the casts: t is a case class (it has a Mirror.ProductOf), and each renderer is the one for its field.
+  protected def nodes(t: T): Seq[Node] =
+    (t.asInstanceOf[Product].productIterator zip fieldNames zip fieldRenderers map { case ((x, name), r) => r.asInstanceOf[HierarchicalRenderer[Any]].render(x, Map("name" -> name)) }).toSeq
 }
 
 /**
@@ -144,6 +161,30 @@ abstract class ProductHierarchicalRenderer[T <: Product : ClassTag](val style: S
  * interface.
  */
 object HierarchicalRenderer {
+
+  /**
+   * Method to derive a HierarchicalRenderer for a case class T, as a node with the given style whose children
+   * are its fields, each rendered by its own HierarchicalRenderer, with a "name" attribute giving the field's name.
+   * This replaces the renderer1 ... renderer13 methods of HierarchicalRenderers in 1.x.
+   *
+   * NOTE: because it takes a style, this is used as `given HierarchicalRenderer[T] = HierarchicalRenderer.derived[T]("style")`,
+   * not with `derives`. Each field's type must have a HierarchicalRenderer of its own.
+   *
+   * NOTE: for a case class defined inside a method, see the NOTE on CellParser.derived.
+   *
+   * @param style the style of the node for a T.
+   * @param attrs the base attributes of the node for a T (defaults to none).
+   * @param m     the Mirror of T.
+   * @tparam T a case class.
+   * @return a HierarchicalRenderer[T].
+   */
+  inline def derived[T](style: String, attrs: Map[String, String] = Map())(using m: Mirror.ProductOf[T]): HierarchicalRenderer[T] =
+    new ProductFieldsHierarchicalRenderer[T](style, attrs, Derivation.fieldNames[m.MirroredElemLabels], fieldRenderers[m.MirroredElemTypes])
+
+  private inline def fieldRenderers[Ts <: Tuple]: List[HierarchicalRenderer[?]] = inline erasedValue[Ts] match {
+    case _: EmptyTuple => Nil
+    case _: (t *: ts) => summonInline[HierarchicalRenderer[t]] :: fieldRenderers[ts]
+  }
 
   /**
    * A type class that provides functionality to render hierarchical data as strings.

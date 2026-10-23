@@ -1,6 +1,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
-import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators, CsvRenderer, CsvRenderers}
+import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators, CsvRenderer, CsvRenderers, StandardCsvGenerator}
+import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -48,8 +49,13 @@ object AttributeSet extends CellParsers with CsvGenerators with CsvRenderers {
   val none: AttributeSet = AttributeSet(Nil)
 
   implicit val parser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
-  val fAttributeSet: StringList => AttributeSet = AttributeSet.apply
-  implicit val renderer: CsvRenderer[AttributeSet] = renderer1(fAttributeSet)
-  implicit val generator: CsvGenerator[AttributeSet] = generator1(fAttributeSet)
+  // An AttributeSet is written in one cell, its attributes separated by "|" (the default listSep of RowConfig),
+  // which is how it is read (see LineParser), e.g. Action|Adventure|Fantasy.
+  implicit val renderer: CsvRenderer[AttributeSet] = new CsvRenderer[AttributeSet] {
+    val csvAttributes: CsvAttributes = implicitly[CsvAttributes]
+
+    def render(a: AttributeSet, attrs: Map[String, String]): String = a.xs mkString "|"
+  }
+  implicit val generator: CsvGenerator[AttributeSet] = new StandardCsvGenerator[AttributeSet]
 }
 

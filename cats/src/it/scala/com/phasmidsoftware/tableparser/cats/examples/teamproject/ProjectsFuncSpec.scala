@@ -49,9 +49,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         pt.writeCSVFile(Paths.get("TeamProjectOutput.csv"))
         succeed
     }
@@ -65,9 +65,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         implicit val hasKey: HasKey[TeamProject] = (t: TeamProject) => t.team.number.toString
         // TODO this integration test occasionally fails
         TableCrypt.writeCSVFileEncrypted(pt)(Paths.get("TeamProjectOutputEncrypted.csv"))
@@ -83,14 +83,14 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.toCSV)
       case x => throw ParserException(s"Expected HeadedTable but got ${x.getClass}")
     }
     matchIO(resultIO) {
-      case w if w.startsWith("Team Number,") && w.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\n") => succeed
+      case w if w.startsWith("Team Number,") && w.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\r\n") => succeed
     }
 
   }
@@ -103,9 +103,9 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.take(1).toCSV)
     }
     check(resultIO) {
@@ -113,7 +113,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
               """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
                 |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
                 |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-                |""".stripMargin =>
+                |""".stripMargin.replace("\n", "\r\n") =>
     }
   }
 
@@ -125,16 +125,16 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
           case Some(h) => Row.csvGenerator(h)
-          case None => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer(12))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.skipRenderer[Grade](12))
         IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
             """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
               |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,,,,,,,,,,,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-              |""".stripMargin
+              |""".stripMargin.replace("\n", "\r\n")
   }
 
   it should "be ingested and written out properly using fabricated header" in {
@@ -144,19 +144,19 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
       case pt@HeadedTable(_, _) =>
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
-          case _ => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case _ => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.toCSV)
     }
     EvaluateIO(resultIO) shouldBe
-            """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
+            """number,member_1,member_2,member_3,member_4,totalScore,onTime,scopeScale,planningPresentation,presentation,idea,useCases,acceptanceCriteria,teamExecution,code,unitTests,repo,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-              |2,Ringo Starr,George Harrison,Paul McCartney,,83.5,8.5,10.0,5.0,9.0,5.0,4.0,6.0,3.0,22.0,7.0,4.0,Presentation quite confused. Part of project not achieved. ,https://github.com/PhoenixMay/MovieRecommendation
+              |2,Ringo Starr,George Harrison,Paul McCartney,,83.5,8.5,10.0,5.0,9.0,5.0,4.0,6.0,3.0,22.0,7.0,4.0,"Presentation quite confused. Part of project not achieved. ",https://github.com/PhoenixMay/MovieRecommendation
               |3,Pablo Picasso,Joan Miro,,,92.0,11.0,10.0,5.0,10.0,5.0,4.0,7.0,4.0,23.0,9.0,4.0,Presentation OK. What did they do about these challenges.,https://github.com/jianghanw/CSYE7200_Team_Project_Team3
               |4,Ludwig van Beethoven,Wolfgang Amadeus Mozart,,,88.5,11.0,10.0,6.0,10.5,5.0,3.5,6.0,4.0,21.5,7.0,4.0,A/C not clearly defined (planning pres?),https://github.com/Essexwwz/heart-health-indicator
               |5,Winston Churchill,Clement Attlee,Harold McMillan,,88.5,11.0,9.5,5.0,11.0,5.0,4.0,7.0,2.0,22.0,7.0,5.0,Presentation long and detailed.  Project excellent overall. A/C not shown clearly.,https://github.com/CSYE7200-21FALL-TEAM6
-              |""".stripMargin
+              |""".stripMargin.replace("\n", "\r\n")
   }
 
   it should "be ingested and written out properly for team 1 using fabricated header" in {
@@ -166,15 +166,15 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
       case pt@HeadedTable(_, _) =>
 
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
-          case _ => createCsvGeneratorFromTeamProject(_.generator12(Grade))
+          case _ => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.renderer12(Grade))
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
-            """team.number,team.member_1,team.member_2,team.member_3,team.member_4,grade.totalScore,grade.onTime,grade.scopeScale,grade.planningPresentation,grade.presentation,grade.idea,grade.useCases,grade.acceptanceCriteria,grade.teamExecution,grade.code,grade.unitTests,grade.repo,remarks,repository
+            """number,member_1,member_2,member_3,member_4,totalScore,onTime,scopeScale,planningPresentation,presentation,idea,useCases,acceptanceCriteria,teamExecution,code,unitTests,repo,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-              |""".stripMargin
+              |""".stripMargin.replace("\n", "\r\n")
   }
 
   it should "be ingested and written out properly for team 1 using fabricated header but skipping grades" in {
@@ -183,15 +183,15 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     val resultIO = tableIO flatMap {
       case pt@HeadedTable(_, _) =>
         implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
-          case _ => createCsvGeneratorFromTeamProject(_.skipGenerator)
+          case _ => createCsvGeneratorFromTeamProject(CsvGenerator.skipGenerator[Grade])
         }
-        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(_.skipRenderer())
+        implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.skipRenderer[Grade]())
         IO.fromTry(pt.take(1).toCSV)
     }
     EvaluateIO(resultIO) shouldBe
-            """team.number,team.member_1,team.member_2,team.member_3,team.member_4,,remarks,repository
+            """number,member_1,member_2,member_3,member_4,,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
-              |""".stripMargin
+              |""".stripMargin.replace("\n", "\r\n")
   }
 
   // FIXME Issue #50
@@ -234,20 +234,20 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
     }
   }
 
-  private def createCsvGeneratorFromTeamProject(function: CsvGenerators => CsvGenerator[Grade]): CsvGenerator[TeamProject] = {
+  private def createCsvGeneratorFromTeamProject(gradeGenerator: CsvGenerator[Grade]): CsvGenerator[TeamProject] = {
     val csvGenerators = new CsvGenerators {}
     implicit val optionStringGenerator: CsvGenerator[Option[String]] = csvGenerators.optionGenerator[String]
-    implicit val teamGenerator: CsvGenerator[Team] = csvGenerators.generator5(Team)
-    implicit val gradeGenerator: CsvGenerator[Grade] = function(csvGenerators)
-    csvGenerators.generator4(TeamProject.apply)
+    implicit val teamGenerator: CsvGenerator[Team] = CsvGenerator.derived[Team]
+    implicit val g: CsvGenerator[Grade] = gradeGenerator
+    CsvGenerator.derived[TeamProject]
   }
 
-  private def createCsvRendererForTeamProject(function: CsvRenderers => CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
+  private def createCsvRendererForTeamProject(gradeRenderer: CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererURL
     val csvRenderers = new CsvRenderers {}
     implicit val optionStringRenderer: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]()
-    implicit val teamRenderer: CsvRenderer[Team] = csvRenderers.renderer5(Team)
-    implicit val gradeRenderer: CsvRenderer[Grade] = function(csvRenderers)
-    csvRenderers.renderer4(TeamProject.apply)
+    implicit val teamRenderer: CsvRenderer[Team] = CsvRenderer.derived[Team]
+    implicit val g: CsvRenderer[Grade] = gradeRenderer
+    CsvRenderer.derived[TeamProject]
   }
 }

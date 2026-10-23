@@ -52,6 +52,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
    * These are application-specific and are not indicative of any bugs in the
    * TableParser library itself.
    */
+  // NOTE: the columns are those that Movie reads (all but facenumber_in_poster of the original columns), so what is written can be read back.
   it should "be ingested and written out properly" in {
     import com.phasmidsoftware.tableparser.core.examples.Movie._
 
@@ -60,8 +61,8 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers {
     val wi: IO[String] = mti flatMap (mt => IO.fromTry(mt.toCSV)) // for (mt <- mti) yield mt.toCSV
     // TODO eliminate use of unsafe methods
     wi.unsafeRunSync().startsWith(
-      """title,format.color,format.language,format.aspectRatio,format.duration,production.country,production.budget,production.gross,production.titleYear,reviews.imdbScore,reviews.facebookLikes,reviews.contentRating.code,reviews.contentRating.age,reviews.numUsersReview,reviews.numUsersVoted,reviews.numCriticReviews,reviews.totalFacebookLikes,director.name.first,director.name.middle,director.name.last,director.name.suffix,director.facebookLikes,actor1.name.first,actor1.name.middle,actor1.name.last,actor1.name.suffix,actor1.facebookLikes,actor2.name.first,actor2.name.middle,actor2.name.last,actor2.name.suffix,actor2.facebookLikes,actor3,genres.xs,plotKeywords.xs,imdb
-        |Avatar,Color,English,1.78,178,USA,237000000,760505847,2009,7.9,33000,PG,13,3054,886204,723,4834,James,,Cameron,,0,CCH,,Pounder,,1000,Joel,David,Moore,,936,Wes,,Studi,,855,Action,Adventure,Fantasy,Sci-Fi,avatar,future,marine,native,paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1""".stripMargin) shouldBe true
+      """movie_title,color,language,aspect_ratio,duration,country,budget,gross,title_year,imdb_score,movie_facebook_likes,content_rating,num_user_for_reviews,num_voted_users,num_critic_for_reviews,cast_total_facebook_likes,director_name,director_facebook_likes,actor_1_name,actor_1_facebook_likes,actor_2_name,actor_2_facebook_likes,actor_3_name,actor_3_facebook_likes,genres,plot_keywords,movie_imdb_link
+        |Avatar,Color,English,1.78,178,USA,237000000,760505847,2009,7.9,33000,PG-13,3054,886204,723,4834,James Cameron,0,CCH Pounder,1000,Joel David Moore,936,Wes Studi,855,Action|Adventure|Fantasy|Sci-Fi,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1""".stripMargin.replace("\n", "\r\n")) shouldBe true
   }
 
   it should "parse and filter the movies from the IMDB dataset" in {

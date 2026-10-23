@@ -19,7 +19,7 @@ import java.io.{File, FileWriter}
  * @tparam T the type of object to be rendered, must provide evidence of CsvRenderer[T] amd CsvGenerator[T].
  * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
  */
-case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey, A: HexEncryption](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file)) {
+case class CsvTableEncryptedFileRenderer[T: CsvRenderer : CsvGenerator : HasKey, A: HexEncryption](file: File)(implicit csvAttributes: CsvAttributes) extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes) {
   override protected def generateText(ow: Writable[FileWriter], tc: CsvRenderer[T], o: FileWriter, t: T): FileWriter = {
     val key = implicitly[HasKey[T]].key(t)
     val rendering = tc.render(t, Map())

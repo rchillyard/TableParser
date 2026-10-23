@@ -27,7 +27,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   }
 
   object Complex1 extends HierarchicalRenderers {
-    implicit val complexRenderer: HierarchicalRenderer[Complex] = renderer2("complex")(Complex.apply)
+    implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("complex")
 
     trait TreeWriterString$ extends TreeWriter[String] {
       def evaluate(node: Node): String = s"""<${node.style}>: "${node.content.getOrElse("")}" ${node.attributes.mkString("(", ",", ")")} ${node.children.map(evaluate).mkString("[", ",", "]")} """
@@ -39,7 +39,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
 
   object Complex2 extends HierarchicalRenderers {
     implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")
-    implicit val complexRenderer: HierarchicalRenderer[Complex] = renderer2("")(Complex)
+    implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("")
     implicit val indexedRenderer: HierarchicalRenderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th")
 
     import HTML._
@@ -54,7 +54,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
 
   object Complex3 extends HierarchicalRenderers {
     implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")
-    implicit val complexRenderer: HierarchicalRenderer[Complex] = renderer2("tr")(Complex)
+    implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("tr")
 
 
     import HTML._
@@ -71,7 +71,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
     implicit val elementRenderer: HierarchicalRenderer[String] = renderer("element")
     implicit val optionLongRenderer: HierarchicalRenderer[Option[Long]] = optionRenderer("", Map())
     implicit val sequenceStringRenderer: HierarchicalRenderer[Seq[String]] = sequenceRenderer("")
-    implicit val complicatedRenderer: HierarchicalRenderer[Complicated] = renderer5("x")(Complicated.apply)
+    implicit val complicatedRenderer: HierarchicalRenderer[Complicated] = HierarchicalRenderer.derived[Complicated]("x")
 
     trait TreeWriterHTML$ extends TreeWriter[SimpleHTML] {
       def evaluate(node: Node): SimpleHTML = SimpleHTML(node.style, node.content, node.attributes, node.children.toSeq map evaluate)

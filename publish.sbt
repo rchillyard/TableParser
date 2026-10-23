@@ -1,5 +1,5 @@
 // Optional but useful
-ThisBuild / description := "Scala library to process tabular data, for example, CSV files"
+ThisBuild / description := "Scala library to process tabular data, for example, CSV files (RFC 4180)"
 ThisBuild / homepage := Some(url("https://github.com/rchillyard/TableParser"))
 ThisBuild / organizationName := "Phasmid Software"
 ThisBuild / organizationHomepage := Some(url("https://phasmidsoftware.com/"))

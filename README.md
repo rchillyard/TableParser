@@ -6,8 +6,22 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/rchillyard/TableParser)
 ![GitHub issues](https://img.shields.io/github/issues-raw/rchillyard/TableParser)
 ![GitHub issues by-label](https://img.shields.io/github/issues/rchillyard/TableParser/bug)
+[![RFC 4180](https://img.shields.io/badge/CSV-RFC%204180-brightgreen)](https://www.rfc-editor.org/rfc/rfc4180)
 
 # Introduction to TableParser
+
+> **RFC 4180 compliant.** From version 2.0.0, _TableParser_ reads and writes CSV exactly as defined by
+> [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180), the standard for CSV files.
+> Every rule of the RFC is tested in [Rfc4180Spec](core/src/test/scala/com/phasmidsoftware/tableparser/core/Rfc4180Spec.scala),
+> and a table that _TableParser_ writes is read back exactly (except that a line break inside a field is always read as LF).
+> In particular:
+> * Fields are separated by commas, and spaces are part of a field (so `a, b` has the fields `a` and ` b`).
+> * A field may be quoted, in which case it may contain commas, line breaks and quotes (which are doubled: `"say ""hi"""`).
+> * When writing, a field is quoted only when it has to be (when it contains a comma, a quote or a line break, or starts or ends with a space).
+> * Records end with CRLF when written; CRLF or LF are both read.
+>
+> To read data whose fields are separated by `", "` (for example, written by 1.x with `CsvAttributes(", ")`), use `RowConfig.trimmingRowConfig`, which ignores spaces next to commas, as 1.x did.
+> To write LF line endings instead of CRLF, use `CsvAttributes(",", "\"", "\n")`.
 
 Full Scaladoc is available via javadoc.io, for [Scala 2.13](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13)
 and [Scala 3](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_3).
@@ -95,7 +109,7 @@ others are ignored):
 etc...
 
 Note that columns not needed for the _Player_ case class are simply ignored.
-Also, note that the case of the column names is not important.
+Also, note that a column whose name matches exactly is preferred, but otherwise the case of the column names is not important.
 
 For another simple use case _TableParser_, please see my blog at: https://scalaprof.blogspot.com/2019/04/new-projects.html 
 
