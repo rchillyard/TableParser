@@ -138,14 +138,17 @@ These decide what can change without notice, and what needs a migration path.
    - Raise coverage well above 62%; Comparer aims for 100%.
    - Migrate CSYE7200 (in CSYE7200, from which `CSYE7200_Fall2026` is derived) and LaScala to it.
 
-   2.0 is built in stages on the `2_0_0` branch, each merged into `master` by its own PR:
-   1. **Groundwork:** a Scala 3-only build without spark; the examples, `Main` and `EvaluateZIO` move into the tests; `Sequential` and the 1.3.0/1.4.0 deprecations are removed.
-   2. **Scala 3 idioms:** `given`/`using`, enums, top-level definitions, `infix def`.
-   3. **Derivation for parsing:** `CellParser` derives, with field names from `Mirror`; `Reflection` goes.
-   4. **Derivation for rendering:** `CsvRenderer`, `CsvGenerator` and the hierarchical renderers.
-   5. **Core types:** `Content` sequential by default, `Table.scala` split, casts and `ClassTag`s removed.
-   6. **Dependencies:** circe for spray-json, an encryption module, `java.time` for Joda-Time.
-   7. **Finish:** the indentation-syntax rewrite, coverage, the README with a migration table, and the release.
+   2.0 is built in stages, in this order, each merged into `master` by its own PR (from now on, branches and PRs are named by topic, not by number):
+   1. **Groundwork** (#71): a Scala 3-only build without spark; the examples, `Main` and `EvaluateZIO` move into the tests; `Sequential` and the 1.3.0/1.4.0 deprecations are removed.
+   2. **Derivation for parsing** (#72): `CellParser` derives, with field names from `Mirror`; `Reflection` goes.
+   3. **Derivation for rendering** (#73): `CsvRenderer`, `CsvGenerator` and the hierarchical renderers; and a full round trip (a table that is written can be read back), with column names from `ColumnHelper`.
+   4. **RFC 4180** (#74, merged into #73): reading and writing CSV as RFC 4180 defines it, by default.
+   5. **Scala 3 idioms** (#76): `given`/`using`, extension methods, enums, top-level definitions, `infix def`.
+   6. **Core types:** `Content` sequential by default, `Table.scala` split, casts and `ClassTag`s removed.
+   7. **Dependencies:** circe for spray-json, an encryption module, `java.time` for Joda-Time.
+   8. **Finish:** `-Wunused:all`, the indentation-syntax rewrite, coverage, the README with a migration table, and the release.
+
+   (The earliest PRs used an older numbering: "stage 3" was derivation for parsing, "stage 4" derivation for rendering, and "stage 2" the idioms.)
 5. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
 
 ## Appendix: how the figures were measured
