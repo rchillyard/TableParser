@@ -150,7 +150,7 @@ trait Table[Row] extends Iterable[Row] {
    *
    * NOTE: the rows are numbered 1..N.
    *
-   * NOTE: unless explicitly ordered, the content might be in random order.
+   * NOTE: as of 2.0, the rows are in the order in which they were read (in 1.x, they might have been in any order).
    *
    * @param n the desired row.
    * @return a new Table[Row] consisting only the row requested.

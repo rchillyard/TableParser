@@ -8,18 +8,18 @@ import scala.util.Random
 /**
  * Class to represent the rows of a `Table`.
  *
- * At present, the rows are implemented as a `ParIterable`.
- * However, we might later change the internal representation; thus `xs` is private.
+ * The rows are kept in a `Vector`, in order (as of 2.0; in 1.x, they were a `ParIterable`, in no particular order).
+ * For parallel processing, use `par`. The internal representation may change; thus `xs` is private.
  *
  * In general, however, you should probably expect that storing rows inside Content will force
  * an aggregation of all rows.
  * There are alternatives (using InputProcessor) that allow you to process an `Iterator[Input]` and
  * yield an `Iterator[Row]`.
  *
- * @param xs a ParIterable[Row].
+ * @param xs a Vector[Row].
  * @tparam Row the underlying Row type.
  */
-case class Content[+Row](private val xs: ParIterable[Row]) {
+case class Content[+Row](private val xs: Vector[Row]) {
 
   /**
    * Method to get the number of elements in the underlying collection `xs`.
@@ -70,7 +70,7 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    * @return an `Iterator` over the `Row` elements of this content in their current order.
    */
   def iterator: Iterator[Row] =
-    xs.toIterator
+    xs.iterator
 
   /**
    * Applies the given function `f` to each `Row` element in the collection.
@@ -117,11 +117,11 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
   /**
    * This is not, strictly speaking, the correct definition of flatMap for allowing Content to be a monad.
    *
-   * @param f a function of type Row=>ParIterable[B]
+   * @param f a function of type Row=>IterableOnce[B]
    * @tparam B the underlying type of the result.
    * @return a Content[B].
    */
-  def flatMap[B](f: Row => ParIterable[B]): Content[B] =
+  def flatMap[B](f: Row => IterableOnce[B]): Content[B] =
     Content(xs flatMap f)
 
   /**
@@ -252,7 +252,7 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    * @return a new Content[Row] with approximately size/n elements.
    */
   def sample(n: Int)(using random: Random): Content[Row] =
-    Content(xs.iterator.filter(_ => random.nextInt(n) == 0).toIndexedSeq)
+    Content(xs filter (_ => random.nextInt(n) == 0))
 
   /**
    * Method to transform this Content[Row] into a sorted Content[S] where S is a super-class of Row and for which there is
@@ -262,7 +262,16 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    * @return a Content[S].
    */
   def sorted[S >: Row : Ordering]: Content[S] =
-    Content(toIndexedSeq.map(_.asInstanceOf[S]).sorted)
+    Content(xs.sorted[S])
+
+  /**
+   * Method to get the rows as a parallel collection, for parallel processing.
+   * (As of 2.0, the other methods of Content are sequential.)
+   *
+   * @return a ParIterable[Row].
+   */
+  def par: ParIterable[Row] =
+    xs.par
 }
 
 /**
@@ -278,7 +287,16 @@ object Content {
    * @param xs the iterable collection to be converted into a parallel collection
    * @return an instance of `Content` containing the parallelized collection
    */
-  def apply[T](xs: Iterable[T]): Content[T] = Content(xs.par)
+  def apply[T](xs: Iterable[T]): Content[T] = Content(xs.toVector)
+
+  /**
+   * Method to create a Content from a parallel collection (its elements are kept in their order).
+   *
+   * @param xs a ParIterable[T].
+   * @tparam T the underlying type.
+   * @return a Content[T].
+   */
+  def apply[T](xs: ParIterable[T]): Content[T] = Content(xs.seq.toVector)
 
   /**
    * Creates an instance of the `Content` class by converting the provided iterator
