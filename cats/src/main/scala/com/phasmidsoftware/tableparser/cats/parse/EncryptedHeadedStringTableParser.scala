@@ -51,8 +51,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser : ClassTag, A: HexEncr
   def parseIO(xr: Iterator[String], n: Int): IO[Table[X]] = {
     def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] = {
       phase2Parser match {
-        case p: TableParser[_] => for (wt <- decryptTable(xt); xt <- IO.fromTry(p.parseRows(wt.iterator, h))) yield xt
-        case _ => IO.raiseError(TableParserException("phase2Parser is not a TableParserIO"))
+        case p: TableParser[?] => for (wt <- decryptTable(xt); xt <- IO.fromTry(p.parseRows(wt.iterator, h))) yield xt
       }
 
     }

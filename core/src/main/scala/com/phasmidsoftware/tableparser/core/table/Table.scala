@@ -578,7 +578,7 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): Try[T] =
+  def parseResource[T: TableParser](w: String, clazz: Class[?] = getClass)(implicit codec: Codec): Try[T] =
     parse(sourceFromClassResource(w, clazz))
 
   /**
@@ -660,7 +660,7 @@ object Table {
    * @param codec            (implicit) the encoding.
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(implicit codec: Codec): Try[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
@@ -784,7 +784,7 @@ object Table {
    * @param clazz the class.
    * @return an Try[Source].
    */
-  def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Try[Source] =
+  def sourceFromClassResource(w: String, clazz: Class[?])(implicit codec: Codec): Try[Source] =
     Try(Source.fromURL(clazz.getResource(w))).recoverWith {
       case _: java.lang.NullPointerException =>
         Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
@@ -843,9 +843,9 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
       rows.toSeq else rows.toSeq) map {
       case p: Product =>
         ww.writeRow(o2)(p)
-      case xs: Seq[_] =>
+      case xs: Seq[?] =>
         ww.writeRowElements(o2)(xs) // TESTME
-      case xs: Array[_] =>
+      case xs: Array[?] =>
         ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
       case _ =>
         throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")

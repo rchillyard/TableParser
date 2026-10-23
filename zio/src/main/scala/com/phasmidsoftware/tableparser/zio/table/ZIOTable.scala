@@ -196,7 +196,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an Task[T]
    */
-  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): Task[T] = parse(sourceFromClassResource(w, clazz))
+  def parseResource[T: TableParser](w: String, clazz: Class[?] = getClass)(implicit codec: Codec): Task[T] = parse(sourceFromClassResource(w, clazz))
 
   /**
    * Method to parse a table from a URL.
@@ -273,7 +273,7 @@ object ZIOTable {
    * @param codec            (implicit) the encoding.
    * @return an Task of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): Task[Table[RawRow]] = {
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(implicit codec: Codec): Task[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
@@ -377,7 +377,7 @@ object ZIOTable {
    * @param clazz the class.
    * @return an Task[Source].
    */
-  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): Task[Source] = ZIO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
+  private def sourceFromClassResource(w: String, clazz: Class[?])(implicit codec: Codec): Task[Source] = ZIO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
     case _: java.lang.NullPointerException => Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
   })
 }

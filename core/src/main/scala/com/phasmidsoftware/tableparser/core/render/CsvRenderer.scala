@@ -219,14 +219,14 @@ abstract class CsvTableRenderer[T, O]()(implicit z1: CsvRenderer[T], z2: CsvGene
    * @return an instance of type O.
    */
   def render(t: Table[T], attrs: Map[String, String]): Try[O] = t match {
-    case x: Table[_] =>
+    case x: Table[?] =>
       val sw = implicitly[Writable[O]]
       val tc = implicitly[CsvRenderer[T]]
       val tg = implicitly[CsvGenerator[T]]
       val hdr: String = tg match {
-        case _tg: CsvProductGenerator[_] =>
+        case _tg: CsvProductGenerator[?] =>
           _tg.toColumnNames(None, None)
-        case _tg: CsvGenerator[_] =>
+        case _tg: CsvGenerator[?] =>
           _tg.toColumnName(None, "")
       }
       Try(sw.unit) map {

@@ -363,8 +363,6 @@ object Parseable {
         Failure(ParseLogicException(s"cannot split string '$w': $msg"))
       case ListParser.Error(msg, _) =>
         Failure(ParseLogicException(s"cannot split string '$w': $msg"))
-      case _ =>
-        Failure(ParseLogicException(s"cannot split string '$w'"))
   }
 
   private def lift[T](f: String => T): String => Try[T] = w => Try(f(w))

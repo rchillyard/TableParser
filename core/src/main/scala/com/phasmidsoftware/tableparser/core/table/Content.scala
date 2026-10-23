@@ -111,7 +111,7 @@ case class Content[+Row](private val xs: ParIterable[Row]) {
    * @param f A function that takes an element of type `Row` and produces a new element of type `B`.
    * @return A new `Content` instance containing the transformed elements of type `B`.
    */
-  def map[B](f: Row => B): Content[B] =
+  infix def map[B](f: Row => B): Content[B] =
     Content(xs map f)
 
   /**

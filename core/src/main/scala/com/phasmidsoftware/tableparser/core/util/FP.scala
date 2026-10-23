@@ -229,7 +229,7 @@ object FP {
    * @param clazz        the class, relative to which the resource can be found (defaults to the caller's class).
    * @return a Try[URL]
    */
-  def resourceForClass(resourceName: String, clazz: Class[_] = getClass): Try[URL] =
+  def resourceForClass(resourceName: String, clazz: Class[?] = getClass): Try[URL] =
     Option(clazz.getResource(resourceName)) match {
       case Some(u) =>
         Success(u)

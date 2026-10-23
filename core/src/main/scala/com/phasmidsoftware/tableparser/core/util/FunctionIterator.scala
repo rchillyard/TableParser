@@ -80,7 +80,7 @@ class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends 
     def inner(xy: Try[X]): Try[R] = invokeFunction(xy) match {
       case Success(y) =>
         Success(y)
-      case Failure(MultiLineException(x: X)) =>
+      case Failure(MultiLineException(x: X @unchecked)) =>
         if (xs.hasNext) {
           val x1 = xs.next()
           val x2: X = xj.join(x, x1)

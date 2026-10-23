@@ -194,7 +194,7 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseResource[T: TableParser](w: String, clazz: Class[_] = getClass)(implicit codec: Codec): IO[T] = parse(sourceFromClassResource(w, clazz))
+  def parseResource[T: TableParser](w: String, clazz: Class[?] = getClass)(implicit codec: Codec): IO[T] = parse(sourceFromClassResource(w, clazz))
 
   /**
    * Method to parse a table from a URL.
@@ -271,7 +271,7 @@ object IOTable {
    * @param codec            (implicit) the encoding.
    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[_] = getClass)(implicit codec: Codec): IO[Table[RawRow]] = {
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(implicit codec: Codec): IO[Table[RawRow]] = {
     implicit val z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
@@ -375,7 +375,7 @@ object IOTable {
    * @param clazz the class.
    * @return an IO[Source].
    */
-  private def sourceFromClassResource(w: String, clazz: Class[_])(implicit codec: Codec): IO[Source] = IO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
+  private def sourceFromClassResource(w: String, clazz: Class[?])(implicit codec: Codec): IO[Source] = IO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
     case _: java.lang.NullPointerException => Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
   })
 }

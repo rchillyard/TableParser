@@ -173,7 +173,7 @@ trait CellParsers {
    * @return a new instance of ColumnHelper[T]
    */
   def columnHelper[T](maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = 
-    columnHelper(identityMapper, maybePrefix, aliases: _*)
+    columnHelper(identityMapper, maybePrefix, aliases*)
 
   /**
    * Method to yield a ColumnHelper[T] based on a column name mapper, and some number of explicit aliases,
@@ -184,7 +184,7 @@ trait CellParsers {
    * @return a new instance of ColumnHelper[T]
    */
   def columnHelper[T](columnNameMapper: String => String, aliases: (String, String)*): ColumnHelper[T] = 
-    columnHelper(columnNameMapper, None, aliases: _*)
+    columnHelper(columnNameMapper, None, aliases*)
 
   /**
    * Method to yield a ColumnHelper[T] based on a column name mapper, an optional prefix, and some number of explicit aliases,
@@ -210,7 +210,7 @@ trait CellParsers {
    * @return a new instance of ColumnHelper[T]
    */
   def columnHelper[T](aliases: (String, String)*): ColumnHelper[T] = 
-    columnHelper(identityMapper, aliases: _*)
+    columnHelper(identityMapper, aliases*)
 }
 
 /**

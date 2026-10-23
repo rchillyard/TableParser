@@ -276,7 +276,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     trait DailyRaptorReportTableParser extends StringTableParser[Table[DailyRaptorReport]] {
       type Row = DailyRaptorReport
 
-      override val maybeHeader: Option[Header] = Some(Header.create(header: _*))
+      override val maybeHeader: Option[Header] = Some(Header.create(header*))
 
       override val headerRowsToRead: Int = 0
 
@@ -521,8 +521,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
         val iterator: Iterator[String] = source.getLines()
         val ms: Iterator[Movie] = movieRowProcessor.process(iterator, movieRowProcessor.headerRowsToRead)
         (ms to List).size shouldBe 1567
-      case _ =>
-        fail("unable to open \"movie_metadata.csv\"")
     }
   }
 

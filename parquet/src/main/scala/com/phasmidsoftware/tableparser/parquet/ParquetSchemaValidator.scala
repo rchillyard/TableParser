@@ -40,7 +40,7 @@ object ParquetSchemaValidator {
   def validate[Row: ClassTag](
                                      schema: MessageType,
                                      helper: ColumnHelper[Row],
-                                     groupedHelpers: Map[String, (ClassTag[_], ColumnHelper[_])] = Map.empty
+                                     groupedHelpers: Map[String, (ClassTag[?], ColumnHelper[?])] = Map.empty
                              ): Try[Unit] = Try {
 
     val parquetColumns: Map[String, ParquetPrimitiveType] =
@@ -73,7 +73,7 @@ object ParquetSchemaValidator {
    * @param parquetColumns the map of available Parquet columns.
    */
   private def validateByClassTag(
-                                        subClassTag: ClassTag[_],
+                                        subClassTag: ClassTag[?],
                                         helper: ColumnHelper[Any],
                                         parquetColumns: Map[String, ParquetPrimitiveType]
                                 ): Unit = {
@@ -114,13 +114,13 @@ object ParquetSchemaValidator {
       case Right(_) => ()
     }
 
-    val isScalaOption = field.getType == classOf[Option[_]]
+    val isScalaOption = field.getType == classOf[Option[?]]
     val isParquetOptional = ParquetTypeMapper.isOptional(parquetType)
 
     if (!isScalaOption && isParquetOptional)
       throw ParquetParserException(
         s"Column '$columnName' is OPTIONAL in Parquet schema but " +
-                s"parameter '$fieldName' is not Option[_]. " +
+                s"parameter '$fieldName' is not Option[?]. " +
                 s"Wrap the parameter type in Option to handle null values."
       )
   }

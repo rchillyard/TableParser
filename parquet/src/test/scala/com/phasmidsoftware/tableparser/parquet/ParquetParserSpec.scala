@@ -1,5 +1,7 @@
 package com.phasmidsoftware.tableparser.parquet
 
+import scala.compiletime.uninitialized
+
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapper
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
 import com.phasmidsoftware.tableparser.core.table.Table
@@ -15,7 +17,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
   private val samplePath: Path =
     Paths.get(getClass.getResource("/taxi_sample.parquet").toURI)
 
-  private var table: Table[YellowTaxiTrip] = _
+  private var table: Table[YellowTaxiTrip] = uninitialized
 
   // The first row in the Parquet file has vendorId=2, puLocationId=75, doLocationId=237.
   // We find it by key rather than relying on ParIterable ordering.
@@ -57,7 +59,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
     import YellowTaxiTrip.helper
     val result: Try[Table[YellowTaxiTrip]] =
       ParquetParser.parse[YellowTaxiTrip](samplePath)
-    result shouldBe a[Success[_]]
+    result shouldBe a[Success[?]]
   }
 
   it should "produce exactly 1000 rows" in {
@@ -159,11 +161,11 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
   it should "compute statistics for a single numeric column on demand" in {
     import com.phasmidsoftware.tableparser.core.table.{Column, EagerStatistics, LazyStatistics}
     val tripDistStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = false)
-    tripDistStats shouldBe a[Some[_]]
+    tripDistStats shouldBe a[Some[?]]
     val col = tripDistStats.get
     col.clazz shouldBe "Double"
     col.optional shouldBe true
-    col.maybeStatistics shouldBe a[Some[_]]
+    col.maybeStatistics shouldBe a[Some[?]]
     col.maybeStatistics match {
       case Some(LazyStatistics(statsThunk)) =>
         val stats = statsThunk().get
@@ -194,7 +196,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
   it should "support lazy fallback mode (return LazyStatistics if no metadata)" in {
     import com.phasmidsoftware.tableparser.core.table.{Column, LazyStatistics}
     val lazyStats = Column.statisticsFrom(samplePath, "trip_distance", useMetadataOnly = false)
-    lazyStats shouldBe a[Some[_]]
+    lazyStats shouldBe a[Some[?]]
     lazyStats.get.maybeStatistics match {
       case Some(LazyStatistics(_)) => succeed
       case _ => fail("Expected LazyStatistics when useMetadataOnly=false")
@@ -209,7 +211,7 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers with 
     import YellowTaxiTrip.helper
     val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
     val result = ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
-    result shouldBe a[Success[_]]
+    result shouldBe a[Success[?]]
   }
 
   it should "produce 1000 rows total from dataset with multiple parts" in {

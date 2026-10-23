@@ -339,7 +339,7 @@ object ParquetCellConverter {
   def convertByClass(
                             group: SimpleGroup,
                             columnName: String,
-                            clazz: Class[_]
+                            clazz: Class[?]
                     ): Try[Any] =
     clazz match {
       case c if c == classOf[Boolean] || c == classOf[java.lang.Boolean] => BooleanConverter.convert(group, columnName)

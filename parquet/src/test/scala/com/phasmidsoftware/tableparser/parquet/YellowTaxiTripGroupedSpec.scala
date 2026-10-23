@@ -1,5 +1,7 @@
 package com.phasmidsoftware.tableparser.parquet
 
+import scala.compiletime.uninitialized
+
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper
 import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Table}
 import java.nio.file.{Path, Paths}
@@ -23,7 +25,7 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAnd
       "fare" -> FareBreakdown.converter.asInstanceOf[ParquetCellConverter[Any]],
       "metrics" -> TripMetrics.converter.asInstanceOf[ParquetCellConverter[Any]]
     )
-    override val groupedHelpers: Map[String, (ClassTag[_], ColumnHelper[_])] = Map(
+    override val groupedHelpers: Map[String, (ClassTag[?], ColumnHelper[?])] = Map(
       "ids" -> (implicitly[ClassTag[TripIdentifiers]], TripIdentifiers.helper),
       "timing" -> (implicitly[ClassTag[TripTiming]], TripTiming.helper),
       "geo" -> (implicitly[ClassTag[TripGeography]], TripGeography.helper),
@@ -32,7 +34,7 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAnd
     )
   }
 
-  private var table: Table[YellowTaxiTripGrouped] = _
+  private var table: Table[YellowTaxiTripGrouped] = uninitialized
 
   // The first row in the Parquet file has vendorId=2, puLocationId=75, doLocationId=237.
   // We find it by key rather than relying on ParIterable ordering.
@@ -53,8 +55,10 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers with BeforeAnd
   it should "produce a table with 19 columns in the header" in {
     val result = parser.parseParquet(taxiParquet)
     result match {
-      case Success(t: HeadedTable[_]) =>
+      case Success(t: HeadedTable[?]) =>
         t.header.size shouldBe 19
+      case x =>
+        fail(s"unexpected result: $x")
     }
   }
 

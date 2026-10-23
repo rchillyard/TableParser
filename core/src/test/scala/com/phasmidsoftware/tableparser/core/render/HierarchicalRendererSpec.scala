@@ -29,55 +29,55 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   object Complex1 extends HierarchicalRenderers {
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("complex")
 
-    trait TreeWriterString$ extends TreeWriter[String] {
+    trait TreeWriterString extends TreeWriter[String] {
       def evaluate(node: Node): String = s"""<${node.style}>: "${node.content.getOrElse("")}" ${node.attributes.mkString("(", ",", ")")} ${node.children.map(evaluate).mkString("[", ",", "]")} """
     }
 
-    implicit object TreeWriterString$ extends TreeWriterString$
+    implicit object treeWriterString extends TreeWriterString
 
   }
 
   object Complex2 extends HierarchicalRenderers {
-    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")
+    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")(using HierarchicalRenderer.DoubleHierarchicalRenderer)
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("")
     implicit val indexedRenderer: HierarchicalRenderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th")
 
     import HTML._
 
-    trait TreeWriterHTML$ extends TreeWriter[HTML] {
+    trait TreeWriterHTML extends TreeWriter[HTML] {
       def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children.toSeq map evaluate)
     }
 
-    implicit object TreeWriterHTML$ extends TreeWriterHTML$
+    implicit object treeWriterHTML extends TreeWriterHTML
 
   }
 
   object Complex3 extends HierarchicalRenderers {
-    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")
+    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")(using HierarchicalRenderer.DoubleHierarchicalRenderer)
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("tr")
 
 
     import HTML._
 
-    trait TreeWriterHTML$ extends TreeWriter[HTML] {
+    trait TreeWriterHTML extends TreeWriter[HTML] {
       def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children.toSeq map evaluate)
     }
 
-    implicit object TreeWriterHTML$ extends TreeWriterHTML$
+    implicit object treeWriterHTML extends TreeWriterHTML
 
   }
 
   object Complicated extends HierarchicalRenderers {
-    implicit val elementRenderer: HierarchicalRenderer[String] = renderer("element")
+    implicit val elementRenderer: HierarchicalRenderer[String] = renderer("element")(using HierarchicalRenderer.StringHierarchicalRenderer)
     implicit val optionLongRenderer: HierarchicalRenderer[Option[Long]] = optionRenderer("", Map())
     implicit val sequenceStringRenderer: HierarchicalRenderer[Seq[String]] = sequenceRenderer("")
     implicit val complicatedRenderer: HierarchicalRenderer[Complicated] = HierarchicalRenderer.derived[Complicated]("x")
 
-    trait TreeWriterHTML$ extends TreeWriter[SimpleHTML] {
+    trait TreeWriterHTML extends TreeWriter[SimpleHTML] {
       def evaluate(node: Node): SimpleHTML = SimpleHTML(node.style, node.content, node.attributes, node.children.toSeq map evaluate)
     }
 
-    implicit object TreeWriterHTML$ extends TreeWriterHTML$
+    implicit object treeWriterHTML extends TreeWriterHTML
 
   }
 

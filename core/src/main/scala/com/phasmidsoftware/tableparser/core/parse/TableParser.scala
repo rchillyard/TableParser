@@ -87,7 +87,7 @@ object TableParser {
      * @param sy a `Try[Source]`.
      * @return a `Try[Table]`.
      */
-    def parse(sy: Try[Source]): Try[Table] =
+    infix def parse(sy: Try[Source]): Try[Table] =
       TryUsing(sy)(x => doParse(x.getLines()))
 
     /**

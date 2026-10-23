@@ -52,7 +52,7 @@ abstract class ParquetTableParser[R <: Product : ClassTag]
    * recursively validate sub-class fields against the Parquet schema.
    * Defaults to empty (flat schema behaviour).
    */
-  val groupedHelpers: Map[String, (ClassTag[_], ColumnHelper[_])] = Map.empty
+  val groupedHelpers: Map[String, (ClassTag[?], ColumnHelper[?])] = Map.empty
 
   /**
    * Build a Table[Row] from parsed rows and a Header derived from

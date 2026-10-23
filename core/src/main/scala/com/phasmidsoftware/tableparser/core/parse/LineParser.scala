@@ -188,7 +188,8 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   lazy val list: Parser[String] =
     getOpenChar ~> (component ~ listSeparator ~ rep1sep(component, listSeparator)) <~ getCloseChar ^^ { case x ~ _ ~ xs => (x +: xs).mkString("{", ",", "}") }
 
-  private val regexComponent =
+  // NOTE lazy, because runChecks (in the constructor) uses it before the body has been initialized.
+  private lazy val regexComponent =
     s"""[^,$listSeparator}]+"""
   private lazy val component: Parser[String] =
     regexComponent.r
@@ -260,7 +261,9 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
     }
 
     //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
-    (check(cell, "Hello", "Hello") && check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")).squawk()
+    // NOTE the check only makes sense when an unquoted "Hello" is a valid string (it isn't, e.g., for hexadecimal data).
+    if (string.matches("Hello"))
+      (check(cell, "Hello", "Hello") && check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")).squawk()
   }
 
 }

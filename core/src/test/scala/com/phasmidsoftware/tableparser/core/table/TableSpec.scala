@@ -25,7 +25,7 @@ import java.nio.file.Paths
 class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   case class IntPair(a: Int, b: Int) {
-    def map(f: Int => Int): IntPair = IntPair(f(a), f(b))
+    infix def map(f: Int => Int): IntPair = IntPair(f(a), f(b))
   }
 
   object IntPair {
@@ -348,7 +348,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
     }
 
-    implicit object DummyRenderer$$ extends Renderer[Table[IntPair], String] {
+    implicit object DummyRenderer extends Renderer[Table[IntPair], String] {
       def render(t: Table[IntPair], attrs: Map[String, String]): String =
         t match {
           case t: RenderableTable[IntPair] => t.renderToWritable(StringBuilderWritable).toString
@@ -358,7 +358,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     val wi: Try[String] = Table.parse(Seq("1 2", "42 99")) map {
       case r: Table[IntPair] => implicitly[Renderer[Table[IntPair], String]].render(r)
-      case _ => fail("cannot render table")
     }
     matchTry(wi) {
       case "a|b\n1|2\n42|99\n" => succeed
@@ -393,7 +392,6 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
       case r: Table[IntPair] =>
         val z: Renderer[Table[IntPair], FileWriter] = implicitly[Renderer[Table[IntPair], FileWriter]]
         z.render(r)
-      case _ => fail("cannot render table")
     }
     matchTry(fi) {
       case _ => succeed
