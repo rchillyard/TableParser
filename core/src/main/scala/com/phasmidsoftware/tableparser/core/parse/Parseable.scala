@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL}
 import java.nio.file.Path
 import java.time.LocalDate
 import scala.annotation.implicitNotFound
@@ -286,7 +286,7 @@ object Parseable {
      *         with an appropriate error message.
      */
     def parse(s: String, optModifier: Option[String]): Try[URL] =
-      parseAndRecover(s)(lift(new URL(_)))(w => s"ParseableURL: cannot interpret '$w' as an URL")
+      parseAndRecover(s)(lift(URI.create(_).toURL))(w => s"ParseableURL: cannot interpret '$w' as an URL")
   }
 
   given ParseableURL: ParseableURL with {}

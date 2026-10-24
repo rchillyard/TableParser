@@ -1,9 +1,7 @@
 package com.phasmidsoftware.tableparser.core.table
 
 import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser, TableParserException}
-import com.phasmidsoftware.tableparser.core.util.FP
 import com.phasmidsoftware.tableparser.core.util.FP.sequence
-import java.net.URL
 import java.nio.file.Path
 import scala.io.Source
 import scala.util.{Failure, Success, Try}

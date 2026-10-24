@@ -15,7 +15,6 @@ import java.time.format.DateTimeFormatter
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.io.{Codec, Source}
-import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
@@ -26,7 +25,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   //noinspection ScalaUnusedSymbol
   // NOTE: unused
-  private val dateFormatString = "MM/dd/yyyy"
 
   object IntPair {
 
@@ -104,12 +102,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     import DailyRaptorReportParser._
 
-    trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w/\- ]+""".r
-      override val delimiter: Regex = """\t""".r
-    }
-
-    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+    implicit val dailyRaptorReportConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardRowParser[DailyRaptorReport] =
       StandardRowParser[DailyRaptorReport](LineParser.apply)
@@ -178,7 +171,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "fail empty sequence" in {
     import DailyRaptorReport._
 
-    Table.parse(Seq(headerRaptors, "")) should matchPattern { case Failure(e: ParserException) => }
+    // The blank line is one empty field (as with any delimiter), which cannot be read as a date.
+    Table.parse(Seq(headerRaptors, "")) should matchPattern { case Failure(_: InvalidParseException) => }
   }
 
   it should "parse empty sequence" in {
@@ -210,12 +204,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     import DailyRaptorReportParser._
 
-    trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w/\- ]+""".r
-      override val delimiter: Regex = """\t""".r
-    }
-
-    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+    implicit val dailyRaptorReportConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardStringsParser[DailyRaptorReport] =
       StandardStringsParser[DailyRaptorReport]()
@@ -264,12 +253,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     import DailyRaptorReportParser._
 
-    trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w/\- ]+""".r
-      override val delimiter: Regex = """\t""".r
-    }
-
-    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+    implicit val dailyRaptorReportConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
 
@@ -363,29 +347,25 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "fail on incompatible parser" in {
     import Submission.TableParser
     val strings: Seq[String] = Nil
-    Table.parse(strings) should matchPattern { case Failure(e: ParserException) => }
+    Table.parse(strings) should matchPattern { case Failure(_: ParserException) => }
   }
 
   it should "fail on empty rows" in {
     import Submission.TableParser
     val rows: Seq[Seq[String]] = Nil
-    parseSequence(rows.iterator) should matchPattern { case Failure(e: NoSuchElementException) => }
+    parseSequence(rows.iterator) should matchPattern { case Failure(_: NoSuchElementException) => }
   }
 
   behavior of "submissions from file"
 
   object SubmissionAlt extends CellParsers {
 
-    private val baseColumnNameMapper: String => String = _.replaceAll("(_)", " ")
 
     implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace)
     implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
     implicit val submissionParser: CellParser[Submission] = CellParser.derived[Submission]
 
-    implicit object SubmissionConfig extends DefaultRowConfig {
-      override val string: Regex = """[^\t]*""".r
-      override val delimiter: Regex = """\t""".r
-    }
+    implicit val submissionConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardRowParser[Submission] = StandardRowParser.create[Submission]
 

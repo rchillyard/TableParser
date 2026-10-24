@@ -24,7 +24,7 @@ trait HierarchicalRenderers {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a HierarchicalRenderer[T].
    */
-  def renderer[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[T] = 
+  def renderer[T](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[T] = 
     new TaggedHierarchicalRenderer[T](style, attrs) {}
 
   /**
@@ -38,7 +38,7 @@ trait HierarchicalRenderers {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a HierarchicalRenderer[T].
    */
-  def rendererExplicit[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map())(f: T => String): HierarchicalRenderer[T] = 
+  def rendererExplicit[T](style: String, attrs: Map[String, String] = Map())(f: T => String): HierarchicalRenderer[T] = 
     new TaggedHierarchicalRenderer[T](style, attrs) {
     override def asString(t: T): String = f(t)
   }

@@ -9,7 +9,6 @@ import com.phasmidsoftware.tableparser.core.util.{FieldNames, Joinable, TeeItera
 import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.implicitNotFound
 import scala.io.Source
-import scala.reflect.ClassTag
 import scala.util.{Failure, Random, Success, Try}
 
 /**
@@ -238,9 +237,24 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
     copy(predicate = p)
 
   def setRowParser(rp: RowParser[Row, String]): RawTableParser =
-    new RawTableParser(predicate, maybeHeader, forgiving, multiline) {
+    new RawTableParser(predicate, maybeHeader, forgiving, multiline, headerRowsToRead) {
       override val rowParser: RowParser[Row, String] = rp
   }
+}
+
+object RawTableParser {
+  /**
+   * Method to create a RawTableParser which reads the header from the first line of the input
+   * or, if a fixed header is given, expects the input to have no header line.
+   *
+   * @param predicate        a predicate which, if true, allows inclusion of the input row.
+   * @param maybeFixedHeader an optional fixed header. If None, we expect to find the header defined in the first line of the input.
+   * @param forgiving        if true then an individual malformed row will not prevent subsequent rows being parsed.
+   * @param multiline        if true then a row may continue onto the next line.
+   * @return a RawTableParser.
+   */
+  def create(predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header], forgiving: Boolean = false, multiline: Boolean = false): RawTableParser =
+    RawTableParser(predicate, maybeFixedHeader, forgiving, multiline, if (maybeFixedHeader.isDefined) 0 else 1)
 }
 
 /**
@@ -316,6 +330,8 @@ abstract class HeadedStringTableParser[X: CellParser](maybeFixedHeader: Option[H
         extends StringTableParser[Table[X]] with CopyableTableParser[X, String, Table[X]] {
 
   type Row = X
+
+  override protected val maybeHeader: Option[Header] = maybeFixedHeader
 
   protected def builder(rows: Iterator[X], header: Header): Table[Row] =
     HeadedTable(Content(rows), header)

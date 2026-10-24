@@ -286,7 +286,7 @@ object LineParser {
    */
   def apply(using c: RowConfig): LineParser = {
     LineParser.logger.info(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
-    new LineParser(c.delimiter, c.string, c.listEnclosure, c.listSep, c.quote)
+    new LineParser(c.delimiterRegex, c.string, c.listEnclosure, c.listSep, c.quote)
   }
 
   val logger: Logger = LoggerFactory.getLogger(LineParser.getClass)

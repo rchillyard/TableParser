@@ -1,11 +1,11 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "2.0.0-SNAPSHOT"
+ThisBuild / version := "2.0.0"
 
 // 2.x is Scala 3 only (for Scala 2.13, use the 1.x line, on the 1.x branch).
 // Build with the oldest supported LTS so that the artifacts are usable from any later Scala 3 version.
 // CircleCI also runs the tests on the current LTS (3.9).
 ThisBuild / scalaVersion := "3.3.8"
-ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature")
+ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature", "-Wunused:all")
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "21")
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
 

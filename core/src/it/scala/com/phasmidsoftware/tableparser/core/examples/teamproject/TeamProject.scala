@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.examples.teamproject
 
 import com.phasmidsoftware.tableparser.core.parse._
-import com.phasmidsoftware.tableparser.core.table.{Content, HeadedTable, Header, Table}
+import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Header, Table}
 import java.net.URL
 
 /**
@@ -54,9 +54,7 @@ object TeamProjectParser extends CellParsers {
   implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
   implicit val teamProjectParser: CellParser[TeamProject] = CellParser.derived[TeamProject]
 
-  implicit object TeamProjectConfig extends DefaultRowConfig {
-    override val listEnclosure: String = ""
-  }
+  implicit val teamProjectConfig: RowConfig = RowConfig(listEnclosure = "")
 
   val parser: StandardRowParser[TeamProject] = StandardRowParser.create[TeamProject]
 }

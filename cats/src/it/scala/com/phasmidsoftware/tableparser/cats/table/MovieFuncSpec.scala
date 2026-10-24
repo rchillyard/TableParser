@@ -5,7 +5,6 @@ import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.cats.util.IOUsing
 import com.phasmidsoftware.tableparser.core.examples.Movie
-import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.flatspec.AnyFlatSpec

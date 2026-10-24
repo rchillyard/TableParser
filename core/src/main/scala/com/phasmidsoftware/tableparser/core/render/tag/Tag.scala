@@ -57,16 +57,6 @@ sealed trait Tag {
    */
   def :+(tag: Tag): Tag
 
-  /**
-   * Method to yield the tag names depth-first in a Seq
-   *
-   * CONSIDER: this method is recursive. Is that what we really want?
-   *
-   * TESTME
-   *
-   * @return a sequence of tag names
-   */
-  private def \\ : Seq[String] = name +: (for (t <- tags; x <- t.\\) yield x)
 }
 
 /**
@@ -90,14 +80,12 @@ abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option
 
   private def attributeString(close: Boolean) = if (close || attributes.isEmpty) "" else " " + attributes.mkString(" ")
 
-  private def nameString(close: Boolean = false) = (if (close) "/" else "") + name
+  private def nameString(close: Boolean) = (if (close) "/" else "") + name
 }
 
 object Attribute {
 
   /**
-   * TESTME
-   *
    * @param m a Map of attributes.
    * @return a Seq[Attribute].
    */

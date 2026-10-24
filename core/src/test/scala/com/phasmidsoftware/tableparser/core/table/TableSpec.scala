@@ -82,6 +82,34 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
+  // Up to 2.0, a fixed header made parseRaw (and parseFileRaw, etc.) drop the first row of the data, as if it were a header.
+  it should "parseRaw with a fixed header, keeping every row" in {
+    matchTry(Table.parseRaw(Seq("1,2", "3,4"), TableParser.includeAll, Some(Header.create("x", "y")))) {
+      case rt@HeadedTable(_, _) =>
+        rt.toSeq.map(_.ws) shouldBe Seq(Seq("1", "2"), Seq("3", "4"))
+        rt.maybeHeader shouldBe Some(Header.create("x", "y"))
+    }
+  }
+
+  // Up to 2.0, the encoding given to parse(URI, enc) and parseInputStream(..., enc) was ignored (the platform default was used).
+  it should "parse an input stream using the given encoding" in {
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
+    val bytes = "first,last\nZoë,Müller\n".getBytes(java.nio.charset.StandardCharsets.UTF_16)
+    matchTry(Table.parseInputStream(Try(new java.io.ByteArrayInputStream(bytes)), "UTF-16")) {
+      case rt@HeadedTable(_, _) => rt.head.ws shouldBe Seq("Zoë", "Müller")
+    }
+  }
+
+  it should "parse a URI using the given encoding" in {
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
+    val file = File.createTempFile("latin1", ".csv")
+    file.deleteOnExit()
+    java.nio.file.Files.write(file.toPath, "first,last\nZoë,Müller\n".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1))
+    matchTry(Table.parse(file.toURI, "ISO-8859-1")) {
+      case rt@HeadedTable(_, _) => rt.head.ws shouldBe Seq("Zoë", "Müller")
+    }
+  }
+
   it should "parse and not filter the movies from the IMDB dataset" in {
     import com.phasmidsoftware.tableparser.core.examples.Movie._
     implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
@@ -482,22 +510,13 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     xs shouldBe Seq("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
   }
 
-  it should "prepend" in {
-    val xs = Header.prepend("x", Header.alphabet.to(LazyList)).take(100).toList
-    xs shouldBe Seq("xA", "xB", "xC", "xD", "xE", "xF", "xG", "xH", "xI", "xJ", "xK", "xL", "xM", "xN", "xO", "xP", "xQ", "xR", "xS", "xT", "xU", "xV", "xW", "xX", "xY", "xZ")
-  }
-
-  it should "multiply" in {
-    val xs = Header.multiply(List("A", "B"), Header.alphabet.to(LazyList))
-    xs shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV", "AW", "AX", "AY", "AZ", "BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", "BM", "BN", "BO", "BP", "BQ", "BR", "BS", "BT", "BU", "BV", "BW", "BX", "BY", "BZ")
-  }
-
   it should "generateLetters" in {
     val xs: List[String] = Header.generateLetters take 100 toList
 
     xs.take(26) shouldBe Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
     xs.slice(26, 36) shouldBe Seq("AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ")
     xs.slice(52, 62) shouldBe Seq("BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ")
+    Header.generateLetters.slice(700, 703).toList shouldBe List("ZY", "ZZ", "AAA")
   }
 
   it should "create ++" in {
@@ -505,10 +524,18 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     header.++(header).xs shouldBe Seq("A", "A")
   }
 
+  it should "join the additional lines pairwise with ++" in {
+    val h1 = Header(Seq(Seq("a", "b"), Seq("1", "2"), Seq("x", "y")))
+    val h2 = Header(Seq(Seq("c"), Seq("3")))
+    val h = h1 ++ h2
+    h.xs shouldBe Seq("a", "b", "c")
+    h.xss shouldBe Seq(Seq("1", "2", "3"), Seq("x", "y"))
+  }
+
   behavior of "transform"
 
   it should "parse and transform the following rows with pushdown function" in {
-    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.{given, *}
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
 
     val rows = Seq(
       header,
@@ -527,7 +554,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse and aggregate the following rows with pushdown function" in {
-    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.{given, *}
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
 
     val rows = Seq(
       header,
@@ -548,7 +575,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "projection"
 
   it should "parse and project the following rows" in {
-    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.{given, *}
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
 
     val rows = Seq(
       header,

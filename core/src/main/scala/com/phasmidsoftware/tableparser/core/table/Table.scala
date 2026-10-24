@@ -7,12 +7,10 @@ package com.phasmidsoftware.tableparser.core.table
 import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
-import com.phasmidsoftware.tableparser.core.util.FP._
-import com.phasmidsoftware.tableparser.core.util.{FieldNames, TryUsing}
-import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
+import com.phasmidsoftware.tableparser.core.util.TryUsing
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Path, Paths}
 import scala.annotation.unused
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
@@ -634,7 +632,7 @@ object Table {
    * @return a `Try` containing the parsed `Table[RawRow]` on success or an exception on failure
    */
   def parsePathRaw(path: Path, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): Try[Table[RawRow]] = {
-    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](path)
   }
 
@@ -646,7 +644,7 @@ object Table {
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): Try[Table[RawRow]] = {
-    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
+    given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, None)
     parseFile[Table[RawRow]](Paths.get(pathname))
   }
 
@@ -661,7 +659,7 @@ object Table {
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): Try[Table[RawRow]] = {
-    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 
@@ -672,7 +670,7 @@ object Table {
    * @return an Try of Table of RawRow
    */
   def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[RawTable] = {
-    given z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
+    given z: TableParser[RawTable] = RawTableParser.create(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
   }
 
@@ -732,7 +730,7 @@ object Table {
    * @param s an InputStream.
    * @return an Try[Source].
    */
-  private def sourceFromInputStream(s: => InputStream): Try[Source] =
+  private def sourceFromInputStream(s: => InputStream)(using codec: Codec): Try[Source] =
     Try(Source.fromInputStream(s))
 
   /**
@@ -741,7 +739,7 @@ object Table {
    * @param u a URI.
    * @return an Try[Source].
    */
-  private def sourceFromURI(u: => URI): Try[Source] =
+  private def sourceFromURI(u: => URI)(using codec: Codec): Try[Source] =
     Try(Source.fromURI(u))
 
   /**
@@ -750,23 +748,8 @@ object Table {
    * @param f a File.
    * @return an Try[Source].
    */
-  private def sourceFromFile(path: Path)(using codec: Codec): Try[Source] =
-    sourceFromPath(path)
-
   private def sourceFromFile(f: => File)(using codec: Codec): Try[Source] =
     Try(Source.fromFile(f))
-
-  /**
-   * Creates a `Source` from the given file path.
-   * NOTE The input stream must be closed by the caller to avoid resource leaks.
-   *
-   * @param path  the file path from which the source is created
-   * @param codec an implicit codec specifying the character encoding to use
-   * @return a `Try` containing the `Source` if successful, or a `Failure` if an error occurs
-   */
-  private def sourceFromPath(path: Path)(using codec: Codec): Try[Source] = {
-    Try(Source.fromInputStream(Files.newInputStream(path))(using codec))
-  }
 
   /**
    * Method to open source defined by a File.

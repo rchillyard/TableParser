@@ -91,18 +91,10 @@ object Movie extends CellParsers with CsvGenerators with CsvRenderers {
   implicit val generator: CsvGenerator[Movie] = CsvGenerator.derived[Movie]
 
   /**
-   * An implicit object extending `DefaultRowConfig`, used for customizing the configuration settings
-   * for parsing rows in the context of the `MovieParser` class.
-   *
-   * The `MovieConfig` object overrides the default `listEnclosure` property to use an empty string (`""`)
-   * instead of the default `{}`. This customization may imply that no special characters are used to
-   * enclose lists in this parsing configuration.
-   *
-   * @see DefaultRowConfig
+   * The RowConfig for the movie database, whose lists (genres and plot keywords, e.g. Action|Adventure)
+   * are not enclosed in "{}".
    */
-  implicit object MovieConfig extends DefaultRowConfig {
-    override val listEnclosure: String = ""
-  }
+  implicit val movieConfig: RowConfig = RowConfig(listEnclosure = "")
 
   implicit val stringParser: StringParser[Movie] = StandardRowParser.create[Movie]
 

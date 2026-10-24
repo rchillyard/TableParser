@@ -9,7 +9,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 // Top-level, so that it can use `derives`: 15 fields, more than the 13 that 1.x's cellParserN supported.
 case class Wide(a: Int, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int, i: Int, j: Int, k: Int, l: Int, m: Int, n: Int, o: String) derives CellParser

@@ -39,7 +39,7 @@ object ZIOTable {
 //   * @param csvAttributes implicit value of CsvAttributes.
 //   * @return a String.
 //   */
-//  def toCSV[T: CsvRenderer : CsvGenerator](t: Table[T])(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[String] =
+//  def toCSV[T: CsvRenderer : CsvGenerator](t: Table[T])(using csvAttributes: CsvAttributes): IO[String] =
 //    IO.fromTry(CsvTableStringRenderer[T]().render(t) map (_.toString))
 
   /**
@@ -58,13 +58,22 @@ object ZIOTable {
   }
 
   /**
+   * Method to parse a table from an Iterator of String, reading as many header rows as the TableParser expects.
+   *
+   * @param ws the Strings.
+   * @tparam T the type of the resulting table.
+   * @return an Task[T]
+   */
+  def parse[T: TableParser](ws: Iterator[String]): Task[T] = parse(ws, summon[TableParser[T]].headerRowsToRead)
+
+  /**
    * Method to parse a table from an Iterable of String.
    *
    * @param ws the Strings.
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterable[String]): Task[T] = parse(ws.iterator, 0)
+  def parse[T: TableParser](ws: Iterable[String]): Task[T] = parse(ws.iterator)
 
   /**
    * Method to parse a table from a Source.
@@ -75,7 +84,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseSource[T: TableParser](x: => Source): Task[T] = for (y <- parse(x.getLines(), 0)) yield y
+  def parseSource[T: TableParser](x: => Source): Task[T] = for (y <- parse(x.getLines())) yield y
 
   /**
    * Method to parse a table from a Source (with proper resource management of the source).
@@ -247,7 +256,7 @@ object ZIOTable {
    * @return an Task of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): Task[Table[RawRow]] = {
-    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](f)
   }
 
@@ -259,7 +268,7 @@ object ZIOTable {
    * @return an Task of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): Task[Table[RawRow]] = {
-    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
+    given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, None)
     parseFile[Table[RawRow]](pathname)
   }
 
@@ -274,7 +283,7 @@ object ZIOTable {
    * @return an Task of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): Task[Table[RawRow]] = {
-    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 
@@ -285,8 +294,8 @@ object ZIOTable {
    * @return an Task of Table of RawRow
    */
   def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Task[RawTable] = {
-    given z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
-    parse(ws.iterator, 0)
+    given z: TableParser[RawTable] = RawTableParser.create(predicate, maybeFixedHeader, forgiving, multiline)
+    parse(ws.iterator)
   }
 
   /**
@@ -309,14 +318,14 @@ object ZIOTable {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes, renderer: CsvRenderer[Row]): Task[String] = {
+  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes): Task[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         import com.phasmidsoftware.tableparser.core.render.CsvRenderer.CsvRendererRow
 //        import Row.CsvRendererRow
         ZIO.fromTry(t.toCSV)
-      case _ => throw TableException("toCSVRow: cannot write this Table to CSV (no header)")
+      case _ => ZIO.fail(TableException("toCSVRow: cannot write this Table to CSV (no header)"))
     }
   }
 
@@ -335,7 +344,7 @@ object ZIOTable {
 //        // CONSIDER this is a bit ugly
 //        val q: IO[FileWriter] = ZIOTable.writeCSVFileIO(t)(file)
 //        q map { f => f.close(); f }
-//      case _ => throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
+//      case _ => ZIO.fail(TableException("writeCSVFileRow: cannot write this Table to CSV (no header)"))
 //    }
 
   /**
@@ -344,7 +353,7 @@ object ZIOTable {
    * @param s an InputStream.
    * @return an Task[Source].
    */
-  private def sourceFromInputStream(s: => InputStream): Task[Source] = ZIO.succeed(Source.fromInputStream(s))
+  private def sourceFromInputStream(s: => InputStream)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromInputStream(s))
 
   /**
    * Method to open source defined by a URI.
@@ -352,7 +361,7 @@ object ZIOTable {
    * @param u a URI.
    * @return an Task[Source].
    */
-  private def sourceFromURI(u: => URI): Task[Source] = ZIO.succeed(Source.fromURI(u))
+  private def sourceFromURI(u: => URI)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromURI(u))
 
   /**
    * Method to open source defined by a File.

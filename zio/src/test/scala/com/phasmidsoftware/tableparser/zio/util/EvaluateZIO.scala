@@ -9,6 +9,21 @@ import zio.test._
  * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
  */
 object EvaluateZIO {
+
+  /**
+   * Method to run a Task[X] (unsafely, so only in tests) and return its outcome.
+   *
+   * @param xio a Task[X].
+   * @tparam X the underlying type of xio.
+   * @return Right(x) if it succeeded, otherwise Left(the exception, whether a failure or a defect).
+   */
+  def run[X](xio: => Task[X]): Either[Throwable, X] =
+    Unsafe.unsafe { implicit unsafe =>
+      Runtime.default.unsafe.run(xio) match {
+        case Exit.Success(x) => Right(x)
+        case Exit.Failure(cause) => Left(cause.squash)
+      }
+    }
 //
 //  /**
 //   * Method to evaluate an IO[X] as an X.

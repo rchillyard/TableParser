@@ -9,7 +9,6 @@ import com.phasmidsoftware.tableparser.core.table.{Header, RawRow, Row}
 import com.phasmidsoftware.tableparser.core.util.{Derivation, FP}
 import scala.compiletime.constValue
 import scala.deriving.Mirror
-import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -38,7 +37,7 @@ trait CellParsers {
    * @tparam P the underlying type of the result
    * @return a MultiCellParser[Seq[P]
    */
-  def cellParserRepetition[P: CellParser : ColumnHelper](start: Int = 1): CellParser[Seq[P]] = 
+  def cellParserRepetition[P: CellParser](start: Int = 1): CellParser[Seq[P]] = 
     new MultiCellParser[Seq[P]] {
     // XXX used only for debugging
     override def toString: String = "MultiCellParser: cellParserRepetition"
