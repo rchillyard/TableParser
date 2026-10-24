@@ -20,9 +20,9 @@ object IOUsing {
    * @param f        a function of R => IO[A].
    * @tparam R the resource type.
    * @tparam A the underlying type of the result.
-   * @return a IO[A], the result of invoking apply(IO(resource))(f).
+   * @return a IO[A], the result of invoking apply(IO.blocking(resource))(f).
    */
-  def apply[R: Releasable, A](resource: => R)(f: R => IO[A]): IO[A] = IOUsing(IO(resource))(f)
+  def apply[R: Releasable, A](resource: => R)(f: R => IO[A]): IO[A] = IOUsing(IO.blocking(resource))(f)
 
   /**
    * This alternative apply method signature is to allow proper handling of Releasable resources which are themselves wrapped in IO, using IO.
@@ -36,7 +36,7 @@ object IOUsing {
    * @tparam A the underlying type of the result.
    * @return a IO[A]
    */
-  def apply[R: Releasable, A](ri: IO[R])(f: R => IO[A]): IO[A] = Resource.make(ri)(r => IO(summon[Releasable[R]].release(r))).use(r => f(r))
+  def apply[R: Releasable, A](ri: IO[R])(f: R => IO[A]): IO[A] = Resource.make(ri)(r => IO.blocking(summon[Releasable[R]].release(r))).use(r => f(r))
 
   /**
    * This alternative apply method signature is to allow proper handling of Releasable resources which are themselves wrapped in Try, using IO.

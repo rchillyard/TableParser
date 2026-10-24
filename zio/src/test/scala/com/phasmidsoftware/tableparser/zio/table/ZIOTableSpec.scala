@@ -2,6 +2,7 @@ package com.phasmidsoftware.tableparser.zio.table
 
 import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
 import com.phasmidsoftware.tableparser.core.parse.TableParser
+import com.phasmidsoftware.tableparser.core.render.CsvProduct
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO
 import java.io.{ByteArrayInputStream, File}
@@ -112,9 +113,58 @@ class ZIOTableSpec extends AnyFlatSpec with should.Matchers {
     val table: Table[Row] = ZIOTable(Seq(Row(Seq("1", "2"), Header.create("x", "y"), 0)), None)
     EvaluateZIO.run(ZIOTable.toCSVRow(table)) should matchPattern { case Left(_: TableException) => }
   }
+
+  behavior of "ZIOTable effects"
+
+  // Up to 2.0.0, ZIOTable never closed the Source it read.
+  it should "close the stream that it reads" in {
+    val stream = new ClosingStream(csv)
+    rows(ZIOTable.parseInputStream[RawTable](stream)) shouldBe expected
+    stream.closed shouldBe true
+  }
+
+  // Up to 2.0.0, a missing file was a defect (ZIO.succeed), which catchAll can't catch.
+  it should "fail (not die) for a missing file" in {
+    run(ZIOTable.parseFile[RawTable]("no/such/file.csv").as("parsed").catchAll(_ => ZIO.succeed("caught"))) shouldBe "caught"
+  }
+
+  it should "render a Table as CSV" in {
+    val table = Table(Seq(Point(1, 2), Point(3, 4)), Some(Header.create("x", "y")))
+    run(ZIOTable.toCSV(table)) shouldBe "x,y\r\n1,2\r\n3,4\r\n"
+  }
+
+  it should "write a file only when the Task is run, and read it back" in {
+    val out = File.createTempFile("points-out", ".csv")
+    out.deleteOnExit()
+    out.delete()
+    val task = ZIOTable.writeCSVFileRow(pointRows, out)
+    out.exists() shouldBe false
+    run(task)
+    rows(ZIOTable.parseFile[RawTable](out)) shouldBe expected
+  }
+
+  it should "fail (in the Task) to write a Table of Row which has no header" in {
+    val table: Table[Row] = ZIOTable(Seq(Row(Seq("1", "2"), Header.create("x", "y"), 0)), None)
+    EvaluateZIO.run(ZIOTable.writeCSVFileRow(table, file)) should matchPattern { case Left(_: TableException) => }
+  }
 }
 
 object ZIOTableSpec {
+
+  case class Point(x: Int, y: Int) derives CsvProduct
+
+  /**
+   * An InputStream which remembers whether it has been closed.
+   */
+  class ClosingStream(w: String) extends ByteArrayInputStream(w.getBytes(StandardCharsets.UTF_8)) {
+    var closed = false
+
+    override def close(): Unit = {
+      closed = true
+      super.close()
+    }
+  }
+
   val csv: String = "x,y\n1,2\n3,4\n"
 
   private val hdr = Header.create("x", "y")

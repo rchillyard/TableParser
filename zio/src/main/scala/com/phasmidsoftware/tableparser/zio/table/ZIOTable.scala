@@ -8,7 +8,7 @@ import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
-import java.io.{File, InputStream}
+import java.io.{File, FileWriter, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
@@ -19,28 +19,28 @@ import zio._
  * The methods here are basically copies of the same methods in Table, but resulting in IO rather than Try.
  */
 object ZIOTable {
-//
-//  /**
-//   * Method to render this Table[T] as a CSV file with (maybe) header.
-//   *
-//   * @param file          instance of File where the output should be stored.
-//   * @param renderer      implicit value of CsvRenderer[Row].
-//   * @param generator     implicit value of CsvProductGenerator[Row].
-//   * @param csvAttributes implicit value of CsvAttributes.
-//   */
-//  def writeCSVFileIO(table: Table[Row])(file: File)(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
-//    IO.fromTry(CsvTableFileRenderer[Row](file).render(table) map { f => f.flush(); f })
-//
-//  /**
-//   * Method to render this Table[T] as a CSV String with (maybe) header.
-//   *
-//   * @param renderer      implicit value of CsvRenderer[Row].
-//   * @param generator     implicit value of CsvProductGenerator[Row].
-//   * @param csvAttributes implicit value of CsvAttributes.
-//   * @return a String.
-//   */
-//  def toCSV[T: CsvRenderer : CsvGenerator](t: Table[T])(using csvAttributes: CsvAttributes): IO[String] =
-//    IO.fromTry(CsvTableStringRenderer[T]().render(t) map (_.toString))
+
+  /**
+   * Method to render this Table[T] as a CSV file with (maybe) header.
+   * NOTE: the FileWriter is flushed but not closed (see writeCSVFileRow, which closes it).
+   *
+   * @param file          instance of File where the output should be stored.
+   * @param renderer      implicit value of CsvRenderer[Row].
+   * @param generator     implicit value of CsvProductGenerator[Row].
+   * @param csvAttributes implicit value of CsvAttributes.
+   */
+  def writeCSVFileIO(table: Table[Row])(file: File)(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Task[FileWriter] =
+    ZIO.attemptBlocking(CsvTableFileRenderer[Row](file).render(table)).flatMap(ZIO.fromTry(_)) map { f => f.flush(); f }
+
+  /**
+   * Method to render this Table[T] as a CSV String with (maybe) header.
+   *
+   * @param t             the table.
+   * @param csvAttributes implicit value of CsvAttributes.
+   * @return a String.
+   */
+  def toCSV[T: CsvRenderer : CsvGenerator](t: Table[T])(using csvAttributes: CsvAttributes): Task[String] =
+    ZIO.fromTry(CsvTableStringRenderer[T]().render(t) map (_.toString))
 
   /**
    * Primary method to parse a table from an Iterator of String.
@@ -50,12 +50,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterator[String], n: Int): Task[T] = summon[TableParser[T]] match {
-    case parser: StringTableParser[T] =>
-      ZIO.fromTry(parser.parse(ws, n))
-    case x =>
-      ZIO.fail(ParserException(s"parse method for Iterator[String] incompatible with tableParser: $x"))
-  }
+  def parse[T: TableParser](ws: Iterator[String], n: Int): Task[T] = ZIO.fromTry(parseTry(ws, n))
 
   /**
    * Method to parse a table from an Iterator of String, reading as many header rows as the TableParser expects.
@@ -73,7 +68,7 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterable[String]): Task[T] = parse(ws.iterator)
+  def parse[T: TableParser](ws: Iterable[String]): Task[T] = ZIO.suspend(parse(ws.iterator))
 
   /**
    * Method to parse a table from a Source.
@@ -84,7 +79,8 @@ object ZIOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseSource[T: TableParser](x: => Source): Task[T] = for (y <- parse(x.getLines())) yield y
+  def parseSource[T: TableParser](x: => Source): Task[T] =
+    ZIO.attemptBlocking(parseTry(x.getLines(), summon[TableParser[T]].headerRowsToRead)).flatMap(ZIO.fromTry(_))
 
   /**
    * Method to parse a table from a Source (with proper resource management of the source).
@@ -94,7 +90,7 @@ object ZIOTable {
    * @return an IO[T]
    */
   def parse[T: TableParser](si: => Task[Source]): Task[T] =
-    for (s <- si; t <- parseSource(s)) yield t
+    ZIO.acquireReleaseWith(si)(s => ZIO.attemptBlocking(s.close()).orDie)(parseSource(_))
 
   /**
    * Method to parse a table from a URI with an implicit encoding.
@@ -230,21 +226,14 @@ object ZIOTable {
     given codec: Codec = Codec(enc)
     parseResource(u)
   }
-//
-//  /**
-//   * Method to parse a table from a Seq of Seq of String.
-//   *
-//   * @param wss the Sequence of Strings.
-//   * @tparam T the type of the resulting table.
-//   * @return an Task[T]
-//   */
-//  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Task[T] = {
-//    val tableParser = summon[TableParser[T]]
-//    tableParser match {
-//      case parser: TableParserIO[T] => parser.parseIO(wss, 1)
-//      case _ => Task.raiseError(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
-//    }
-//  }
+  /**
+   * Method to parse a table from a sequence of sequences of String (one per row, already split into cells).
+   *
+   * @param wss the rows, each a sequence of Strings.
+   * @tparam T the type of the resulting table.
+   * @return an Task[T]
+   */
+  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Task[T] = ZIO.fromTry(Table.parseSequence(wss))
 
   /**
    * Method to parse a table from a File as a table of Seq[String].
@@ -323,7 +312,6 @@ object ZIOTable {
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         import com.phasmidsoftware.tableparser.core.render.CsvRenderer.CsvRendererRow
-//        import Row.CsvRendererRow
         ZIO.fromTry(t.toCSV)
       case _ => ZIO.fail(TableException("toCSVRow: cannot write this Table to CSV (no header)"))
     }
@@ -337,15 +325,14 @@ object ZIOTable {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-//  def writeCSVFileRow(t: Table[Row], file: File)(using csvAttributes: CsvAttributes): IO[FileWriter] =
-//    t.maybeHeader match {
-//      case Some(hdr) =>
-//        implicit val z: CsvGenerator[Row] = Row.csvGenerator(hdr)
-//        // CONSIDER this is a bit ugly
-//        val q: IO[FileWriter] = ZIOTable.writeCSVFileIO(t)(file)
-//        q map { f => f.close(); f }
-//      case _ => ZIO.fail(TableException("writeCSVFileRow: cannot write this Table to CSV (no header)"))
-//    }
+  def writeCSVFileRow(t: Table[Row], file: File)(using csvAttributes: CsvAttributes): Task[FileWriter] =
+    t.maybeHeader match {
+      case Some(hdr) =>
+        given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
+        import com.phasmidsoftware.tableparser.core.render.CsvRenderer.CsvRendererRow
+        writeCSVFileIO(t)(file) flatMap (f => ZIO.attemptBlocking(f.close()).as(f))
+      case _ => ZIO.fail(TableException("writeCSVFileRow: cannot write this Table to CSV (no header)"))
+    }
 
   /**
    * Method to open source defined by an InputStream.
@@ -353,7 +340,14 @@ object ZIOTable {
    * @param s an InputStream.
    * @return an Task[Source].
    */
-  private def sourceFromInputStream(s: => InputStream)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromInputStream(s))
+  // NOTE: opening a Source can fail (e.g. there is no such file), so it's attempted (a failure, not a defect),
+  // and reading or writing a file is blocking, so it runs on the blocking pool.
+  private def parseTry[T: TableParser](ws: Iterator[String], n: Int): Try[T] = summon[TableParser[T]] match {
+    case parser: StringTableParser[T] => parser.parse(ws, n)
+    case x => Failure(ParserException(s"parse method for Iterator[String] incompatible with tableParser: $x"))
+  }
+
+  private def sourceFromInputStream(s: => InputStream)(using codec: Codec): Task[Source] = ZIO.attemptBlocking(Source.fromInputStream(s))
 
   /**
    * Method to open source defined by a URI.
@@ -361,7 +355,7 @@ object ZIOTable {
    * @param u a URI.
    * @return an Task[Source].
    */
-  private def sourceFromURI(u: => URI)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromURI(u))
+  private def sourceFromURI(u: => URI)(using codec: Codec): Task[Source] = ZIO.attemptBlocking(Source.fromURI(u))
 
   /**
    * Method to open source defined by a File.
@@ -369,7 +363,7 @@ object ZIOTable {
    * @param f a File.
    * @return an Task[Source].
    */
-  private def sourceFromFile(f: => File)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromFile(f))
+  private def sourceFromFile(f: => File)(using codec: Codec): Task[Source] = ZIO.attemptBlocking(Source.fromFile(f))
 
   /**
    * Method to open source defined by a File.
@@ -377,7 +371,7 @@ object ZIOTable {
    * @param filename a File.
    * @return an Task[Source].
    */
-  private def sourceFromFilename(filename: => String)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromFile(filename))
+  private def sourceFromFilename(filename: => String)(using codec: Codec): Task[Source] = ZIO.attemptBlocking(Source.fromFile(filename))
 
   /**
    * Method to open a source defined by a Class and a resource name.
