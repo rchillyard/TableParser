@@ -7,11 +7,17 @@ package com.phasmidsoftware.tableparser.core.table
 import com.phasmidsoftware.tableparser.core.util.FP._
 import com.phasmidsoftware.tableparser.core.util.FieldNames
 import scala.language.postfixOps
-import scala.reflect.ClassTag
 import scala.util.Try
 
 /**
  * Case class to represent a header.
+ *
+ * A Header is normally read from the first row(s) of a file (see TableParser.headerRowsToRead).
+ * Otherwise, a fixed Header can be given to a TableParser (e.g. via setHeader), made in one of these ways:
+ *  - Header.create("a", "b", "c"): the given column names;
+ *  - Header[X](): the names of the fields of the case class X;
+ *  - Header(letters = true, n): n columns named as in a spreadsheet (A B ... Z AA AB ...), or by number (1 2 3 ...);
+ *  - Header(wss): from several rows, the first of which gives the column names.
  *
  * @param xs  the sequence of column names.
  * @param xss a sequence of sequence of String representing any additional header lines.
@@ -43,11 +49,13 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
   /**
    * Concatenate this Header with other.
    *
+   * The additional header lines are joined pairwise (a missing line counts as empty).
+   *
    * @param other the other Header.
    * @return a Header made up of these columns and those of other, in that order.
    */
   def ++(other: Header): Header =
-    Header(xs ++ other.xs, for (xs <- xss; ys <- other.xss) yield xs ++ ys)
+    Header(xs ++ other.xs, xss.zipAll(other.xss, Nil, Nil) map ((ws, vs) => ws ++ vs))
 }
 
 /**
@@ -56,46 +64,31 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
  */
 object Header {
 
-  // TODO come back and figure out why recursiveLetters (below) didn't work properly.
   private lazy val numbers: LazyList[Int] = LazyList.from(1)
-  lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
-  //  lazy val recursiveLetters: LazyList[String] = alphabet.toStream #::: multiply(alphabet,recursiveLetters)
-  //  lazy val generateLetters: LazyList[String] = recursiveLetters
-  val alphabet: List[String] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray.map(_.toString).toList
 
+  /**
+   * Column names as in a spreadsheet, by number: 1 2 3 ...
+   */
+  lazy val generateNumbers: LazyList[String] = numbers map (_.toString)
+
+  /**
+   * Column names as in a spreadsheet, by letter: A B C ... Z AA AB ... AZ BA ... ZZ AAA ...
+   */
+  lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
+
+  // The column name of the nth column (from 1): with letters, n is written in "bijective base 26" (A=1 ... Z=26).
   private def intToString(letters: Boolean)(n: Int): String = if (letters) {
     @scala.annotation.tailrec
-    def inner(s: String, n: Int): String = {
-      if (n <= 0)
-        s
+    def inner(s: String, n: Int): String =
+      if (n <= 0) s
       else {
-        val m = n % 26 match {
-          case 0 =>
-            26
-          case other =>
-            other
-        }
+        val m = if (n % 26 == 0) 26 else n % 26
         inner(s"${(m + 64).toChar}$s", (n - m) / 26)
       }
-    }
 
     inner("", n)
   }
   else n.toString
-
-  lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
-
-  def multiply(prefixes: List[String], strings: LazyList[String]): LazyList[String] = {
-    prefixes collect {
-      case "x" =>
-        "x"
-    }
-    val wss: List[LazyList[String]] = prefixes map (prepend(_, strings))
-    wss.foldLeft(LazyList.empty[String])(_ #::: _)
-  }
-
-  def prepend(prefix: String, stream: LazyList[String]): LazyList[String] =
-    stream map (prefix + _)
 
   /**
    * This method constructs a new Header based on a header spanning several lines.
@@ -112,7 +105,8 @@ object Header {
    *
    * @param letters true if we want the sequence A B C D E ... Z AA AB ... BA BB ...
    *                false is we just want numbers.
-   * @return a
+   * @param length  the number of columns.
+   * @return a Header with length column names.
    */
   def apply(letters: Boolean, length: Int): Header =
     Header(numbers map intToString(letters) take length toList, Nil)
