@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "2.0.2"
+ThisBuild / version := "2.0.3"
 
 // 2.x is Scala 3 only (for Scala 2.13, use the 1.x line, on the 1.x branch).
 // Build with the oldest supported LTS so that the artifacts are usable from any later Scala 3 version.

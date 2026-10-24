@@ -117,7 +117,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 2.0.2.
+This version of the README.md file refers to version: 2.0.3.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only (it is built with Scala 3.3 LTS, so it can be used from any later Scala 3 version),
 and it needs Java 21 or later.
@@ -127,12 +127,12 @@ To use it, add the modules you need to your _build.sbt_:
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "2.0.2"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "2.0.2"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "2.0.2"     // ZIO support
-  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.0.2"  // encryption
-  , "com.phasmidsoftware" %% "tableparser-json" % "2.0.2"    // JSON (circe)
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.0.2" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "2.0.3"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "2.0.3"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "2.0.3"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.0.3"  // encryption
+  , "com.phasmidsoftware" %% "tableparser-json" % "2.0.3"    // JSON (circe)
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.0.3" // Parquet files
 )
 ```
 
@@ -929,6 +929,16 @@ For more examples (numbers, dates, nested case classes, and bad input), see _Tab
 
 Release Notes
 =============
+V2.0.2 -> V2.0.3
+* Bug fix: _Table.writeCSVFile_ (and so _Table.writeCSVFileRow_) wrote an empty file: it never closed the file, so what
+  it wrote was never flushed. It also ignored any failure. It now closes the file, and throws a _TableException_ on failure.
+* Encryption: new _TableCrypt.writeCSVFileEncryptedIO_, which writes an encrypted table in _IO_ (the rows are encrypted
+  in parallel, and the file is always closed). _writeCSVFileEncrypted_ runs it. Every line now ends with the
+  _CsvAttributes_ newline (the rows used to end with LF, even though the header ended with CRLF).
+* Tests: none is ignored any more (each of the five was fixed, or rewritten to test what is right); the zio tests which
+  use _matchZIO_ now run (it returned a _Task_ which was never run, so about 35 of them checked nothing).
+  573 tests (and 20 integration tests); statement coverage is 90.4% (branch coverage 84.9%).
+
 V2.0.1 -> V2.0.2
 * Encrypted tables (the crypto module) can be written and read again (both had been broken since the modules were split):
   * _TableCrypt.writeCSVFileEncrypted_ takes a key function (from the key of a row to its encryption key), as
