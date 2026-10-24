@@ -901,28 +901,51 @@ to say that tables can be read from Json strings.
 _TableCodecs_ provides a circe _Encoder_ and _Decoder_ for _Table[T]_, given an _Encoder_ (or _Decoder_) for _T_.
 A table is a JSON object with a "rows" array and, if the table has a header, a "header" array of column names.
 
-The following example from _JsonTableRendererSpec.scala_ (in the json module) shows how we can take the following steps
-(for the definitions of _Player_, _Partnership_, please see the spec file itself):
-* read a table of players from a list of _Strings_
-  * (there are, as shown above, other signatures of parse for files, URLs, etc.);
-* convert to a table of partnerships;
-* write the resulting table to a Json string;
-* check the accuracy of the Json string;
-* check that we can read the string back in as a table.
+The following example, from _TableCodecsSpec.scala_ (in the json module), reads the movie database,
+writes it as JSON, and reads the JSON back.
+_UnstructuredMovie_ (in core's tests) is a case class with a field for each of the 28 columns,
+many of them optional:
 
     import com.phasmidsoftware.tableparser.json.render.JsonTableRenderer
     import com.phasmidsoftware.tableparser.json.table.TableCodecs.given
     import io.circe.Codec
     import io.circe.parser.decode
 
-    case class Partnership(playerA: String, playerB: String) derives Codec.AsObject
+    given Codec.AsObject[UnstructuredMovie] = Codec.AsObject.derived
 
-    given Renderer[Table[Partnership], String] = new JsonTableRenderer[Partnership]
+    val movies: Table[UnstructuredMovie] = Table.parseResource[Table[UnstructuredMovie]]("movie_metadata.csv", classOf[UnstructuredMovie]).get
+    val json: String = new JsonTableRenderer[UnstructuredMovie].render(movies)
+    val decoded: Either[io.circe.Error, Table[UnstructuredMovie]] = decode[Table[UnstructuredMovie]](json)
+    decoded.map(_.toList) shouldBe Right(movies.toList)
 
-    val strings = List("First,Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
-    val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt).asInstanceOf[TableRenderable[Partnership]].render
-    wy shouldBe Success(partnershipsJson("playerA", "playerB"))
-    wy.map(p => decode[Table[Partnership]](p)) should matchPattern { case Success(Right(HeadedTable(_, _))) => }
+The JSON looks like this (abbreviated):
+
+    {
+      "rows" : [
+        {
+          "color" : "Color",
+          "directorName" : "James Cameron",
+          "numCriticForReviews" : 723,
+          ...
+          "gross" : 760505847,
+          ...
+        },
+        ...
+      ],
+      "header" : [
+        "color",
+        "director_name",
+        "num_critic_for_reviews",
+        ...
+      ]
+    }
+
+Note that the header and the keys of the rows differ.
+The header is the table's own header: here, the column names of the CSV file.
+The keys of each row are whatever its _Encoder_ writes: for a derived _Codec_, the field names.
+A missing (_None_) value is written as _null_ (and a missing or _null_ value is read as _None_).
+Reading JSON which is malformed, or which doesn't match the row type, gives a _Left_.
+For more examples (numbers, dates, nested case classes, and bad input), see _TableCodecsSpec.scala_ and _JsonTableRendererSpec.scala_.
 
 Release Notes
 =============

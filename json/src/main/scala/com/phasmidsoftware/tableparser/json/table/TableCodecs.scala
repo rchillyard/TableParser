@@ -23,6 +23,12 @@ import io.circe.{Decoder, Encoder, Json}
  *
  * Use them with `import com.phasmidsoftware.tableparser.json.table.TableCodecs.given`.
  * The rows need an Encoder (or Decoder): for a case class, `derives Codec.AsObject` gives both.
+ *
+ * NOTE the header and the keys of the rows may differ.
+ * The header is the Table's own header: for a table parsed from CSV, that's the column names of the file
+ * (e.g. "director_name").
+ * The keys of each row are whatever the row's Encoder writes: for a derived Codec, the field names (e.g. "directorName").
+ * The Decoder reads the rows by their keys, and keeps the header just as it was, so a round trip loses nothing.
  */
 object TableCodecs {
 
