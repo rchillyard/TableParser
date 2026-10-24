@@ -29,7 +29,8 @@ trait WritableCrypt[O] extends Writable[O]:
    */
   def writeLineEncrypted[A: HexEncryption](o: O)(key: String, rawKey: String, plaintext: CharSequence): O =
     import cats.effect.unsafe.implicits.global
-    // TODO use IO for O
+    // NOTE a Writable is synchronous, so each row's encryption (an IO) is run here.
+    // TableCrypt.writeCSVFileEncryptedIO writes a whole table in IO, without this.
     val hex = summon[HexEncryption[A]].encryptHex(rawKey, plaintext).unsafeRunSync()
     writeRaw(writeRaw(o)(s"$key|$hex"))(newline)
 

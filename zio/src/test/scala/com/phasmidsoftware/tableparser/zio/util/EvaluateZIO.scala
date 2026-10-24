@@ -1,7 +1,6 @@
 package com.phasmidsoftware.tableparser.zio.util
 
 import zio._
-import zio.test._
 
 /**
  * Interim utilities for checking IO.
@@ -38,20 +37,22 @@ object EvaluateZIO:
 //    whenReady(xio.toFuture(), timeout)(identity)
 
   /**
-   * Method to evaluate an Task[X] as an Assertion.
-   * It does this by converting to a Future,
-   * waiting for that Future to finish and
-   * then passing the result to the given partialFunction.
+   * Method to run a Task[X] and check its result with a partial function, which must be defined for it and yield true.
+   * The Task is run (unsafely, so only in tests).
+   * NOTE: up to 2.0.2, this returned a Task[TestResult], which the tests never ran, so they checked nothing.
    * For usage, see EvaluateZIOSpec.
    *
    * @param xio             a value of Task[X].
-   * @param partialFunction a PartialFunction of type X=>Assertion
+   * @param partialFunction a PartialFunction of type X=>Boolean.
    * @tparam X the underlying type of xio.
    * @return an Assertion.
    */
-  def matchZIO[X](xio: => Task[X])(partialFunction: PartialFunction[X, Boolean]): Task[TestResult] =
-    val f: (=> X) => Boolean = partialFunction(_)
-    assertZIO(xio)(Assertion.assertion("matchZIO OK")(f))
+  def matchZIO[X](xio: => Task[X])(partialFunction: PartialFunction[X, Boolean]): org.scalatest.Assertion =
+    import org.scalatest.Assertions.{assert, fail}
+    run(xio) match
+      case Right(x) if partialFunction.isDefinedAt(x) => assert(partialFunction(x), s"matchZIO: the check was false for $x")
+      case Right(x) => fail(s"matchZIO: no case matched $x")
+      case Left(e) => fail(s"matchZIO: the Task failed with $e", e)
 //
 //  /**
 //   * Check the result by converting it to a Future, and waiting for it to complete.

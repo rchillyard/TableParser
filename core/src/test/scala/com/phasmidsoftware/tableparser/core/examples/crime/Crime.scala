@@ -82,7 +82,8 @@ object CrimeRenderer extends CsvRenderers:
   implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt]:
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
-    def render(t: BigInt, attrs: Map[String, String]): String = t.toString(16)
+    // A crime ID is a SHA-256 hash: 64 hex digits, including any leading zeros (which toString(16) would drop).
+    def render(t: BigInt, attrs: Map[String, String]): String = String.format("%064x", t.bigInteger)
   implicit val crimeIdRenderer: CsvRenderer[Option[BigInt]] = optionRenderer[BigInt]()
   implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator[BigInt]
   implicit val geoRenderer: CsvRenderer[Option[Double]] = optionRenderer[Double]()
@@ -96,7 +97,8 @@ object CrimeLocationRenderer extends CsvRenderers:
   implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt]:
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
-    def render(t: BigInt, attrs: Map[String, String]): String = t.toString(16)
+    // A crime ID is a SHA-256 hash: 64 hex digits, including any leading zeros (which toString(16) would drop).
+    def render(t: BigInt, attrs: Map[String, String]): String = String.format("%064x", t.bigInteger)
   implicit val crimeIdRenderer: CsvRenderer[Option[BigInt]] = optionRenderer[BigInt]("unidentified")
   implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator
   implicit val crimeRenderer: CsvProduct[CrimeLocation] = CsvProduct.derived[CrimeLocation]

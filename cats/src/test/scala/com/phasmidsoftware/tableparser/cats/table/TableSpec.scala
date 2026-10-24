@@ -66,14 +66,18 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     matchIO(z1 product z2):
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) => a.size shouldBe 2; b.size shouldBe 2
 
-  // NOTE: this test can be flaky. Perhaps we should just use zip instead of parProduct.
-  // NOTE: actually the problem (on CircleCI) is with creating the new File.
-  ignore should "parse table from raw file" in:
-    val z1: IO[Table[RawRow]] = IO.fromTry(Table.parsePathRaw(Paths.get("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))))
+  // Up to 2.0.2, this read output.csv (written by another test, so it was flaky) and was ignored;
+  // it also expected the first row to be dropped when the header is fixed, which 2.0.0 fixed.
+  it should "parse table from raw file" in:
+    val file = java.io.File.createTempFile("raw", ".csv")
+    file.deleteOnExit()
+    java.nio.file.Files.writeString(file.toPath, "1,2\n3,4\n")
+    val z1: IO[Table[RawRow]] = IO.fromTry(Table.parsePathRaw(file.toPath, TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))))
     val z2: IO[Table[RawRow]] = IO.fromTry(Table.parseFileRaw("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", TableParser.includeAll))
     matchIO(z1 product z2):
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) =>
-        a.size shouldBe 0; b.size shouldBe 1
+        a.toSeq.map(_.ws) shouldBe Seq(Seq("1", "2"), Seq("3", "4"))
+        b.size shouldBe 1
 
   it should "write table to the file" in:
     val hdr = Header(Seq(Seq("a", "b")))
