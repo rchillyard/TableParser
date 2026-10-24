@@ -89,9 +89,9 @@ object CsvRenderer extends CsvRenderers {
   }
 
   // Prefer a field type's own CsvRenderer; otherwise, if it is a case class, derive one.
-  private inline def fieldRenderer[A](using CsvAttributes): CsvRenderer[A] = summonFrom {
+  private inline def fieldRenderer[A](using ca: CsvAttributes): CsvRenderer[A] = summonFrom {
     case r: CsvRenderer[A] => r
-    case m: Mirror.ProductOf[A] => derived[A](using m, summonInline[CsvAttributes])
+    case m: Mirror.ProductOf[A] => derived[A](using m, ca)
   }
 
   given localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {

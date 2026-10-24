@@ -89,9 +89,9 @@ object CsvGenerator extends CsvGenerators {
   }
 
   // Prefer a field type's own CsvGenerator; otherwise, if it is a case class, derive one.
-  private inline def fieldGenerator[A](using CsvAttributes): CsvGenerator[A] = summonFrom {
+  private inline def fieldGenerator[A](using ca: CsvAttributes): CsvGenerator[A] = summonFrom {
     case g: CsvGenerator[A] => g
-    case m: Mirror.ProductOf[A] => derived[A](using m, summonInline[CsvAttributes])
+    case m: Mirror.ProductOf[A] => derived[A](using m, ca)
   }
 }
 

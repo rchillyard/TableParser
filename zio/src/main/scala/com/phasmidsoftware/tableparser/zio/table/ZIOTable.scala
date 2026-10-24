@@ -39,7 +39,7 @@ object ZIOTable {
 //   * @param csvAttributes implicit value of CsvAttributes.
 //   * @return a String.
 //   */
-//  def toCSV[T: CsvRenderer : CsvGenerator](t: Table[T])(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[String] =
+//  def toCSV[T: CsvRenderer : CsvGenerator](t: Table[T])(using csvAttributes: CsvAttributes): IO[String] =
 //    IO.fromTry(CsvTableStringRenderer[T]().render(t) map (_.toString))
 
   /**
@@ -309,7 +309,7 @@ object ZIOTable {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes, renderer: CsvRenderer[Row]): Task[String] = {
+  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes): Task[String] = {
     t.maybeHeader match {
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
@@ -344,7 +344,7 @@ object ZIOTable {
    * @param s an InputStream.
    * @return an Task[Source].
    */
-  private def sourceFromInputStream(s: => InputStream): Task[Source] = ZIO.succeed(Source.fromInputStream(s))
+  private def sourceFromInputStream(s: => InputStream)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromInputStream(s))
 
   /**
    * Method to open source defined by a URI.
@@ -352,7 +352,7 @@ object ZIOTable {
    * @param u a URI.
    * @return an Task[Source].
    */
-  private def sourceFromURI(u: => URI): Task[Source] = ZIO.succeed(Source.fromURI(u))
+  private def sourceFromURI(u: => URI)(using codec: Codec): Task[Source] = ZIO.succeed(Source.fromURI(u))
 
   /**
    * Method to open source defined by a File.

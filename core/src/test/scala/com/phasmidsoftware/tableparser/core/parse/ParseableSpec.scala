@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL}
 import java.time.LocalDate
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -124,8 +124,9 @@ class ParseableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse an optional URL value" in {
     import com.phasmidsoftware.tableparser.core.parse.ParseableOption.{given, *}
-    summon[Parseable[Option[URL]]].parse("https://google.com") shouldBe Success(Some(new URL("https://google.com")))
-    summon[Parseable[Option[URL]]].parse("") should matchPattern { case Failure(_) => }
+    summon[Parseable[Option[URL]]].parse("https://google.com") shouldBe Success(Some(URI.create("https://google.com").toURL))
+    // A blank URL is None, as for the other types (up to 2.0, it was a Failure).
+    summon[Parseable[Option[URL]]].parse("") shouldBe Success(None)
   }
 
   it should "parse an optional File value" in {

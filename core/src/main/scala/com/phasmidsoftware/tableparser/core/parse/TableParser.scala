@@ -9,7 +9,6 @@ import com.phasmidsoftware.tableparser.core.util.{FieldNames, Joinable, TeeItera
 import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.implicitNotFound
 import scala.io.Source
-import scala.reflect.ClassTag
 import scala.util.{Failure, Random, Success, Try}
 
 /**
@@ -316,6 +315,8 @@ abstract class HeadedStringTableParser[X: CellParser](maybeFixedHeader: Option[H
         extends StringTableParser[Table[X]] with CopyableTableParser[X, String, Table[X]] {
 
   type Row = X
+
+  override protected val maybeHeader: Option[Header] = maybeFixedHeader
 
   protected def builder(rows: Iterator[X], header: Header): Table[Row] =
     HeadedTable(Content(rows), header)

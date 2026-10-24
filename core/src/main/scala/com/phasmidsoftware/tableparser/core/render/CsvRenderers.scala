@@ -4,7 +4,6 @@
 
 package com.phasmidsoftware.tableparser.core.render
 
-import com.phasmidsoftware.tableparser.core.parse.Strings
 import com.phasmidsoftware.tableparser.core.table._
 import java.net.URL
 import java.time.Instant

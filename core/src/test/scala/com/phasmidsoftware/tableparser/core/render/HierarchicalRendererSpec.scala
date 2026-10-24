@@ -38,7 +38,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   }
 
   object Complex2 extends HierarchicalRenderers {
-    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")(using HierarchicalRenderer.DoubleHierarchicalRenderer)
+    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer[Double]("td")
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("")
     implicit val indexedRenderer: HierarchicalRenderer[Indexed[Complex]] = indexedRenderer[Complex]("tr", "th")
 
@@ -53,7 +53,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   }
 
   object Complex3 extends HierarchicalRenderers {
-    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")(using HierarchicalRenderer.DoubleHierarchicalRenderer)
+    implicit val valueRenderer: HierarchicalRenderer[Double] = renderer[Double]("td")
     implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("tr")
 
 
@@ -68,7 +68,7 @@ class HierarchicalRendererSpec extends flatspec.AnyFlatSpec with should.Matchers
   }
 
   object Complicated extends HierarchicalRenderers {
-    implicit val elementRenderer: HierarchicalRenderer[String] = renderer("element")(using HierarchicalRenderer.StringHierarchicalRenderer)
+    implicit val elementRenderer: HierarchicalRenderer[String] = renderer[String]("element")
     implicit val optionLongRenderer: HierarchicalRenderer[Option[Long]] = optionRenderer("", Map())
     implicit val sequenceStringRenderer: HierarchicalRenderer[Seq[String]] = sequenceRenderer("")
     implicit val complicatedRenderer: HierarchicalRenderer[Complicated] = HierarchicalRenderer.derived[Complicated]("x")

@@ -7,12 +7,10 @@ package com.phasmidsoftware.tableparser.core.table
 import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
-import com.phasmidsoftware.tableparser.core.util.FP._
-import com.phasmidsoftware.tableparser.core.util.{FieldNames, TryUsing}
-import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
+import com.phasmidsoftware.tableparser.core.util.TryUsing
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Path, Paths}
 import scala.annotation.unused
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
@@ -732,7 +730,7 @@ object Table {
    * @param s an InputStream.
    * @return an Try[Source].
    */
-  private def sourceFromInputStream(s: => InputStream): Try[Source] =
+  private def sourceFromInputStream(s: => InputStream)(using codec: Codec): Try[Source] =
     Try(Source.fromInputStream(s))
 
   /**
@@ -741,7 +739,7 @@ object Table {
    * @param u a URI.
    * @return an Try[Source].
    */
-  private def sourceFromURI(u: => URI): Try[Source] =
+  private def sourceFromURI(u: => URI)(using codec: Codec): Try[Source] =
     Try(Source.fromURI(u))
 
   /**
@@ -750,23 +748,8 @@ object Table {
    * @param f a File.
    * @return an Try[Source].
    */
-  private def sourceFromFile(path: Path)(using codec: Codec): Try[Source] =
-    sourceFromPath(path)
-
   private def sourceFromFile(f: => File)(using codec: Codec): Try[Source] =
     Try(Source.fromFile(f))
-
-  /**
-   * Creates a `Source` from the given file path.
-   * NOTE The input stream must be closed by the caller to avoid resource leaks.
-   *
-   * @param path  the file path from which the source is created
-   * @param codec an implicit codec specifying the character encoding to use
-   * @return a `Try` containing the `Source` if successful, or a `Failure` if an error occurs
-   */
-  private def sourceFromPath(path: Path)(using codec: Codec): Try[Source] = {
-    Try(Source.fromInputStream(Files.newInputStream(path))(using codec))
-  }
 
   /**
    * Method to open source defined by a File.

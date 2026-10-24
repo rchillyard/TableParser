@@ -6,7 +6,7 @@ package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.table.{Header, Row}
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL}
 import java.time.LocalDate
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -126,8 +126,8 @@ class CellParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "parse option URL" in {
     val p = summon[CellParser[Option[URL]]]
 
-    p.convertString("https://google.com") shouldBe Success(Some(new URL("https://google.com")))
-    p.convertString("") should matchPattern { case Failure(_) => }
+    p.convertString("https://google.com") shouldBe Success(Some(URI.create("https://google.com").toURL))
+    p.convertString("") shouldBe Success(None)
   }
 
   it should "parse option File" in {

@@ -82,6 +82,25 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
+  // Up to 2.0, the encoding given to parse(URI, enc) and parseInputStream(..., enc) was ignored (the platform default was used).
+  it should "parse an input stream using the given encoding" in {
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
+    val bytes = "first,last\nZoë,Müller\n".getBytes(java.nio.charset.StandardCharsets.UTF_16)
+    matchTry(Table.parseInputStream(Try(new java.io.ByteArrayInputStream(bytes)), "UTF-16")) {
+      case rt@HeadedTable(_, _) => rt.head.ws shouldBe Seq("Zoë", "Müller")
+    }
+  }
+
+  it should "parse a URI using the given encoding" in {
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
+    val file = File.createTempFile("latin1", ".csv")
+    file.deleteOnExit()
+    java.nio.file.Files.write(file.toPath, "first,last\nZoë,Müller\n".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1))
+    matchTry(Table.parse(file.toURI, "ISO-8859-1")) {
+      case rt@HeadedTable(_, _) => rt.head.ws shouldBe Seq("Zoë", "Müller")
+    }
+  }
+
   it should "parse and not filter the movies from the IMDB dataset" in {
     import com.phasmidsoftware.tableparser.core.examples.Movie._
     implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country

@@ -4,20 +4,10 @@
 
 package com.phasmidsoftware.tableparser.core.table
 
-import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
-import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
-import com.phasmidsoftware.tableparser.core.util.FP._
-import com.phasmidsoftware.tableparser.core.util.{FieldNames, TryUsing}
+import com.phasmidsoftware.tableparser.core.util.FieldNames
 import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
-import java.io.{File, InputStream}
-import java.net.{URI, URL}
-import java.nio.file.{Files, Path, Paths}
-import scala.annotation.unused
-import scala.io.{Codec, Source}
 import scala.language.postfixOps
-import scala.reflect.ClassTag
-import scala.util.{Failure, Random, Try}
 
 /**
  * CONSIDER eliminating this base class or, perhaps, rename it.

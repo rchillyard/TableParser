@@ -10,7 +10,6 @@ import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.parse
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.TeeIterator
-import scala.reflect.ClassTag
 import scala.util.Try
 
 /**
@@ -36,7 +35,7 @@ import scala.util.Try
  * @tparam X the underlying row type for which there must be evidence of a CellParser.
  */
 case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](encryptedRowPredicate: String => Boolean, keyFunction: String => String, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
-        extends HeadedStringTableParser[X](None, false, headerRowsToRead) {
+        extends HeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead) {
 
   private val phase2Parser: PlainTextHeadedStringTableParser[X] = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
 
@@ -56,16 +55,6 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
 
     }
 
-
-    /**
-     * Parse the Input, resulting in a IO[Header]
-     *
-     * CONSIDER making this share the same signature as parse but for different Row type.
-     *
-     * @param xs a sequence of Inputs to be parsed.
-     * @return a IO[Header]
-     */
-    def parseHeaderIO(xs: Seq[Input]): IO[Header] = IO.fromTry(parseHeader(xs))
 
 
     val sr: TeeIterator[String] = new TeeIterator(n)(xr)

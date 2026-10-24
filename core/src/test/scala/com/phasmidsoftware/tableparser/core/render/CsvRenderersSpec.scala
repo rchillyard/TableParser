@@ -3,7 +3,7 @@ package com.phasmidsoftware.tableparser.core.render
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
-import java.net.URL
+import java.net.{URI, URL}
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.scalatest.flatspec.AnyFlatSpec
@@ -214,7 +214,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
     case class Eightsy(a: URL, b: Int, c: Int, d: Int, e: Int, f: Int, g: Int, h: Int)
     implicit val renderer: CsvRenderer[Eightsy] = CsvRenderer.derived[Eightsy]
 
-    val eightsy = Eightsy(new URL("https://google.com"), 2, 3, 4, 5, 6, 7, 8)
+    val eightsy = Eightsy(URI.create("https://google.com").toURL, 2, 3, 4, 5, 6, 7, 8)
     summon[CsvRenderer[Eightsy]].render(eightsy) shouldBe "https://google.com, 2, 3, 4, 5, 6, 7, 8"
   }
 
