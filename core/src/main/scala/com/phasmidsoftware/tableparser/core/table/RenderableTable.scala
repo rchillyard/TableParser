@@ -58,12 +58,13 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
     // TODO this makes no sense now: the decision is taken inside Content.
     (if (knownSize1 > -1)
       rows.toSeq else rows.toSeq) map:
+        // NOTE a Seq must be matched before a Product, which a List also is (::), else it's written as its head and tail.
+        case xs: Seq[?] =>
+          ww.writeRowElements(o2)(xs)
+        case xs: Array[?] =>
+          ww.writeRowElements(o2)(xs.toIndexedSeq)
         case p: Product =>
           ww.writeRow(o2)(p)
-        case xs: Seq[?] =>
-          ww.writeRowElements(o2)(xs) // TESTME
-        case xs: Array[?] =>
-          ww.writeRowElements(o2)(xs.toIndexedSeq) // TESTME
         case _ =>
           throw TableException("cannot render table because row is neither a Product, nor an array nor a sequence")
     o1

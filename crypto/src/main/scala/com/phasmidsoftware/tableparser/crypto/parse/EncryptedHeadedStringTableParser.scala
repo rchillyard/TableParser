@@ -40,25 +40,39 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
   private val phase2Parser: PlainTextHeadedStringTableParser[X] = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
 
   /**
-   * TESTME
+   * Method to parse an encrypted table.
+   * The first n lines are the (plaintext) header.
+   * Each of the other lines is a key and the encrypted row, separated by "|" (see CsvTableEncryptedFileRenderer).
+   * Only the rows whose key satisfies encryptedRowPredicate are decrypted (with the key given by keyFunction),
+   * and they are then parsed as plaintext rows, with the header.
    *
-   * @param xr the sequence of Inputs, one for each row
-   * @param n  the number of lines that should be used as a Header.
-   *           If n == 0 == maybeHeader.empty then there is a logic error.
-   * @return an IO[Table]
+   * @param xr the lines of the input.
+   * @param n  the number of lines which make up the header.
+   * @return an IO[Table].
    */
-  def parseIO(xr: Iterator[String], n: Int): IO[Table[X]] =
-    def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] =
-      phase2Parser match
-        case p: TableParser[?] => for (wt <- decryptTable(xt); xt <- IO.fromTry(p.parseRows(wt.iterator, h))) yield xt
-
-
-
-
+  def parseIO(xr: Iterator[String], n: Int): IO[Table[X]] = IO.defer:
     val sr: TeeIterator[String] = new TeeIterator(n)(xr)
-    val hi: IO[Header] = IO.fromTry(parseHeader(sr.tee))
-    val xti: IO[RawTable] = IO.fromTry(createPhase1Parser.parse(sr, 1)) // NOTE n=1 is a guess
-    for (h <- hi; xt1 <- xti; xt2 <- decryptAndParse(h, xt1)) yield xt2
+    for
+      h <- IO.fromTry(parseHeader(sr.tee))
+      // NOTE the header lines have already been taken (by the TeeIterator), so no more are read here.
+      // (Up to 2.0.1, one more line was dropped: the first encrypted row.)
+      xt <- IO.fromTry(createPhase1Parser.parse(sr, 0))
+      wt <- decryptTable(xt)
+      t <- IO.fromTry(phase2Parser.parseRows(wt.iterator, h))
+    yield t
+
+  /**
+   * Method to parse an encrypted table, as Table.parse (and parseFile, parseResource, etc.) do.
+   * This is parseIO, run synchronously (decryption is done in IO).
+   * Up to 2.0.1, this was the parse method of HeadedStringTableParser, which doesn't decrypt.
+   *
+   * @param xs the lines of the input.
+   * @param n  the number of lines which make up the header.
+   * @return a Try[Table].
+   */
+  override def parse(xs: Iterator[String], n: Int = headerRowsToRead): Try[Table[X]] =
+    import cats.effect.unsafe.implicits.global
+    parseIO(xs, n).attempt.unsafeRunSync().toTry
 
   /**
    * Set the Header for the plaintext TableParser.
