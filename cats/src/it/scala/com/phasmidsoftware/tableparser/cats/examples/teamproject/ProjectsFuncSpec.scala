@@ -62,9 +62,15 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
           case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         implicit val hasKey: HasKey[TeamProject] = (t: TeamProject) => t.team.number.toString
-        // TODO this integration test occasionally fails
-        TableCrypt.writeCSVFileEncrypted(pt)(Paths.get("TeamProjectOutputEncrypted.csv"))
-        succeed
+        val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
+        val file = java.io.File.createTempFile("TeamProjectOutputEncrypted", ".csv")
+        file.deleteOnExit()
+        // Up to 2.0.1, this failed (silently): nothing could write encrypted rows.
+        TableCrypt.writeCSVFileEncrypted[AES128CTR, TeamProject](pt)(file.toPath, keyMap) shouldBe scala.util.Success(())
+        // ... and it can be read back.
+        implicit val cellParser: CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
+        implicit val parser: TableParser[RawTable] = EncryptedHeadedStringTableParser[RawRow, AES128CTR](keyMap.contains, keyMap, headerRowsToRead = 2)
+        Table.parseFile[RawTable](file.toPath).map(_.toSeq.map(_.ws.head)) shouldBe scala.util.Success(Seq("1", "2", "3", "4", "5"))
 
   it should "be ingested and written out properly using the given header" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser

@@ -82,6 +82,16 @@ trait HexEncryption[A] extends Encryption[A]:
   def encryptWithRandomKey(plaintext: CharSequence): IO[(String, String, Boolean)]
 
   /**
+   * Encrypt a plain text String with the given raw key (the inverse of decryptHex).
+   * The result is checked: it fails if it doesn't decrypt to the plain text.
+   *
+   * @param rawKey    a raw key, i.e. a sequence of 16 characters.
+   * @param plaintext the plain text to be encrypted.
+   * @return a string of Hexadecimal digits representing the cipher, wrapped in IO.
+   */
+  def encryptHex(rawKey: String, plaintext: CharSequence): IO[String]
+
+  /**
    * Given a raw key and a Hex string, do the decryption.
    *
    * @param rawKey a raw key, i.e. a sequence of 16 characters.
@@ -138,6 +148,15 @@ abstract class BaseHexEncryption[A] extends HexEncryption[A]:
    * @param hex    a string of Hexadecimal digits representing a cipher.
    * @return the decrypted String, wrapped in IO.
    */
+  def encryptHex(rawKey: String, plaintext: CharSequence): IO[String] = for {
+    cipherKey <- buildKey(rawKey)
+    cipherText <- encrypt(cipherKey)(plaintext.toString)
+    bytes <- concat(cipherText)
+    hex <- HexEncryption.bytesToHexString(bytes)
+    ok <- checkHex(hex, cipherKey, plaintext.toString)
+    checked <- if (ok) IO.pure(hex) else IO.raiseError(TableParserException(s"encryptHex: the encrypted text does not decrypt to the plaintext: $plaintext"))
+  } yield checked
+
   def decryptHex(rawKey: String, hex: String): IO[String] = for {
     x <- buildKey(rawKey)
     bytes <- HexEncryption.hexStringToBytes(hex)
