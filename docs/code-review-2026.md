@@ -145,8 +145,14 @@ These decide what can change without notice, and what needs a migration path.
    4. **RFC 4180** (#74, merged into #73): reading and writing CSV as RFC 4180 defines it, by default.
    5. **Scala 3 idioms** (#76): `given`/`using`, extension methods, enums, top-level definitions, `infix def`.
    6. **Core types:** `Content` sequential by default, `Table.scala` split, casts and `ClassTag`s removed (in core, cats and zio; `Header[X]()` uses a new `FieldNames` type class instead of reflection).
-   7. **Dependencies:** circe for spray-json (tableparser-json), an encryption module (tableparser-crypto), `java.time` for Joda-Time, Java 21 (from 17); and parquet's mapping of columns to case-class fields from the `Mirror` (it still uses `Reflection` and `ClassTag`s).
+   7. **Dependencies:** circe for spray-json (tableparser-json), an encryption module (tableparser-crypto), `java.time` for Joda-Time, Java 21 (from 17); and parquet's mapping of columns to case-class fields from the `Mirror` (instead of `Reflection` and `ClassTag`s).
    8. **Finish:** `-Wunused:all`, the indentation-syntax rewrite, coverage, the README with a migration table, and the release.
+      - **TODO: resolve the five open GitHub issues** (fix each, or close it with a note on why it no longer applies):
+        - [#44](https://github.com/rchillyard/TableParser/issues/44) Incompatible with Scala Parser Combinators version 2. 2.x builds with scala-parser-combinators 2.5.0, so this is probably fixed: check, and close it.
+        - [#12](https://github.com/rchillyard/TableParser/issues/12) Header-related code is inconsistent and confusing. `Header` now has its own file, and `Header(letters, length)` makes Excel-style headers: check what's left.
+        - [#48](https://github.com/rchillyard/TableParser/issues/48) Need method for default RowConfig. Changing the delimiter should change the string regex too.
+        - [#38](https://github.com/rchillyard/TableParser/issues/38) CSV parsing should use CsvAttributes. Parsing (`RowConfig`) and rendering (`CsvAttributes`) describe the delimiter and quote separately: probably best done together with #48.
+        - [#32](https://github.com/rchillyard/TableParser/issues/32) The way parsers are configured does not use lens pattern.
 
    (The earliest PRs used an older numbering: "stage 3" was derivation for parsing, "stage 4" derivation for rendering, and "stage 2" the idioms.)
 5. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
