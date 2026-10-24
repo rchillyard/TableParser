@@ -14,6 +14,12 @@ class EvaluateZIOSpec extends AnyFlatSpec with should.Matchers:
       case 1 => true
       case _ => false
 
+  // Up to 2.0.2, matchZIO returned a Task which no test ran, so it could not fail.
+  it should "fail if the check is false, if no case matches, or if the Task fails" in:
+    an[org.scalatest.exceptions.TestFailedException] should be thrownBy matchZIO(ZIO.succeed(0)) { case x => x == 1 }
+    an[org.scalatest.exceptions.TestFailedException] should be thrownBy matchZIO(ZIO.succeed(0)) { case 1 => true }
+    an[org.scalatest.exceptions.TestFailedException] should be thrownBy matchZIO(ZIO.fail(new RuntimeException("oops"))) { case _ => true }
+
 //  it should "apply 2" in {
 //    a[RuntimeException] should be thrownBy EvaluateZIO(IO.raiseError(new RuntimeException("failure")))
 //  }

@@ -4,7 +4,7 @@ import cats.effect.IO
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.matchIO
 import com.phasmidsoftware.tableparser.cats.util.IOUsing
 import com.phasmidsoftware.tableparser.core.examples.crime.Crime
-import com.phasmidsoftware.tableparser.core.parse.{RawTableParser, TableParser}
+import com.phasmidsoftware.tableparser.core.parse.{LineParser, RawTableParser, RowConfig, TableParser}
 import com.phasmidsoftware.tableparser.core.table.{Analysis, HeadedTable, RawTable, Table}
 import com.phasmidsoftware.tableparser.core.util.FP.resourceForClass
 import java.net.URL
@@ -25,8 +25,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers:
    */
   val crimeFile = "2023-01-metropolitan-street.csv"
 
-  // FIXME Issue #50
-  ignore should "be ingested and analyzed as a RawTable" in:
+  it should "be ingested and analyzed as a RawTable" in:
 
     // Set up the source
     val si: IO[Source] = IO.fromTry(for (u <- resourceForClass(crimeFile, classOf[Crime])) yield Source.fromURL(u))
@@ -37,7 +36,8 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers:
 
 
     // Create the table
-    val wsty: IO[RawTable] = si flatMap (s => IO.fromTry(parser.parse(s.getLines(), 0))) // NOTE: Guessing that n should be 0
+    // The header is the first line of the file (up to 2.0.2, this passed 0, which meant no header: a logic error).
+    val wsty: IO[RawTable] = si flatMap (s => IO.fromTry(parser.parse(s.getLines(), parser.headerRowsToRead)))
 
 // CONSIDER how is it that this test runs in around 157 seconds yet the timeout is set to 30 seconds?
     matchIO(wsty, Timeout(Span(30, Seconds))):
@@ -61,9 +61,8 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers:
         r take 100 foreach println
         succeed
 
-  // TODO fix this test
   private val crimeResource: URL = classOf[Crime].getResource(crimeFile)
-  ignore should "be ingested and written out properly to CSV" in:
+  it should "be ingested and written out properly to CSV" in:
     import com.phasmidsoftware.tableparser.core.examples.crime.CrimeParser._
     import com.phasmidsoftware.tableparser.core.examples.crime.CrimeRenderer._
 
@@ -72,7 +71,17 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers:
 
     val wi: IO[String] = mti flatMap (mt => IO.fromTry(mt.toCSV))
     matchIO(wi, Timeout(Span(60, Seconds))):
-      case w => w should startWith("crimeID,month,reportedBy,fallsWithin,longitude,latitude,location,lsoaCode,lsoaName,crimeType,lastOutcomeCategory,context\n8536e93fb3ce916daa4251bd53c1a4416ba4159a938340be4a7c40cd4873bfcf,2023-01,Metropolitan Police Service,Metropolitan Police Service,-0.681541,50.792113,On or near Fletcher Way,E01031444,Arun 016B,Violence and sexual offences,Under investigation,")
+      case w =>
+        // The header uses the field names (see CrimeRenderer); each row is written as it was read, except that
+        // a number is written as a Double is (e.g. 0.13883, which the file has as 0.138830),
+        // and a field which ends with a space is quoted (as RFC 4180 requires, so that the space is kept).
+        // (Up to 2.0.2, this test expected a row which isn't in this file, and was ignored.)
+        val lineParser = LineParser.apply(using RowConfig.default)
+        def fields(line: String): Seq[Any] = lineParser.parseRow(line -> 0).get map (f => f.toDoubleOption.getOrElse(f))
+        val written = w.split("\r\n").toSeq
+        written.head shouldBe "crimeID,month,reportedBy,fallsWithin,longitude,latitude,location,lsoaCode,lsoaName,crimeType,lastOutcomeCategory,context"
+        val original = scala.util.Using.resource(Source.fromURL(crimeResource))(_.getLines().slice(1, 1001).toList)
+        written.slice(1, 1001) map fields shouldBe (original map fields)
 
   it should "be ingested and written out in brief to CSV" in:
     import com.phasmidsoftware.tableparser.core.examples.crime.CrimeLocationRenderer._
