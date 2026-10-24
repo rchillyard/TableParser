@@ -17,10 +17,9 @@ import scala.util.Try
  *
  * @tparam T the contravariant type of object to be rendered.
  */
-trait CsvRenderer[-T] extends Renderer[T, String] {
+trait CsvRenderer[-T] extends Renderer[T, String]:
   // CONSIDER removing this abstract val.
   val csvAttributes: CsvAttributes
-}
 
 /**
  * An object that provides type class support for rendering data as CSV (Comma-Separated Values).
@@ -32,7 +31,7 @@ trait CsvRenderer[-T] extends Renderer[T, String] {
  * This object can include predefined implicit renderers (e.g., `Row` renderer) that leverage attributes
  * (`Map[String, String]`) to modify the output or handle special behaviors for CSV attributes.
  */
-object CsvRenderer extends CsvRenderers {
+object CsvRenderer extends CsvRenderers:
   /**
    * Implicit object that provides a CSV rendering implementation for the `Row` class.
    *
@@ -43,11 +42,10 @@ object CsvRenderer extends CsvRenderers {
    * @see CsvRenderer
    * @see Row
    */
-  given CsvRendererRow: CsvRenderer[Row] with {
+  given CsvRendererRow: CsvRenderer[Row] with
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(r: Row, attrs: Map[String, String]): String = r.ws mkString csvAttributes.delimiter
-  }
 
   given rendererInt: CsvRenderer[Int] = CsvRenderers.CsvRendererInt
   given rendererLong: CsvRenderer[Long] = CsvRenderers.CsvRendererLong
@@ -83,29 +81,25 @@ object CsvRenderer extends CsvRenderers {
   inline def derived[T](using m: Mirror.ProductOf[T], ca: CsvAttributes): CsvRenderer[T] =
     new ProductCsvRenderer[T](fieldRenderers[m.MirroredElemTypes])
 
-  private[render] inline def fieldRenderers[Ts <: Tuple](using CsvAttributes): List[CsvRenderer[?]] = inline erasedValue[Ts] match {
+  private[render] inline def fieldRenderers[Ts <: Tuple](using CsvAttributes): List[CsvRenderer[?]] = inline erasedValue[Ts] match
     case _: EmptyTuple => Nil
     case _: (t *: ts) => fieldRenderer[t] :: fieldRenderers[ts]
-  }
 
   // Prefer a field type's own CsvRenderer; otherwise, if it is a case class, derive one.
-  private inline def fieldRenderer[A](using ca: CsvAttributes): CsvRenderer[A] = summonFrom {
+  private inline def fieldRenderer[A](using ca: CsvAttributes): CsvRenderer[A] = summonFrom:
     case r: CsvRenderer[A] => r
     case m: Mirror.ProductOf[A] => derived[A](using m, ca)
-  }
 
-  given localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate] {
+  given localDateRenderer: CsvRenderer[LocalDate] = new CsvRenderer[LocalDate]:
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: LocalDate, attrs: Map[String, String]): String = t.toString
-  }
 //  implicit val rendererTemporal: CsvRenderer[Temporal] = new CsvRenderer[Temporal] {
 //    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 //
 //    def render(t: Temporal, attrs: Map[String, String]): String = t.toString
 //  }
 
-}
 
 /**
  * Type class which combines CsvRenderer and CsvGenerator
@@ -117,7 +111,7 @@ trait CsvProduct[-T] extends CsvRenderer[T] with CsvGenerator[T]
 /**
  * Companion object for CsvProduct, which renders a case class and generates its column names.
  */
-object CsvProduct {
+object CsvProduct:
   /**
    * Method to derive a CsvProduct (both a CsvRenderer and a CsvGenerator) for a case class T,
    * so that `case class T(...) derives CsvProduct` works.
@@ -132,14 +126,13 @@ object CsvProduct {
    */
   inline def derived[T](using m: Mirror.ProductOf[T], ca: CsvAttributes): CsvProduct[T] =
     new ProductCsvProduct[T](Derivation.fieldNames[m.MirroredElemLabels], CsvRenderer.fieldRenderers[m.MirroredElemTypes], CsvGenerator.fieldGenerators[m.MirroredElemTypes])(using ca, summonInline[ColumnHelper[T]])
-}
 
 /**
  * Trait `BaseCsvRenderer[-T]` which extends CsvRenderer[T]  to render, as CSV, an instance of Product (typically a case class).
  *
  * @tparam T the contravariant type of object to be rendered.
  */
-trait BaseCsvRenderer[-T] extends CsvRenderer[T] {
+trait BaseCsvRenderer[-T] extends CsvRenderer[T]:
   /**
    * Method to obtain a Seq of Strings corresponding to each of the members of the given value of t.
    *
@@ -157,7 +150,6 @@ trait BaseCsvRenderer[-T] extends CsvRenderer[T] {
    */
   def render(t: T, attrs: Map[String, String]): String =
     elements(t) mkString csvAttributes.delimiter
-}
 
 /**
  * The CsvRenderer of a case class T, as derived by CsvRenderer.derived.
@@ -167,13 +159,12 @@ trait BaseCsvRenderer[-T] extends CsvRenderer[T] {
  * @param ca             the CsvAttributes.
  * @tparam T the type of the case class.
  */
-class ProductCsvRenderer[T](fieldRenderers: List[CsvRenderer[?]])(using ca: CsvAttributes) extends BaseCsvRenderer[T] {
+class ProductCsvRenderer[T](fieldRenderers: List[CsvRenderer[?]])(using ca: CsvAttributes) extends BaseCsvRenderer[T]:
   val csvAttributes: CsvAttributes = ca
 
   def elements(t: T): Strings = ProductCsvRenderer.elements(t, fieldRenderers)
-}
 
-object ProductCsvRenderer {
+object ProductCsvRenderer:
   /**
    * Method to render each field of a case class with its own CsvRenderer.
    *
@@ -185,7 +176,6 @@ object ProductCsvRenderer {
    */
   def elements(t: Any, fieldRenderers: List[CsvRenderer[?]]): Strings =
     (t.asInstanceOf[Product].productIterator zip fieldRenderers map ((x, r) => r.asInstanceOf[CsvRenderer[Any]].render(x))).toSeq
-}
 
 /**
  * The CsvProduct of a case class T, as derived by CsvProduct.derived: a ProductCsvGenerator which is also a CsvRenderer.
@@ -197,9 +187,8 @@ object ProductCsvRenderer {
  * @param helper          the ColumnHelper[T].
  * @tparam T the type of the case class.
  */
-class ProductCsvProduct[T](fieldNames: List[String], fieldRenderers: List[CsvRenderer[?]], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes, helper: ColumnHelper[T]) extends ProductCsvGenerator[T](fieldNames, fieldGenerators) with BaseCsvRenderer[T] with CsvProduct[T] {
+class ProductCsvProduct[T](fieldNames: List[String], fieldRenderers: List[CsvRenderer[?]], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes, helper: ColumnHelper[T]) extends ProductCsvGenerator[T](fieldNames, fieldGenerators) with BaseCsvRenderer[T] with CsvProduct[T]:
   def elements(t: T): Strings = ProductCsvRenderer.elements(t, fieldRenderers)
-}
 
 /**
  * Abstract class for rendering a tabular representation of type `Table[T]` to a sequentially writable format `O`,
@@ -211,7 +200,7 @@ class ProductCsvProduct[T](fieldNames: List[String], fieldRenderers: List[CsvRen
  * @tparam T the type of elements contained within the table; must have implicit evidence for `CsvRenderer` and `CsvGenerator`.
  * @tparam O the type of the writable output; must have implicit evidence for `Writable`.
  */
-abstract class CsvTableRenderer[T, O]()(using z1: CsvRenderer[T], z2: CsvGenerator[T], z3: Writable[O], ca: CsvAttributes) extends Renderer[Table[T], Try[O]] {
+abstract class CsvTableRenderer[T, O]()(using z1: CsvRenderer[T], z2: CsvGenerator[T], z3: Writable[O], ca: CsvAttributes) extends Renderer[Table[T], Try[O]]:
 
   /**
    * Render an instance of T as an O, qualifying the rendering with attributes defined in attrs.
@@ -220,25 +209,22 @@ abstract class CsvTableRenderer[T, O]()(using z1: CsvRenderer[T], z2: CsvGenerat
    * @param attrs a map of attributes for this value of O.
    * @return an instance of type O.
    */
-  def render(t: Table[T], attrs: Map[String, String]): Try[O] = t match {
+  def render(t: Table[T], attrs: Map[String, String]): Try[O] = t match
     case x: Table[?] =>
       val sw = summon[Writable[O]]
       val tc = summon[CsvRenderer[T]]
       val tg = summon[CsvGenerator[T]]
-      val hdr: String = tg match {
+      val hdr: String = tg match
         case _tg: CsvProductGenerator[?] =>
           _tg.toColumnNames(None, None)
         case _tg: CsvGenerator[?] =>
           _tg.toColumnName(None, "")
-      }
-      Try(sw.unit) map {
+      Try(sw.unit) map:
         o =>
           // CONSIDER can remove o2 here and just use o.
           val o2 = writeLine(sw, o, hdr)
           for (r <- x.content.toSeq) yield generateText(sw, tc, o2, r)
           o2
-      }
-  }
 
   /**
    * CONSIDER replacing ow by implicitly of Writable[O].
@@ -256,7 +242,6 @@ abstract class CsvTableRenderer[T, O]()(using z1: CsvRenderer[T], z2: CsvGenerat
   // Each line (record) ends with the newline of the CsvAttributes (by default, CRLF, as in RFC 4180).
   private def writeLine(ow: Writable[O], o: O, line: CharSequence): O =
     ow.writeRaw(ow.writeRaw(o)(line))(ca.newline)
-}
 
 /**
  * Case class to help render a Table to a StringBuilder in CSV format.
@@ -285,7 +270,7 @@ case class CsvTableFileRenderer[T](path: Path)(using z1: CsvRenderer[T], z2: Csv
  * Implicit instances of `CsvRenderer`, `CsvGenerator`, and `CsvAttributes` are required
  * to define CSV rendering logic, header generation, and formatting options.
  */
-object CsvTableFileRenderer {
+object CsvTableFileRenderer:
   /**
    * Factory method to create an instance of CsvTableFileRenderer.
    *
@@ -304,4 +289,3 @@ object CsvTableFileRenderer {
    */
   def apply[T: CsvRenderer : CsvGenerator](file: File)(using csvAttributes: CsvAttributes): CsvTableFileRenderer[T] =
     CsvTableFileRenderer(file.toPath)(using summon[CsvRenderer[T]], summon[CsvGenerator[T]], csvAttributes)
-}

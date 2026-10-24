@@ -23,7 +23,7 @@ import scala.util.parsing.combinator.JavaTokenParsers
  *                      there can be any number of any character (other than quote).
  * @param verbose       will print the various parameters.
  */
-class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char, verbose: Boolean = false) extends JavaTokenParsers {
+class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSeparator: Char, quote: Char, verbose: Boolean = false) extends JavaTokenParsers:
 
   if (verbose) LineParser.logger.info(s"delimiter: '${delimiter.regex}', string: '${string.regex}', enclosures: '$enclosures', quote: '$quote', listSeparator: '$listSeparator', ")
   runChecks()
@@ -46,7 +46,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
    * @return a Try[Strings].
    */
   def parseRow(indexedString: (String, Int)): Try[Strings] =
-    parseAll(row, indexedString._1) match {
+    parseAll(row, indexedString._1) match
       case Success(s, _) =>
         scala.util.Success(s)
       case Failure("end of input", _) | Failure("end of input expected", _) =>
@@ -55,7 +55,6 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
         scala.util.Failure(formException(indexedString, x))
       case Error(x, _) =>
         scala.util.Failure(formException(indexedString, x))
-  }
 
   /**
    * A parser for parsing a single row consisting of multiple cells separated by a delimiter.
@@ -207,12 +206,12 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   override def toString: String =
     s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 
-  private lazy val getDelimiterChar: Char = {
+  private lazy val getDelimiterChar: Char =
     @tailrec
     def inner(w: Seq[Char], escaped: Boolean): Char =
-      w match {
+      w match
         case h :: t =>
-          if (escaped) h match {
+          if (escaped) h match
             case 't' => '\t'
             case '\\' => '\\'
             case 'n' => '\n'
@@ -221,21 +220,17 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
             case 'f' => '\f'
             case 'b' => '\b'
             case _ => h
-          }
-          else h match {
+          else h match
             case '[' | '{' => inner(t, escaped = false)
             case '\\' => inner(t, escaped = true)
             case '^' => throw ParserException(s"Cannot get a delimiter from ${delimiter.regex} (unsupported)")
             case _ => h
-          }
         case Nil =>
           throw ParserException(s"Cannot get a delimiter from ${delimiter.regex}")
-      }
 
     inner(delimiter.regex.toList, escaped = false)
-  }
 
-  private def runChecks(): Unit = {
+  private def runChecks(): Unit =
     def check[X](parser: Parser[X], input: String, matchedValue: X) =
       Try(parseAll(parser, input) match {
         case Success(`matchedValue`, _) =>
@@ -248,31 +243,27 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
           throw ParserException(s"Warning: (LineParser constructor validity check): '$input' did not result in $matchedValue because: $z")
       })
 
-    extension (x: Try[Unit]) {
-      def squawk(): Unit = x match {
+    extension (x: Try[Unit])
+      def squawk(): Unit = x match
         case scala.util.Failure(z) =>
           LineParser.logger.warn(s"squawk: $z")
         case _ =>
         // XXX do nothing
-      }
 
       def &&(y: Try[Unit]): Try[Unit] =
         if (x.isSuccess) y else x
-    }
 
     //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
     // NOTE the check only makes sense when an unquoted "Hello" is a valid string (it isn't, e.g., for hexadecimal data).
     if (string.matches("Hello"))
       (check(cell, "Hello", "Hello") && check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")).squawk()
-  }
 
-}
 
 /**
  * Companion object for the `LineParser` class, responsible for constructing instances of `LineParser`
  * and providing logging capabilities.
  */
-object LineParser {
+object LineParser:
   /**
    * Constructs an instance of `LineParser` using an implicitly provided `RowConfig`.
    * The provided `RowConfig` instance defines various parameters required for parsing rows, such as delimiter,
@@ -284,13 +275,11 @@ object LineParser {
    *          `listSep` (character separating elements in a list), and `quote` (character for quoting strings).
    * @return a new instance of `LineParser`, created with the parameters defined in the provided `RowConfig`.
    */
-  def apply(using c: RowConfig): LineParser = {
+  def apply(using c: RowConfig): LineParser =
     LineParser.logger.info(s"Constructing LineParser with an implicitly defined instance of RowConfig: $c")
     new LineParser(c.delimiterRegex, c.string, c.listEnclosure, c.listSep, c.quote)
-  }
 
   val logger: Logger = LoggerFactory.getLogger(LineParser.getClass)
-}
 
 /**
  * Represents an exception that occurs during parsing operations.

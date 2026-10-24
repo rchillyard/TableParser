@@ -51,14 +51,13 @@ class ParquetTableParser[R](using converter: ParquetCellConverter[R])
    * @param path a java.nio.file.Path to a .parquet file (not a directory).
    * @return a Try[Table[Row]].
    */
-  def parseParquet(path: Path): Try[Table[Row]] = Try {
+  def parseParquet(path: Path): Try[Table[Row]] = Try:
     if (Files.isDirectory(path))
       throw ParquetParserException(
         s"Path is a directory: $path. Use parseParquetDataset for dataset directories.",
         None
       )
     parseParquetInternal(path)
-  }
 
   /**
    * Parse a Parquet dataset directory into a Table[Row].
@@ -72,14 +71,13 @@ class ParquetTableParser[R](using converter: ParquetCellConverter[R])
    * @param path a java.nio.file.Path to a directory containing part files.
    * @return a Try[Table[Row]].
    */
-  def parseParquetDataset(path: Path): Try[Table[Row]] = Try {
+  def parseParquetDataset(path: Path): Try[Table[Row]] = Try:
     if (!Files.isDirectory(path))
       throw ParquetParserException(
         s"Path is not a directory: $path. Use parseParquet for single files.",
         None
       )
     parseParquetInternal(path)
-  }
 
   /**
    * Internal implementation for both single-file and dataset parsing.
@@ -88,23 +86,21 @@ class ParquetTableParser[R](using converter: ParquetCellConverter[R])
    * @param path the path to a .parquet file or dataset directory.
    * @return a Table[Row].
    */
-  private def parseParquetInternal(path: Path): Table[Row] = {
+  private def parseParquetInternal(path: Path): Table[Row] =
     val conf = new Configuration()
     val hadoopPath = new HadoopPath(path.toUri)
     val schema: MessageType = readSchema(hadoopPath, conf)
 
     // Validate schema against the target case class before reading any rows.
-    ParquetSchemaValidator.validate[Row](schema, converter) match {
+    ParquetSchemaValidator.validate[Row](schema, converter) match
       case Failure(exception) => throw exception
       case Success(_) =>
-    }
 
     val header: Header = headerFromSchema(schema)
 
     val rows: Iterator[Row] = readRows(hadoopPath, conf)
 
     builder(rows, header)
-  }
 
   // ── private helpers ───────────────────────────────────────────────────────
 
@@ -114,7 +110,7 @@ class ParquetTableParser[R](using converter: ParquetCellConverter[R])
       Nil
     )
 
-  private def readSchema(path: HadoopPath, conf: Configuration): MessageType = {
+  private def readSchema(path: HadoopPath, conf: Configuration): MessageType =
     import java.nio.file.Paths
     val javaPath = Paths.get(path.toUri)
     val actualPath = ParquetPathResolver.schemaSourcePath(javaPath)
@@ -124,9 +120,8 @@ class ParquetTableParser[R](using converter: ParquetCellConverter[R])
     )
     try reader.getFooter.getFileMetaData.getSchema
     finally reader.close()
-  }
 
-  private def readRows(path: HadoopPath, conf: Configuration): Iterator[Row] = {
+  private def readRows(path: HadoopPath, conf: Configuration): Iterator[Row] =
     val reader: ParquetReader[Group] =
       ParquetReader
               .builder(new GroupReadSupport(), path)
@@ -149,5 +144,4 @@ class ParquetTableParser[R](using converter: ParquetCellConverter[R])
     // materialises the iterator eagerly into Content via HeadedTable.
     // If you ever change builder() to return a lazy structure,
     // resource management must be revisited.
-  }
 }

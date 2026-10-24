@@ -19,7 +19,7 @@ import scala.util.Random
  * @param xs a Vector[Row].
  * @tparam Row the underlying Row type.
  */
-case class Content[+Row](private val xs: Vector[Row]) {
+case class Content[+Row](private val xs: Vector[Row]):
 
   /**
    * Method to get the number of elements in the underlying collection `xs`.
@@ -272,14 +272,13 @@ case class Content[+Row](private val xs: Vector[Row]) {
    */
   def par: ParIterable[Row] =
     xs.par
-}
 
 /**
  * The `Content` object provides a factory method for creating instances of the `Content` class.
  * This utility is designed to facilitate the creation of `Content` objects from standard iterable collections
  * by converting them into parallel collections for potential parallel processing.
  */
-object Content {
+object Content:
   /**
    * Creates an instance of the `Content` class by converting the given iterable collection
    * into a parallel collection.
@@ -306,4 +305,3 @@ object Content {
    * @return an instance of `Content` containing the processed collection
    */
   def apply[T](xs: Iterator[T]): Content[T] = apply(xs to Seq)
-}

@@ -12,7 +12,7 @@ import scala.util._
 /**
  * Cats effect IO equivalent of TryUsing
  */
-object IOUsing {
+object IOUsing:
   /**
    * This apply method is to allow proper handling of Releasable resources, using IO.
    *
@@ -50,4 +50,3 @@ object IOUsing {
    * @return a IO[A]
    */
   def apply[R: Releasable, A](ry: Try[R])(f: R => IO[A]): IO[A] = apply(IO.fromTry(ry))(f)
-}

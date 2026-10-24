@@ -8,7 +8,7 @@ import zio.test._
  * TODO eliminate use of unsafe methods.
  * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
  */
-object EvaluateZIO {
+object EvaluateZIO:
 
   /**
    * Method to run a Task[X] (unsafely, so only in tests) and return its outcome.
@@ -19,10 +19,9 @@ object EvaluateZIO {
    */
   def run[X](xio: => Task[X]): Either[Throwable, X] =
     Unsafe.unsafe { implicit unsafe =>
-      Runtime.default.unsafe.run(xio) match {
+      Runtime.default.unsafe.run(xio) match
         case Exit.Success(x) => Right(x)
         case Exit.Failure(cause) => Left(cause.squash)
-      }
     }
 //
 //  /**
@@ -50,10 +49,9 @@ object EvaluateZIO {
    * @tparam X the underlying type of xio.
    * @return an Assertion.
    */
-  def matchZIO[X](xio: => Task[X])(partialFunction: PartialFunction[X, Boolean]): Task[TestResult] = {
+  def matchZIO[X](xio: => Task[X])(partialFunction: PartialFunction[X, Boolean]): Task[TestResult] =
     val f: (=> X) => Boolean = partialFunction(_)
     assertZIO(xio)(Assertion.assertion("matchZIO OK")(f))
-  }
 //
 //  /**
 //   * Check the result by converting it to a Future, and waiting for it to complete.
@@ -87,4 +85,3 @@ object EvaluateZIO {
 //    val result: ZIO[Any, Nothing, ZIO[Any, Throwable, TestResult]] = for (z <- xio.exit) yield assertZIO(z)(fails(equalTo(x)))
 //    result.
 //  }
-}

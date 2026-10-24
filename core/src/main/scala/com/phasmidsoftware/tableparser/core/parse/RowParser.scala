@@ -16,7 +16,7 @@ import scala.util.Try
  * @tparam Input the (parametric) Input type for which there must be evidence of a RowParser[Row, Input].
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of RowParser[${Row}, ${Input}]. Typically, you might define a StandardRowParser or StandardStringsParser")
-trait RowParser[Row, Input] {
+trait RowParser[Row, Input]:
 
   /**
    * Parses the given input using the provided header and produces a result wrapped in a Try.
@@ -47,7 +47,6 @@ trait RowParser[Row, Input] {
    * @return a Try[Header]
    */
   def parseHeader(xs: Seq[Input]): Try[Header]
-}
 
 /**
  * A RowParser whose input type is String.
@@ -62,7 +61,7 @@ trait StringParser[Row] extends RowParser[Row, String]
  * @param parser the LineParser to use
  * @tparam Row the (parametric) Row type for which there must be evidence of a CellParser[Row].
  */
-case class StandardRowParser[Row: CellParser](parser: LineParser) extends StringParser[Row] {
+case class StandardRowParser[Row: CellParser](parser: LineParser) extends StringParser[Row]:
 
 //  private val flog = Flog[StandardRowParser[_]]
 //
@@ -99,18 +98,15 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
    * @param xs the header row(s) as a String.
    * @return a Try[Header].
    */
-  def parseHeader(xs: Strings): Try[Header] = {
+  def parseHeader(xs: Strings): Try[Header] =
     val wsys: Seq[Try[Strings]] = for (x <- xs.tail) yield parser.parseRow(x, -1)
     for (w <- Try(xs.head); ws <- parser.parseRow((w, -1)); wss <- FP.sequence(wsys)) yield Header(ws, wss)
-  }
 
   private def doConversion(indexedString: (String, Int), header: Header, ws: Strings) =
     RowValues(Row(ws, header, indexedString._2)).convertTo[Row]
-}
 
-object StandardRowParser {
+object StandardRowParser:
   def create[Row: CellParser](using rowConfig: RowConfig): StandardRowParser[Row] = StandardRowParser(LineParser.apply)
-}
 
 /**
  * Trait to describe a parser which will yield a Try[Row] from a sequence of Strings representing a row of a table.
@@ -125,7 +121,7 @@ trait StringsParser[Row] extends RowParser[Row, Strings]
  *
  * @tparam Row the (parametric) Row type for which there must be evidence of a CellParser[Row].
  */
-case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
+case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row]:
 
   /**
    * Parses a given indexed String (row data and its index) using the specified table header to produce a Try[Row].
@@ -156,4 +152,3 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row] {
    * @return a Try[Header].
    */
   def parseHeader(ws: Seq[Strings]): Try[Header] = Try(Header(ws))
-}

@@ -17,7 +17,7 @@ import scala.deriving.Mirror
  *
  * @tparam T the contravariant type of the objects to be rendered by CSV.
  */
-trait CsvGenerator[-T] {
+trait CsvGenerator[-T]:
   // CONSIDER removing this abstract val.
   val csvAttributes: CsvAttributes
 
@@ -29,7 +29,6 @@ trait CsvGenerator[-T] {
    * @return a list of names of the form parent.column.
    */
   def toColumnName(po: Option[String], name: String): String
-}
 
 /**
  * Companion object for the CsvGenerator type class providing implicit instances for various types.
@@ -46,7 +45,7 @@ trait CsvGenerator[-T] {
  * - Long integer values (`Long`), using `CsvGenerators.CsvGeneratorLong`
  * - URL values from the `java.net` package (`java.net.URL`), using `CsvGenerators.CsvGeneratorURL`
  */
-object CsvGenerator extends CsvGenerators {
+object CsvGenerator extends CsvGenerators:
   given intGenerator: CsvGenerator[Int] = CsvGenerators.CsvGeneratorInt
   given stringGenerator: CsvGenerator[String] = CsvGenerators.CsvGeneratorString
   given booleanGenerator: CsvGenerator[Boolean] = CsvGenerators.CsvGeneratorBoolean
@@ -83,17 +82,14 @@ object CsvGenerator extends CsvGenerators {
   inline def derived[T](using m: Mirror.ProductOf[T], ca: CsvAttributes): CsvProductGenerator[T] =
     new ProductCsvGenerator[T](Derivation.fieldNames[m.MirroredElemLabels], fieldGenerators[m.MirroredElemTypes])(using ca, summonInline[ColumnHelper[T]])
 
-  private[render] inline def fieldGenerators[Ts <: Tuple](using CsvAttributes): List[CsvGenerator[?]] = inline erasedValue[Ts] match {
+  private[render] inline def fieldGenerators[Ts <: Tuple](using CsvAttributes): List[CsvGenerator[?]] = inline erasedValue[Ts] match
     case _: EmptyTuple => Nil
     case _: (t *: ts) => fieldGenerator[t] :: fieldGenerators[ts]
-  }
 
   // Prefer a field type's own CsvGenerator; otherwise, if it is a case class, derive one.
-  private inline def fieldGenerator[A](using ca: CsvAttributes): CsvGenerator[A] = summonFrom {
+  private inline def fieldGenerator[A](using ca: CsvAttributes): CsvGenerator[A] = summonFrom:
     case g: CsvGenerator[A] => g
     case m: Mirror.ProductOf[A] => derived[A](using m, ca)
-  }
-}
 
 /**
  * Trait (typeclass) for generating headers for CSV output.
@@ -102,7 +98,7 @@ object CsvGenerator extends CsvGenerators {
  *
  * @tparam T the type of the objects to be rendered by CSV.
  */
-trait CsvProductGenerator[T] extends CsvGenerator[T] {
+trait CsvProductGenerator[T] extends CsvGenerator[T]:
   /**
    * Method to generate a list of appropriate column names for a value of t.
    *
@@ -123,7 +119,6 @@ trait CsvProductGenerator[T] extends CsvGenerator[T] {
    */
   override def toColumnName(po: Option[String], name: String): String =
     toColumnNames(po, Some(name))
-}
 
 /**
  * The `StandardCsvGenerator` class extends the `CsvGenerator` trait to provide functionality
@@ -136,7 +131,7 @@ trait CsvProductGenerator[T] extends CsvGenerator[T] {
  * the configuration for CSV generation.
  * @param ca an implicit instance of `CsvAttributes` which defines the delimiter and quote character.
  */
-class StandardCsvGenerator[T](using ca: CsvAttributes) extends CsvGenerator[T] {
+class StandardCsvGenerator[T](using ca: CsvAttributes) extends CsvGenerator[T]:
   val csvAttributes: CsvAttributes = ca
 
   /**
@@ -163,18 +158,15 @@ class StandardCsvGenerator[T](using ca: CsvAttributes) extends CsvGenerator[T] {
    * @return an optional string in the format `po.no` if both options are defined,
    *         or the defined option if only one is present, or `None` if both are `None`.
    */
-  def merge(po: Option[String], no: Option[String]): Option[String] = po match {
+  def merge(po: Option[String], no: Option[String]): Option[String] = po match
     case Some(p) =>
-      no match {
+      no match
         case Some(n) =>
           Some(s"$p.$n")
         case None =>
           po
-      }
     case None =>
       no
-  }
-}
 
 /**
  * Base class for generating CSV output for product types, such as case classes,
@@ -202,15 +194,13 @@ abstract class BaseCsvProductGenerator[T](using ca: CsvAttributes) extends Stand
  * @param helper          the ColumnHelper[T], which gives the column name of each field.
  * @tparam T the type of the case class.
  */
-class ProductCsvGenerator[T](fieldNames: List[String], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes, helper: ColumnHelper[T]) extends BaseCsvProductGenerator[T] {
+class ProductCsvGenerator[T](fieldNames: List[String], fieldGenerators: List[CsvGenerator[?]])(using ca: CsvAttributes, helper: ColumnHelper[T]) extends BaseCsvProductGenerator[T]:
   /**
    * Method to generate the column names of the fields of T.
    * The name of the enclosing field (if any) is no (or po, if that is all there is):
    * each field's column name is then helper.lookup(that name, field name), as in CellParser.derived.
    * A field which is itself a case class is given its column name as the name of its enclosing field.
    */
-  def toColumnNames(po: Option[String], no: Option[String]): String = {
+  def toColumnNames(po: Option[String], no: Option[String]): String =
     val wo = merge(po, no)
     (fieldNames zip fieldGenerators) map ((name, generator) => generator.toColumnName(None, helper.lookup(wo, name))) mkString ca.delimiter
-  }
-}

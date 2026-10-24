@@ -13,7 +13,7 @@ import scala.io.Source
 import scala.util.Try
 import zio._
 
-class AnalysisSpec extends AnyFlatSpec with Matchers {
+class AnalysisSpec extends AnyFlatSpec with Matchers:
 
   val airBNBFile = "airbnb2.csv"
   implicit val parser: RawTableParser = RawTableParser(TableParser.includeAll, None, forgiving = true).setMultiline(true)
@@ -25,9 +25,9 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
    * These are application-specific and are not indicative of any bugs in the
    * TableParser library itself.
    */
-  it should "be correct for airbnb2.csv" in {
+  it should "be correct for airbnb2.csv" in:
     val sy: Try[Source] = (resource[AnalysisSpec](airBNBFile) map Source.fromURL)
-    matchZIO(ZIO.fromTry(parser parse sy)) {
+    matchZIO(ZIO.fromTry(parser parse sy)):
       case t@HeadedTable(_, _) =>
         val analysis = Analysis(t)
         analysis.rows == 253 &&
@@ -39,34 +39,26 @@ class AnalysisSpec extends AnyFlatSpec with Matchers {
                 }) &&
                 analysis.columnMap("accommodates").toString.startsWith("Int (range: 1.0-10.0, mean: 2.7") &&
                 analysis.columnMap("license").toString == "optional Int"
-    }
-  }
 
   behavior of "Column"
 
-  it should "make" in {
+  it should "make" in:
     val ti: Task[RawTable] = ZIO.fromTry(Table.parseResource(airBNBFile, classOf[AnalysisSpec]))
-    matchZIO(ti) {
+    matchZIO(ti):
       case t: RawTable =>
         val z: Iterator[Option[String]] = t.column("accommodates")
         val maybeColumn: Option[Column] = sequence(z) flatMap (ws => make(ws))
         maybeColumn should matchPattern { case Some(Column(_, _, Some(_))) => }
-        maybeColumn match {
+        maybeColumn match
           case Some(Column("Int", false, Some(maybeStatistics))) =>
-            maybeStatistics.getStatistics() match {
+            maybeStatistics.getStatistics() match
               case Some(statistics) =>
                 statistics.mu shouldBe 2.785 +- 0.005
               case None => fail("Statistics should be available")
-            }
           case x => fail(x.toString)
-        }
         true
-    }
-  }
 
   behavior of "Main"
 
-  it should "doMain" in {
+  it should "doMain" in:
     Main.doMain(FP.resource[Crime]("2023-01-metropolitan-street-sample.csv"))
-  }
-}

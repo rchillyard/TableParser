@@ -18,18 +18,15 @@ private object ParquetPathResolver {
    * @return the path to read schema from
    * @throws ParquetParserException if directory has no _metadata or part files
    */
-  def schemaSourcePath(path: Path): Path = {
-    if (Files.isDirectory(path)) {
+  def schemaSourcePath(path: Path): Path =
+    if (Files.isDirectory(path))
       val metadataPath = path.resolve("_metadata")
-      if (Files.exists(metadataPath)) {
+      if (Files.exists(metadataPath))
         metadataPath
-      } else {
+      else
         findFirstPartFile(path)
-      }
-    } else {
+    else
       path
-    }
-  }
 
   /**
    * Get all Parquet part files to read.
@@ -39,18 +36,16 @@ private object ParquetPathResolver {
    * @param path a file or directory path
    * @return a sequence of part file paths
    */
-  def allPartFiles(path: Path): Seq[Path] = {
-    if (Files.isDirectory(path)) {
+  def allPartFiles(path: Path): Seq[Path] =
+    if (Files.isDirectory(path))
       Files.list(path)
               .filter(p => Files.isRegularFile(p) && p.getFileName.toString.startsWith("part-") && p.toString.endsWith(".parquet"))
               .sorted()
               .collect(java.util.stream.Collectors.toList())
               .asScala
               .toSeq
-    } else {
+    else
       Seq(path)
-    }
-  }
 
   /**
    * Check if path is a dataset directory (has multiple parts or _metadata).
@@ -58,9 +53,8 @@ private object ParquetPathResolver {
    * @param path a file or directory path
    * @return true if path is a dataset directory
    */
-  def isDataset(path: Path): Boolean = {
+  def isDataset(path: Path): Boolean =
     Files.isDirectory(path)
-  }
 
   /**
    * Check if a dataset has _metadata file.
@@ -68,9 +62,8 @@ private object ParquetPathResolver {
    * @param path a directory path
    * @return true if _metadata exists
    */
-  def hasMetadata(path: Path): Boolean = {
+  def hasMetadata(path: Path): Boolean =
     Files.exists(path.resolve("_metadata"))
-  }
 
   /**
    * Find the first part-*.parquet file in a directory.
@@ -79,7 +72,7 @@ private object ParquetPathResolver {
    * @return the first part file found
    * @throws ParquetParserException if no part files exist
    */
-  private def findFirstPartFile(path: Path): Path = {
+  private def findFirstPartFile(path: Path): Path =
     Files.list(path)
             .filter(p => Files.isRegularFile(p) && p.getFileName.toString.startsWith("part-") && p.toString.endsWith(".parquet"))
             .sorted()
@@ -88,5 +81,4 @@ private object ParquetPathResolver {
               s"No _metadata or part-*.parquet files found in directory: $path",
               None
             ))
-  }
 }

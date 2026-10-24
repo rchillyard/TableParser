@@ -12,7 +12,7 @@ import java.io.{File, FileWriter}
  *
  * @tparam O the underlying type, for example, a StringBuilder.
  */
-trait Writable[O] {
+trait Writable[O]:
 
   // TODO create some off-the-shelf Writables
 
@@ -66,12 +66,11 @@ trait Writable[O] {
    * @param xs the sequence of elements (values) to be written.
    * @return an instance of O which represents the updated output structure.
    */
-  def writeRowElements(o: O)(xs: Seq[Any]): O = {
+  def writeRowElements(o: O)(xs: Seq[Any]): O =
     // CONSIDER using foldLeft so that we can use the updated value of o at each step.
     for (x <- xs.headOption) writeValue(o)(x)
     for (x <- xs.tail) writeValue(writeRaw(o)(delimiter))(x)
     o
-  }
 
   private val sQuote: String = quote.toString
 
@@ -96,10 +95,9 @@ trait Writable[O] {
    * @param x the character sequence to be written.
    * @return an instance of O which represents the updated output structure.
    */
-  def writeQuoted(o: O)(x: CharSequence): O = {
+  def writeQuoted(o: O)(x: CharSequence): O =
     val w = x.toString.replaceAll(quote.toString, s"$quote$quote")
     writeRaw(o)(s"$quote$w$quote")
-  }
 
   /**
    * The default quote is one double-quote symbol
@@ -121,7 +119,6 @@ trait Writable[O] {
    * @return \n
    */
   def newline: CharSequence = "\n"
-}
 
 /**
  * The `Writable` object provides factory methods for creating instances of the `Writable` type
@@ -138,7 +135,7 @@ object Writable {
    * @return a `Writable[StringBuilder]` instance for writing character sequences to a `StringBuilder`.
    */
   def stringBuilderWritable(delim: CharSequence = ",", quoteChar: CharSequence = """""""): Writable[StringBuilder] =
-    new Writable[StringBuilder] {
+    new Writable[StringBuilder]:
       def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder =
         o.append(x)
 
@@ -150,7 +147,6 @@ object Writable {
 
       override def quote: CharSequence =
         quoteChar
-  }
 
   /**
    * Creates a `Writable` instance for handling `FileWriter` objects, enabling the writing of character sequences
@@ -161,16 +157,14 @@ object Writable {
    * @return a `Writable[FileWriter]` instance for operating with `FileWriter`.
    */
   def fileWritable(file: File): Writable[FileWriter] =
-    new Writable[FileWriter] {
+    new Writable[FileWriter]:
       def unit: FileWriter =
         new FileWriter(file)
 
-      def writeRaw(o: FileWriter)(x: CharSequence): FileWriter = {
+      def writeRaw(o: FileWriter)(x: CharSequence): FileWriter =
         o.append(x)
         o
-      }
 
       override def close(o: FileWriter): Unit =
         o.close()
-  }
 }

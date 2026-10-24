@@ -19,7 +19,7 @@ import com.phasmidsoftware.tableparser.core.write.{TreeWriter, Writable}
  *
  * @tparam X the underlying type of this TableRenderable.
  */
-trait TableRenderable[X] {
+trait TableRenderable[X]:
 
   /**
    * Method to render this TableRenderable to serialized type O without any constraint on O.
@@ -79,4 +79,3 @@ trait TableRenderable[X] {
    * @return a new instance of U which represents this Table as a tree of some sort.
    */
   def renderHierarchicalSequenced[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(using xr: HierarchicalRenderer[Indexed[X]]): U
-}

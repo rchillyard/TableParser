@@ -11,7 +11,7 @@ import scala.deriving.Mirror
  * Helpers for the type classes that are derived from a case class's Mirror
  * (CellParser, CsvRenderer, CsvGenerator, CsvProduct and HierarchicalRenderer).
  */
-object Derivation {
+object Derivation:
 
   /**
    * Method to get the names of the fields of a case class from its Mirror's MirroredElemLabels.
@@ -21,11 +21,9 @@ object Derivation {
    * @tparam Ls the MirroredElemLabels.
    * @return the field names, in declaration order.
    */
-  inline def fieldNames[Ls <: Tuple]: List[String] = inline erasedValue[Ls] match {
+  inline def fieldNames[Ls <: Tuple]: List[String] = inline erasedValue[Ls] match
     case _: EmptyTuple => Nil
     case _: (l *: ls) => constValue[l].toString :: fieldNames[ls]
-  }
-}
 
 /**
  * Type class giving the names of the fields of a case class T, in declaration order.
@@ -35,11 +33,10 @@ object Derivation {
  *
  * @tparam T the case class.
  */
-trait FieldNames[T] {
+trait FieldNames[T]:
   def names: List[String]
-}
 
-object FieldNames {
+object FieldNames:
   /**
    * The FieldNames of a case class T, from its Mirror.
    *
@@ -49,7 +46,6 @@ object FieldNames {
    */
   inline given derived[T](using m: Mirror.ProductOf[T]): FieldNames[T] =
     FieldNamesOf[T](Derivation.fieldNames[m.MirroredElemLabels])
-}
 
 /**
  * A FieldNames[T] with the given names.

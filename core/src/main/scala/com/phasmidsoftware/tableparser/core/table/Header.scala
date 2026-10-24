@@ -22,7 +22,7 @@ import scala.util.Try
  * @param xs  the sequence of column names.
  * @param xss a sequence of sequence of String representing any additional header lines.
  */
-case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
+case class Header(xs: Seq[String], xss: Seq[Seq[String]]):
   /**
    * Get the number of columns.
    *
@@ -56,13 +56,12 @@ case class Header(xs: Seq[String], xss: Seq[Seq[String]]) {
    */
   def ++(other: Header): Header =
     Header(xs ++ other.xs, xss.zipAll(other.xss, Nil, Nil) map ((ws, vs) => ws ++ vs))
-}
 
 /**
  * This companion object contains utility methods and constants
  * for creating and manipulating instances of the Header class.
  */
-object Header {
+object Header:
 
   private lazy val numbers: LazyList[Int] = LazyList.from(1)
 
@@ -77,17 +76,15 @@ object Header {
   lazy val generateLetters: LazyList[String] = numbers map intToString(letters = true)
 
   // The column name of the nth column (from 1): with letters, n is written in "bijective base 26" (A=1 ... Z=26).
-  private def intToString(letters: Boolean)(n: Int): String = if (letters) {
+  private def intToString(letters: Boolean)(n: Int): String = if (letters)
     @scala.annotation.tailrec
     def inner(s: String, n: Int): String =
       if (n <= 0) s
-      else {
+      else
         val m = if (n % 26 == 0) 26 else n % 26
         inner(s"${(m + 64).toChar}$s", (n - m) / 26)
-      }
 
     inner("", n)
-  }
   else n.toString
 
   /**
@@ -133,4 +130,3 @@ object Header {
    */
   def create(ws: String*): Header =
     apply(ws, Nil)
-}

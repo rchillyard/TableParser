@@ -16,7 +16,7 @@ import scala.annotation.implicitNotFound
  * @tparam U the type of a node of the tree.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of TreeWriter[${U}].")
-trait TreeWriter[U] {
+trait TreeWriter[U]:
 
   /**
    * This method is required to convert a Node into a U.
@@ -26,7 +26,6 @@ trait TreeWriter[U] {
    */
   def evaluate(node: Node): U
 
-}
 
 /**
  * This case class defines a Node in the hierarchical output produced by rendering.
@@ -40,30 +39,27 @@ trait TreeWriter[U] {
  * @param attributes the attributes of this Node (may be empty).
  * @param children   the children of this Node (may be empty).
  */
-case class Node(style: String, content: Option[String], attributes: Map[String, String], children: Seq[Node]) {
+case class Node(style: String, content: Option[String], attributes: Map[String, String], children: Seq[Node]):
 
   /**
    * Method to eliminate nodes of the form Node("", None, Map.empty, ...).
    *
    * @return a subtree rooted at this, but with nodes trimmed.
    */
-  lazy val trim: Node = this match {
+  lazy val trim: Node = this match
     case Node(s, wo, kVm, ns) =>
       Node(s, wo, kVm, for (n <- ns; x <- doTrim(n)) yield x)
-  }
 
-  private def doTrim(n: Node): Seq[Node] = n match {
+  private def doTrim(n: Node): Seq[Node] = n match
     case Node("", None, kVm, ns) if kVm.isEmpty =>
       ns map (_.trim)
     case _ =>
       Seq(n.trim)
-  }
-}
 
 /**
  * Companion object to Node.
  */
-object Node {
+object Node:
 
   /**
    * Create a content-less leaf Node (with no children).
@@ -147,5 +143,4 @@ object Node {
   def mergeRight(left: Node, right: Node): Node =
     Node(right.style, right.content, right.attributes, left.children ++ right.children)
 
-}
 

@@ -13,12 +13,12 @@ import org.scalatest.time.{Seconds, Span}
 import scala.io.Source
 import scala.util.Try
 
-class CrimeSpec extends AnyFlatSpec with Matchers {
+class CrimeSpec extends AnyFlatSpec with Matchers:
 
   behavior of "Crime"
   val crimeFile = "2023-01-metropolitan-street-sample.csv"
 
-  it should "be ingested and analyzed as a RawTable" in {
+  it should "be ingested and analyzed as a RawTable" in:
 
     // Set up the source
     val sy: Try[Source] = for (u <- resourceForClass(crimeFile, classOf[Crime])) yield Source.fromURL(u)
@@ -29,15 +29,13 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
     // Create the table
     val wsty: IO[RawTable] = IO.fromTry(parser.parse(sy))
 
-    matchIO(wsty, Timeout(Span(10, Seconds))) {
+    matchIO(wsty, Timeout(Span(10, Seconds))):
       case t@HeadedTable(r, _) =>
         val analysis = Analysis(t)
         println(s"Crime: $analysis")
         analysis.rows shouldBe 400 +- 80
         r take 10 foreach println
         succeed
-    }
-  }
 
 //  it should "be ingested and written out in brief to CSV" in {
 //    implicit val random: Random = new Random(0)
@@ -58,4 +56,3 @@ class CrimeSpec extends AnyFlatSpec with Matchers {
 //    }
 //  }
 
-}

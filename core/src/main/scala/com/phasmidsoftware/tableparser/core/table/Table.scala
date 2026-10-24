@@ -22,7 +22,7 @@ import scala.util.{Failure, Random, Try}
  *
  * @tparam Row the type of each row.
  */
-trait Table[Row] extends Iterable[Row] {
+trait Table[Row] extends Iterable[Row]:
 
   /**
    * Optional value of the Header of this Table, if there is one.
@@ -138,10 +138,9 @@ trait Table[Row] extends Iterable[Row] {
    * @param range a Range
    * @return a new Table[Row] consisting only of those rows in the given range.
    */
-  def select(range: Range): Table[Row] = {
+  def select(range: Range): Table[Row] =
     val ys: IndexedSeq[Row] = asOneBasedIndexedSequence
     Table(for (i <- range) yield ys(i), maybeHeader)
-  }
 
   /**
    * Method to select those rows defined by the given range.
@@ -161,11 +160,10 @@ trait Table[Row] extends Iterable[Row] {
    *
    * @return a Seq[Row]
    */
-  override def toSeq: Seq[Row] = {
+  override def toSeq: Seq[Row] =
     // XXX huh?
     lazy val rs = content.toSeq
     rs
-  }
 
   /**
    * Method to yield an Array from the rows of this Table.
@@ -173,11 +171,10 @@ trait Table[Row] extends Iterable[Row] {
    * @tparam Element the element type of the resulting Array.
    * @return an Array[Element].
    */
-  override def toArray[Element >: Row : ClassTag]: Array[Element] = {
+  override def toArray[Element >: Row : ClassTag]: Array[Element] =
     // XXX huh?
     lazy val rs = content.iterator.toArray[Element]
     rs
-  }
 
   /**
    * Method to return the rows of this table as an iterator.
@@ -348,11 +345,10 @@ trait Table[Row] extends Iterable[Row] {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return a String.
    */
-  def toCSV(using rcr: CsvRenderer[Row], rgr: CsvGenerator[Row], csvAttributes: CsvAttributes): Try[String] = {
+  def toCSV(using rcr: CsvRenderer[Row], rgr: CsvGenerator[Row], csvAttributes: CsvAttributes): Try[String] =
     val renderer: CsvTableStringRenderer[Row] = CsvTableStringRenderer[Row]()(using rcr, rgr, csvAttributes)
     val output: Try[StringBuilder] = renderer.render(this)
     output map (_.toString)
-  }
 
   /**
    * Converts the table to a CSV file and writes it to the specified output path.
@@ -409,15 +405,13 @@ trait Table[Row] extends Iterable[Row] {
   private def doZip[R, S](f: (Iterable[Row], Iterable[R]) => Iterable[S])(other: Table[R]): Table[S] =
     unit(f(content.toSeq, other.content.toSeq))
 
-  private lazy val asOneBasedIndexedSequence = new IndexedSeq[Row]() {
+  private lazy val asOneBasedIndexedSequence = new IndexedSeq[Row]():
     def apply(i: Int): Row = content.toIndexedSeq(i - 1)
 
     // TESTME
     def length: Int = content.size
-  }
-}
 
-object Table {
+object Table:
   /**
    * Primary method to parse a table from an Iterator of String.
    * This method is, in turn, invoked by all other parse methods defined below (other than parseSequence).
@@ -427,12 +421,11 @@ object Table {
    * @return an Try[T]
    */
   def parse[T: TableParser](ws: Iterator[String]): Try[T] =
-    summon[TableParser[T]] match {
+    summon[TableParser[T]] match
       case parser: StringTableParser[T] =>
         parser.parse(ws, parser.headerRowsToRead)
       case x =>
         Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
-    }
 
   /**
    * Method to parse a table from an Iterable of String.
@@ -485,10 +478,9 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parse[T: TableParser](u: => URI, enc: String): Try[T] = {
+  def parse[T: TableParser](u: => URI, enc: String): Try[T] =
     given codec: Codec = Codec(enc)
     parse(u)
-  }
 
   /**
    * Method to parse a table from an InputStream with an implicit encoding.
@@ -509,10 +501,9 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseInputStream[T: TableParser](si: Try[InputStream], enc: String): Try[T] = {
+  def parseInputStream[T: TableParser](si: Try[InputStream], enc: String): Try[T] =
     given codec: Codec = Codec(enc)
     for (s <- si; t <- parseInputStream(s)) yield t
-  }
 
   /**
    * Parses a file at the given path into an instance of type T using the provided implicit TableParser.
@@ -534,10 +525,9 @@ object Table {
    * @tparam T The type to which the file content will be parsed, requiring an implicit TableParser instance.
    * @return A Try containing the parsed result of type T if successful, or a failure if an error occurs during parsing.
    */
-  def parseFile[T: TableParser](path: Path, enc: String): Try[T] = {
+  def parseFile[T: TableParser](path: Path, enc: String): Try[T] =
     given codec: Codec = Codec(enc)
     parseFile(path)
-  }
 
 //
 //  /**
@@ -599,10 +589,9 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] = {
+  def parseResource[T: TableParser](u: => URL, enc: String): Try[T] =
     given codec: Codec = Codec(enc)
     parseResource(u)
-  }
 
   /**
    * Method to parse a table from a Seq of Seq of String.
@@ -611,15 +600,13 @@ object Table {
    * @tparam T the type of the resulting table.
    * @return an Try[T]
    */
-  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] = {
+  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): Try[T] =
     val tableParser = summon[TableParser[T]]
-    tableParser match {
+    tableParser match
       case parser: StringsTableParser[T] =>
         parser.parse(wss, 1)
       case _ =>
         Failure(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
-    }
-  }
 
   /**
    * Parses a file at the given path into a `Table[RawRow]` using the specified conditions and options.
@@ -631,10 +618,9 @@ object Table {
    * @param codec            the character encoding to be used for reading the file
    * @return a `Try` containing the parsed `Table[RawRow]` on success or an exception on failure
    */
-  def parsePathRaw(path: Path, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): Try[Table[RawRow]] = {
+  def parsePathRaw(path: Path, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): Try[Table[RawRow]] =
     given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](path)
-  }
 
   /**
    * Method to parse a table from a File as a table of Seq[String].
@@ -643,10 +629,9 @@ object Table {
    * @param codec    (implicit) the encoding.
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): Try[Table[RawRow]] = {
+  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): Try[Table[RawRow]] =
     given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, None)
     parseFile[Table[RawRow]](Paths.get(pathname))
-  }
 
   /**
    * Method to parse a table from a resource as a table of Seq[String].
@@ -658,10 +643,9 @@ object Table {
    * @param codec            (implicit) the encoding.
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): Try[Table[RawRow]] = {
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): Try[Table[RawRow]] =
     given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
-  }
 
   /**
    * Method to parse a table of raw rows from an Iterable of String.
@@ -669,10 +653,9 @@ object Table {
    * @param ws the Strings.
    * @return an Try of Table of RawRow
    */
-  def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[RawTable] = {
+  def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[RawTable] =
     given z: TableParser[RawTable] = RawTableParser.create(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
-  }
 
   /**
    * Method to construct one of the standard table types, given an Iterable of T and an optional header.
@@ -682,12 +665,11 @@ object Table {
    * @tparam X the underlying type of xs.
    * @return a Table[X] which is either a HeadedTable or an UnheadedTable, as appropriate.
    */
-  def apply[X](xs: Iterable[X], maybeHeader: Option[Header]): Table[X] = maybeHeader match {
+  def apply[X](xs: Iterable[X], maybeHeader: Option[Header]): Table[X] = maybeHeader match
     case Some(h) =>
       HeadedTable(Content(xs), h)
     case None =>
       UnheadedTable(Content(xs))
-  }
 
   /**
    * Method to render the given Table[Row] as a CSV String with `header`.
@@ -696,15 +678,13 @@ object Table {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes): Try[String] = {
-    t.maybeHeader match {
+  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes): Try[String] =
+    t.maybeHeader match
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         t.toCSV
       case _ =>
         throw TableException("toCSVRow: cannot write this Table to CSV (no header)")
-    }
-  }
 
   /**
    * Method to render the given Table[Row] as a CSV String with header.
@@ -715,14 +695,13 @@ object Table {
    * @return an Iterable[String]
    */
   def writeCSVFileRow(t: Table[Row], file: File)(using csvAttributes: CsvAttributes): Unit =
-    t.maybeHeader match {
+    t.maybeHeader match
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         // CONSIDER this is a bit ugly
         t.writeCSVFile(file.toPath)
       case _ =>
         throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")
-    }
 
   /**
    * Method to open source defined by an InputStream.
@@ -768,11 +747,9 @@ object Table {
    * @return an Try[Source].
    */
   def sourceFromClassResource(w: String, clazz: Class[?])(using codec: Codec): Try[Source] =
-    Try(Source.fromURL(clazz.getResource(w))).recoverWith {
+    Try(Source.fromURL(clazz.getResource(w))).recoverWith:
       case _: java.lang.NullPointerException =>
         Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
-    }
-}
 
 /**
  * This typeclass pertains to a table row type T that has one particular column which is considered
@@ -780,9 +757,8 @@ object Table {
  *
  * @tparam Row the underlying type.
  */
-trait HasKey[Row] {
+trait HasKey[Row]:
   def key(t: Row): String
-}
 
 /**
  * Table Exception.

@@ -35,7 +35,7 @@ import scala.util.{Failure, Success, Try}
  * To analyze a specific dataset, update the `crimeFile` variable with the correct
  * resource file path before running the application.
  */
-object Main {
+object Main:
   // NOTE: not `extends App`: in Scala 3, the body of an App runs when the object is initialized
   // (e.g. by a call of doMain), and its parallel foreach then deadlocks on that initialization.
   def main(args: Array[String]): Unit =
@@ -50,7 +50,7 @@ object Main {
    * @return Unit - This method performs side effects (e.g., file IO, data analysis, and printing)
    *         and does not return a value.
    */
-  def doMain(triedUrl: Try[URL]): Unit = {
+  def doMain(triedUrl: Try[URL]): Unit =
     // Set up the source
     val sy: Try[Source] = for (u <- triedUrl) yield Source.fromURL(u)
 
@@ -58,7 +58,7 @@ object Main {
     // Set up the parser (we set the predicate only for demonstration purposes)
     val parser: RawTableParser = RawTableParser().setPredicate(TableParser.sampler(fraction))
 
-    parser.parse(sy) match {
+    parser.parse(sy) match
       case Success(t@HeadedTable(r, _)) =>
         val analysis = Analysis(t)
         println(s"Crime: $analysis")
@@ -67,6 +67,3 @@ object Main {
         System.err.println(s"Unexpected result: $t")
       case Failure(x) =>
         throw x
-    }
-  }
-}

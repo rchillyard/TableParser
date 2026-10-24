@@ -3,7 +3,7 @@ package com.phasmidsoftware.tableparser.cats.table
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class AirBNBFuncSpec extends AnyFlatSpec with Matchers {
+class AirBNBFuncSpec extends AnyFlatSpec with Matchers:
 
   behavior of "AirBNB table"
 
@@ -32,4 +32,3 @@ class AirBNBFuncSpec extends AnyFlatSpec with Matchers {
   //      case _ =>
   //    }
   //  }
-}

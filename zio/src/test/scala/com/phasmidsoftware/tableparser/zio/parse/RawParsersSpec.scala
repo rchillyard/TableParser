@@ -11,11 +11,11 @@ import org.scalatest.matchers.should
 import scala.util.{Failure, Success}
 import zio._
 
-class RawParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
+class RawParsersSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
   behavior of "parse"
 
-  it should "parse the raw strings" in {
+  it should "parse the raw strings" in:
     import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
 
     val rows = Seq(
@@ -23,17 +23,13 @@ class RawParsersSpec extends flatspec.AnyFlatSpec with should.Matchers {
       ",Doug Walker,,,131,,Rob Walker,131,,Documentary,Doug Walker,Star Wars: Episode VII - The Force Awakens             ,8,143,,0,,https://www.imdb.com/title/tt5289954/?ref_=fn_tt_tt_1,,,,,,,12,7.1,,0"
     )
 
-    matchZIO(ZIO.fromTry(Table.parse(rows))) {
+    matchZIO(ZIO.fromTry(Table.parse(rows))):
       case t@HeadedTable(_, _) =>
         val stringSeqTable: RawTable = t
         stringSeqTable.size shouldBe 1
         val triedString = stringSeqTable.head(1)
-        triedString match {
+        triedString match
           case Success(s) if s == "Doug Walker" => println(s"success: $s"); true
           case Failure(e) => fail(s"failure: $e")
           case _ => fail("unexpected")
-        }
-    }
-  }
 
-}

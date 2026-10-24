@@ -9,7 +9,7 @@ package com.phasmidsoftware.tableparser.core.util
  *
  * @tparam T the joinable type.
  */
-trait Joinable[T] {
+trait Joinable[T]:
   /**
    * Method to join t1 to t2.
    *
@@ -41,13 +41,12 @@ trait Joinable[T] {
    * @return true if t must be joined to the T that follows it.
    */
   def incomplete(t: T): Boolean = false
-}
 
 /**
  * Companion object for the `Joinable` type class, providing default implementations
  * of the `Joinable` behavior for specific types.
  */
-object Joinable {
+object Joinable:
   /**
    * A trait extending the behavior of `Joinable` for a tuple of type `(T, Int)`.
    * It defines how to join two `(T, Int)` values, a zero value, and validity checks
@@ -55,7 +54,7 @@ object Joinable {
    *
    * @tparam T the type to be joined within the `(T, Int)` tuple.
    */
-  trait JoinableTInt[T] extends Joinable[(T, Int)] {
+  trait JoinableTInt[T] extends Joinable[(T, Int)]:
 
     def tj: Joinable[T]
 
@@ -70,14 +69,13 @@ object Joinable {
 
     override def incomplete(t: (T, Int)): Boolean =
       tj.incomplete(t._1)
-  }
 
   /**
    * Provides an implicit implementation of the `Joinable` type class for the `String` type.
    * This enables strings to be combined using the `join` method, defines a zero value for
    * strings, and validates non-empty strings.
    */
-  given JoinableString: Joinable[String] with {
+  given JoinableString: Joinable[String] with
     /**
      * Concatenates two strings into a single string.
      *
@@ -115,14 +113,13 @@ object Joinable {
      */
     override def incomplete(t: String): Boolean =
       t.count(_ == '"') % 2 == 1
-  }
 
   /**
    * Provides an implicit implementation of the `Joinable` type class for sequences of strings (`Seq[String]`).
    * This enables sequences of strings to be combined, defines a zero value for sequences, and validates
    * non-empty sequences.
    */
-  given JoinableStrings: Joinable[Seq[String]] with {
+  given JoinableStrings: Joinable[Seq[String]] with
     /**
      * Combines two sequences of strings into a single sequence by appending the elements of the second sequence
      * to the elements of the first sequence.
@@ -151,5 +148,3 @@ object Joinable {
      */
     def valid(t: Seq[String]): Boolean =
       t.nonEmpty // TESTME
-  }
-}

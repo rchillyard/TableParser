@@ -22,9 +22,8 @@ import scala.util.{Failure, Success, Try, Using}
  * @param path the path to a .parquet file or dataset directory.
  * @tparam Row the target case class type (not used for schema extraction, but kept for consistency).
  */
-case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer {
+case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer:
   def analyze(): ColumnStatistics = ParquetAnalysisHelper.analyzeInternal(path)
-}
 
 /**
  * Analyzer for Parquet dataset directories.
@@ -33,18 +32,16 @@ case class ParquetAnalyzer[Row <: Product](path: Path) extends Analyzer {
  * @param path the path to a dataset directory containing part-*.parquet files.
  * @tparam Row the target case class type.
  */
-case class ParquetDatasetAnalyzer[Row <: Product](path: Path) extends Analyzer {
-  def analyze(): ColumnStatistics = {
+case class ParquetDatasetAnalyzer[Row <: Product](path: Path) extends Analyzer:
+  def analyze(): ColumnStatistics =
     if (!Files.isDirectory(path))
       throw ParquetParserException(s"Path is not a directory: $path. Use ParquetAnalyzer for single files.", None)
     ParquetAnalysisHelper.analyzeInternal(path)
-  }
-}
 
 /**
  * Helper object for shared analysis logic between single files and datasets.
  */
-private object ParquetAnalysisHelper {
+private object ParquetAnalysisHelper:
 
   /**
    * Shared internal analysis logic for both single files and datasets.
@@ -53,7 +50,7 @@ private object ParquetAnalysisHelper {
    * @param path the path to a .parquet file or dataset directory.
    * @return a ColumnStatistics instance describing the schema and row count.
    */
-  def analyzeInternal(path: Path): ColumnStatistics = {
+  def analyzeInternal(path: Path): ColumnStatistics =
     val conf = new Configuration()
     val hadoopPath = new HadoopPath(ParquetPathResolver.schemaSourcePath(path).toUri)
     Using(ParquetFileReader.open(HadoopInputFile.fromPath(hadoopPath, conf))) { reader =>
@@ -65,11 +62,9 @@ private object ParquetAnalysisHelper {
         else
           footer.getBlocks.asScala.foldLeft(0L)(_ + _.getRowCount).toInt
       ColumnStatistics(rowCount, schema.getFieldCount, buildColumnMap(schema))
-    } match {
+    } match
       case Success(value) => value
       case Failure(exception) => throw exception
-    }
-  }
 
   /**
    * Builds a map of column name to Column from a Parquet schema.
@@ -115,21 +110,17 @@ private object ParquetAnalysisHelper {
    * @param fieldType the Parquet Type to map.
    * @return a string representing the Scala type ("Int", "Double", "String", or "BigDecimal").
    */
-  private def clazzFromParquetType(fieldType: Type): String = fieldType match {
+  private def clazzFromParquetType(fieldType: Type): String = fieldType match
     case pt: PrimitiveType =>
-      pt.getPrimitiveTypeName.toString match {
+      pt.getPrimitiveTypeName.toString match
         case "INT32" | "INT64" => "Int"
         case "FLOAT" | "DOUBLE" => "Double"
         case "BINARY" | "FIXED_LEN_BYTE_ARRAY" =>
-          Option(pt.getOriginalType) match {
+          Option(pt.getOriginalType) match
             case Some(OriginalType.DECIMAL) => "BigDecimal"
             case _ => "String"
-          }
         case _ => "String"
-      }
     case _ => "String"
-  }
-}
 
 /**
  * Provider for computing column statistics from Parquet files.
@@ -148,7 +139,7 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
    * @param useMetadataOnly if true, return None if metadata unavailable; if false, return lazy thunk.
    * @return an optional Column with eager or lazy statistics.
    */
-  def computeStatistics(path: Path, columnName: String, useMetadataOnly: Boolean = true): Option[Column] = {
+  def computeStatistics(path: Path, columnName: String, useMetadataOnly: Boolean = true): Option[Column] =
     val conf = new Configuration()
     val hadoopPath = new HadoopPath(path.toUri)
     val coy = Using(ParquetFileReader.open(HadoopInputFile.fromPath(hadoopPath, conf))) { reader =>
@@ -158,7 +149,6 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
               .flatMap(getFieldInformation(path, useMetadataOnly, schema, footer))
     }
     FP.recoverOption(coy)(ex => System.err.println(s"computeStatistics: Error reading Parquet file: $ex"))
-  }
 
   /**
    * Extracts Column information for a specific field index.
@@ -185,15 +175,13 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
    * @return Some type name string if numeric, None otherwise.
    */
   private def numericClazz(schema: MessageType, fieldIdx: Int): Option[String] =
-    schema.getType(fieldIdx) match {
+    schema.getType(fieldIdx) match
       case pt: PrimitiveType =>
-        pt.getPrimitiveTypeName.toString match {
+        pt.getPrimitiveTypeName.toString match
           case "INT32" | "INT64" => Some("Int")
           case "FLOAT" | "DOUBLE" => Some("Double")
           case _ => None
-        }
       case _ => None
-    }
 
   /**
    * Processes metadata statistics and returns an appropriate Column.
@@ -207,14 +195,13 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
    * @return an optional Column with eager or lazy statistics.
    */
   private def processMetadataStats(metadataStats: Option[Statistics])(path: Path, useMetadataOnly: Boolean, fieldIdx: Int, optional: Boolean, clazz: String): Option[Column] =
-    metadataStats match {
+    metadataStats match
       case Some(stats) =>
         Some(Column(clazz, optional, Some(EagerStatistics(stats))))
       case None if useMetadataOnly =>
         None
       case None =>
         Some(Column(clazz, optional, Some(LazyStatistics(() => computeStatsFromRowsForColumn(path, fieldIdx)))))
-    }
 
   /**
    * Extract statistics from Parquet column metadata if available.
@@ -236,7 +223,7 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
    * @param fieldIdx the field index.
    * @return optional Statistics computed from row values.
    */
-  private def computeStatsFromRowsForColumn(path: Path, fieldIdx: Int): Option[Statistics] = {
+  private def computeStatsFromRowsForColumn(path: Path, fieldIdx: Int): Option[Statistics] =
     val reader: ParquetReader[Group] =
       ParquetReader
               .builder(new GroupReadSupport(), new HadoopPath(path.toUri))
@@ -249,5 +236,4 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
       }.toSeq
     }.map(Statistics.make)
     FP.recoverOption(yos)(ex => System.err.println(s"Error reading Parquet file: $ex"))
-  }
 }

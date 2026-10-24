@@ -14,7 +14,7 @@ import java.time.Instant
  *
  * CONSIDER a mechanism to ensure that objects involving case classes are presented in the same order as specified by the header.
  */
-trait CsvRenderers {
+trait CsvRenderers:
 
   /**
    * Method to return a CsvRenderer[RawRow].
@@ -22,7 +22,7 @@ trait CsvRenderers {
    * @param ca the (implicit) CsvAttributes.
    * @return a CsvRenderer[RawRow].
    */
-  def rawRowRenderer(using ca: CsvAttributes): CsvRenderer[RawRow] = new CsvRenderer[RawRow] {
+  def rawRowRenderer(using ca: CsvAttributes): CsvRenderer[RawRow] = new CsvRenderer[RawRow]:
     given z: CsvRenderer[String] = CsvRenderers.CsvRendererString
 
     /**
@@ -37,7 +37,6 @@ trait CsvRenderers {
       sequenceRenderer[String].render(t.ws)
 
     val csvAttributes: CsvAttributes = ca
-  }
 
   /**
    * Method to return a CsvRenderer[ Seq[T] ].
@@ -46,7 +45,7 @@ trait CsvRenderers {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[ Seq[T] ]
    */
-  def sequenceRenderer[T: CsvRenderer](using ca: CsvAttributes): CsvRenderer[Seq[T]] = new CsvRenderer[Seq[T]] {
+  def sequenceRenderer[T: CsvRenderer](using ca: CsvAttributes): CsvRenderer[Seq[T]] = new CsvRenderer[Seq[T]]:
 
     /**
      * Renders a sequence of objects into a CSV-formatted string using provided attributes.
@@ -59,7 +58,6 @@ trait CsvRenderers {
       (ts map { (t: T) => summon[CsvRenderer[T]].render(t) }).mkString(csvAttributes.delimiter)
 
     val csvAttributes: CsvAttributes = ca
-  }
 
   /**
    * Method to return a CsvRenderer[ Option[T] ].
@@ -68,7 +66,7 @@ trait CsvRenderers {
    * @tparam T the underlying type of the first parameter of the input to the render method.
    * @return a CsvRenderer[ Option[T] ].
    */
-  def optionRenderer[T: CsvRenderer](defaultString: String = "")(using ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
+  def optionRenderer[T: CsvRenderer](defaultString: String = "")(using ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]]:
     val csvAttributes: CsvAttributes = ca
 
     /**
@@ -84,7 +82,6 @@ trait CsvRenderers {
      */
     def render(to: Option[T], attrs: Map[String, String]): String =
       (to map (t => summon[CsvRenderer[T]].render(t))).getOrElse(defaultString)
-  }
 
   /**
    * Method to return a CsvRenderer[Option[T]] for a T which has several columns (e.g. a case class).
@@ -98,17 +95,15 @@ trait CsvRenderers {
    * @tparam T the underlying type.
    * @return a CsvRenderer[Option[T]].
    */
-  def optionProductRenderer[T](using r: CsvRenderer[T], g: CsvGenerator[T], ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]] {
+  def optionProductRenderer[T](using r: CsvRenderer[T], g: CsvGenerator[T], ca: CsvAttributes): CsvRenderer[Option[T]] = new CsvRenderer[Option[T]]:
     val csvAttributes: CsvAttributes = ca
 
     // The number of columns of a T.
     private lazy val columns: Int = g.toColumnName(None, "x").split(java.util.regex.Pattern.quote(ca.delimiter)).length
 
-    def render(to: Option[T], attrs: Map[String, String]): String = to match {
+    def render(to: Option[T], attrs: Map[String, String]): String = to match
       case Some(t) => r.render(t, attrs)
       case None => ca.delimiter * (columns - 1)
-    }
-  }
 
   /**
    * Method to return a CsvRenderer[T] which does not output a T at all, only a number of delimiters according to the value of alignment.
@@ -120,7 +115,7 @@ trait CsvRenderers {
    * @tparam T the type of the parameter to the render method.
    * @return a CsvRenderer[T].
    */
-  def skipRenderer[T](alignment: Int = 1)(using ca: CsvAttributes): CsvRenderer[T] = new CsvRenderer[T] {
+  def skipRenderer[T](alignment: Int = 1)(using ca: CsvAttributes): CsvRenderer[T] = new CsvRenderer[T]:
     val csvAttributes: CsvAttributes = ca
 
     /**
@@ -132,7 +127,6 @@ trait CsvRenderers {
      */
     def render(t: T, attrs: Map[String, String]): String =
       ca.delimiter * (alignment - 1)
-  }
 
 // ── 14 ──────────────────────────────────────────────────────────────────────
 
@@ -146,14 +140,13 @@ trait CsvRenderers {
 
   // ── 19 ──────────────────────────────────────────────────────────────────────
 
-}
 
 /**
  * The `CsvRenderers` object provides a collection of implicit `StandardCsvRenderer` implementations
  * for common data types. These renderers are used to convert data of specific types into CSV
  * (Comma-Separated Values) format according to the defined rendering logic.
  */
-object CsvRenderers {
+object CsvRenderers:
   /**
    * The `StandardCsvRenderer` is an abstract class that provides a base implementation of the
    * `CsvRenderer` trait for rendering objects of type `T` into CSV (Comma-Separated Values) format.
@@ -164,7 +157,7 @@ object CsvRenderers {
    *
    * @tparam T The type of object to be rendered into CSV format.
    */
-  abstract class StandardCsvRenderer[T] extends CsvRenderer[T] {
+  abstract class StandardCsvRenderer[T] extends CsvRenderer[T]:
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     /**
@@ -176,7 +169,6 @@ object CsvRenderers {
      * @return a string representation of the object `t`.
      */
     def render(t: T, attrs: Map[String, String]): String = t.toString
-  }
 
   /**
    * An implicit object for rendering `Boolean` values into CSV (Comma-Separated Values) format.
@@ -323,18 +315,16 @@ object CsvRenderers {
    * @param ca the CsvAttributes (for the delimiter and the quote character).
    * @return the String, quoted if necessary.
    */
-  def quoteIfNecessary(w: String)(using ca: CsvAttributes): String = {
+  def quoteIfNecessary(w: String)(using ca: CsvAttributes): String =
     val quote = ca.quote
-    val delimiter = ca.delimiter.trim match {
+    val delimiter = ca.delimiter.trim match
       case "" => ca.delimiter
       case d => d
-    }
     val mustQuote = quote.nonEmpty && w.nonEmpty &&
             (w.contains(delimiter) || w.contains(quote) || w.exists(c => c == '\n' || c == '\r') || w.head.isWhitespace || w.last.isWhitespace)
     if (mustQuote) quote + w.replace(quote, quote + quote) + quote else w
-  }
 
-  given CsvRendererString: StandardCsvRenderer[String] with {
+  given CsvRendererString: StandardCsvRenderer[String] with
     /**
      * Method to render a String as a CSV cell, quoting it (as in RFC 4180) when it has to be quoted to be read back as it is:
      * when it contains the delimiter, the quote character or a line break, or when it starts or ends with whitespace
@@ -346,7 +336,6 @@ object CsvRenderers {
      */
     override def render(w: String, attrs: Map[String, String]): String =
       CsvRenderers.quoteIfNecessary(w)(using csvAttributes)
-  }
 
   /**
    * Provides an implicit instance of `StandardCsvRenderer` for the type `java.net.URL`.
@@ -371,14 +360,12 @@ object CsvRenderers {
    */
   given CsvRendererURL: StandardCsvRenderer[URL] with {}
 
-  given CsvRendererInstant: CsvRenderer[Instant] with {
+  given CsvRendererInstant: CsvRenderer[Instant] with
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: Instant, attrs: Map[String, String]): String = t.toString
-  }
 
 //  implicit object CsvRendererTemporal extends CsvRenderer[Temporal] {
 //    val csvAttributes: CsvAttributes = summon[CsvAttributes]
 //    def render(t: Temporal, attrs: Map[String, String]): String = t.toString
 //  }
-}

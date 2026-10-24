@@ -8,35 +8,30 @@ import org.scalatest.matchers.should
 import scala.io.BufferedSource
 import scala.util.Try
 
-class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
+class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
   import scala.io.Source
 
   behavior of "implicit class"
 
-  it should "properly parse movie data" in {
+  it should "properly parse movie data" in:
     val sy: Try[Source] = Try(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))
     val parser: StringTableParser[Table[Movie]] = summon[StringTableParser[Table[Movie]]]
     val parsed: Try[Table[Movie]] = sy flatMap (ms => parser.parse(ms.getLines()))
-    matchTry(parsed) {
+    matchTry(parsed):
       case tm@HeadedTable(_, _) =>
         println(s"Table read with ${tm.content} rows")
         succeed
-    }
-  }
 
-  class MySource(s: Source) extends Source {
-    protected val iter: Iterator[Char] = s match {
+  class MySource(s: Source) extends Source:
+    protected val iter: Iterator[Char] = s match
       case b: BufferedSource => b.iter
       case _ => fail("wrong type of Source")
-    }
     var open: Boolean = true
 
-    override def close(): Unit = {
+    override def close(): Unit =
       super.close()
       open = false
-    }
-  }
 
   // TODO use a smaller data set to save time.
   //  it should "properly close the source" in {
@@ -50,4 +45,3 @@ class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   //    }
   //  }
 
-}

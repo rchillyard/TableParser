@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
  * @tparam T the (covariant) type of the resulting object.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of CellParser[${T}]. Typically, you should invoke a suitable method from CellParsers.")
-trait CellParser[+T] extends StringConverter[T] {
+trait CellParser[+T] extends StringConverter[T]:
 
   /**
    * Parse a Convertible value into a T.
@@ -31,12 +31,11 @@ trait CellParser[+T] extends StringConverter[T] {
    * @param value the Convertible value.
    * @return a new instance of T wrapped in Try.
    */
-  def parse(value: Convertible): Try[T] = value match {
+  def parse(value: Convertible): Try[T] = value match
     case CellValue(w) =>
       convertString(w)
     case RowValues(row, columns) =>
       parse(None, row, columns)
-  }
 
   /**
    * Method to parse an Option[String] to a T.
@@ -48,27 +47,25 @@ trait CellParser[+T] extends StringConverter[T] {
    * @return a new instance of T.
    */
   def parse(wo: Option[String], row: Row, columns: Header): Try[T]
-}
 
 /**
  * Trait SingleCellParser, which extends CellParser[T].
  *
  * @tparam T the type of the resulting object.
  */
-trait SingleCellParser[T] extends CellParser[T] {
+trait SingleCellParser[T] extends CellParser[T]:
   def parse(w: Option[String], row: Row, columns: Header): Try[T] =
     Failure(new UnsupportedOperationException)
 
   // NOTE used only for debugging
   override def toString: String = "SingleCellParser"
-}
 
 /**
  * CONSIDER renaming this to something like RowParser, or RawRowParser.
  *
  * @tparam T the type of the result.
  */
-trait MultiCellParser[T] extends CellParser[T] {
+trait MultiCellParser[T] extends CellParser[T]:
   // NOTE not used
   //noinspection NotImplementedCode
   def convertString(w: String): Try[T] =
@@ -76,132 +73,115 @@ trait MultiCellParser[T] extends CellParser[T] {
 
   // NOTE used only for debugging
   override def toString: String = "MultiCellParser"
-}
 
-object CellParser {
+object CellParser:
 
-  given BooleanCellParser: SingleCellParser[Boolean] with {
+  given BooleanCellParser: SingleCellParser[Boolean] with
     def convertString(w: String): Try[Boolean] =
       summon[Parseable[Boolean]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "BooleanCellParser"
-  }
 
-  given CharCellParser: SingleCellParser[Char] with {
+  given CharCellParser: SingleCellParser[Char] with
     def convertString(w: String): Try[Char] =
       summon[Parseable[Char]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "CharCellParser"
-  }
 
-  given ByteCellParser: SingleCellParser[Byte] with {
+  given ByteCellParser: SingleCellParser[Byte] with
     def convertString(w: String): Try[Byte] =
       summon[Parseable[Byte]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "ByteCellParser"
-  }
 
-  given ShortCellParser: SingleCellParser[Short] with {
+  given ShortCellParser: SingleCellParser[Short] with
     def convertString(w: String): Try[Short] =
       summon[Parseable[Short]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "ShortCellParser"
-  }
 
-  given IntCellParser: SingleCellParser[Int] with {
+  given IntCellParser: SingleCellParser[Int] with
     def convertString(w: String): Try[Int] =
       summon[Parseable[Int]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "IntCellParser"
-  }
 
-  given LongCellParser: SingleCellParser[Long] with {
+  given LongCellParser: SingleCellParser[Long] with
     def convertString(w: String): Try[Long] =
       summon[Parseable[Long]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "LongCellParser"
-  }
 
-  given BigIntCellParser: SingleCellParser[BigInt] with {
+  given BigIntCellParser: SingleCellParser[BigInt] with
     def convertString(w: String): Try[BigInt] =
       summon[Parseable[BigInt]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "BigIntCellParser"
-  }
 
-  given FloatCellParser: SingleCellParser[Float] with {
+  given FloatCellParser: SingleCellParser[Float] with
     def convertString(w: String): Try[Float] =
       summon[Parseable[Float]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "FloatCellParser"
-  }
 
-  given DoubleCellParser: SingleCellParser[Double] with {
+  given DoubleCellParser: SingleCellParser[Double] with
     def convertString(w: String): Try[Double] =
       summon[Parseable[Double]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "DoubleCellParser"
-  }
 
-  given BigDecimalCellParser: SingleCellParser[BigDecimal] with {
+  given BigDecimalCellParser: SingleCellParser[BigDecimal] with
     def convertString(w: String): Try[BigDecimal] =
       summon[Parseable[BigDecimal]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "BigDecimalCellParser"
-  }
 
   /**
    * This parser succeeds on empty strings.
    */
-  given StringCellParser: SingleCellParser[String] with {
+  given StringCellParser: SingleCellParser[String] with
     def convertString(w: String): Try[String] = Success(w)
 
     // NOTE used only for debugging
     override def toString: String = "StringCellParser"
-  }
 
-  given LocalDateParser: SingleCellParser[LocalDate] with {
+  given LocalDateParser: SingleCellParser[LocalDate] with
     def convertString(w: String): Try[LocalDate] =
       summon[Parseable[LocalDate]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "LocalDateParser"
-  }
 
-  given URLParser: SingleCellParser[URL] with {
+  given URLParser: SingleCellParser[URL] with
     def convertString(w: String): Try[URL] =
       summon[Parseable[URL]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "URLParser"
-  }
 
-  given FileParser: SingleCellParser[File] with {
+  given FileParser: SingleCellParser[File] with
     def convertString(w: String): Try[File] =
       summon[Parseable[File]].parse(w)
 
     // NOTE used only for debugging
     override def toString: String = "FileParser"
-  }
 
   // TODO why do we have both OptionParser and ParseableOption?
-  abstract class OptionParser[T: Parseable] extends SingleCellParser[Option[T]] {
+  abstract class OptionParser[T: Parseable] extends SingleCellParser[Option[T]]:
     def convertString(w: String): Try[Option[T]] =
-      summon[Parseable[T]].parse(w).map(Option(_)).recoverWith[Option[T]] {
+      summon[Parseable[T]].parse(w).map(Option(_)).recoverWith[Option[T]]:
         case _: BlankException =>
           Success(None)
-    }
-  }
 
   given BooleanOptionParser: OptionParser[Boolean] with {}
 
@@ -243,17 +223,14 @@ object CellParser {
       xs => m.fromProduct(Tuple.fromArray(xs.toArray))
     )(using summonInline[ColumnHelper[T]])
 
-  private inline def fieldParsers[Ts <: Tuple]: List[CellParser[?]] = inline erasedValue[Ts] match {
+  private inline def fieldParsers[Ts <: Tuple]: List[CellParser[?]] = inline erasedValue[Ts] match
     case _: EmptyTuple => Nil
     case _: (t *: ts) => fieldParser[t] :: fieldParsers[ts]
-  }
 
   // Prefer a field type's own CellParser; otherwise, if it is a case class, derive one.
-  private inline def fieldParser[A]: CellParser[A] = summonFrom {
+  private inline def fieldParser[A]: CellParser[A] = summonFrom:
     case p: CellParser[A] => p
     case m: Mirror.ProductOf[A] => derived[A](using m)
-  }
-}
 
 /**
  * The CellParser of a case class T, as derived by CellParser.derived.
@@ -265,35 +242,30 @@ object CellParser {
  * @param helper       the ColumnHelper[T] which maps field names to column names.
  * @tparam T the type of the result.
  */
-class ProductCellParser[T](typeName: String, fieldNames: List[String], fieldParsers: List[CellParser[?]], construct: Seq[Any] => T)(using helper: ColumnHelper[T]) extends MultiCellParser[T] {
+class ProductCellParser[T](typeName: String, fieldNames: List[String], fieldParsers: List[CellParser[?]], construct: Seq[Any] => T)(using helper: ColumnHelper[T]) extends MultiCellParser[T]:
 
   // NOTE used only for debugging
   override def toString: String = s"MultiCellParser for $typeName"
 
-  def parse(wo: Option[String], row: Row, columns: Header): Try[T] = {
+  def parse(wo: Option[String], row: Row, columns: Header): Try[T] =
     // The fields are read in order, stopping at the first failure.
     @tailrec
-    def inner(fs: List[(String, CellParser[?])], xs: List[Any]): Try[List[Any]] = fs match {
+    def inner(fs: List[(String, CellParser[?])], xs: List[Any]): Try[List[Any]] = fs match
       case Nil => Success(xs.reverse)
-      case (f, p) :: tail => ProductCellParser.readCell[T, Any](typeName, p, wo, row, columns, f) match {
+      case (f, p) :: tail => ProductCellParser.readCell[T, Any](typeName, p, wo, row, columns, f) match
         case Success(x) => inner(tail, x :: xs)
         case Failure(e) => Failure(e)
-      }
-    }
 
     inner(fieldNames zip fieldParsers, Nil) map construct
-  }
 
   /**
    * A case class with just one field can also be parsed from a single String (see issue #1).
    */
-  override def convertString(w: String): Try[T] = fieldParsers match {
+  override def convertString(w: String): Try[T] = fieldParsers match
     case p :: Nil => p.convertString(w) map (x => construct(Seq(x)))
     case _ => Failure(new UnsupportedOperationException)
-  }
-}
 
-object ProductCellParser {
+object ProductCellParser:
   /**
    * Method to read the value of one field of a case class T from a Row.
    * The column is the one named by helper for the field (and the prefix wo, if any).
@@ -310,16 +282,13 @@ object ProductCellParser {
    * @tparam A the type of the field.
    * @return the value of the field, wrapped in Try.
    */
-  def readCell[T, A](typeName: String, cellParser: CellParser[A], wo: Option[String], row: Row, header: Header, field: String)(using helper: ColumnHelper[T]): Try[A] = {
+  def readCell[T, A](typeName: String, cellParser: CellParser[A], wo: Option[String], row: Row, header: Header, field: String)(using helper: ColumnHelper[T]): Try[A] =
     val columnName = helper.lookup(wo, field)
     val idx = row.getIndex(columnName)
     if (idx >= 0) for (w <- row(idx); z <- cellParser.parse(CellValue(w)).recoverWith {
       case NonFatal(e) =>
         Failure(InvalidParseException(s"Problem parsing '$w' as $typeName from $columnName at index $idx of $row", e))
     }) yield z
-    else cellParser.parse(Some(columnName), row, header).recoverWith {
+    else cellParser.parse(Some(columnName), row, header).recoverWith:
       case _: UnsupportedOperationException =>
         Failure(ParserException(s"$typeName: where original name is based on $wo and $field, unable to find value for column '$columnName' in '${header.xs}'"))
-    }
-  }
-}

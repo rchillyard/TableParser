@@ -15,7 +15,7 @@ import io.circe.syntax.*
  *
  * @tparam T the underlying type of the Table (i.e., the Row type) for which there must be evidence of Encoder[T].
  */
-class JsonTableRenderer[T: Encoder] extends Renderer[Table[T], String] {
+class JsonTableRenderer[T: Encoder] extends Renderer[Table[T], String]:
 
   /**
    * Renders a Table[T] object into its JSON string representation.
@@ -25,4 +25,3 @@ class JsonTableRenderer[T: Encoder] extends Renderer[Table[T], String] {
    * @return a JSON string (indented by two spaces) representing the table.
    */
   def render(tt: Table[T], attrs: Map[String, String]): String = tt.asJson.spaces2
-}

@@ -45,7 +45,7 @@ case class UnstructuredMovie(color: String,
                              aspectRatio: Option[Double],
                              movieFacebookLikes: Option[Int]) derives CsvProduct
 
-object UnstructuredMovie extends CellParsers with CsvRenderers {
+object UnstructuredMovie extends CellParsers with CsvRenderers:
   implicit val helper: ColumnHelper[UnstructuredMovie] = columnHelper(camelToSnakeCaseColumnNameMapperLower)
 
   // A missing Double renders as nothing (the default renderer of Option[Double] writes "no double"), so that a row renders as it was read.
@@ -58,7 +58,5 @@ object UnstructuredMovie extends CellParsers with CsvRenderers {
 
   implicit val stringParser: StringParser[UnstructuredMovie] = StandardRowParser.create[UnstructuredMovie]
 
-  implicit object UnstructuredMovieTableParser extends HeadedCSVTableParser[UnstructuredMovie] {
+  implicit object UnstructuredMovieTableParser extends HeadedCSVTableParser[UnstructuredMovie]:
     override val forgiving: Boolean = true
-  }
-}

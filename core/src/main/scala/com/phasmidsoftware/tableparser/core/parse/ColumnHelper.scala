@@ -12,7 +12,7 @@ import scala.annotation.implicitNotFound
  * @tparam T the type of the object being helped.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of ColumnHelper[${T}]. If ${T} is a case class, you will normally need to provide some help translating column names.")
-trait ColumnHelper[T] {
+trait ColumnHelper[T]:
   /**
    * This is the format for the prefix of a name, where "x" represents the value, if any, of the optional string.
    */
@@ -38,11 +38,9 @@ trait ColumnHelper[T] {
    * @param w  is the name of column, as determined from the Product which we are trying to fill.
    * @return a String which may include a prefix.
    */
-  def lookup(so: Option[String], w: String): String = {
+  def lookup(so: Option[String], w: String): String =
     val column = _aliases.toMap.getOrElse(w, _columnNameMapper(w))
     (for (p <- _maybePrefix; s <- so) yield p.replace("$x", s).replace("$c", column)).getOrElse(column)
-  }
-}
 
 /**
  * Object containing utility functions for mapping and transforming column names,
