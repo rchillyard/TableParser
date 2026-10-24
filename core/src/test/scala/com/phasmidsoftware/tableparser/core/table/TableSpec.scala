@@ -527,7 +527,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "transform"
 
   it should "parse and transform the following rows with pushdown function" in {
-    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.{given, *}
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
 
     val rows = Seq(
       header,
@@ -546,7 +546,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   }
 
   it should "parse and aggregate the following rows with pushdown function" in {
-    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.{given, *}
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
 
     val rows = Seq(
       header,
@@ -567,7 +567,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
   behavior of "projection"
 
   it should "parse and project the following rows" in {
-    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.{given, *}
+    import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
 
     val rows = Seq(
       header,

@@ -83,8 +83,6 @@ object CrimeParser extends CellParsers {
 
 object CrimeRenderer extends CsvRenderers {
 
-  import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
-
   private val generators = new CsvGenerators {}
 
   implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt] {
@@ -100,8 +98,6 @@ object CrimeRenderer extends CsvRenderers {
 }
 
 object CrimeLocationRenderer extends CsvRenderers {
-
-  import com.phasmidsoftware.tableparser.core.render.CsvRenderers._
 
   private val generators = new CsvGenerators {}
 

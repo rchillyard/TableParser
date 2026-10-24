@@ -12,7 +12,6 @@ import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators,
 import com.phasmidsoftware.tableparser.core.table.Table.parseResource
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.EvaluateTry.matchTry
-import java.io.File
 import org.scalatest.concurrent.{Futures, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -139,7 +138,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
   it should "be ingested and written out properly using fabricated header" in {
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    val tableIO = IO.fromTry(try (parseResource("TeamProject.csv", classOf[TeamProject])))
+    val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
     val resultIO = tableIO flatMap {
       case pt@HeadedTable(_, _) =>
 

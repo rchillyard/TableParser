@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.examples.teamproject
 
 import com.phasmidsoftware.tableparser.core.parse._
-import com.phasmidsoftware.tableparser.core.table.{Content, HeadedTable, Header, Table}
+import com.phasmidsoftware.tableparser.core.table.{HeadedTable, Header, Table}
 import java.net.URL
 
 /**

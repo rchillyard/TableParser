@@ -8,6 +8,7 @@ import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
+import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO
 import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO.matchZIO
 import java.io.{File, FileWriter, InputStream}
 import org.scalatest.flatspec
@@ -111,8 +112,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     lazy val si: Task[InputStream] = ZIO.succeed(classOf[TableSpec].getResourceAsStream(null))
     val iIty = for (s <- si) yield Table.parseInputStream(s)
-    // TODO eliminate use of unsafe methods
-//    EvaluateIO.checkFailure(iIty)(classOf[NullPointerException]).unsafeRunSync()
+    EvaluateZIO.run(iIty) should matchPattern { case Left(_: NullPointerException) => }
   }
 
   behavior of "other"

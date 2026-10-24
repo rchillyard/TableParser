@@ -26,7 +26,6 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   //noinspection ScalaUnusedSymbol
   // NOTE: unused
-  private val dateFormatString = "MM/dd/yyyy"
 
   object IntPair {
 
@@ -178,7 +177,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "fail empty sequence" in {
     import DailyRaptorReport._
 
-    Table.parse(Seq(headerRaptors, "")) should matchPattern { case Failure(e: ParserException) => }
+    Table.parse(Seq(headerRaptors, "")) should matchPattern { case Failure(_: ParserException) => }
   }
 
   it should "parse empty sequence" in {
@@ -363,20 +362,19 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "fail on incompatible parser" in {
     import Submission.TableParser
     val strings: Seq[String] = Nil
-    Table.parse(strings) should matchPattern { case Failure(e: ParserException) => }
+    Table.parse(strings) should matchPattern { case Failure(_: ParserException) => }
   }
 
   it should "fail on empty rows" in {
     import Submission.TableParser
     val rows: Seq[Seq[String]] = Nil
-    parseSequence(rows.iterator) should matchPattern { case Failure(e: NoSuchElementException) => }
+    parseSequence(rows.iterator) should matchPattern { case Failure(_: NoSuchElementException) => }
   }
 
   behavior of "submissions from file"
 
   object SubmissionAlt extends CellParsers {
 
-    private val baseColumnNameMapper: String => String = _.replaceAll("(_)", " ")
 
     implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace)
     implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption

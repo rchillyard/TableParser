@@ -5,8 +5,9 @@
 package com.phasmidsoftware.tableparser.zio.table
 
 import com.phasmidsoftware.tableparser.core.examples.Movie
-import com.phasmidsoftware.tableparser.core.parse.{CellParser, RowParser, StringTableParser}
+import com.phasmidsoftware.tableparser.core.parse.{CellParser, InvalidParseException, RowParser, StringTableParser}
 import com.phasmidsoftware.tableparser.core.table._
+import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO
 import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO.matchZIO
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
@@ -71,8 +72,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers {
       "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-,,2009,936,7.9,1.78,33000"
     )
     val x: Task[Table[Movie]] = ZIO.fromTry(Table.parse(movies))
-    // TODO eliminate use of unsafe methods
-//    checkFailure(x)(classOf[InvalidParseException]).unsafeRunSync()
+    EvaluateZIO.run(x) should matchPattern { case Left(_: InvalidParseException) => }
   }
 
   it should "parse all the following rows" in {
