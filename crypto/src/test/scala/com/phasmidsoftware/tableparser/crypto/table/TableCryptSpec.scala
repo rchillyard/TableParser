@@ -65,6 +65,29 @@ class TableCryptSpec extends AnyFlatSpec with should.Matchers:
     given TableParser[Table[Account]] = EncryptedHeadedStringTableParser[Account, AES128CTR](_ == "A1", wrongKeys)
     Table.parseFile[Table[Account]](file.toPath).map(_.toSeq) should not be Success(Seq(accounts.head))
 
+  behavior of "TableCrypt.writeCSVFileEncryptedIO"
+
+  it should "write nothing until the IO is run" in:
+    import cats.effect.unsafe.implicits.global
+    val file = tempFile
+    file.delete()
+    val io = TableCrypt.writeCSVFileEncryptedIO[AES128CTR, Account](Table(accounts, None))(file.toPath, keyMap)
+    file.exists() shouldBe false
+    io.unsafeRunSync()
+    file.exists() shouldBe true
+
+  it should "write a table which can be read back, each line ending with CRLF" in:
+    import cats.effect.unsafe.implicits.global
+    val file = tempFile
+    TableCrypt.writeCSVFileEncryptedIO[AES128CTR, Account](Table(accounts, None))(file.toPath, keyMap).unsafeRunSync()
+    val text = Files.readString(file.toPath)
+    text.split("\r\n", -1).length shouldBe 5
+    EncryptedHeadedStringTableParser[Account, AES128CTR](keyMap.contains, keyMap).parseIO(text.linesIterator, 1).unsafeRunSync().toSeq shouldBe accounts
+
+  it should "fail in the IO if a row has no key" in:
+    import cats.effect.unsafe.implicits.global
+    TableCrypt.writeCSVFileEncryptedIO[AES128CTR, Account](Table(accounts, None))(tempFile.toPath, keyMap - "C3").attempt.unsafeRunSync() should matchPattern { case Left(_: NoSuchElementException) => }
+
 object TableCryptSpec:
   case class Account(id: String, name: String, balance: Int) derives CsvProduct
 
