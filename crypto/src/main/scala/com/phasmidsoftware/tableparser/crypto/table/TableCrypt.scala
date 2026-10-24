@@ -2,10 +2,10 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.tableparser.cats.table
+package com.phasmidsoftware.tableparser.crypto.table
 
-import com.phasmidsoftware.tableparser.cats.crypto.HexEncryption
-import com.phasmidsoftware.tableparser.cats.render.CsvTableEncryptedFileRenderer
+import com.phasmidsoftware.tableparser.crypto.HexEncryption
+import com.phasmidsoftware.tableparser.crypto.render.CsvTableEncryptedFileRenderer
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table.{CsvAttributes, HasKey, Table}
 import java.nio.file.Path

@@ -1,7 +1,7 @@
-package com.phasmidsoftware.tableparser.cats.render
+package com.phasmidsoftware.tableparser.crypto.render
 
-import com.phasmidsoftware.tableparser.cats.crypto.HexEncryption
-import com.phasmidsoftware.tableparser.cats.write.WritableCrypt
+import com.phasmidsoftware.tableparser.crypto.HexEncryption
+import com.phasmidsoftware.tableparser.crypto.write.WritableCrypt
 import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvRenderer, CsvTableRenderer}
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.Writable

@@ -7,7 +7,7 @@ package com.phasmidsoftware.tableparser.core.parse
 import java.io.File
 import java.net.URL
 import java.nio.file.Path
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import scala.annotation.implicitNotFound
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -370,6 +370,9 @@ object Parseable {
   private def parseAndRecover[T](w: String)(f: String => Try[T])(msg: String => String): Try[T] =
     f(w).recoverWith {
       case x: IllegalArgumentException =>
+        Failure(if (w.nonEmpty) InvalidParseException(msg(w), x) else BlankException(x))
+      // java.time (e.g. LocalDate.parse) throws a DateTimeException, not an IllegalArgumentException
+      case x: java.time.DateTimeException =>
         Failure(if (w.nonEmpty) InvalidParseException(msg(w), x) else BlankException(x))
 //      case x: NumberFormatException =>
 //        Failure(if (w.nonEmpty) InvalidParseException(msg(w), x) else BlankException(x))

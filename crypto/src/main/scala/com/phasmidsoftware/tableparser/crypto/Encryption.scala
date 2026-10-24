@@ -1,7 +1,7 @@
-package com.phasmidsoftware.tableparser.cats.crypto
+package com.phasmidsoftware.tableparser.crypto
 
 import cats.effect.IO
-import com.phasmidsoftware.tableparser.cats.crypto.Encryption.syncRandomLetter
+import com.phasmidsoftware.tableparser.crypto.Encryption.syncRandomLetter
 import com.phasmidsoftware.tableparser.core.parse.TableParserException
 import java.util.Base64
 import scala.util.Random
@@ -205,12 +205,9 @@ object HexEncryption {
    * @param hex the hex String.
    * @return Array[Byte].
    */
-  def hexStringToBytes(hex: String): IO[Array[Byte]] = {
-    // CONSIDER getting the byte array a different way that doesn't require the drop.
-    val q: Array[Byte] = BigInt(hex, 16).toByteArray
-    val bytes = if (q.length > hex.length / 2) q.drop(1) else q
-    IO(bytes)
-  }
+  def hexStringToBytes(hex: String): IO[Array[Byte]] =
+    // NOTE: each pair of hex digits is one byte (going via BigInt would lose any leading zero bytes).
+    IO(hex.grouped(2).map(Integer.parseInt(_, 16).toByte).toArray)
 
   /**
    * Method to decrypt a row consisting of an identifier and a Hex string.

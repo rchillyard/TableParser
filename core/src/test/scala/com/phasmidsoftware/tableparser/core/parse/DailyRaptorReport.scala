@@ -2,8 +2,8 @@ package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators, CsvProductGenerator, CsvRenderer, CsvRenderers}
 import com.phasmidsoftware.tableparser.core.table._
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -30,7 +30,7 @@ object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerator
 
   object DailyRaptorReportParser extends CellParsers with CsvGenerators with CsvRenderers {
     implicit val dateParser: CellParser[LocalDate] =
-      this.cellParser(LocalDate.parse(_: String, DateTimeFormat.forPattern("MM/dd/yyyy")))
+      this.cellParser(LocalDate.parse(_: String, DateTimeFormatter.ofPattern("MM/dd/yyyy")))
     implicit val helper: ColumnHelper[DailyRaptorReport] =
       columnHelper()
   }

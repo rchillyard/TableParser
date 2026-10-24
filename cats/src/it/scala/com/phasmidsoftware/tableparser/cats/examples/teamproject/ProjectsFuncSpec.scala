@@ -1,9 +1,9 @@
 package com.phasmidsoftware.tableparser.cats.examples.teamproject
 
 import cats.effect.IO
-import com.phasmidsoftware.tableparser.cats.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
-import com.phasmidsoftware.tableparser.cats.parse.EncryptedHeadedStringTableParser
-import com.phasmidsoftware.tableparser.cats.table.TableCrypt
+import com.phasmidsoftware.tableparser.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
+import com.phasmidsoftware.tableparser.crypto.parse.EncryptedHeadedStringTableParser
+import com.phasmidsoftware.tableparser.crypto.table.TableCrypt
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO
 import com.phasmidsoftware.tableparser.cats.util.EvaluateIO.{check, matchIO}
 import com.phasmidsoftware.tableparser.core.examples.teamproject.{Grade, Team, TeamProject, TeamProjectTableParser}

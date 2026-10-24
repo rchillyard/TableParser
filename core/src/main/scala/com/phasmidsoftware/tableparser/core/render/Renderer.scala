@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.write.Node
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import scala.annotation.implicitNotFound
 import com.phasmidsoftware.tableparser.core.util.Derivation
 import scala.compiletime.{erasedValue, summonInline}

@@ -1,10 +1,11 @@
 package com.phasmidsoftware.tableparser.parquet
 
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper
-import com.phasmidsoftware.tableparser.core.util.Reflection
+import com.phasmidsoftware.tableparser.core.util.Derivation
 import java.time.{Instant, LocalDate}
 import org.apache.parquet.example.data.simple.SimpleGroup
-import scala.reflect.ClassTag
+import scala.compiletime.{erasedValue, summonFrom, summonInline}
+import scala.deriving.Mirror
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -18,66 +19,74 @@ trait ParquetCellConverter[T] {
    * Extract and convert the value of the named field from the given SimpleGroup.
    *
    * @param group     the SimpleGroup representing one Parquet row.
-   * @param fieldName the Parquet column name.
+   * @param fieldName the Parquet column name (a converter for a case class ignores it, and reads its own columns).
    * @return a Try[T].
    */
   def convert(group: SimpleGroup, fieldName: String): Try[T]
+
+  /**
+   * The Parquet columns which this converter reads (used to validate the schema before any rows are read).
+   * By default, it reads just the one column, of any supported type.
+   *
+   * @param field      the name of the parameter (for error messages).
+   * @param columnName the name of the Parquet column.
+   * @return the columns which this converter reads.
+   */
+  def columns(field: String, columnName: String): Seq[ParquetColumn] =
+    Seq(ParquetColumn(field, columnName, None, optional = false))
 }
+
+/**
+ * A Parquet column which is read by a ParquetCellConverter.
+ *
+ * @param field      the name of the parameter which the column is read into.
+ * @param columnName the name of the column in the Parquet schema.
+ * @param maybeClass the Scala type which the column must map to (see ParquetTypeMapper), if any.
+ * @param optional   true if the parameter is an Option (so the column may be OPTIONAL).
+ */
+case class ParquetColumn(field: String, columnName: String, maybeClass: Option[Class[?]], optional: Boolean)
 
 object ParquetCellConverter {
 
-  given BooleanConverter: ParquetCellConverter[Boolean] with {
-    def convert(group: SimpleGroup, fieldName: String): Try[Boolean] =
-      Try(group.getBoolean(fieldName, 0))
+  /**
+   * Method to create a ParquetCellConverter for a primitive column.
+   *
+   * @param clazz the Scala type which the column must map to (see ParquetTypeMapper).
+   * @param f     a function which gets the value of the named column from a SimpleGroup.
+   * @tparam T the type of the result.
+   * @return a ParquetCellConverter[T].
+   */
+  def primitive[T](clazz: Class[?])(f: (SimpleGroup, String) => T): ParquetCellConverter[T] = new ParquetCellConverter[T] {
+    def convert(group: SimpleGroup, fieldName: String): Try[T] = Try(f(group, fieldName))
+
+    override def columns(field: String, columnName: String): Seq[ParquetColumn] =
+      Seq(ParquetColumn(field, columnName, Some(clazz), optional = false))
   }
 
-  given IntConverter: ParquetCellConverter[Int] with {
-    def convert(group: SimpleGroup, fieldName: String): Try[Int] =
-      Try(group.getInteger(fieldName, 0))
+  given BooleanConverter: ParquetCellConverter[Boolean] = primitive(classOf[Boolean])(_.getBoolean(_, 0))
+
+  given IntConverter: ParquetCellConverter[Int] = primitive(classOf[Int])(_.getInteger(_, 0))
+
+  given LongConverter: ParquetCellConverter[Long] = primitive(classOf[Long])(_.getLong(_, 0))
+
+  given FloatConverter: ParquetCellConverter[Float] = primitive(classOf[Float])(_.getFloat(_, 0))
+
+  given DoubleConverter: ParquetCellConverter[Double] = primitive(classOf[Double])(_.getDouble(_, 0))
+
+  given StringConverter: ParquetCellConverter[String] = primitive(classOf[String])(_.getBinary(_, 0).toStringUsingUTF8)
+
+  given InstantConverter: ParquetCellConverter[Instant] = primitive(classOf[Instant]) { (group, fieldName) =>
+    val micros = group.getLong(fieldName, 0)
+    Instant.ofEpochSecond(micros / 1_000_000L, (micros % 1_000_000L) * 1000L)
   }
 
-  given LongConverter: ParquetCellConverter[Long] with {
-    def convert(group: SimpleGroup, fieldName: String): Try[Long] =
-      Try(group.getLong(fieldName, 0))
-  }
+  given LocalDateConverter: ParquetCellConverter[LocalDate] =
+    primitive(classOf[LocalDate])((group, fieldName) => LocalDate.ofEpochDay(group.getInteger(fieldName, 0).toLong))
 
-  given FloatConverter: ParquetCellConverter[Float] with {
-    def convert(group: SimpleGroup, fieldName: String): Try[Float] =
-      Try(group.getFloat(fieldName, 0))
-  }
-
-  given DoubleConverter: ParquetCellConverter[Double] with {
-    def convert(group: SimpleGroup, fieldName: String): Try[Double] =
-      Try(group.getDouble(fieldName, 0))
-  }
-
-  given StringConverter: ParquetCellConverter[String] with {
-    def convert(group: SimpleGroup, fieldName: String): Try[String] =
-      Try(group.getBinary(fieldName, 0).toStringUsingUTF8)
-  }
-
-  given InstantConverter: ParquetCellConverter[Instant] with {
-    def convert(group: SimpleGroup, fieldName: String): Try[Instant] =
-      Try {
-        val micros = group.getLong(fieldName, 0)
-        Instant.ofEpochSecond(micros / 1_000_000L, (micros % 1_000_000L) * 1000L)
-      }
-  }
-
-  given LocalDateConverter: ParquetCellConverter[LocalDate] with {
-    def convert(group: SimpleGroup, fieldName: String): Try[LocalDate] =
-      Try(LocalDate.ofEpochDay(group.getInteger(fieldName, 0).toLong))
-  }
-
-  given BigDecimalConverter: ParquetCellConverter[BigDecimal] with {
-    // NOTE: scale hardcoded to 0 pending access to PrimitiveType metadata.
-    def convert(group: SimpleGroup, fieldName: String): Try[BigDecimal] =
-      Try {
-        val binary = group.getBinary(fieldName, 0)
-        BigDecimal(new java.math.BigDecimal(
-          new java.math.BigInteger(binary.getBytes), 0
-        ))
-      }
+  // NOTE: scale hardcoded to 0 pending access to PrimitiveType metadata.
+  given BigDecimalConverter: ParquetCellConverter[BigDecimal] = primitive(classOf[BigDecimal]) { (group, fieldName) =>
+    val binary = group.getBinary(fieldName, 0)
+    BigDecimal(new java.math.BigDecimal(new java.math.BigInteger(binary.getBytes), 0))
   }
 
   // ── Option converter ────────────────────────────────────────────────────────
@@ -85,6 +94,7 @@ object ParquetCellConverter {
   /**
    * Converter for Option[T] fields.
    * Returns None if the field has no value in this row, Some(value) otherwise.
+   * T must be read from a single column (an optional case class is not supported).
    */
   given optionConverter[T: ParquetCellConverter]: ParquetCellConverter[Option[T]] =
     new ParquetCellConverter[Option[T]] {
@@ -93,267 +103,88 @@ object ParquetCellConverter {
           Success(None)
         else
           summon[ParquetCellConverter[T]].convert(group, fieldName).map(Some(_))
+
+      override def columns(field: String, columnName: String): Seq[ParquetColumn] =
+        summon[ParquetCellConverter[T]].columns(field, columnName).map(_.copy(optional = true))
     }
 
-  // ── converterN factory methods ──────────────────────────────────────────────
+  // ── Derivation for case classes ─────────────────────────────────────────────
 
   /**
-   * Returns the effective field names for type T: uses the provided list if non-empty,
-   * otherwise reflects on the ClassTag. Mirrors CellParsers.fieldNames.
-   */
-  private def effectiveFieldNames[T: ClassTag](fields: Seq[String]): Array[String] =
-    if (fields.isEmpty) Reflection.extractFieldNames(summon[ClassTag[T]])
-    else fields.toArray
-
-  /**
-   * Method to return a ParquetCellConverter[T] where T is a 2-ary Product,
-   * reading its fields from the same flat SimpleGroup by name via ColumnHelper[T].
+   * Method to derive a ParquetCellConverter[T] for a case class T, so that `case class T(...) derives ParquetCellConverter` works.
+   * This replaces the converter2 ... converter8 methods (and the reflection) of 1.x, and has no limit on the number of fields.
    *
-   * @param construct a function (P1, P2) => T, usually the apply method of a case class.
-   * @param fields    optional explicit field names; if Nil, field names are obtained by reflection.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam T  the target case class type.
+   * Each field is read from the column whose name is given by ColumnHelper[T] for that field's name.
+   * The field names come from the Mirror (at compile time), in declaration order.
+   * A field whose type is itself a case class (a "grouped" field), and which has no ParquetCellConverter of its own,
+   * is derived in turn: its fields are read from the same (flat) row, using its own ColumnHelper.
+   *
+   * NOTE: as for CellParser.derived, don't derive the converter of a case class defined inside a method
+   * in a companion object that you write for it.
+   *
+   * @param m the Mirror of T.
+   * @tparam T a case class.
    * @return a ParquetCellConverter[T].
    */
-  def converter2[P1: ParquetCellConverter, P2: ParquetCellConverter, T <: Product : ClassTag : ColumnHelper]
-  (construct: (P1, P2) => T, fields: Seq[String] = Nil): ParquetCellConverter[T] =
-    new ParquetCellConverter[T] {
-      private val fs = effectiveFieldNames[T](fields)
-      private val f1 = fs(0)
-      private val f2 = fs(1)
-
-      def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = summon[ColumnHelper[T]]
-        for {
-          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
-          p2 <- summon[ParquetCellConverter[P2]].convert(group, h.lookup(None, f2))
-        } yield construct(p1, p2)
-      }
-    }
+  inline def derived[T](using m: Mirror.ProductOf[T]): ParquetCellConverter[T] =
+    new ProductParquetCellConverter[T](
+      Derivation.fieldNames[m.MirroredElemLabels],
+      fieldConverters[m.MirroredElemTypes],
+      xs => m.fromProduct(Tuple.fromArray(xs.toArray))
+    )(using summonInline[ColumnHelper[T]])
 
   /**
-   * Method to return a ParquetCellConverter[T] where T is a 3-ary Product.
+   * Method to get the ParquetCellConverter of T: its own, if there is one; otherwise, if T is a case class, a derived one.
    *
-   * @param construct a function (P1, P2, P3) => T, usually the apply method of a case class.
-   * @param fields    optional explicit field names; if Nil, field names are obtained by reflection.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam T  the target case class type.
+   * @tparam T the type of the result.
    * @return a ParquetCellConverter[T].
    */
-  def converter3[P1: ParquetCellConverter, P2: ParquetCellConverter, P3: ParquetCellConverter, T <: Product : ClassTag : ColumnHelper]
-  (construct: (P1, P2, P3) => T, fields: Seq[String] = Nil): ParquetCellConverter[T] =
-    new ParquetCellConverter[T] {
-      private val fs = effectiveFieldNames[T](fields)
-      private val f1 = fs(0)
+  inline def apply[T]: ParquetCellConverter[T] = summonFrom {
+    case c: ParquetCellConverter[T] => c
+    case m: Mirror.ProductOf[T] => derived[T](using m)
+  }
 
-      def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = summon[ColumnHelper[T]]
-        for {
-          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
-          t <- converter2[P2, P3, T](construct(p1, _, _), fs.tail.toSeq).convert(group, fieldName)
-        } yield t
-      }
-    }
+  private inline def fieldConverters[Ts <: Tuple]: List[ParquetCellConverter[?]] = inline erasedValue[Ts] match {
+    case _: EmptyTuple => Nil
+    case _: (t *: ts) => apply[t] :: fieldConverters[ts]
+  }
+}
+
+/**
+ * The ParquetCellConverter of a case class T, as derived by ParquetCellConverter.derived.
+ *
+ * @param fieldNames the names of the fields of T, in declaration order.
+ * @param converters the ParquetCellConverters of the fields of T, in the same order.
+ * @param construct  a function to construct a T from the values of its fields.
+ * @param helper     the ColumnHelper[T] which maps field names to column names.
+ * @tparam T the type of the result.
+ */
+class ProductParquetCellConverter[T](fieldNames: List[String], converters: List[ParquetCellConverter[?]], construct: Seq[Any] => T)(using helper: ColumnHelper[T]) extends ParquetCellConverter[T] {
+
+  private val fields: List[(String, String, ParquetCellConverter[?])] =
+    fieldNames.zip(converters).map((f, c) => (f, helper.lookup(None, f), c))
 
   /**
-   * Method to return a ParquetCellConverter[T] where T is a 4-ary Product.
+   * Method to convert a row (or part of a row) into a T.
    *
-   * @param construct a function (P1, P2, P3, P4) => T, usually the apply method of a case class.
-   * @param fields    optional explicit field names; if Nil, field names are obtained by reflection.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam T  the target case class type.
-   * @return a ParquetCellConverter[T].
+   * @param group     the SimpleGroup representing one Parquet row.
+   * @param fieldName ignored: each field of T is read from its own column.
+   * @return a Try[T].
    */
-  def converter4[P1: ParquetCellConverter, P2: ParquetCellConverter, P3: ParquetCellConverter, P4: ParquetCellConverter, T <: Product : ClassTag : ColumnHelper]
-  (construct: (P1, P2, P3, P4) => T, fields: Seq[String] = Nil): ParquetCellConverter[T] =
-    new ParquetCellConverter[T] {
-      private val fs = effectiveFieldNames[T](fields)
-      private val f1 = fs(0)
-
-      def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = summon[ColumnHelper[T]]
-        for {
-          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
-          t <- converter3[P2, P3, P4, T](construct(p1, _, _, _), fs.tail.toSeq).convert(group, fieldName)
-        } yield t
+  def convert(group: SimpleGroup, fieldName: String): Try[T] = Try {
+    val values = fields map { (f, columnName, c) =>
+      c.convert(group, columnName) match {
+        case Success(v) => v
+        case Failure(e: ParquetParserException) => throw e
+        case Failure(e) => throw ParquetParserException(
+          s"Failed to convert field '$f' from column '$columnName': ${e.getClass.getSimpleName}: ${e.getMessage}",
+          Some(e)
+        )
       }
     }
+    construct(values)
+  }
 
-  /**
-   * Method to return a ParquetCellConverter[T] where T is a 5-ary Product.
-   *
-   * @param construct a function (P1, P2, P3, P4, P5) => T, usually the apply method of a case class.
-   * @param fields    optional explicit field names; if Nil, field names are obtained by reflection.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam T  the target case class type.
-   * @return a ParquetCellConverter[T].
-   */
-  def converter5[P1: ParquetCellConverter, P2: ParquetCellConverter, P3: ParquetCellConverter, P4: ParquetCellConverter, P5: ParquetCellConverter, T <: Product : ClassTag : ColumnHelper]
-  (construct: (P1, P2, P3, P4, P5) => T, fields: Seq[String] = Nil): ParquetCellConverter[T] =
-    new ParquetCellConverter[T] {
-      private val fs = effectiveFieldNames[T](fields)
-      private val f1 = fs(0)
-
-      def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = summon[ColumnHelper[T]]
-        for {
-          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
-          t <- converter4[P2, P3, P4, P5, T](construct(p1, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
-        } yield t
-      }
-    }
-
-  /**
-   * Method to return a ParquetCellConverter[T] where T is a 6-ary Product.
-   *
-   * @param construct a function (P1, P2, P3, P4, P5, P6) => T, usually the apply method of a case class.
-   * @param fields    optional explicit field names; if Nil, field names are obtained by reflection.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam T  the target case class type.
-   * @return a ParquetCellConverter[T].
-   */
-  def converter6[P1: ParquetCellConverter, P2: ParquetCellConverter, P3: ParquetCellConverter, P4: ParquetCellConverter, P5: ParquetCellConverter, P6: ParquetCellConverter, T <: Product : ClassTag : ColumnHelper]
-  (construct: (P1, P2, P3, P4, P5, P6) => T, fields: Seq[String] = Nil): ParquetCellConverter[T] =
-    new ParquetCellConverter[T] {
-      private val fs = effectiveFieldNames[T](fields)
-      private val f1 = fs(0)
-
-      def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = summon[ColumnHelper[T]]
-        for {
-          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
-          t <- converter5[P2, P3, P4, P5, P6, T](construct(p1, _, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
-        } yield t
-      }
-    }
-
-  /**
-   * Method to return a ParquetCellConverter[T] where T is a 7-ary Product.
-   *
-   * @param construct a function (P1, P2, P3, P4, P5, P6, P7) => T, usually the apply method of a case class.
-   * @param fields    optional explicit field names; if Nil, field names are obtained by reflection.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam P7 the type of the seventh field of the Product type T.
-   * @tparam T  the target case class type.
-   * @return a ParquetCellConverter[T].
-   */
-  def converter7[P1: ParquetCellConverter, P2: ParquetCellConverter, P3: ParquetCellConverter, P4: ParquetCellConverter, P5: ParquetCellConverter, P6: ParquetCellConverter, P7: ParquetCellConverter, T <: Product : ClassTag : ColumnHelper]
-  (construct: (P1, P2, P3, P4, P5, P6, P7) => T, fields: Seq[String] = Nil): ParquetCellConverter[T] =
-    new ParquetCellConverter[T] {
-      private val fs = effectiveFieldNames[T](fields)
-      private val f1 = fs(0)
-
-      def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = summon[ColumnHelper[T]]
-        for {
-          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
-          t <- converter6[P2, P3, P4, P5, P6, P7, T](construct(p1, _, _, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
-        } yield t
-      }
-    }
-
-  /**
-   * Method to return a ParquetCellConverter[T] where T is an 8-ary Product.
-   *
-   * @param construct a function (P1, P2, P3, P4, P5, P6, P7, P8) => T, usually the apply method of a case class.
-   * @param fields    optional explicit field names; if Nil, field names are obtained by reflection.
-   * @tparam P1 the type of the first field of the Product type T.
-   * @tparam P2 the type of the second field of the Product type T.
-   * @tparam P3 the type of the third field of the Product type T.
-   * @tparam P4 the type of the fourth field of the Product type T.
-   * @tparam P5 the type of the fifth field of the Product type T.
-   * @tparam P6 the type of the sixth field of the Product type T.
-   * @tparam P7 the type of the seventh field of the Product type T.
-   * @tparam P8 the type of the eighth field of the Product type T.
-   * @tparam T  the target case class type.
-   * @return a ParquetCellConverter[T].
-   */
-  def converter8[P1: ParquetCellConverter, P2: ParquetCellConverter, P3: ParquetCellConverter, P4: ParquetCellConverter, P5: ParquetCellConverter, P6: ParquetCellConverter, P7: ParquetCellConverter, P8: ParquetCellConverter, T <: Product : ClassTag : ColumnHelper]
-  (construct: (P1, P2, P3, P4, P5, P6, P7, P8) => T, fields: Seq[String] = Nil): ParquetCellConverter[T] =
-    new ParquetCellConverter[T] {
-      private val fs = effectiveFieldNames[T](fields)
-      private val f1 = fs(0)
-
-      def convert(group: SimpleGroup, fieldName: String): Try[T] = {
-        val h = summon[ColumnHelper[T]]
-        for {
-          p1 <- summon[ParquetCellConverter[P1]].convert(group, h.lookup(None, f1))
-          t <- converter7[P2, P3, P4, P5, P6, P7, P8, T](construct(p1, _, _, _, _, _, _, _), fs.tail.toSeq).convert(group, fieldName)
-        } yield t
-      }
-    }
-
-  // ── Low-level dispatch methods ──────────────────────────────────────────────
-
-  /**
-   * Dispatch to the correct converter based on the field's runtime type.
-   * Used by ParquetRowParser for non-optional primitive fields.
-   */
-  def convertField(
-                          group: SimpleGroup,
-                          columnName: String,
-                          field: java.lang.reflect.Field
-                  ): Try[Any] =
-    convertByClass(group, columnName, field.getType)
-
-  /**
-   * Handle OPTIONAL columns via the legacy PrimitiveType path.
-   * Used by StandardParquetRowParser for flat (non-grouped) Option fields.
-   */
-  def convertOption(
-                           group: SimpleGroup,
-                           columnName: String,
-                           parquetType: org.apache.parquet.schema.PrimitiveType
-                   ): Try[Any] =
-    if (group.getFieldRepetitionCount(columnName) == 0)
-      Success(None)
-    else
-      ParquetTypeMapper.mapType(parquetType) match {
-        case Left(ex) => Failure(ex)
-        case Right(clazz) => convertByClass(group, columnName, clazz).map(Some(_))
-      }
-
-  /**
-   * Dispatch to the correct converter by Class[_] directly.
-   */
-  def convertByClass(
-                            group: SimpleGroup,
-                            columnName: String,
-                            clazz: Class[?]
-                    ): Try[Any] =
-    clazz match {
-      case c if c == classOf[Boolean] || c == classOf[java.lang.Boolean] => BooleanConverter.convert(group, columnName)
-      case c if c == classOf[Int] || c == classOf[java.lang.Integer] => IntConverter.convert(group, columnName)
-      case c if c == classOf[Long] || c == classOf[java.lang.Long] => LongConverter.convert(group, columnName)
-      case c if c == classOf[Float] || c == classOf[java.lang.Float] => FloatConverter.convert(group, columnName)
-      case c if c == classOf[Double] || c == classOf[java.lang.Double] => DoubleConverter.convert(group, columnName)
-      case c if c == classOf[String] => StringConverter.convert(group, columnName)
-      case c if c == classOf[Instant] => InstantConverter.convert(group, columnName)
-      case c if c == classOf[LocalDate] => LocalDateConverter.convert(group, columnName)
-      case c if c == classOf[BigDecimal] || c == classOf[java.math.BigDecimal] => BigDecimalConverter.convert(group, columnName)
-      case other =>
-        Failure(ParquetParserException(
-          s"No ParquetCellConverter available for type '${other.getName}' on column '$columnName'"
-        ))
-    }
+  override def columns(field: String, columnName: String): Seq[ParquetColumn] =
+    fields flatMap ((f, w, c) => c.columns(f, w))
 }

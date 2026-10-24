@@ -2,10 +2,10 @@
  * Copyright (c) 2019. Phasmid Software
  */
 
-package com.phasmidsoftware.tableparser.cats.write
+package com.phasmidsoftware.tableparser.crypto.write
 
 import cats.effect.IO
-import com.phasmidsoftware.tableparser.cats.crypto.HexEncryption
+import com.phasmidsoftware.tableparser.crypto.HexEncryption
 import com.phasmidsoftware.tableparser.core.write.Writable
 
 /**

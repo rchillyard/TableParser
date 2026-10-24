@@ -4,7 +4,7 @@ import com.phasmidsoftware.tableparser.core.parse.{ColumnHelper, StringList}
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import com.phasmidsoftware.tableparser.core.util.Derivation
 import java.time.Instant
-import org.joda.time.LocalDate
+import java.time.LocalDate
 import scala.compiletime.{erasedValue, summonFrom, summonInline}
 import scala.deriving.Mirror
 

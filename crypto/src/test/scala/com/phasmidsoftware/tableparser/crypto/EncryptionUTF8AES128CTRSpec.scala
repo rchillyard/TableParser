@@ -1,4 +1,4 @@
-package com.phasmidsoftware.tableparser.cats.crypto
+package com.phasmidsoftware.tableparser.crypto
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
@@ -62,6 +62,18 @@ class EncryptionUTF8AES128CTRSpec extends AnyFlatSpec with should.Matchers {
       } yield message
     // TODO eliminate use of unsafe methods
     result.unsafeRunSync() shouldBe originalMessage
+  }
+
+  it should "convert bytes to hex and back, keeping leading zero bytes" in {
+    val bytes = Array[Byte](0, 0, 1, -1, 127, -128, 16)
+    val result: IO[(String, Array[Byte])] =
+      for {
+        hex <- HexEncryption.bytesToHexString(bytes)
+        bytes2 <- HexEncryption.hexStringToBytes(hex)
+      } yield (hex, bytes2)
+    val (hex, bytes2) = result.unsafeRunSync()
+    hex shouldBe "000001FF7F8010"
+    bytes2 shouldBe bytes
   }
 
   it should "round-trip via Hex string" in {

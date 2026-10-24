@@ -6,13 +6,13 @@ ThisBuild / version := "2.0.0-SNAPSHOT"
 // CircleCI also runs the tests on the current LTS (3.9).
 ThisBuild / scalaVersion := "3.3.8"
 ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature")
-ThisBuild / scalacOptions ++= Seq("-java-output-version", "17")
-ThisBuild / javacOptions ++= Seq("-source", "17", "-target", "17")
+ThisBuild / scalacOptions ++= Seq("-java-output-version", "21")
+ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
 
-// Enforce Java 17 minimum
+// Enforce Java 21 minimum (2.x targets Java 21; for Java 17, use the 1.x line)
 ThisBuild / initialize := {
   val _ = initialize.value
-  val required = "17"
+  val required = "21"
   val current = sys.props("java.specification.version")
   assert(
     current.toDouble >= required.toDouble,
@@ -27,7 +27,6 @@ ThisBuild / resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typ
 // Shared versions
 val scalaTestVersion = "3.2.20"
 val scalaParserCombinatorsVersion = "2.5.0"
-val nScalaTimeVersion = "3.2.0"
 val tsecVersion = "0.6.0"
 val catsVersion = "3.7.1"
 val zioVersion = "2.1.27"
@@ -35,14 +34,13 @@ val logbackVersion = "1.5.38"
 val slf4jVersion = "2.0.20"
 val parquetVersion = "1.18.1"
 val hadoopVersion = "3.4.3"
+val circeVersion = "0.14.17"
 
 lazy val core = project.settings(
   name := "tableparser-core",
   libraryDependencies ++= Seq(
-    "io.spray" %% "spray-json" % "1.3.6",
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
     "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
-    "com.github.nscala-time" %% "nscala-time" % nScalaTimeVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
     "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
@@ -54,9 +52,31 @@ lazy val core = project.settings(
 lazy val cats = project.dependsOn(core % "compile->compile;test->test").settings(
   name := "tableparser-cats",
   libraryDependencies ++= Seq(
+    "org.typelevel" %% "cats-effect" % catsVersion,
+    "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
+    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
+    "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+  )
+)
+
+// Encryption of tables (e.g. of the rows of a CSV file), using tsec, with cats-effect IO.
+lazy val crypto = project.dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test").settings(
+  name := "tableparser-crypto",
+  libraryDependencies ++= Seq(
     "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
     "org.typelevel" %% "cats-effect" % catsVersion,
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
+    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
+    "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+  )
+)
+
+// Reading and writing tables as JSON, using circe.
+lazy val json = project.dependsOn(core % "compile->compile;test->test").settings(
+  name := "tableparser-json",
+  libraryDependencies ++= Seq(
+    "io.circe" %% "circe-core" % circeVersion,
+    "io.circe" %% "circe-parser" % circeVersion,
     "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
@@ -92,7 +112,7 @@ lazy val zio = project.dependsOn(core % "compile->compile;test->test").settings(
 // The integration tests in core/src/it and cats/src/it run against full-size data files (69 MB).
 // They're not aggregated by root, so neither `sbt test` nor CI runs them: use `sbt integration/test`.
 lazy val integration = (project in file("integration"))
-        .dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test")
+        .dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test", crypto % "compile->compile;test->test")
         .settings(
           name := "tableparser-integration",
           publish / skip := true,
@@ -106,7 +126,7 @@ lazy val integration = (project in file("integration"))
         )
 
 lazy val root = (project in file("."))
-        .aggregate(core, cats, parquet, zio)
+        .aggregate(core, cats, crypto, json, parquet, zio)
         .settings(
           name := "TableParser",
           publish / skip := true

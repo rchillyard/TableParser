@@ -1,6 +1,6 @@
 package com.phasmidsoftware.tableparser.parquet
 
-import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapper
+import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.{camelToSnakeCaseColumnNameMapper, camelToSnakeCaseColumnNameMapperLower}
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
 import com.phasmidsoftware.tableparser.core.table.Table
 import java.nio.file.{Path, Paths}
@@ -20,7 +20,6 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
   }
 
   // The first row in the Parquet file has vendorId=2, puLocationId=75, doLocationId=237.
-  // We find it by key rather than relying on ParIterable ordering.
   private def firstRow: YellowTaxiTrip =
     table.content.toSeq
             .find(r => r.puLocationId.contains(75) && r.doLocationId.contains(237))
@@ -110,12 +109,21 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
   }
 
   it should "fail with ParquetParserException for a non-Option field mapping to an OPTIONAL column" in {
-    // congestion_surcharge is OPTIONAL in the schema but declared as Double here
-    // In the actual taxi data it happens to be non-null in all sample rows,
-    // but the validator should catch the schema-level mismatch.
-    // NOTE: this test assumes congestion_surcharge is OPTIONAL in the Parquet schema.
-    // If it is REQUIRED in the 2024 file, adjust accordingly after inspecting the schema.
-    pending
+    // congestion_surcharge is OPTIONAL in the schema but declared as Double here.
+    case class NotOptional(congestionSurcharge: Double)
+    given ColumnHelper[NotOptional] = columnHelper(camelToSnakeCaseColumnNameMapperLower)
+    val result = ParquetParser.parse[NotOptional](samplePath)
+    result.failed.get shouldBe a[ParquetParserException]
+    result.failed.get.getMessage should include("'congestion_surcharge' is OPTIONAL")
+  }
+
+  it should "fail with ParquetParserException for a field whose type doesn't match its column" in {
+    // fare_amount is a DOUBLE column.
+    case class WrongType(fareAmount: Option[Int])
+    given ColumnHelper[WrongType] = columnHelper(camelToSnakeCaseColumnNameMapperLower)
+    val result = ParquetParser.parse[WrongType](samplePath)
+    result.failed.get shouldBe a[ParquetParserException]
+    result.failed.get.getMessage should include("parameter 'fareAmount' needs int")
   }
 
   // ── Analysis ──────────────────────────────────────────────────────────────
