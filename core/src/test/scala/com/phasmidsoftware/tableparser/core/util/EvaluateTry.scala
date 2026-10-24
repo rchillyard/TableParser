@@ -10,7 +10,7 @@ import scala.util.{Failure, Success, Try}
  *
  * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
  */
-object EvaluateTry extends Futures with ScalaFutures with should.Matchers {
+object EvaluateTry extends Futures with ScalaFutures with should.Matchers:
 
   /**
    * Method to evaluate a Try[X] as an Assertion.
@@ -25,8 +25,6 @@ object EvaluateTry extends Futures with ScalaFutures with should.Matchers {
    * @return an Assertion.
    */
   def matchTry[X](xy: => Try[X])(partialFunction: PartialFunction[X, Assertion]): Assertion =
-    xy match {
+    xy match
       case Success(x) => if (partialFunction.isDefinedAt(x)) partialFunction(x) else fail(s"$x did not match")
       case Failure(x) => fail(x.getLocalizedMessage)
-    }
-}

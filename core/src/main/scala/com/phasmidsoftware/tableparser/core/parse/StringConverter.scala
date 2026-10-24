@@ -10,7 +10,7 @@ import scala.util.Try
  *
  * @tparam T the type of the result.
  */
-trait StringConverter[+T] {
+trait StringConverter[+T]:
 
   /**
    * Convert a String into a T.
@@ -20,4 +20,3 @@ trait StringConverter[+T] {
    */
   def convertString(w: String): Try[T]
 
-}

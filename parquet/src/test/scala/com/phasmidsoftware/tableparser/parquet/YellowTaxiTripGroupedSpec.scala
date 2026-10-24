@@ -25,63 +25,53 @@ class YellowTaxiTripGroupedSpec extends AnyFlatSpec with Matchers {
 
   behavior of "ParquetTableParser with grouped YellowTaxiTripGrouped"
 
-  it should "parse taxi_sample.parquet into 1000 rows" in {
+  it should "parse taxi_sample.parquet into 1000 rows" in:
     table.size shouldBe 1000
-  }
 
-  it should "produce a table with 19 columns in the header" in {
+  it should "produce a table with 19 columns in the header" in:
     val result = parser.parseParquet(taxiParquet)
-    result match {
+    result match
       case Success(t: HeadedTable[?]) =>
         t.header.size shouldBe 19
       case x =>
         fail(s"unexpected result: $x")
-    }
-  }
 
-  it should "correctly populate TripIdentifiers for the first row" in {
+  it should "correctly populate TripIdentifiers for the first row" in:
     val row = firstRow
     row.ids.vendorId shouldBe Some(2)
     row.ids.ratecodeId shouldBe Some(1L)
     row.ids.storeAndFwdFlag shouldBe Some("N")
-  }
 
-  it should "correctly populate TripTiming for the first row" in {
+  it should "correctly populate TripTiming for the first row" in:
     val row = firstRow
     row.timing.tpepPickupDatetime shouldBe defined
     row.timing.tpepDropoffDatetime shouldBe defined
     row.timing.tpepPickupDatetime.get.isBefore(row.timing.tpepDropoffDatetime.get) shouldBe true
-  }
 
-  it should "correctly populate TripGeography for the first row" in {
+  it should "correctly populate TripGeography for the first row" in:
     val row = firstRow
     row.geo.puLocationId shouldBe Some(75)
     row.geo.doLocationId shouldBe Some(237)
-  }
 
-  it should "correctly populate FareBreakdown for the first row" in {
+  it should "correctly populate FareBreakdown for the first row" in:
     val row = firstRow
     row.fare.fareAmount shouldBe Some(10.0)
     row.fare.tipAmount shouldBe Some(4.5)
     row.fare.improvementSurcharge shouldBe Some(1.0)
     row.fare.congestionSurcharge shouldBe Some(2.5)
     row.fare.airportFee shouldBe Some(0.0)
-  }
 
-  it should "correctly populate TripMetrics for the first row" in {
+  it should "correctly populate TripMetrics for the first row" in:
     val row = firstRow
     row.metrics.passengerCount shouldBe Some(1L)
     row.metrics.tripDistance shouldBe Some(1.76)
     row.metrics.paymentType shouldBe Some(1L)
     row.metrics.totalAmount shouldBe Some(19.5)
-  }
 
-  it should "produce 1000 non-empty totalAmount values" in {
+  it should "produce 1000 non-empty totalAmount values" in:
     val totalAmounts = table.content.toSeq.flatMap(_.metrics.totalAmount)
     totalAmounts should have size 1000
-  }
 
-  it should "have consistent totalAmount for the known first row" in {
+  it should "have consistent totalAmount for the known first row" in:
     firstRow.metrics.totalAmount shouldBe Some(19.5)
-  }
 }

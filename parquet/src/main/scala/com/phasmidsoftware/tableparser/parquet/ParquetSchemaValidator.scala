@@ -11,7 +11,7 @@ import scala.util.Try
  * (all fields map directly to Parquet columns) and grouped case classes (some fields are sub-case-classes,
  * each of which maps its own fields to Parquet columns via its own ColumnHelper).
  */
-object ParquetSchemaValidator {
+object ParquetSchemaValidator:
 
   /**
    * Validates a Parquet MessageType schema against the columns read by the converter of Row.
@@ -31,7 +31,7 @@ object ParquetSchemaValidator {
    * @tparam Row the target case class type.
    * @return Success(()) if valid, Failure(ParquetParserException) if not.
    */
-  def validate[Row](schema: MessageType, converter: ParquetCellConverter[Row]): Try[Unit] = Try {
+  def validate[Row](schema: MessageType, converter: ParquetCellConverter[Row]): Try[Unit] = Try:
 
     val parquetColumns: Map[String, ParquetPrimitiveType] =
       (0 until schema.getFieldCount)
@@ -40,7 +40,6 @@ object ParquetSchemaValidator {
               .toMap
 
     converter.columns("", "") foreach (validateColumn(_, parquetColumns))
-  }
 
   /**
    * Validates a single column against the Parquet column map.
@@ -48,7 +47,7 @@ object ParquetSchemaValidator {
    * @param column         the column read by a converter.
    * @param parquetColumns the map of available Parquet columns.
    */
-  private def validateColumn(column: ParquetColumn, parquetColumns: Map[String, ParquetPrimitiveType]): Unit = {
+  private def validateColumn(column: ParquetColumn, parquetColumns: Map[String, ParquetPrimitiveType]): Unit =
     val ParquetColumn(field, columnName, maybeClass, optional) = column
 
     val parquetType = parquetColumns.getOrElse(columnName,
@@ -59,7 +58,7 @@ object ParquetSchemaValidator {
       )
     )
 
-    ParquetTypeMapper.mapType(parquetType) match {
+    ParquetTypeMapper.mapType(parquetType) match
       case Left(ex) => throw ex
       case Right(clazz) =>
         maybeClass foreach { expected =>
@@ -69,7 +68,6 @@ object ParquetSchemaValidator {
                       s"but parameter '$field' needs ${expected.getSimpleName}"
             )
         }
-    }
 
     if (!optional && ParquetTypeMapper.isOptional(parquetType))
       throw ParquetParserException(
@@ -77,5 +75,3 @@ object ParquetSchemaValidator {
                 s"parameter '$field' is not Option[?]. " +
                 s"Wrap the parameter type in Option to handle null values."
       )
-  }
-}

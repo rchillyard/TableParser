@@ -19,7 +19,7 @@ import scala.util.{Failure, Try}
 /**
  * The methods here are basically copies of the same methods in Table, but resulting in IO rather than Try.
  */
-object IOTable {
+object IOTable:
 
   /**
    * Method to render this Table[T] as a CSV file with (maybe) header.
@@ -109,10 +109,9 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](u: => URI, enc: String): IO[T] = {
+  def parse[T: TableParser](u: => URI, enc: String): IO[T] =
     given codec: Codec = Codec(enc)
     parse(u)
-  }
 
   /**
    * Method to parse a table from an InputStream with an implicit encoding.
@@ -132,10 +131,9 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseInputStream[T: TableParser](si: IO[InputStream], enc: String): IO[T] = {
+  def parseInputStream[T: TableParser](si: IO[InputStream], enc: String): IO[T] =
     given codec: Codec = Codec(enc)
     for (s <- si; t <- parseInputStream(s)) yield t
-  }
 
   /**
    * Method to parse a table from a File.
@@ -149,10 +147,9 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseFile[T: TableParser](f: => File, enc: String): IO[T] = {
+  def parseFile[T: TableParser](f: => File, enc: String): IO[T] =
     given codec: Codec = Codec(enc)
     parseFile(f)
-  }
 
   /**
    * Method to parse a table from an File.
@@ -176,10 +173,9 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseFile[T: TableParser](pathname: String, enc: String): IO[T] = {
+  def parseFile[T: TableParser](pathname: String, enc: String): IO[T] =
     given codec: Codec = Codec(enc)
     parseFile(pathname)
-  }
 
   /**
    * Method to parse a table from an File.
@@ -221,10 +217,9 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseResource[T: TableParser](u: => URL, enc: String): IO[T] = {
+  def parseResource[T: TableParser](u: => URL, enc: String): IO[T] =
     given codec: Codec = Codec(enc)
     parseResource(u)
-  }
   /**
    * Method to parse a table from a sequence of sequences of String (one per row, already split into cells).
    *
@@ -243,10 +238,9 @@ object IOTable {
    * @param codec            (implicit) the encoding.
    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): IO[Table[RawRow]] = {
+  def parseFileRaw(f: File, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): IO[Table[RawRow]] =
     given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](f)
-  }
 
   /**
    * Method to parse a table from a File as a table of Seq[String].
@@ -255,10 +249,9 @@ object IOTable {
    * @param codec    (implicit) the encoding.
    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): IO[Table[RawRow]] = {
+  def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): IO[Table[RawRow]] =
     given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, None)
     parseFile[Table[RawRow]](pathname)
-  }
 
   /**
    * Method to parse a table from a resource as a table of Seq[String].
@@ -270,10 +263,9 @@ object IOTable {
    * @param codec            (implicit) the encoding.
    * @return an IO of Table[RawRow] where RawRow is a Seq[String].
    */
-  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): IO[Table[RawRow]] = {
+  def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): IO[Table[RawRow]] =
     given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
-  }
 
   /**
    * Method to parse a table of raw rows from an Iterable of String.
@@ -281,10 +273,9 @@ object IOTable {
    * @param ws the Strings.
    * @return an IO of Table of RawRow
    */
-  def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): IO[RawTable] = {
+  def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): IO[RawTable] =
     given z: TableParser[RawTable] = RawTableParser.create(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
-  }
 
   /**
    * Method to construct one of the standard table types, given an Iterable of T and an optional header.
@@ -294,10 +285,9 @@ object IOTable {
    * @tparam X the underlying type of xs.
    * @return a Table[X] which is either a HeadedTable or an UnheadedTable, as appropriate.
    */
-  def apply[X](xs: Iterable[X], maybeHeader: Option[Header]): Table[X] = maybeHeader match {
+  def apply[X](xs: Iterable[X], maybeHeader: Option[Header]): Table[X] = maybeHeader match
     case Some(h) => HeadedTable(Content(xs), h)
     case None => UnheadedTable(Content(xs))
-  }
 
   /**
    * Method to render the given Table[Row] as a CSV String with header.
@@ -306,15 +296,13 @@ object IOTable {
    * @param csvAttributes implicit value of CsvAttributes.
    * @return an Iterable[String]
    */
-  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes): IO[String] = {
-    t.maybeHeader match {
+  def toCSVRow(t: Table[Row])(using csvAttributes: CsvAttributes): IO[String] =
+    t.maybeHeader match
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         import com.phasmidsoftware.tableparser.core.render.CsvRenderer.CsvRendererRow
         delayTry(t.toCSV)
       case _ => IO.raiseError(TableException("toCSVRow: cannot write this Table to CSV (no header)"))
-    }
-  }
 
   /**
    * Method to render the given Table[Row] as a CSV String with header.
@@ -325,12 +313,11 @@ object IOTable {
    * @return an Iterable[String]
    */
   def writeCSVFileRow(t: Table[Row], file: File)(using csvAttributes: CsvAttributes): IO[FileWriter] =
-    t.maybeHeader match {
+    t.maybeHeader match
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         IOTable.writeCSVFileIO(t)(file) flatMap (f => IO.blocking(f.close()).as(f))
       case _ => IO.raiseError(TableException("writeCSVFileRow: cannot write this Table to CSV (no header)"))
-    }
 
   /**
    * Method to open source defined by an InputStream.
@@ -344,10 +331,9 @@ object IOTable {
 
   private def blockingTry[A](t: => Try[A]): IO[A] = IO.blocking(t).flatMap(IO.fromTry)
 
-  private def parseTry[T: TableParser](ws: Iterator[String], n: Int): Try[T] = summon[TableParser[T]] match {
+  private def parseTry[T: TableParser](ws: Iterator[String], n: Int): Try[T] = summon[TableParser[T]] match
     case parser: StringTableParser[T] => parser.parse(ws, n)
     case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
-  }
 
   private def sourceFromInputStream(s: => InputStream)(using codec: Codec): IO[Source] = IO.blocking(Source.fromInputStream(s))
 
@@ -385,4 +371,3 @@ object IOTable {
   private def sourceFromClassResource(w: String, clazz: Class[?])(using codec: Codec): IO[Source] = blockingTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
     case _: java.lang.NullPointerException => Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
   })
-}

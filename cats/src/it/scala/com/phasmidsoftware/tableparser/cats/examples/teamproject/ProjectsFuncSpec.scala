@@ -20,7 +20,7 @@ import java.nio.file.Paths
 
 
 //noinspection SpellCheckingInspection
-class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with ScalaFutures {
+class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with ScalaFutures:
 
   behavior of "TeamProject table"
 
@@ -31,123 +31,102 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
    * These are application-specific and are not indicative of any bugs in the
    * TableParser library itself.
    */
-  it should "be ingested properly" in {
+  it should "be ingested properly" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    matchTry(parseResource("TeamProject.csv", classOf[TeamProject])) {
+    matchTry(parseResource("TeamProject.csv", classOf[TeamProject])):
       case pt@HeadedTable(_, _) =>
         pt.size shouldBe 5
       case x => fail(s"not a HeadedTable: $x") // NOTE: This is not necessary
-    }
-  }
 
 
-  it should "be ingested and written out to file using the given header" in {
+  it should "be ingested and written out to file using the given header" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    matchIO(IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))) {
+    matchIO(IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))):
       case pt@HeadedTable(_, _) =>
 
-        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
+        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
-        }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         pt.writeCSVFile(Paths.get("TeamProjectOutput.csv"))
         succeed
-    }
-  }
 
   // NOTE this sometimes causes a problem
-  it should "be ingested and written out to encrypted file using the given header" in {
+  it should "be ingested and written out to encrypted file using the given header" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
-    matchIO(IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))) {
+    matchIO(IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))):
       case pt@HeadedTable(_, _) =>
 
-        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
+        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
-        }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         implicit val hasKey: HasKey[TeamProject] = (t: TeamProject) => t.team.number.toString
         // TODO this integration test occasionally fails
         TableCrypt.writeCSVFileEncrypted(pt)(Paths.get("TeamProjectOutputEncrypted.csv"))
         succeed
-    }
-  }
 
-  it should "be ingested and written out properly using the given header" in {
+  it should "be ingested and written out properly using the given header" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
-    val resultIO = tableIO flatMap {
+    val resultIO = tableIO flatMap:
       case pt@HeadedTable(_, _) =>
 
-        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
+        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
-        }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.toCSV)
       case x => throw ParserException(s"Expected HeadedTable but got ${x.getClass}")
-    }
-    matchIO(resultIO) {
+    matchIO(resultIO):
       case w if w.startsWith("Team Number,") && w.endsWith("https://github.com/CSYE7200-21FALL-TEAM6\r\n") => succeed
-    }
 
-  }
 
-  it should "be ingested and written out properly for team 1 using the given header" in {
+  it should "be ingested and written out properly for team 1 using the given header" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val tableIO = parseResource("TeamProject.csv", classOf[TeamProject])
-    val resultIO = IO.fromTry(tableIO) flatMap {
+    val resultIO = IO.fromTry(tableIO) flatMap:
       case pt@HeadedTable(_, _) =>
 
-        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
+        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
-        }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.take(1).toCSV)
-    }
-    check(resultIO) {
+    check(resultIO):
       case w if w ==
               """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
                 |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
                 |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
                 |""".stripMargin.replace("\n", "\r\n") =>
-    }
-  }
 
-  it should "be ingested and written out properly for team 1 using the given header but skipping grades" in {
+  it should "be ingested and written out properly for team 1 using the given header but skipping grades" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
-    val resultIO = tableIO flatMap {
+    val resultIO = tableIO flatMap:
       case pt@HeadedTable(_, _) =>
 
-        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
+        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
-        }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.skipRenderer[Grade](12))
         IO.fromTry(pt.take(1).toCSV)
-    }
     EvaluateIO(resultIO) shouldBe
             """Team Number,Team Member 1,Team Member 2,Team Member 3,Team Member 4,Total Score,On Time,Scope Scale,Planning Presentation,Presentation,Idea,Use Cases,Acceptance Criteria,Team Execution,Code,Unit Tests,Repo,Remarks,Repository
               |,,,,,100,11,10,6,12,5,4,8,5,23,11,5,,
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,,,,,,,,,,,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
               |""".stripMargin.replace("\n", "\r\n")
-  }
 
-  it should "be ingested and written out properly using fabricated header" in {
+  it should "be ingested and written out properly using fabricated header" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
-    val resultIO = tableIO flatMap {
+    val resultIO = tableIO flatMap:
       case pt@HeadedTable(_, _) =>
 
-        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
+        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match
           case _ => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
-        }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.toCSV)
-    }
     EvaluateIO(resultIO) shouldBe
             """number,member_1,member_2,member_3,member_4,totalScore,onTime,scopeScale,planningPresentation,presentation,idea,useCases,acceptanceCriteria,teamExecution,code,unitTests,repo,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
@@ -156,60 +135,51 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
               |4,Ludwig van Beethoven,Wolfgang Amadeus Mozart,,,88.5,11.0,10.0,6.0,10.5,5.0,3.5,6.0,4.0,21.5,7.0,4.0,A/C not clearly defined (planning pres?),https://github.com/Essexwwz/heart-health-indicator
               |5,Winston Churchill,Clement Attlee,Harold McMillan,,88.5,11.0,9.5,5.0,11.0,5.0,4.0,7.0,2.0,22.0,7.0,5.0,Presentation long and detailed.  Project excellent overall. A/C not shown clearly.,https://github.com/CSYE7200-21FALL-TEAM6
               |""".stripMargin.replace("\n", "\r\n")
-  }
 
-  it should "be ingested and written out properly for team 1 using fabricated header" in {
+  it should "be ingested and written out properly for team 1 using fabricated header" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
-    val resultIO = tableIO flatMap {
+    val resultIO = tableIO flatMap:
       case pt@HeadedTable(_, _) =>
 
-        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
+        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match
           case _ => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
-        }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
         IO.fromTry(pt.take(1).toCSV)
-    }
     EvaluateIO(resultIO) shouldBe
             """number,member_1,member_2,member_3,member_4,totalScore,onTime,scopeScale,planningPresentation,presentation,idea,useCases,acceptanceCriteria,teamExecution,code,unitTests,repo,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,92.0,8.5,8.0,5.0,10.5,5.0,4.0,8.0,5.0,23.0,10.0,5.0,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
               |""".stripMargin.replace("\n", "\r\n")
-  }
 
-  it should "be ingested and written out properly for team 1 using fabricated header but skipping grades" in {
+  it should "be ingested and written out properly for team 1 using fabricated header but skipping grades" in:
     implicit val teamProjectParser: TableParser[Table[TeamProject]] = TeamProjectTableParser
     val tableIO = IO.fromTry(parseResource("TeamProject.csv", classOf[TeamProject]))
-    val resultIO = tableIO flatMap {
+    val resultIO = tableIO flatMap:
       case pt@HeadedTable(_, _) =>
-        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match {
+        implicit val csvGenerator: CsvGenerator[TeamProject] = pt.maybeHeader match
           case _ => createCsvGeneratorFromTeamProject(CsvGenerator.skipGenerator[Grade])
-        }
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.skipRenderer[Grade]())
         IO.fromTry(pt.take(1).toCSV)
-    }
     EvaluateIO(resultIO) shouldBe
             """number,member_1,member_2,member_3,member_4,,remarks,repository
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
               |""".stripMargin.replace("\n", "\r\n")
-  }
 
   // FIXME Issue #50
-  ignore should "parse and filter the team projects from the encrypted dataset" in {
+  ignore should "parse and filter the team projects from the encrypted dataset" in:
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
 
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
 
     import com.phasmidsoftware.tableparser.core.examples.teamproject.TeamProjectParser.teamProjectParser
     implicit val parser: TableParser[Table[TeamProject]] = EncryptedHeadedStringTableParser[TeamProject, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
-    matchIO(IO.fromTry(parseResource("TeamProjectEncrypted.csv", classOf[TeamProject]))) {
+    matchIO(IO.fromTry(parseResource("TeamProjectEncrypted.csv", classOf[TeamProject]))):
       case pt@HeadedTable(_, _) =>
         pt.size shouldBe 1
         val teamProject = pt.head
         teamProject should matchPattern { case TeamProject(_, _, _, _) => }
         teamProject.team shouldBe Team(1, "Leonhard Euler", Some("Daniel Bernoulli"), Some("Isaac Newton"), Some("Srinivas Ramanujan"))
         teamProject.grade should matchPattern { case Grade(92.0, _, _, _, _, _, _, _, _, _, _, _) => }
-    }
-  }
 
   /**
    * NOTE: it is perfectly proper for there to be a number of parsing problems.
@@ -217,7 +187,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
    * TableParser library itself.
    */
   // FIXME Issue #50
-  ignore should "parse and filter the team projects from the encrypted dataset using RawRow" in {
+  ignore should "parse and filter the team projects from the encrypted dataset using RawRow" in:
 
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
 
@@ -225,28 +195,23 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
 
     implicit val cellParser: CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
     implicit val parser: TableParser[RawTable] = EncryptedHeadedStringTableParser[RawRow, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
-    matchIO(IO.fromTry(parseResource("TeamProjectEncrypted.csv", classOf[TeamProject]))) {
+    matchIO(IO.fromTry(parseResource("TeamProjectEncrypted.csv", classOf[TeamProject]))):
       case pt@HeadedTable(_, _) =>
 //        pt foreach println
         println(Analysis(pt))
         pt.size shouldBe 1
-    }
-  }
 
-  private def createCsvGeneratorFromTeamProject(gradeGenerator: CsvGenerator[Grade]): CsvGenerator[TeamProject] = {
+  private def createCsvGeneratorFromTeamProject(gradeGenerator: CsvGenerator[Grade]): CsvGenerator[TeamProject] =
     val csvGenerators = new CsvGenerators {}
     implicit val optionStringGenerator: CsvGenerator[Option[String]] = csvGenerators.optionGenerator[String]
     implicit val teamGenerator: CsvGenerator[Team] = CsvGenerator.derived[Team]
     implicit val g: CsvGenerator[Grade] = gradeGenerator
     CsvGenerator.derived[TeamProject]
-  }
 
-  private def createCsvRendererForTeamProject(gradeRenderer: CsvRenderer[Grade]): CsvRenderer[TeamProject] = {
+  private def createCsvRendererForTeamProject(gradeRenderer: CsvRenderer[Grade]): CsvRenderer[TeamProject] =
     import com.phasmidsoftware.tableparser.core.render.CsvRenderers.CsvRendererURL
     val csvRenderers = new CsvRenderers {}
     implicit val optionStringRenderer: CsvRenderer[Option[String]] = csvRenderers.optionRenderer[String]()
     implicit val teamRenderer: CsvRenderer[Team] = CsvRenderer.derived[Team]
     implicit val g: CsvRenderer[Grade] = gradeRenderer
     CsvRenderer.derived[TeamProject]
-  }
-}

@@ -5,27 +5,23 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import zio._
 
-class EvaluateZIOSpec extends AnyFlatSpec with should.Matchers {
+class EvaluateZIOSpec extends AnyFlatSpec with should.Matchers:
 
   behavior of "matchZIO"
 
-  it should "apply 1" in {
-    matchZIO(ZIO.succeed(1)) {
+  it should "apply 1" in:
+    matchZIO(ZIO.succeed(1)):
       case 1 => true
       case _ => false
-    }
-  }
 
 //  it should "apply 2" in {
 //    a[RuntimeException] should be thrownBy EvaluateZIO(IO.raiseError(new RuntimeException("failure")))
 //  }
 
-  it should "matchZIO 0" in {
-    matchZIO(ZIO.succeed(0)) {
+  it should "matchZIO 0" in:
+    matchZIO(ZIO.succeed(0)):
       case x@1 => fail(s"wrong value: $x")
       case _ => true
-    }
-  }
 
 //  it should "matchZIO 0A" in {
 //    a[TestFailedException] shouldBe thrownBy(matchZIO(ZIO.succeed(0)) {
@@ -42,12 +38,10 @@ class EvaluateZIOSpec extends AnyFlatSpec with should.Matchers {
 //    }
 //  }
 
-  it should "matchZIO 1" in {
-    matchZIO(ZIO.succeed(1)) {
+  it should "matchZIO 1" in:
+    matchZIO(ZIO.succeed(1)):
       case 1 => true
       case x => fail(s"wrong value: $x")
-    }
-  }
 
 //  it should "matchZIO 2" in {
 //    a[RuntimeException] should be thrownBy matchZIO(IO.raiseError(new RuntimeException("failure"))) {
@@ -83,4 +77,3 @@ class EvaluateZIOSpec extends AnyFlatSpec with should.Matchers {
 //    checkFailure(IO.raiseError(new NoSuchElementException))(classOf[NoSuchElementException]).unsafeRunSync()
 //  }
 
-}

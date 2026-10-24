@@ -12,7 +12,7 @@ import com.phasmidsoftware.tableparser.core.table._
  * @param optionalHeader a header if appropriate.
  * @param forgiving   true if we want this parser to be forgiving (defaults to false).
  */
-abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = false, headerRows: Int = 1) extends CellParsers {
+abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = false, headerRows: Int = 1) extends CellParsers:
   self =>
 
   override given rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
@@ -20,7 +20,7 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
   given parser: StandardRowParser[RawRow] = StandardRowParser.create[RawRow]
 
   // CONSIDER why do we have a concrete Table type mentioned here?
-  given RawTableParser: StringTableParser[RawTable] with {
+  given RawTableParser: StringTableParser[RawTable] with
     type Row = RawRow
 
     override val maybeHeader: Option[Header] = optionalHeader
@@ -34,8 +34,6 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
 
     val rowParser: RowParser[Row, Input] =
       summon[RowParser[Row, String]]
-  }
-}
 
 /**
  * Object `RawParsers` provides utility instances for parsing raw data represented as sequences of strings.
@@ -43,7 +41,7 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
  *
  * Example use cases include parsing data with a pre-defined header row.
  */
-object RawParsers {
+object RawParsers:
 
   /**
    * Companion object `WithHeaderRow` provides a specific instance of the `RawParsers` abstraction,
@@ -57,5 +55,4 @@ object RawParsers {
    */
   object WithHeaderRow extends RawParsers(None)
 
-}
 

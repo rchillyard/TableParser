@@ -28,25 +28,23 @@ import scala.util.matching.Regex
  * @param maybeString   an explicit Regex for a field which is not quoted, if the default
  *                      (any characters other than the delimiter and the quote) is not wanted.
  */
-case class RowConfig(delimiter: Char = ',', quote: Char = '"', listSep: Char = '|', listEnclosure: String = "{}", trim: Boolean = false, maybeString: Option[Regex] = None) {
+case class RowConfig(delimiter: Char = ',', quote: Char = '"', listSep: Char = '|', listEnclosure: String = "{}", trim: Boolean = false, maybeString: Option[Regex] = None):
 
   /**
    * The Regex which matches a delimiter (with any spaces around it, if trim is true).
    */
-  lazy val delimiterRegex: Regex = {
+  lazy val delimiterRegex: Regex =
     val d = Regex.quote(delimiter.toString)
     (if (trim) s"""\\s*$d\\s*""" else d).r
-  }
 
   /**
    * The Regex which matches a field which is not quoted: maybeString if it is defined;
    * otherwise, any characters other than the delimiter and the quote
    * (if trim is true, not ending with a space, which belongs to the following delimiter).
    */
-  lazy val string: Regex = maybeString getOrElse {
+  lazy val string: Regex = maybeString getOrElse:
     val others = s"${RowConfig.inClass(delimiter)}${RowConfig.inClass(quote)}"
     (if (trim) s"""(?:[^$others]*[^$others\\s])?""" else s"[^$others]*").r
-  }
 
   /**
    * The CsvAttributes for writing tables as this RowConfig reads them.
@@ -68,12 +66,11 @@ case class RowConfig(delimiter: Char = ',', quote: Char = '"', listSep: Char = '
   infix def withString(r: Regex): RowConfig = copy(maybeString = Some(r))
 
   override def toString: String = s"RowConfig: delimiter='$delimiter', string='$string', listSep='$listSep', listEnclosure='$listEnclosure', quote='$quote', trim=$trim"
-}
 
 /**
  * Companion object to RowConfig.
  */
-object RowConfig {
+object RowConfig:
 
   /**
    * The default RowConfig: RFC 4180.
@@ -102,16 +99,13 @@ object RowConfig {
    * @param csvAttributes the CsvAttributes, whose delimiter (ignoring any spaces) and quote must each be one character.
    * @return a RowConfig, which trims spaces if the delimiter of csvAttributes has any.
    */
-  def apply(csvAttributes: CsvAttributes): RowConfig = {
+  def apply(csvAttributes: CsvAttributes): RowConfig =
     val w = csvAttributes.delimiter
-    val d = w.filter(_ != ' ') match {
+    val d = w.filter(_ != ' ') match
       case "" => w // the delimiter is a space
       case x => x
-    }
     require(d.length == 1 && csvAttributes.quote.length == 1, s"RowConfig: cannot read tables written with $csvAttributes")
     RowConfig(delimiter = d.head, quote = csvAttributes.quote.head, trim = d != w)
-  }
 
   // A character as it must appear inside a character class of a Regex.
   private def inClass(c: Char): String = if ("""\^]-[""".contains(c)) s"\\$c" else c.toString
-}

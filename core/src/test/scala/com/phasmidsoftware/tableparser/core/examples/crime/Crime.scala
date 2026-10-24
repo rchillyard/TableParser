@@ -35,25 +35,23 @@ case class Crime(crimeID: Option[BigInt],
                  lsoaName: String,
                  crimeType: String,
                  lastOutcomeCategory: String,
-                 context: String) {
+                 context: String):
   def brief: Option[CrimeLocation] = for (long <- longitude; lat <- latitude) yield CrimeLocation(crimeID, long, lat)
-}
 
 case class CrimeLocation(crimeID: Option[BigInt],
                          longitude: Double,
                          latitude: Double) {
 }
 
-object CrimeParser extends CellParsers {
+object CrimeParser extends CellParsers:
 
   /**
    * Precede each upper case letter (or digit) with _.
    */
   private val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", " $1")
 
-  implicit object BigIntCellParser extends SingleCellParser[BigInt] {
+  implicit object BigIntCellParser extends SingleCellParser[BigInt]:
     def convertString(w: String): Try[BigInt] = summon[Parseable[BigInt]].parse(w, Some("16"))
-  }
 
   implicit val movieColumnHelper: ColumnHelper[Crime] = columnHelper(camelToSnakeCaseColumnNameMapper,
     "crimeID" -> "Crime ID")
@@ -65,7 +63,7 @@ object CrimeParser extends CellParsers {
 
   implicit val parser: StandardRowParser[Crime] = StandardRowParser.create[Crime]
 
-  trait CrimeTableParser extends StringTableParser[Table[Crime]] {
+  trait CrimeTableParser extends StringTableParser[Table[Crime]]:
     type Row = Crime
 
     override val forgiving: Boolean = true
@@ -74,38 +72,32 @@ object CrimeParser extends CellParsers {
 
     protected def builder(rows: Iterator[Crime], header: Header): Table[Row] =
       HeadedTable(Content(rows), header)
-  }
 
   implicit object CrimeTableParser extends CrimeTableParser
-}
 
-object CrimeRenderer extends CsvRenderers {
+object CrimeRenderer extends CsvRenderers:
 
   private val generators = new CsvGenerators {}
 
-  implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt] {
+  implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt]:
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: BigInt, attrs: Map[String, String]): String = t.toString(16)
-  }
   implicit val crimeIdRenderer: CsvRenderer[Option[BigInt]] = optionRenderer[BigInt]()
   implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator[BigInt]
   implicit val geoRenderer: CsvRenderer[Option[Double]] = optionRenderer[Double]()
   implicit val geoGenerator: CsvGenerator[Option[Double]] = generators.optionGenerator[Double]
   implicit val crimeRenderer: CsvProduct[Crime] = CsvProduct.derived[Crime]
-}
 
-object CrimeLocationRenderer extends CsvRenderers {
+object CrimeLocationRenderer extends CsvRenderers:
 
   private val generators = new CsvGenerators {}
 
-  implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt] {
+  implicit val bigIntRenderer: CsvRenderer[BigInt] = new CsvRenderer[BigInt]:
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: BigInt, attrs: Map[String, String]): String = t.toString(16)
-  }
   implicit val crimeIdRenderer: CsvRenderer[Option[BigInt]] = optionRenderer[BigInt]("unidentified")
   implicit val crimeIdGenerator: CsvGenerator[Option[BigInt]] = generators.optionGenerator
   implicit val crimeRenderer: CsvProduct[CrimeLocation] = CsvProduct.derived[CrimeLocation]
-}
 

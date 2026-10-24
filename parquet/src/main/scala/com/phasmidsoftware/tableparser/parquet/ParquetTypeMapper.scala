@@ -21,7 +21,7 @@ object ParquetTypeMapper {
    *         Left(ParquetParserException) if not.
    */
   def mapType(pt: ParquetPrimitiveType): Either[ParquetParserException, Class[?]] =
-    (pt.getPrimitiveTypeName, Option(pt.getLogicalTypeAnnotation)) match {
+    (pt.getPrimitiveTypeName, Option(pt.getLogicalTypeAnnotation)) match
       case (BOOLEAN, _) => Right(classOf[Boolean])
       case (INT32, Some(_: DateLogicalTypeAnnotation)) => Right(classOf[LocalDate])
       case (INT32, Some(_: DecimalLogicalTypeAnnotation)) => Right(classOf[BigDecimal])
@@ -39,7 +39,6 @@ object ParquetTypeMapper {
           s"Unsupported Parquet type: ${pt.getPrimitiveTypeName} " +
                   s"with logical type: ${pt.getLogicalTypeAnnotation}"
         ))
-    }
 
   /**
    * Returns true if the Parquet column is OPTIONAL (i.e. nullable).

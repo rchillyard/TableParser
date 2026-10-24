@@ -12,7 +12,7 @@ import java.time.LocalDate
  * The class includes methods to handle sequences, options, individual types, and products (case classes with varying numbers of fields).
  * It supports up to 6-ary product types, allowing for type inference and customization of CSV behavior.
  */
-trait CsvGenerators {
+trait CsvGenerators:
 
   /**
    * Method to return a CsvGenerator[ Seq[T] ].
@@ -53,11 +53,10 @@ trait CsvGenerators {
    * @tparam T the underlying type.
    * @return a CsvGenerator[Option[T]].
    */
-  def optionProductGenerator[T](using g: CsvGenerator[T]): CsvGenerator[Option[T]] = new CsvGenerator[Option[T]] {
+  def optionProductGenerator[T](using g: CsvGenerator[T]): CsvGenerator[Option[T]] = new CsvGenerator[Option[T]]:
     val csvAttributes: CsvAttributes = g.csvAttributes
 
     def toColumnName(po: Option[String], name: String): String = g.toColumnName(po, name)
-  }
 
   /**
    * Method to return a CsvGenerator[T] which does not output a column header for at all.
@@ -65,14 +64,13 @@ trait CsvGenerators {
    * @tparam T the type of the column objects.
    * @return a CsvGenerator[T].
    */
-  def skipGenerator[T](using ca: CsvAttributes): CsvGenerator[T] = new CsvProductGenerator[T] {
+  def skipGenerator[T](using ca: CsvAttributes): CsvGenerator[T] = new CsvProductGenerator[T]:
     val csvAttributes: CsvAttributes = ca
 
     override def toColumnName(po: Option[String], name: String): String = ""
 
     // TESTME (not actually used).
     def toColumnNames(po: Option[String], no: Option[String]): String = ""
-  }
 
 // ── 14 ──────────────────────────────────────────────────────────────────────
 
@@ -86,9 +84,8 @@ trait CsvGenerators {
 
   // ── 19 ──────────────────────────────────────────────────────────────────────
 
-}
 
-object CsvGenerators {
+object CsvGenerators:
   object CsvGeneratorBoolean extends StandardCsvGenerator[Boolean]
 
   object CsvGeneratorInt extends StandardCsvGenerator[Int]
@@ -114,4 +111,3 @@ object CsvGenerators {
   object CsvGeneratorInstant extends StandardCsvGenerator[Instant]
 
 //  object CsvGeneratorTemporal extends StandardCsvGenerator[Temporal]
-}

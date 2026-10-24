@@ -16,7 +16,7 @@ import tsec.cipher.symmetric.jca.{AES128CTR, SecretKey}
  *
  * @tparam A the cipher algorithm.
  */
-trait Encryption[A] {
+trait Encryption[A]:
   /**
    * Generate a random String of the required length.
    *
@@ -65,14 +65,13 @@ trait Encryption[A] {
    * @return an IO of CipherText[A].
    */
   def bytesToCipherText(bytes: Array[Byte]): IO[symmetric.CipherText[A]]
-}
 
 /**
  * Typeclass trait to deal with Encryption to/from Hex strings.
  *
  * @tparam A the cipher algorithm.
  */
-trait HexEncryption[A] extends Encryption[A] {
+trait HexEncryption[A] extends Encryption[A]:
   /**
    * Encrypt a plain text String but using a randomly generated key.
    * The key, together with the encrypted text as hex and a check boolean, is returned.
@@ -100,14 +99,13 @@ trait HexEncryption[A] extends Encryption[A] {
    * @return true if the Hex string is correct.
    */
   def checkHex(hex: String, key: SecretKey[A], plaintext: String): IO[Boolean]
-}
 
 /**
  * Abstract base class which extends Encryption and provides methods for encrypt/decrypt hex strings.
  *
  * @tparam A the cipher algorithm.
  */
-abstract class BaseHexEncryption[A] extends HexEncryption[A] {
+abstract class BaseHexEncryption[A] extends HexEncryption[A]:
 
   /**
    * Method to get a raw key, wrapped in IO.
@@ -116,15 +114,13 @@ abstract class BaseHexEncryption[A] extends HexEncryption[A] {
    *
    * @return an IO of String.
    */
-  def genRawKey: IO[String] = {
+  def genRawKey: IO[String] =
     val xis: Seq[IO[Character]] = for (_ <- 0 to 15) yield for (x <- syncRandomLetter) yield x
-    IO.parSequenceN(2)(xis) map {
+    IO.parSequenceN(2)(xis) map:
       xs =>
         val sb = new StringBuilder
         xs.foreach(sb.append(_))
         sb.toString
-    }
-  }
 
   def encryptWithRandomKey(plaintext: CharSequence): IO[(String, String, Boolean)] = for {
     rawKey <- genRawKey
@@ -163,9 +159,8 @@ abstract class BaseHexEncryption[A] extends HexEncryption[A] {
     message <- decrypt(key)(encrypted)
     ok = message == plaintext
   } yield ok
-}
 
-object Encryption {
+object Encryption:
   /**
    * Random number generator wrapped inside IO.
    *
@@ -183,9 +178,8 @@ object Encryption {
    * @return IO[Character]
    */
   def syncRandomLetter: IO[Character] = for (random <- asyncRandom; x = alphabet(random.nextInt(alphabet.length))) yield x
-}
 
-object HexEncryption {
+object HexEncryption:
 
   /**
    * Show the given bytes as hexadecimal text.
@@ -193,11 +187,10 @@ object HexEncryption {
    * @param bytes an Array[Byte].
    * @return an IO of String.
    */
-  def bytesToHexString(bytes: Array[Byte]): IO[String] = {
+  def bytesToHexString(bytes: Array[Byte]): IO[String] =
     val sb = new StringBuilder
     for (b <- bytes) yield sb.append(String.format("%02X", b))
     IO(sb.toString())
-  }
 
   /**
    * Decode the given String in hexadecimal as an array of Byte.
@@ -219,18 +212,15 @@ object HexEncryption {
    * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
    * @return a IO[String].
    */
-  def decryptRow[A: HexEncryption](keyFunction: String => String)(row: Seq[String]): IO[String] = {
+  def decryptRow[A: HexEncryption](keyFunction: String => String)(row: Seq[String]): IO[String] =
     val ko = row.headOption // the first element of the row is the identifier (row-id).
     val hexIndex = 1 // the second (and last) element in the row is the Hex string.
     val f: Int => Option[String] = row.lift
-    (for (key <- ko map keyFunction; hex <- f(hexIndex)) yield (key, hex)) match {
+    (for (key <- ko map keyFunction; hex <- f(hexIndex)) yield (key, hex)) match
       case Some(key -> hex) => summon[HexEncryption[A]].decryptHex(key, hex)
       case _ => IO.raiseError(TableParserException(s"Encryption.decryptRow: logic error: row=$row does not include element for hexIndex ($hexIndex)"))
-    }
-  }
-}
 
-object Base64Encryption {
+object Base64Encryption:
   /**
    * Show the given bytes as base64 text.
    *
@@ -246,12 +236,11 @@ object Base64Encryption {
    * @return Array[Byte].
    */
   def base64ToBytes(base64: String): IO[Array[Byte]] = IO(Base64.getDecoder.decode(base64))
-}
 
 /**
  * An object which provides hex-encryption based on AES128CTR for UTF-8 Strings.
  */
-object EncryptionUTF8AES128CTR extends BaseHexEncryption[AES128CTR] {
+object EncryptionUTF8AES128CTR extends BaseHexEncryption[AES128CTR]:
 
   import tsec.cipher.common.padding.NoPadding
   import tsec.cipher.symmetric
@@ -279,4 +268,3 @@ object EncryptionUTF8AES128CTR extends BaseHexEncryption[AES128CTR] {
   def concat(cipher: symmetric.CipherText[AES128CTR]): IO[Array[Byte]] = IO(cipher.toConcatenated)
 
   def bytesToCipherText(bytes: Array[Byte]): IO[symmetric.CipherText[AES128CTR]] = IO.fromEither(AES128CTR.ciphertextFromConcat(bytes))
-}

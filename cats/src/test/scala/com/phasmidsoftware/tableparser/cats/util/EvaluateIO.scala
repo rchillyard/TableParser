@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
  * TODO eliminate use of unsafe methods.
  * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
  */
-object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
+object EvaluateIO extends Futures with ScalaFutures with should.Matchers:
 
   /**
    * Method to evaluate an IO[X] as an X.
@@ -57,10 +57,9 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
    * @param check   a partial function of type X => Unit to invoke on the result.
    * @tparam X the underlying type of the result.
    */
-  def check[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(check: PartialFunction[X, Unit]): Unit = {
+  def check[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(check: PartialFunction[X, Unit]): Unit =
     // TODO eliminate use of unsafe methods
     whenReady(xio.unsafeToFuture(), timeout)(check(_))
-  }
 
   /**
    * Method to check that the result is a fail (throws an exception).
@@ -73,7 +72,7 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
    * @tparam X the underlying type of the result.
    * @return an IO[Assertion].
    */
-  def checkFailure[X](xio: => IO[X])(expected: Class[?]): IO[Assertion] = {
+  def checkFailure[X](xio: => IO[X])(expected: Class[?]): IO[Assertion] =
     implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
     // TODO eliminate use of unsafe methods
     val af: Future[Assertion] = xio.unsafeToFuture().transform(xy => xy match {
@@ -81,5 +80,3 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers {
       case Failure(x) => if (expected.isAssignableFrom(x.getClass)) Success(succeed) else Success(fail(s"$x is not a $expected"))
     })
     IO.fromFuture(IO(af))
-  }
-}

@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
  *
  * @tparam T the target Scala type.
  */
-trait ParquetCellConverter[T] {
+trait ParquetCellConverter[T]:
   /**
    * Extract and convert the value of the named field from the given SimpleGroup.
    *
@@ -34,7 +34,6 @@ trait ParquetCellConverter[T] {
    */
   def columns(field: String, columnName: String): Seq[ParquetColumn] =
     Seq(ParquetColumn(field, columnName, None, optional = false))
-}
 
 /**
  * A Parquet column which is read by a ParquetCellConverter.
@@ -46,7 +45,7 @@ trait ParquetCellConverter[T] {
  */
 case class ParquetColumn(field: String, columnName: String, maybeClass: Option[Class[?]], optional: Boolean)
 
-object ParquetCellConverter {
+object ParquetCellConverter:
 
   /**
    * Method to create a ParquetCellConverter for a primitive column.
@@ -56,12 +55,11 @@ object ParquetCellConverter {
    * @tparam T the type of the result.
    * @return a ParquetCellConverter[T].
    */
-  def primitive[T](clazz: Class[?])(f: (SimpleGroup, String) => T): ParquetCellConverter[T] = new ParquetCellConverter[T] {
+  def primitive[T](clazz: Class[?])(f: (SimpleGroup, String) => T): ParquetCellConverter[T] = new ParquetCellConverter[T]:
     def convert(group: SimpleGroup, fieldName: String): Try[T] = Try(f(group, fieldName))
 
     override def columns(field: String, columnName: String): Seq[ParquetColumn] =
       Seq(ParquetColumn(field, columnName, Some(clazz), optional = false))
-  }
 
   given BooleanConverter: ParquetCellConverter[Boolean] = primitive(classOf[Boolean])(_.getBoolean(_, 0))
 
@@ -97,7 +95,7 @@ object ParquetCellConverter {
    * T must be read from a single column (an optional case class is not supported).
    */
   given optionConverter[T: ParquetCellConverter]: ParquetCellConverter[Option[T]] =
-    new ParquetCellConverter[Option[T]] {
+    new ParquetCellConverter[Option[T]]:
       def convert(group: SimpleGroup, fieldName: String): Try[Option[T]] =
         if (group.getFieldRepetitionCount(fieldName) == 0)
           Success(None)
@@ -106,7 +104,6 @@ object ParquetCellConverter {
 
       override def columns(field: String, columnName: String): Seq[ParquetColumn] =
         summon[ParquetCellConverter[T]].columns(field, columnName).map(_.copy(optional = true))
-    }
 
   // ── Derivation for case classes ─────────────────────────────────────────────
 
@@ -139,16 +136,13 @@ object ParquetCellConverter {
    * @tparam T the type of the result.
    * @return a ParquetCellConverter[T].
    */
-  inline def apply[T]: ParquetCellConverter[T] = summonFrom {
+  inline def apply[T]: ParquetCellConverter[T] = summonFrom:
     case c: ParquetCellConverter[T] => c
     case m: Mirror.ProductOf[T] => derived[T](using m)
-  }
 
-  private inline def fieldConverters[Ts <: Tuple]: List[ParquetCellConverter[?]] = inline erasedValue[Ts] match {
+  private inline def fieldConverters[Ts <: Tuple]: List[ParquetCellConverter[?]] = inline erasedValue[Ts] match
     case _: EmptyTuple => Nil
     case _: (t *: ts) => apply[t] :: fieldConverters[ts]
-  }
-}
 
 /**
  * The ParquetCellConverter of a case class T, as derived by ParquetCellConverter.derived.
@@ -159,7 +153,7 @@ object ParquetCellConverter {
  * @param helper     the ColumnHelper[T] which maps field names to column names.
  * @tparam T the type of the result.
  */
-class ProductParquetCellConverter[T](fieldNames: List[String], converters: List[ParquetCellConverter[?]], construct: Seq[Any] => T)(using helper: ColumnHelper[T]) extends ParquetCellConverter[T] {
+class ProductParquetCellConverter[T](fieldNames: List[String], converters: List[ParquetCellConverter[?]], construct: Seq[Any] => T)(using helper: ColumnHelper[T]) extends ParquetCellConverter[T]:
 
   private val fields: List[(String, String, ParquetCellConverter[?])] =
     fieldNames.zip(converters).map((f, c) => (f, helper.lookup(None, f), c))
@@ -171,20 +165,17 @@ class ProductParquetCellConverter[T](fieldNames: List[String], converters: List[
    * @param fieldName ignored: each field of T is read from its own column.
    * @return a Try[T].
    */
-  def convert(group: SimpleGroup, fieldName: String): Try[T] = Try {
+  def convert(group: SimpleGroup, fieldName: String): Try[T] = Try:
     val values = fields map { (f, columnName, c) =>
-      c.convert(group, columnName) match {
+      c.convert(group, columnName) match
         case Success(v) => v
         case Failure(e: ParquetParserException) => throw e
         case Failure(e) => throw ParquetParserException(
           s"Failed to convert field '$f' from column '$columnName': ${e.getClass.getSimpleName}: ${e.getMessage}",
           Some(e)
         )
-      }
     }
     construct(values)
-  }
 
   override def columns(field: String, columnName: String): Seq[ParquetColumn] =
     fields flatMap ((f, w, c) => c.columns(f, w))
-}

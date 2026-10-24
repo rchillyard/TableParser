@@ -19,7 +19,7 @@ case class AttributeSet(xs: StringList)
  * represents a set of attributes, typically formatted as a comma-separated list, and
  * potentially enclosed in brackets or other separators.
  */
-object AttributeSet extends CellParsers with CsvGenerators with CsvRenderers {
+object AttributeSet extends CellParsers with CsvGenerators with CsvRenderers:
 
   /**
    * This method is required to be a String=>AttributeSet and is only invoked inside Try.
@@ -30,12 +30,11 @@ object AttributeSet extends CellParsers with CsvGenerators with CsvRenderers {
    * @param w the String to be converted to an AttributeSet.
    * @return an AttributeSet.
    */
-  def apply(w: String): AttributeSet = parse(w) match {
+  def apply(w: String): AttributeSet = parse(w) match
     case Success(a) =>
       a
     case Failure(x) =>
       throw x
-  }
 
   /**
    * Method to parse a String as an AttributeSet.
@@ -51,11 +50,9 @@ object AttributeSet extends CellParsers with CsvGenerators with CsvRenderers {
   given parser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
   // An AttributeSet is written in one cell, its attributes separated by "|" (the default listSep of RowConfig),
   // which is how it is read (see LineParser), e.g. Action|Adventure|Fantasy.
-  given renderer: CsvRenderer[AttributeSet] = new CsvRenderer[AttributeSet] {
+  given renderer: CsvRenderer[AttributeSet] = new CsvRenderer[AttributeSet]:
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(a: AttributeSet, attrs: Map[String, String]): String = a.xs mkString "|"
-  }
   given generator: CsvGenerator[AttributeSet] = new StandardCsvGenerator[AttributeSet]
-}
 

@@ -14,7 +14,7 @@ import com.phasmidsoftware.tableparser.core.write.Writable
  *
  * @tparam O the underlying type, for example, a StringBuilder.
  */
-trait WritableCrypt[O] extends Writable[O] {
+trait WritableCrypt[O] extends Writable[O]:
 
   /**
    * Method to write a character sequence to the given instance o followed by a newline.
@@ -25,19 +25,16 @@ trait WritableCrypt[O] extends Writable[O] {
    * @tparam A the cipher algorithm (for which there must be evidence of Encryption[A]).
    * @return an instance of O which represents the updated output structure.
    */
-  def writeLineEncrypted[A: HexEncryption](o: O)(key: String, plaintext: CharSequence): O = {
+  def writeLineEncrypted[A: HexEncryption](o: O)(key: String, plaintext: CharSequence): O =
     import cats.effect.unsafe.implicits.global
     val encryption = summon[HexEncryption[A]]
     val wBi: IO[(String, String, Boolean)] = encryption.encryptWithRandomKey(plaintext)
 
     // TODO use IO for O
     // TODO eliminate use of unsafe methods
-    wBi.unsafeRunSync() match {
+    wBi.unsafeRunSync() match
       case (k, w, true) =>
         println(s"$key: $k") // CONSIDER writing these key/password pairs to the log file.
         writeRaw(writeRaw(o)(s"$key|$w"))(newline)
       case x => throw new RuntimeException(s"Writable.writeLineEncrypted: logic error: wBi=$x, plaintext=$plaintext")
-    }
-  }
 
-}

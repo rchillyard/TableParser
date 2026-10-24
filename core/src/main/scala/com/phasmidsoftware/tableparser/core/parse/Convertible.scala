@@ -6,10 +6,9 @@ import scala.util.Try
 /**
  * Trait Convertible.
  */
-sealed trait Convertible {
+sealed trait Convertible:
   def convertTo[T](using z: CellParser[T]): Try[T] =
     cellReader.parse(this)
-}
 
 /**
  * A concrete Convertible corresponding to a cell value.
@@ -24,10 +23,8 @@ case class CellValue(w: String) extends Convertible
  * @param row    the Row containing several values.
  * @param header the Header.
  */
-case class RowValues(row: Row, header: Header) extends Convertible {
+case class RowValues(row: Row, header: Header) extends Convertible:
   override def toString: String = (for ((h, x) <- header.xs zip row.ws) yield s"""${h.toUpperCase}="$x"""").mkString(", ")
-}
 
-object RowValues {
+object RowValues:
   def apply(row: Row): RowValues = RowValues(row, row.hdr)
-}

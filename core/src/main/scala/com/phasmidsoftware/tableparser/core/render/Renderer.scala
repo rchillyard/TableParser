@@ -21,7 +21,7 @@ import scala.deriving.Mirror
  * @tparam O the type of the serialization result.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of Renderer[${T},${O}].")
-trait Renderer[-T, O] {
+trait Renderer[-T, O]:
 
   /**
    * Render an instance of T as an O, qualifying the rendering with no attributes.
@@ -39,7 +39,6 @@ trait Renderer[-T, O] {
    * @return an instance of type O.
    */
   def render(t: T, attrs: Map[String, String]): O
-}
 
 /**
  * Definition of type class HierarchicalRenderer for the purpose of serializing objects of type T.
@@ -49,7 +48,7 @@ trait Renderer[-T, O] {
  * @tparam T the type of object to be rendered.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of HierarchicalRenderer[${T}].")
-trait HierarchicalRenderer[T] extends Renderer[T, Node] {
+trait HierarchicalRenderer[T] extends Renderer[T, Node]:
 
   /**
    * Defines the default style for type T.
@@ -81,14 +80,13 @@ trait HierarchicalRenderer[T] extends Renderer[T, Node] {
    * @return a String corresponding to t.
    */
   def asString(t: T): String = t.toString
-}
 
 /**
  * CONSIDER having style defined as an Option[String]
  *
  * @tparam T the type of object to be rendered.
  */
-trait UntaggedHierarchicalRenderer[T] extends HierarchicalRenderer[T] {
+trait UntaggedHierarchicalRenderer[T] extends HierarchicalRenderer[T]:
   val style: String = ""
 
   /**
@@ -100,7 +98,6 @@ trait UntaggedHierarchicalRenderer[T] extends HierarchicalRenderer[T] {
    */
   def render(t: T, attrs: Map[String, String]): Node = Node(style, Some(asString(t)), baseAttrs ++ attrs)
 
-}
 
 /**
  * Abstract class TaggedHierarchicalRenderer.
@@ -109,7 +106,7 @@ trait UntaggedHierarchicalRenderer[T] extends HierarchicalRenderer[T] {
  * @param baseAttrs baseAttrs (a Map[String, String]
  * @tparam T the type of object to be rendered.
  */
-abstract class TaggedHierarchicalRenderer[T](val style: String, override val baseAttrs: Map[String, String] = Map()) extends HierarchicalRenderer[T] {
+abstract class TaggedHierarchicalRenderer[T](val style: String, override val baseAttrs: Map[String, String] = Map()) extends HierarchicalRenderer[T]:
 
   /**
    * Render an instance of T as a U.
@@ -119,7 +116,6 @@ abstract class TaggedHierarchicalRenderer[T](val style: String, override val bas
    * @return a new instance of U.
    */
   def render(t: T, attrs: Map[String, String]): Node = Node(style, Some(asString(t)), baseAttrs ++ attrs)
-}
 
 /**
  * Abstract class ProductHierarchicalRenderer
@@ -128,11 +124,10 @@ abstract class TaggedHierarchicalRenderer[T](val style: String, override val bas
  * @param baseAttrs baseAttrs (a Map[String, String]
  * @tparam T the type of object to be rendered.
  */
-abstract class ProductHierarchicalRenderer[T](val style: String, override val baseAttrs: Map[String, String] = Map()) extends HierarchicalRenderer[T] {
+abstract class ProductHierarchicalRenderer[T](val style: String, override val baseAttrs: Map[String, String] = Map()) extends HierarchicalRenderer[T]:
   def render(t: T, attrs: Map[String, String]): Node = Node(style, attrs, nodes(t))
 
   protected def nodes(t: T): Seq[Node]
-}
 
 /**
  * The HierarchicalRenderer of a case class T, as derived by HierarchicalRenderer.derived.
@@ -143,11 +138,10 @@ abstract class ProductHierarchicalRenderer[T](val style: String, override val ba
  * @param fieldRenderers the HierarchicalRenderers of the fields of T, in the same order.
  * @tparam T the type of the case class.
  */
-class ProductFieldsHierarchicalRenderer[T](style: String, attrs: Map[String, String], fieldNames: List[String], fieldRenderers: List[HierarchicalRenderer[?]]) extends ProductHierarchicalRenderer[T](style, attrs) {
+class ProductFieldsHierarchicalRenderer[T](style: String, attrs: Map[String, String], fieldNames: List[String], fieldRenderers: List[HierarchicalRenderer[?]]) extends ProductHierarchicalRenderer[T](style, attrs):
   // NOTE the casts: t is a case class (it has a Mirror.ProductOf), and each renderer is the one for its field.
   protected def nodes(t: T): Seq[Node] =
     (t.asInstanceOf[Product].productIterator zip fieldNames zip fieldRenderers map { case ((x, name), r) => r.asInstanceOf[HierarchicalRenderer[Any]].render(x, Map("name" -> name)) }).toSeq
-}
 
 /**
  * Object `HierarchicalRenderer` provides a collection of implicit instances
@@ -160,7 +154,7 @@ class ProductFieldsHierarchicalRenderer[T](style: String, attrs: Map[String, Str
  * `UntaggedHierarchicalRenderer` which implements the `HierarchicalRenderer`
  * interface.
  */
-object HierarchicalRenderer {
+object HierarchicalRenderer:
 
   /**
    * Method to derive a HierarchicalRenderer for a case class T, as a node with the given style whose children
@@ -181,10 +175,9 @@ object HierarchicalRenderer {
   inline def derived[T](style: String, attrs: Map[String, String] = Map())(using m: Mirror.ProductOf[T]): HierarchicalRenderer[T] =
     new ProductFieldsHierarchicalRenderer[T](style, attrs, Derivation.fieldNames[m.MirroredElemLabels], fieldRenderers[m.MirroredElemTypes])
 
-  private inline def fieldRenderers[Ts <: Tuple]: List[HierarchicalRenderer[?]] = inline erasedValue[Ts] match {
+  private inline def fieldRenderers[Ts <: Tuple]: List[HierarchicalRenderer[?]] = inline erasedValue[Ts] match
     case _: EmptyTuple => Nil
     case _: (t *: ts) => summonInline[HierarchicalRenderer[t]] :: fieldRenderers[ts]
-  }
 
   /**
    * A type class that provides functionality to render hierarchical data as strings.
@@ -467,4 +460,3 @@ object HierarchicalRenderer {
 //     */
 //    def render(t: Row, attrs: Map[String, String]): String = t.toString()  // TESTME
 //  }
-}

@@ -20,7 +20,7 @@ import scala.util.{Failure, Success, Try}
  * @tparam Row   the type of rows to be produced after transformation, typically structured representations
  *               like case classes or tuples.
  */
-abstract class InputTransformer[Input, Row]() extends InputPreprocessor[Input, Row] {
+abstract class InputTransformer[Input, Row]() extends InputPreprocessor[Input, Row]:
 
   /**
    * Processes an iterator of `Try[Row]` values, extracting successful rows while filtering out failed ones.
@@ -44,7 +44,6 @@ abstract class InputTransformer[Input, Row]() extends InputPreprocessor[Input, R
    * @return An `Iterator` of output rows of type `Row`, resulting from the transformation process.
    */
   def processInput(xs: Iterator[Input]): Iterator[Row]
-}
 
 /**
  * The `InputAggregator` abstract class extends the `InputPreprocessor` trait to provide additional
@@ -60,7 +59,7 @@ abstract class InputTransformer[Input, Row]() extends InputPreprocessor[Input, R
  * @tparam Row     the type of rows that result from processing the inputs, typically structured representations.
  * @tparam Wrapper the container type used to wrap the successfully processed rows, e.g., `Option`, `Either`, or `List`.
  */
-abstract class InputAggregator[Input, Row, Wrapper[_]]() extends InputPreprocessor[Input, Row] {
+abstract class InputAggregator[Input, Row, Wrapper[_]]() extends InputPreprocessor[Input, Row]:
 
   /**
    * Processes an iterator of `Try[Row]` elements, filtering out any failed attempts,
@@ -83,7 +82,6 @@ abstract class InputAggregator[Input, Row, Wrapper[_]]() extends InputPreprocess
    *         where the transformation and processing operations have been applied to the inputs.
    */
   def processInput(xs: Iterator[Input]): Wrapper[Iterator[Row]]
-}
 
 /**
  * A trait for preprocessing input data elements into rows, representing an early stage in data
@@ -99,7 +97,7 @@ abstract class InputAggregator[Input, Row, Wrapper[_]]() extends InputPreprocess
  * @tparam Row   the type of rows to be produced by the mapping, e.g., structured representations
  *               of the input (such as case classes or key-value mappings).
  */
-trait InputPreprocessor[Input, Row] {
+trait InputPreprocessor[Input, Row]:
 
   /**
    * Processes an input iterator of type `Input` and maps its elements into rows of type `Row` while handling potential errors
@@ -134,18 +132,15 @@ trait InputPreprocessor[Input, Row] {
    * @param ev the Joinable of (Input, Int).
    * @return the inputs, with each incomplete one joined to what follows it.
    */
-  private def joinIncomplete(xs: Iterator[(Input, Int)])(using ev: Joinable[(Input, Int)]): Iterator[(Input, Int)] = new Iterator[(Input, Int)] {
+  private def joinIncomplete(xs: Iterator[(Input, Int)])(using ev: Joinable[(Input, Int)]): Iterator[(Input, Int)] = new Iterator[(Input, Int)]:
     def hasNext: Boolean = xs.hasNext
 
-    def next(): (Input, Int) = {
+    def next(): (Input, Int) =
       @scala.annotation.tailrec
       def inner(x: (Input, Int)): (Input, Int) =
         if (ev.incomplete(x) && xs.hasNext) inner(ev.join(x, xs.next())) else x
 
       inner(xs.next())
-    }
-  }
-}
 
 /**
  * A trait that defines a contract for mapping an input of type `Input` to a row of type `Row` as a computation
@@ -182,7 +177,7 @@ trait InputMapper[Input, Row] extends (Input => Try[Row])
  * @tparam Input the type of input elements to be processed.
  * @tparam Row   the type of rows transformed from the input.
  */
-class IndexedInputToRowsAggregator[Input: Joinable, Row](f: ((Input, Int)) => Try[Row], multiline: Boolean, forgiving: Boolean, predicate: Try[Row] => Boolean) extends InputAggregator[Input, Row, Try]() {
+class IndexedInputToRowsAggregator[Input: Joinable, Row](f: ((Input, Int)) => Try[Row], multiline: Boolean, forgiving: Boolean, predicate: Try[Row] => Boolean) extends InputAggregator[Input, Row, Try]():
 
   /**
    * Implicit object that provides a `JoinableTInt` instance for the type `Input`.
@@ -200,9 +195,8 @@ class IndexedInputToRowsAggregator[Input: Joinable, Row](f: ((Input, Int)) => Tr
    *       `Joinable[Input]` defined elsewhere in the application.
    * @see [[JoinableTInt]] for its detailed trait definition.
    */
-  given JoinableTInt: JoinableTInt[Input] with {
+  given JoinableTInt: JoinableTInt[Input] with
     def tj: Joinable[Input] = summon[Joinable[Input]]
-  }
 
   /**
    * Processes an iterator of `Try` wrapped rows, transforming it into a single `Try` that contains an iterator of successfully processed rows.
@@ -214,12 +208,11 @@ class IndexedInputToRowsAggregator[Input: Joinable, Row](f: ((Input, Int)) => Tr
    *         - a success containing an iterator of all successfully processed rows, or
    *         - a failure if any of the individual rows failed during processing
    */
-  def processTriedRows(rys: Iterator[Try[Row]]): Try[Iterator[Row]] = if (forgiving) {
+  def processTriedRows(rys: Iterator[Try[Row]]): Try[Iterator[Row]] = if (forgiving)
     val (good, bad) = partition(rys)
     // CONSIDER using sequenceRev in order to save time
     bad foreach logException[Row] //AbstractTableParser.logException[Row]
     sequence(good filter predicate)
-  }
   else
     sequence(rys filter predicate)
 
@@ -236,7 +229,6 @@ class IndexedInputToRowsAggregator[Input: Joinable, Row](f: ((Input, Int)) => Tr
   def processInput(xs: Iterator[Input]): Try[Iterator[Row]] =
     processTriedRows(mapTsToRows(xs)(multiline)(f))
 
-}
 
 /**
  * A transformer class designed to map and process inputs to rows while handling indexed inputs.
@@ -251,7 +243,7 @@ class IndexedInputToRowsAggregator[Input: Joinable, Row](f: ((Input, Int)) => Tr
  *                  the transformation logic from input to row with error handling.
  * @param multiline A boolean flag indicating whether the transformation operates in a multiline mode.
  */
-class IndexedInputToRowsTransformer[Input: Joinable, Row](f: ((Input, Int)) => Try[Row], multiline: Boolean) extends InputTransformer[Input, Row]() {
+class IndexedInputToRowsTransformer[Input: Joinable, Row](f: ((Input, Int)) => Try[Row], multiline: Boolean) extends InputTransformer[Input, Row]():
 
   /**
    * Implicit object representing a `JoinableTInt` instance for the type `Input`.
@@ -272,9 +264,8 @@ class IndexedInputToRowsTransformer[Input: Joinable, Row](f: ((Input, Int)) => T
    * - The `tj` member refers to the `Joinable[Input]` instance, obtained implicitly.
    *
    */
-  given JoinableTInt: JoinableTInt[Input] with {
+  given JoinableTInt: JoinableTInt[Input] with
     def tj: Joinable[Input] = summon[Joinable[Input]]
-  }
 
   /**
    * Processes an iterator of `Try[Row]` instances, filtering out any failures and retaining only successful results.
@@ -303,4 +294,3 @@ class IndexedInputToRowsTransformer[Input: Joinable, Row](f: ((Input, Int)) => T
    */
   def processInput(xs: Iterator[Input]): Iterator[Row] =
     processTriedRows(mapTsToRows(xs)(multiline)(f))
-}

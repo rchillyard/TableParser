@@ -13,18 +13,17 @@ import com.phasmidsoftware.tableparser.core.parse.RowConfig
  * @param quote     the quote character.
  * @param newline   the line ending of each record (defaults to CRLF, as in RFC 4180; use "\n" for LF).
  */
-case class CsvAttributes(delimiter: String, quote: String, newline: String = "\r\n") {
+case class CsvAttributes(delimiter: String, quote: String, newline: String = "\r\n"):
   /**
    * The RowConfig which reads tables as these CsvAttributes write them (see RowConfig.apply(CsvAttributes)).
    */
   lazy val rowConfig: RowConfig = RowConfig(this)
-}
 
 /**
  * Companion object for the `CsvAttributes` case class.
  * Provides utility methods and implicit instances for working with CSV attributes.
  */
-object CsvAttributes {
+object CsvAttributes:
   given defaultCsvAttributes: CsvAttributes = CsvAttributes(",")
 
   /**
@@ -34,4 +33,3 @@ object CsvAttributes {
    * @return a new `CsvAttributes` instance with the given delimiter, a double quote as the quote character, and CRLF as the newline.
    */
   def apply(delimiter: String): CsvAttributes = CsvAttributes(delimiter, """"""")
-}

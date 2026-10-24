@@ -46,13 +46,13 @@ import scala.util.{Failure, Success, Try}
  * }}}
  * @note The `FunctionIterator` may use a mutable variable `ry` internally to store the result of the last element processed.
  */
-class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends AbstractIterator[Try[R]] {
+class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends AbstractIterator[Try[R]]:
   private val xj = summon[Joinable[X]]
 
   // NOTE: yes, this has to be a var. Don't be too heartbroken--an Iterator is a mutable construct, after all.
   private var ry: Try[R] = Failure(new Exception("FunctionIterator: uninitialized"))
 
-  def hasNext: Boolean = takeFromIterator match {
+  def hasNext: Boolean = takeFromIterator match
     case Success(r) =>
       ry = Success(r); true
     case Failure(IteratorExhaustedException) =>
@@ -61,12 +61,11 @@ class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends 
       throw f // NOTE: this would be a logic error
     case f@Failure(_) =>
       ry = f; true
-  }
 
   def next(): Try[R] = ry
 
-  private def takeFromIterator: Try[R] = {
-    def invokeFunction(xy: Try[X]) = xy match {
+  private def takeFromIterator: Try[R] =
+    def invokeFunction(xy: Try[X]) = xy match
       case Success(x) =>
         if (xj.valid(x))
           f(x)
@@ -74,30 +73,25 @@ class FunctionIterator[X: Joinable, R](f: X => Try[R])(xs: Iterator[X]) extends 
           Failure(InvalidInputException)
       case Failure(x) =>
         Failure(x)
-    }
 
     @tailrec
-    def inner(xy: Try[X]): Try[R] = invokeFunction(xy) match {
+    def inner(xy: Try[X]): Try[R] = invokeFunction(xy) match
       case Success(y) =>
         Success(y)
       case Failure(MultiLineException(x: X @unchecked)) =>
-        if (xs.hasNext) {
+        if (xs.hasNext)
           val x1 = xs.next()
           val x2: X = xj.join(x, x1)
           inner(Success(x2))
-        }
         else
           Failure(IteratorExhaustedException)
       case Failure(InvalidInputException) =>
         Failure(IteratorExhaustedException)
       case f@Failure(_) =>
         f
-    }
 
     inner(Failure(MultiLineException(xj.zero)))
-  }
 
-}
 
 /**
  * `IteratorExhaustedException` is a case object that represents an exception to be thrown

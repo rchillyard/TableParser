@@ -11,7 +11,7 @@ import java.time.Instant
 
 case class TripIdentifiers(vendorId: Option[Int], ratecodeId: Option[Long], storeAndFwdFlag: Option[String])
 
-object TripIdentifiers extends CellParsers with CsvRenderers with CsvGenerators {
+object TripIdentifiers extends CellParsers with CsvRenderers with CsvGenerators:
   implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
   implicit val helper: ColumnHelper[TripIdentifiers] =
     columnHelper(
@@ -23,11 +23,10 @@ object TripIdentifiers extends CellParsers with CsvRenderers with CsvGenerators 
     CsvRenderer.derived[TripIdentifiers]
   implicit val generator: CsvProductGenerator[TripIdentifiers] =
     CsvGenerator.derived[TripIdentifiers]
-}
 
 case class TripTiming(tpepPickupDatetime: Option[Instant], tpepDropoffDatetime: Option[Instant])
 
-object TripTiming extends CellParsers with CsvRenderers with CsvGenerators {
+object TripTiming extends CellParsers with CsvRenderers with CsvGenerators:
   implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
   implicit val helper: ColumnHelper[TripTiming] =
     columnHelper(camelToSnakeCaseColumnNameMapperLower)
@@ -35,11 +34,10 @@ object TripTiming extends CellParsers with CsvRenderers with CsvGenerators {
     CsvRenderer.derived[TripTiming]
   implicit val generator: CsvProductGenerator[TripTiming] =
     CsvGenerator.derived[TripTiming]
-}
 
 case class TripGeography(puLocationId: Option[Int], doLocationId: Option[Int])
 
-object TripGeography extends CellParsers with CsvRenderers with CsvGenerators {
+object TripGeography extends CellParsers with CsvRenderers with CsvGenerators:
   implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
   implicit val helper: ColumnHelper[TripGeography] =
     columnHelper(
@@ -51,7 +49,6 @@ object TripGeography extends CellParsers with CsvRenderers with CsvGenerators {
     CsvRenderer.derived[TripGeography]
   implicit val generator: CsvProductGenerator[TripGeography] =
     CsvGenerator.derived[TripGeography]
-}
 
 case class FareBreakdown(
                                 fareAmount: Option[Double],
@@ -64,7 +61,7 @@ case class FareBreakdown(
                                 airportFee: Option[Double]
                         )
 
-object FareBreakdown extends CellParsers with CsvRenderers with CsvGenerators {
+object FareBreakdown extends CellParsers with CsvRenderers with CsvGenerators:
   implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
   implicit val helper: ColumnHelper[FareBreakdown] =
     columnHelper(
@@ -75,7 +72,6 @@ object FareBreakdown extends CellParsers with CsvRenderers with CsvGenerators {
     CsvRenderer.derived[FareBreakdown]
   implicit val generator: CsvProductGenerator[FareBreakdown] =
     CsvGenerator.derived[FareBreakdown]
-}
 
 case class TripMetrics(
                               passengerCount: Option[Long],
@@ -84,7 +80,7 @@ case class TripMetrics(
                               totalAmount: Option[Double]
                       )
 
-object TripMetrics extends CellParsers with CsvRenderers with CsvGenerators {
+object TripMetrics extends CellParsers with CsvRenderers with CsvGenerators:
   implicit val csvAttributes: CsvAttributes = CsvAttributes(", ")
   implicit val helper: ColumnHelper[TripMetrics] =
     columnHelper(camelToSnakeCaseColumnNameMapperLower)
@@ -92,7 +88,6 @@ object TripMetrics extends CellParsers with CsvRenderers with CsvGenerators {
     CsvRenderer.derived[TripMetrics]
   implicit val generator: CsvProductGenerator[TripMetrics] =
     CsvGenerator.derived[TripMetrics]
-}
 
 // ── Top-level grouped case class ──────────────────────────────────────────────
 

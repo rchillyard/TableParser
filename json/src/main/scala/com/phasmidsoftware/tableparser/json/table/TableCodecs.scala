@@ -30,7 +30,7 @@ import io.circe.{Decoder, Encoder, Json}
  * The keys of each row are whatever the row's Encoder writes: for a derived Codec, the field names (e.g. "directorName").
  * The Decoder reads the rows by their keys, and keeps the header just as it was, so a round trip loses nothing.
  */
-object TableCodecs {
+object TableCodecs:
 
   /**
    * An Encoder for a Table[T].
@@ -57,4 +57,3 @@ object TableCodecs {
       wso <- cursor.downField("header").as[Option[Seq[String]]]
     } yield Table(tso.getOrElse(Nil), wso.map(ws => Header(ws, Nil)))
   }
-}

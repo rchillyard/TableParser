@@ -14,7 +14,7 @@ package com.phasmidsoftware.tableparser.core.render.tag
  * @param tags       the child tags.
  * @param rules      the "rules" (currently ignored) but useful in the future to validate documents.
  */
-case class HTML(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(using rules: TagRules) extends BaseTag(name, attributes, content, tags) {
+case class HTML(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(using rules: TagRules) extends BaseTag(name, attributes, content, tags):
 
   /**
    * Method to add a child to this Tag
@@ -23,12 +23,11 @@ case class HTML(name: String, attributes: Seq[Attribute], content: Option[String
    * @return a new version of this Tag with the additional tag added as a child
    */
   def :+(tag: Tag): Tag = HTML(name, attributes, content, tags :+ tag)
-}
 
 /**
  * Companion object to HTML
  */
-object HTML {
+object HTML:
 
   given HtmlRules: TagRules with {}
 
@@ -41,5 +40,4 @@ object HTML {
   def apply(name: String, content: Option[String]): HTML = apply(name, Map.empty, content)
 
   private def defaultName(name: String): String = if (name == "") "span" else name
-}
 

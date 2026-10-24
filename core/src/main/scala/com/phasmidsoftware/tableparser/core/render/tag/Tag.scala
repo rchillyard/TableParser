@@ -11,15 +11,14 @@ package com.phasmidsoftware.tableparser.core.render.tag
  * @param key   the attribute's key.
  * @param value the attribute's value.
  */
-case class Attribute(key: String, value: String) {
+case class Attribute(key: String, value: String):
   override def toString: String = s"""$key="$value""""
-}
 
 /**
  * Trait Tag to model a tagged (i.e. Markup Language-type) document.
  * Examples of a tagged document would be XML or HTML.
  */
-sealed trait Tag {
+sealed trait Tag:
 
   /**
    * Method to yield the name of this Tag
@@ -57,7 +56,6 @@ sealed trait Tag {
    */
   def :+(tag: Tag): Tag
 
-}
 
 /**
  * Abstract class representing a base tag.
@@ -68,7 +66,7 @@ sealed trait Tag {
  * @param tags       the children tags.
  * @param rules      an implicit set of rules (like a DTD).
  */
-abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(using rules: TagRules) extends Tag {
+abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])(using rules: TagRules) extends Tag:
 
   override def toString: String = s"""\n${tagString()}$contentString$tagsString${tagString(true)}"""
 
@@ -81,9 +79,8 @@ abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option
   private def attributeString(close: Boolean) = if (close || attributes.isEmpty) "" else " " + attributes.mkString(" ")
 
   private def nameString(close: Boolean) = (if (close) "/" else "") + name
-}
 
-object Attribute {
+object Attribute:
 
   /**
    * @param m a Map of attributes.
@@ -94,7 +91,6 @@ object Attribute {
   def apply(kv: (String, String)): Attribute = convertFromTuple(kv)
 
   def convertFromTuple(kv: (String, String)): Attribute = Attribute(kv._1, kv._2)
-}
 
 /**
  * For future expansion.

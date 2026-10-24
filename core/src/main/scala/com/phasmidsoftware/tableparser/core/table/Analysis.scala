@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
  * @param columns   the number of columns.
  * @param columnMap a map of column names to Column objects (the statistics of a column).
  */
-case class ColumnStatistics(rows: Int, columns: Int, columnMap: Map[String, Column]) {
+case class ColumnStatistics(rows: Int, columns: Int, columnMap: Map[String, Column]):
   /**
    * Returns a string representation of the `ColumnStatistics` object, including its row count,
    * column count, and a formatted view of the column map.
@@ -22,25 +22,22 @@ case class ColumnStatistics(rows: Int, columns: Int, columnMap: Map[String, Colu
    */
   override def toString: String = s"ColumnStatistics: rows: $rows, columns: $columns, $showColumnMap"
 
-  private def showColumnMap: String = {
+  private def showColumnMap: String =
     val sb = new StringBuilder("\ncolumns:\n")
     columnMap.toSeq.foreach(t => sb.append(s"${t._1}: ${t._2}\n"))
     sb.toString()
-  }
-}
 
 /**
  * Unsealed trait for polymorphic analysis of table sources.
  * Implement this trait to add support for new sources (CSV, Parquet, etc.).
  */
-trait Analyzer {
+trait Analyzer:
   /**
    * Compute statistics for the source.
    *
    * @return a ColumnStatistics object.
    */
   def analyze(): ColumnStatistics
-}
 
 /**
  * Analyzer for CSV sources.
@@ -48,21 +45,19 @@ trait Analyzer {
  *
  * @param table the raw table to analyze.
  */
-case class CsvAnalyzer(table: RawTable) extends Analyzer {
-  def analyze(): ColumnStatistics = {
+case class CsvAnalyzer(table: RawTable) extends Analyzer:
+  def analyze(): ColumnStatistics =
     def createColumnMap(names: Seq[String]): Seq[(String, Column)] =
       for (name <- names; column <- Column.make(table, name)) yield name -> column
 
     val columnMap = for (ws <- table.maybeColumnNames.toSeq; z <- createColumnMap(ws)) yield z
     ColumnStatistics(table.size, table.head.ws.size, columnMap.toMap)
-  }
-}
 
 /**
  * Provider trait for computing column statistics from external sources (e.g., Parquet files).
  * Implement this in modules that add support for new sources.
  */
-trait ColumnStatisticsProvider {
+trait ColumnStatisticsProvider:
   /**
    * Compute statistics for a single numeric column in a source file.
    * Returns None if the column is non-numeric or does not exist.
@@ -74,23 +69,20 @@ trait ColumnStatisticsProvider {
    * @return an optional Column with statistics (eager or lazy).
    */
   def computeStatistics(path: Path, columnName: String, useMetadataOnly: Boolean = true): Option[Column]
-}
 
 /**
  * Marker trait for single-file analyzer factories.
  * Implemented by parquet module to enable Analysis.forParquet.
  */
-trait SingleFileAnalyzerFactory {
+trait SingleFileAnalyzerFactory:
   def apply(path: Path): Analyzer
-}
 
 /**
  * Marker trait for dataset analyzer factories.
  * Implemented by parquet module to enable Analysis.forParquetDataset.
  */
-trait DatasetAnalyzerFactory {
+trait DatasetAnalyzerFactory:
   def apply(path: Path): Analyzer
-}
 
 /**
  * The `Analysis` object provides factory methods to analyze tables from various sources.
@@ -108,7 +100,7 @@ trait DatasetAnalyzerFactory {
  *   val stats: ColumnStatistics = Analysis.forParquet[YellowTaxiTrip](Path.of("data.parquet"))
  * }}}
  */
-object Analysis {
+object Analysis:
 
   /**
    * Analyze a CSV-sourced RawTable.
@@ -129,12 +121,11 @@ object Analysis {
    * @return a ColumnStatistics object.
    */
   def forCsv(path: Path)(using tableParser: RawTableParser = RawTableParser()): ColumnStatistics =
-    tableParser.parse(Try(Source.fromFile(path.toFile))) match {
+    tableParser.parse(Try(Source.fromFile(path.toFile))) match
       case Success(rawTable: RawTable) =>
         CsvAnalyzer(rawTable).analyze()
       case Failure(ex) =>
         throw new TableParserException(s"Failed to parse CSV file at $path", Some(ex))
-    }
 
   /**
    * Analyze a single Parquet file by Path.
@@ -161,7 +152,6 @@ object Analysis {
    */
   def forParquetDataset[Row <: Product](path: Path)(using datasetFactory: DatasetAnalyzerFactory): ColumnStatistics =
     datasetFactory(path).analyze()
-}
 
 /**
  * A representation of the analysis of a column.
@@ -170,7 +160,7 @@ object Analysis {
  * @param optional        if true then this column contains nulls (empty strings).
  * @param maybeStatistics an optional MaybeStatistics (eager or lazy); None if statistics are unavailable or deferred.
  */
-case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[MaybeStatistics]) {
+case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[MaybeStatistics]):
   /**
    * Converts the current `Column` instance into a descriptive string representation.
    *
@@ -182,24 +172,20 @@ case class Column(clazz: String, optional: Boolean, maybeStatistics: Option[Mayb
    * @return a string representation of the `Column` instance. This includes the class type, optionality,
    *         and any associated statistics (if present).
    */
-  override def toString: String = {
+  override def toString: String =
     val sb = new StringBuilder
     if (optional) sb.append("optional ")
     sb.append(clazz)
-    maybeStatistics match {
+    maybeStatistics match
       case Some(ms) =>
-        ms.getStatistics() match {
+        ms.getStatistics() match
           case Some(s) =>
             sb.append(s" $s")
           case None =>
-        }
       case _ =>
-    }
     sb.toString()
-  }
-}
 
-object Column {
+object Column:
   /**
    * Method to make a Column from column values of <code>table</code>, identified by <code>name</code>.
    * Some columns cannot be analyzed (e.g., non-numeric columns) and that's why the result is optional.
@@ -222,7 +208,7 @@ object Column {
    * @param xs a sequence of String values, each corresponding to the column value of a row of the table.
    * @return an optional Column.
    */
-  def make(xs: Seq[String]): Option[Column] = {
+  def make(xs: Seq[String]): Option[Column] =
     val (ws, nulls) = xs.partition(_.nonEmpty)
     val nullable: Boolean = nulls.nonEmpty
     val co1 = for (xs <- sequence(for (w <- ws) yield w.toIntOption); ys = xs map (_.toDouble)) yield
@@ -230,7 +216,6 @@ object Column {
     lazy val co2 = for (xs <- sequence(for (w <- ws) yield w.toDoubleOption); ys = xs) yield
       Column("Double", nullable, Statistics.make(ys).map(EagerStatistics(_)))
     co1 orElse co2 orElse Some(Column("String", nullable, None))
-  }
 
   /**
    * Compute statistics for a single numeric column from an external source via a provider.
@@ -246,14 +231,13 @@ object Column {
    */
   def statisticsFrom(path: Path, columnName: String, useMetadataOnly: Boolean = true)(using provider: ColumnStatisticsProvider): Option[Column] =
     provider.computeStatistics(path, columnName, useMetadataOnly)
-}
 
 /**
  * Sealed trait representing statistics that may be eager or lazy.
  * Eager statistics are computed upfront (from Parquet metadata).
  * Lazy statistics are deferred as a thunk (computed on demand).
  */
-enum MaybeStatistics {
+enum MaybeStatistics:
   /**
    * Eager statistics, computed upfront (typically from Parquet metadata).
    *
@@ -275,11 +259,9 @@ enum MaybeStatistics {
    *
    * @return an optional Statistics (None if computation fails or thunk returns None).
    */
-  def getStatistics(): Option[Statistics] = this match {
+  def getStatistics(): Option[Statistics] = this match
     case EagerStatistics(stats) => Some(stats)
     case LazyStatistics(compute) => compute()
-  }
-}
 
 export MaybeStatistics.{EagerStatistics, LazyStatistics}
 
@@ -291,7 +273,7 @@ export MaybeStatistics.{EagerStatistics, LazyStatistics}
  * @param min   the smallest value.
  * @param max   the largest value.
  */
-case class Statistics(mu: Double, sigma: Double, min: Double, max: Double) {
+case class Statistics(mu: Double, sigma: Double, min: Double, max: Double):
   /**
    * Returns a string representation of the `Statistics` object, including the range, mean,
    * and standard deviation of the data.
@@ -300,13 +282,12 @@ case class Statistics(mu: Double, sigma: Double, min: Double, max: Double) {
    *         where `min`, `max`, `mu`, and `sigma` are the respective values of the `Statistics` object.
    */
   override def toString: String = s"(range: $min-$max, mean: $mu, stdDev: $sigma)"
-}
 
 /**
  * Companion object for the Statistics case class.
  * Provides methods to create a `Statistics` instance from a sequence of doubles.
  */
-object Statistics {
+object Statistics:
   /**
    * Creates an `Option[Statistics]` from a sequence of `Double` values.
    * If the sequence is empty, returns `None`.
@@ -316,19 +297,16 @@ object Statistics {
    * @param xs a sequence of `Double` values from which to compute statistics.
    * @return an `Option[Statistics]` containing the computed statistics if the sequence is non-empty, or `None` if the sequence is empty.
    */
-  def make(xs: Seq[Double]): Option[Statistics] = xs match {
+  def make(xs: Seq[Double]): Option[Statistics] = xs match
     case Nil =>
       None
     case h :: Nil =>
       Some(Statistics(h, 0, h, h))
     case _ =>
       doMake(xs)
-  }
 
-  private def doMake(xs: Seq[Double]): Option[Statistics] = {
+  private def doMake(xs: Seq[Double]): Option[Statistics] =
     val mu = xs.sum / xs.size
     val variance = (xs map (_ - mu) map (x => x * x)).sum / xs.size
     Some(Statistics(mu, math.sqrt(variance), xs.min, xs.max))
-  }
-}
 

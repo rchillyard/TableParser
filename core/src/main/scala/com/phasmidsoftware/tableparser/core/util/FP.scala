@@ -13,7 +13,7 @@ import scala.util.control.NonFatal
 /**
  * Various utilities for functional programming.
  */
-object FP {
+object FP:
 
   /**
    * Attempts to recover the value from a computation represented as a lazy `Try[Option[X]]`.
@@ -29,11 +29,10 @@ object FP {
    *         or the exception is rethrown if it is fatal.
    */
   def recoverOption[X](xy: => Try[Option[X]])(f: Throwable => Unit): Option[X] =
-    xy match {
+    xy match
       case Success(x) => x
       case Failure(NonFatal(x)) => f(x); None
       case Failure(x) => throw x
-    }
 
   /**
    * Method to return a random sampling function.
@@ -81,9 +80,8 @@ object FP {
    *         NOTE: that the output collection type will be Seq, regardless of the input type
    */
   def sequenceRev[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
-    xys.foldLeft(Try(Seq[X]())) {
+    xys.foldLeft(Try(Seq[X]())):
       (xsy, xy) => for (xs <- xsy; x <- xy) yield x +: xs
-    }
 
   /**
    * Sequence method to combine elements of Try.
@@ -94,12 +92,11 @@ object FP {
    *         NOTE: that the output collection type will be Seq, regardless of the input type
    */
   def sequenceForgiving[X](xys: Iterable[Try[X]]): Try[Seq[X]] =
-    sequenceForgivingWith[X](xys) {
+    sequenceForgivingWith[X](xys):
       case NonFatal(x) =>
         System.err.println(s"forgiving: $x"); Success(None)
       case x =>
         Failure(x)
-    }
 
   /**
    * Sequence method to combine elements of Try.
@@ -123,10 +120,9 @@ object FP {
    * @return a Try of Seq[X].
    *         NOTE: that the output collection type will be Seq, regardless of the input type
    */
-  def sequenceForgivingTransform[X](xys: Iterable[Try[X]])(fSuccess: X => Try[Option[X]], pfFailure: PartialFunction[Throwable, Try[Option[X]]]): Try[Seq[X]] = {
+  def sequenceForgivingTransform[X](xys: Iterable[Try[X]])(fSuccess: X => Try[Option[X]], pfFailure: PartialFunction[Throwable, Try[Option[X]]]): Try[Seq[X]] =
     val xosy: Try[Seq[Option[X]]] = sequence(for (xy <- xys) yield xy.transform[Option[X]](fSuccess, pfFailure))
     for (xos <- xosy) yield for (xo <- xos; x <- xo) yield x
-  }
 
   /**
    * Sequence (inclusive) method to combine elements of type Option[X].
@@ -145,16 +141,14 @@ object FP {
       (xso, xo) =>
         for {
           xs <- xso
-        } yield xo match {
+        } yield xo match
           case Some(x) =>
             x +: xs
           case None =>
             xs
-        }
-    }.collect {
+    }.collect:
       case list@_ :: _ =>
         list
-    }
 
   /**
    * Sequence method to combine elements of type Option[X].
@@ -170,10 +164,9 @@ object FP {
    *         CONSIDER using Builder
    */
   def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
-    xos.foldLeft(Option(Seq[X]())) { // TODO merge code with duplicate
+    xos.foldLeft(Option(Seq[X]())): // TODO merge code with duplicate
       (xso, xo) =>
         for (xs <- xso; x <- xo) yield x +: xs
-    }
 
   /**
    * Sequence method to combine elements of Option[X].
@@ -188,10 +181,9 @@ object FP {
    *         NOTE: that the output collection type will be Seq, regardless of the input type
    */
   def sequence[X](xos: Iterator[Option[X]]): Option[Seq[X]] =
-    xos.foldLeft(Option(Seq[X]())) { // TODO merge code with duplicate
+    xos.foldLeft(Option(Seq[X]())): // TODO merge code with duplicate
       (xso, xo) =>
         for (xs <- xso; x <- xo) yield x +: xs
-    }
 
   /**
    * Method to partition an Iterator.
@@ -230,12 +222,11 @@ object FP {
    * @return a Try[URL]
    */
   def resourceForClass(resourceName: String, clazz: Class[?] = getClass): Try[URL] =
-    Option(clazz.getResource(resourceName)) match {
+    Option(clazz.getResource(resourceName)) match
       case Some(u) =>
         Success(u)
       case None =>
         Failure(FPException(s"$resourceName is not a valid resource for $clazz"))
-  }
 
   /**
    * Method to determine if the String w was found at a valid index (i).
@@ -244,12 +235,11 @@ object FP {
    * @param i the index found.
    * @return Success(i) if all well, else Failure(exception).
    */
-  def indexFound(w: String, i: Int): Try[Int] = i match {
+  def indexFound(w: String, i: Int): Try[Int] = i match
     case x if x >= 0 =>
       Success(x)
     case _ =>
       Failure(FPException(s"Header column '$w' not found"))
-  }
 
   /**
    * Method to transform a Try[X] into an Option[X].
@@ -260,17 +250,15 @@ object FP {
    * @tparam X the underlying type.
    * @return an Option[X].
    */
-  def tryToOption[X](f: Throwable => Unit)(xy: Try[X]): Option[X] = xy match {
+  def tryToOption[X](f: Throwable => Unit)(xy: Try[X]): Option[X] = xy match
     case Success(x) =>
       Some(x)
     case Failure(NonFatal(x)) =>
       f(x); None
     case Failure(x) =>
       throw x
-  }
-}
 
-object TryUsing {
+object TryUsing:
   /**
    * This method is to `Using.apply` as `flatMap` is to `Map`.
    *
@@ -297,7 +285,6 @@ object TryUsing {
    */
   def apply[R: Releasable, A](ry: Try[R])(f: R => Try[A]): Try[A] =
     for (r <- ry; a <- apply(r)(f)) yield a
-}
 
 /**
  * A simple case class representing a custom exception for functional programming-related errors.

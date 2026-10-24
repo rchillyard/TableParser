@@ -52,7 +52,7 @@ trait Transformation[X, Y] extends (X => Y)
  * @see [[RawTable]]
  * @see [[Header.getIndex]]
  */
-case class RawTableTransformation(transformers: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable] {
+case class RawTableTransformation(transformers: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable]:
   /**
    * Applies a set of transformations to a given `RawTable`.
    * The transformations are selectively applied based on the column indices determined
@@ -62,11 +62,9 @@ case class RawTableTransformation(transformers: Map[String, Transformation[Strin
    *          Each row in the table may be transformed based on the transformations for matching columns.
    * @return a new `RawTable` where each row is transformed according to the applicable transformations.
    */
-  def apply(t: RawTable): RawTable = {
+  def apply(t: RawTable): RawTable =
     val xm: Map[Int, Transformation[String, String]] = for ((k, x) <- transformers; h <- t.maybeHeader; index <- h.getIndex(k).toOption) yield (index, x)
     t.map(RawRowTransformation(xm))
-  }
-}
 
 /**
  * This case class represents a transformation that performs column-wise aggregation on a `RawTable`.
@@ -78,7 +76,7 @@ case class RawTableTransformation(transformers: Map[String, Transformation[Strin
  *                    input from a column and produces a transformed string output.
  */
 @unused
-case class RawTableAggregation(aggregators: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable] {
+case class RawTableAggregation(aggregators: Map[String, Transformation[String, String]]) extends Transformation[RawTable, RawTable]:
   /**
    * Transforms a given `RawTable` by applying specified column-wise transformations.
    *
@@ -87,7 +85,7 @@ case class RawTableAggregation(aggregators: Map[String, Transformation[String, S
    *         The transformations are applied by mapping column names to their respective transformation logic,
    *         using the header to resolve column indices.
    */
-  def apply(t: RawTable): RawTable = t.maybeHeader match { // NOTE there will always be a header for a raw table.
+  def apply(t: RawTable): RawTable = t.maybeHeader match // NOTE there will always be a header for a raw table.
     case Some(header) =>
       val wWtXm = for {
         (column, wWt) <- aggregators
@@ -95,8 +93,6 @@ case class RawTableAggregation(aggregators: Map[String, Transformation[String, S
       t.map(RawRowTransformation(wWtXm))
     case None =>
       throw TableException(s"RawTableAggregation.apply($t) is missing its header")
-  }
-}
 
 /**
  * A transformation that projects a subset of columns from a `RawTable` based on the specified column names.
@@ -106,7 +102,7 @@ case class RawTableAggregation(aggregators: Map[String, Transformation[String, S
  *
  * @param columns A sequence of column names to include in the resulting table.
  */
-case class RawTableProjection(columns: Seq[String]) extends Transformation[RawTable, RawTable] {
+case class RawTableProjection(columns: Seq[String]) extends Transformation[RawTable, RawTable]:
   /**
    * Applies a projection to a `RawTable` based on the specified column names.
    *
@@ -118,11 +114,9 @@ case class RawTableProjection(columns: Seq[String]) extends Transformation[RawTa
    * @return a new `RawTable` containing only the columns specified by the `columns` parameter
    *         of the parent `RawTableProjection` class, in the same order as provided.
    */
-  def apply(t: RawTable): RawTable = {
+  def apply(t: RawTable): RawTable =
     val xs: Seq[Int] = for (k <- columns; h <- t.maybeHeader; io = h.getIndex(k).toOption; i <- io) yield i
     t.map(RawRowProjection(xs))
-  }
-}
 
 /**
  * Represents a transformation that can be applied to a `RawRow`, transforming its individual string elements
@@ -136,11 +130,10 @@ case class RawTableProjection(columns: Seq[String]) extends Transformation[RawTa
  *                     to be applied to the corresponding column's data. If a column index is not present in this map,
  *                     an identity transformation is applied by default.
  */
-case class RawRowTransformation(transformers: Map[Int, Transformation[String, String]]) extends Transformation[RawRow, RawRow] {
+case class RawRowTransformation(transformers: Map[Int, Transformation[String, String]]) extends Transformation[RawRow, RawRow]:
 
   def apply(r: RawRow): RawRow =
     RawRow(for ((x, i) <- r.ws.zipWithIndex; f = transformers.getOrElse(i, identityMapper)) yield f(x), r.header)
-}
 
 /**
  * A case class `RawRowProjection` that transforms a `RawRow` into another `RawRow` by selecting specific columns.
@@ -153,7 +146,7 @@ case class RawRowTransformation(transformers: Map[Int, Transformation[String, St
  * @define X The input type, which is `RawRow`.
  * @define Y The output type, which is also `RawRow`.
  */
-case class RawRowProjection(columns: Seq[Int]) extends Transformation[RawRow, RawRow] {
+case class RawRowProjection(columns: Seq[Int]) extends Transformation[RawRow, RawRow]:
   /**
    * Transforms a given `RawRow` into a new `RawRow` by selectively retaining columns based on the indices
    * specified in the `columns` parameter of the enclosing `RawRowProjection` class.
@@ -167,7 +160,6 @@ case class RawRowProjection(columns: Seq[Int]) extends Transformation[RawRow, Ra
    */
   def apply(r: RawRow): RawRow =
     RawRow(for ((x, i) <- r.ws.zipWithIndex; if columns contains i) yield x, r.header)
-}
 
 /**
  * A case class representing a transformation for individual cell values in a table.

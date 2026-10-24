@@ -17,7 +17,7 @@ import scala.util.{Failure, Random, Success, Try}
  * @tparam Table the Table type.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of TableParser[${Table}]. Typically, you should define an instance of StringTableParser or StringsTableParser.")
-trait TableParser[Table] extends TableBuilder[Table] {
+trait TableParser[Table] extends TableBuilder[Table]:
   /**
    * The input type, typically `String` or `Strings`.
    */
@@ -61,7 +61,6 @@ trait TableParser[Table] extends TableBuilder[Table] {
    * @return an Try[Table]
    */
   def parse(xs: Iterator[Input], n: Int = headerRowsToRead): Try[Table]
-}
 
 /**
  * The `TableParser` object provides functionality for parsing tabular data from various sources
@@ -69,7 +68,7 @@ trait TableParser[Table] extends TableBuilder[Table] {
  * working with sampled data, and handling parsing results effectively. The object also provides
  * implicit and utility functions to enhance parsing workflows.
  */
-object TableParser {
+object TableParser:
 
   /**
    * Class to allow the simplification of an expression to parse a source, given a `StringTableParser`.
@@ -77,7 +76,7 @@ object TableParser {
    * @param p a StringTableParser.
    * @tparam Table the (parametric) underlying type of `p` (`Table` will be `Table[_]`).
    */
-  extension [Table](p: StringTableParser[Table]) {
+  extension [Table](p: StringTableParser[Table])
 
     /**
      * Method to parse a `Try[Source]` character-by-character.
@@ -97,7 +96,6 @@ object TableParser {
      */
     private def doParse(xs: Iterator[String]): Try[Table] =
       p.parse(xs, 1)
-  }
 
   val r: Random = new Random()
 
@@ -113,18 +111,16 @@ object TableParser {
    * @return a Try[X] => Boolean function which is always yields false if its input is a failure, otherwise,
    *         it chooses every nth value (approximately).
    */
-  def sampler[X](n: Int): Try[X] => Boolean = {
+  def sampler[X](n: Int): Try[X] => Boolean =
     case Success(_) =>
       r.nextInt(n) == 0
     case _ =>
       false
-  }
 
   /**
    * a function which always evaluates as true, regardless of the successfulness of the input.
    */
   val includeAll: Try[Any] => Boolean = _ => true
-}
 
 /**
  * A trait representing a parser for tables that supports configurability and row-level parsing.
@@ -139,7 +135,7 @@ object TableParser {
  * @tparam Input the type of the raw input data used to parse rows.
  * @tparam Table the type of the parsed table.
  */
-trait CopyableTableParser[Row, Input, Table] {
+trait CopyableTableParser[Row, Input, Table]:
   /**
    * Sets a fixed header for the table parser.
    * This method allows the configuration of the parser to use the specified header,
@@ -200,7 +196,6 @@ trait CopyableTableParser[Row, Input, Table] {
    * @return a new `TableParser` instance configured with the specified row parser.
    */
   def setRowParser(rowParser: RowParser[Row, Input]): TableParser[Table]
-}
 
 /**
  * Class used to parse files as a Table of Seq[String].
@@ -211,7 +206,7 @@ trait CopyableTableParser[Row, Input, Table] {
  * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
  */
 case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
-        extends StringTableParser[RawTable] with CopyableTableParser[RawRow, String, RawTable] {
+        extends StringTableParser[RawTable] with CopyableTableParser[RawRow, String, RawTable]:
 
   type Row = RawRow
 
@@ -237,12 +232,10 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
     copy(predicate = p)
 
   def setRowParser(rp: RowParser[Row, String]): RawTableParser =
-    new RawTableParser(predicate, maybeHeader, forgiving, multiline, headerRowsToRead) {
+    new RawTableParser(predicate, maybeHeader, forgiving, multiline, headerRowsToRead):
       override val rowParser: RowParser[Row, String] = rp
-  }
-}
 
-object RawTableParser {
+object RawTableParser:
   /**
    * Method to create a RawTableParser which reads the header from the first line of the input
    * or, if a fixed header is given, expects the input to have no header line.
@@ -255,7 +248,6 @@ object RawTableParser {
    */
   def create(predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header], forgiving: Boolean = false, multiline: Boolean = false): RawTableParser =
     RawTableParser(predicate, maybeFixedHeader, forgiving, multiline, if (maybeFixedHeader.isDefined) 0 else 1)
-}
 
 /**
  * Case class to define a StringTableParser that assumes a header to be found in the input file.
@@ -278,7 +270,7 @@ object RawTableParser {
  * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
  */
 case class PlainTextHeadedStringTableParser[X: CellParser](override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
-        extends HeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead) {
+        extends HeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead):
 
   def setHeader(header: Header): PlainTextHeadedStringTableParser[X] =
     copy(maybeHeader = Some(header))
@@ -287,20 +279,16 @@ case class PlainTextHeadedStringTableParser[X: CellParser](override val maybeHea
     copy(forgiving = b)
 
   def setMultiline(b: Boolean): PlainTextHeadedStringTableParser[X] =
-    new PlainTextHeadedStringTableParser[X](maybeHeader, forgiving) {
+    new PlainTextHeadedStringTableParser[X](maybeHeader, forgiving):
       override val multiline: Boolean = b
-  }
 
   def setPredicate(p: Try[X] => Boolean): PlainTextHeadedStringTableParser[X] =
-    new PlainTextHeadedStringTableParser[X](maybeHeader, forgiving) {
-    override val predicate: Try[X] => Boolean = p
-  }
+    new PlainTextHeadedStringTableParser[X](maybeHeader, forgiving):
+      override val predicate: Try[X] => Boolean = p
 
   def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] =
-    new PlainTextHeadedStringTableParser[X] {
+    new PlainTextHeadedStringTableParser[X]:
       override val rowParser: RowParser[X, String] = rp
-  }
-}
 
 /**
  * Abstract class to define a StringTableParser that assumes a header to be found in the input file.
@@ -327,7 +315,7 @@ case class PlainTextHeadedStringTableParser[X: CellParser](override val maybeHea
  * @tparam X the underlying row type for which there must be evidence of a CellParser and ClassTag.
  */
 abstract class HeadedStringTableParser[X: CellParser](maybeFixedHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
-        extends StringTableParser[Table[X]] with CopyableTableParser[X, String, Table[X]] {
+        extends StringTableParser[Table[X]] with CopyableTableParser[X, String, Table[X]]:
 
   type Row = X
 
@@ -338,9 +326,8 @@ abstract class HeadedStringTableParser[X: CellParser](maybeFixedHeader: Option[H
 
   val rowParser: RowParser[X, String] =
     StandardRowParser.create[X]
-}
 
-object HeadedStringTableParser {
+object HeadedStringTableParser:
   /**
    * This `create` method constructs a HeadedStringTableParser with header based simply on the type X.
    * In this case, the source data must have the same number of columns as X has parameters, and they must be in the
@@ -351,7 +338,6 @@ object HeadedStringTableParser {
    */
   def create[X: CellParser : FieldNames](forgiving: Boolean): HeadedStringTableParser[X] =
     PlainTextHeadedStringTableParser[X](Some(Header.apply[X]()), forgiving, 0)
-}
 
 /**
  * Abstract base class for implementations of TableParser[T].
@@ -361,7 +347,7 @@ object HeadedStringTableParser {
  *
  * @tparam Table the (parametric) Table type.
  */
-abstract class AbstractTableParser[Table] extends TableParser[Table] {
+abstract class AbstractTableParser[Table] extends TableParser[Table]:
 
   /**
    * Abstract method to parse a sequence of Inputs, with a given header.
@@ -379,7 +365,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    * @param n  the number of rows to drop (length of the header).
    * @return a Try[Table].
    */
-  def parse(xs: Iterator[Input], n: Int = headerRowsToRead): Try[Table] = maybeHeader match {
+  def parse(xs: Iterator[Input], n: Int = headerRowsToRead): Try[Table] = maybeHeader match
     case Some(h) =>
       // CONSIDER eliminating the drop here but there is one test in Cats Tests that will fail
       parseRows(xs drop n, h)
@@ -388,7 +374,6 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
       for (h <- rowParser.parseHeader(yr.tee); t <- parseRows(yr, h)) yield t
     case _ =>
       Failure(TableParserException("parse: logic error"))
-  }
 
   /**
    * Parses rows of input data into a table representation.
@@ -406,22 +391,20 @@ abstract class AbstractTableParser[Table] extends TableParser[Table] {
    *               which defines how input elements can be combined or validated during processing.
    * @return a `Try` containing a `Table` if the parsing is successful, or an error in case of failure.
    */
-  def doParseRows(ts: Iterator[Input], header: Header, f: ((Input, Int)) => Try[Row])(using ev: Joinable[Input]): Try[Table] = {
+  def doParseRows(ts: Iterator[Input], header: Header, f: ((Input, Int)) => Try[Row])(using ev: Joinable[Input]): Try[Table] =
 
     val inputTransformer = new IndexedInputToRowsAggregator(f, multiline, forgiving, predicate)
 
     // NOTE that here, although builder takes an Iterator, all builder implementations that currently exist
     // wrap the rows into Content which forces a materialization of the rows into a list of rows.
     for (rs <- inputTransformer.processInput(ts)) yield builder(rs, header)
-  }
-}
 
 /**
  * The `AbstractTableParser` companion object provides utility methods for logging exceptions during the table parsing process.
  *
  * This object includes methods to log exceptions, whether they are directly provided as a `Throwable` or wrapped inside a `Try` result.
  */
-object AbstractTableParser {
+object AbstractTableParser:
   /**
    * Logs an exception by generating a warning message that includes the localized message of the exception
    * and, if present, the message from the exception's cause.
@@ -429,12 +412,11 @@ object AbstractTableParser {
    * @param e the `Throwable` exception to be logged. This might include a cause that provides additional context.
    * @return `Unit`. The method does not produce a result; it logs the warning message using the `TableParser.logger`.
    */
-  def logException(e: Throwable): Unit = {
+  def logException(e: Throwable): Unit =
     val string = s"${e.getLocalizedMessage}${
       if (e.getCause == null) "" else s" caused by ${e.getCause.getLocalizedMessage}"
     }"
     TableParser.logger.warn(string)
-  }
 
   /**
    * Logs an exception contained within a `Try` result. If the `Try` is a `Failure`, the enclosed exception is logged.
@@ -443,13 +425,11 @@ object AbstractTableParser {
    * @param xy a `Try` instance, which may either encapsulate a successful computation (`Success`) or an exception (`Failure`).
    * @return `Unit`. This method does not return a value; it is used only for logging purposes.
    */
-  def logException[X](xy: Try[X]): Unit = xy match {
+  def logException[X](xy: Try[X]): Unit = xy match
     case Success(_) =>
     // XXX do nothing
     case Failure(exception) =>
       logException(exception)
-  }
-}
 
 /**
  * Abstract class to extend AbstractTableParser but with Input = String.
@@ -457,7 +437,7 @@ object AbstractTableParser {
  *
  * @tparam Table the table type.
  */
-abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
+abstract class StringTableParser[Table] extends AbstractTableParser[Table]:
   type Input = String
 
   /**
@@ -484,7 +464,6 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
    * @return a Try[Table].
    */
   override def parse(xs: Iterator[String], n: Int = headerRowsToRead): Try[Table] = super.parse(xs, n)
-}
 
 /**
  * Abstract class for parsing tables from CSV-formatted strings, where the table has a defined header.
@@ -493,7 +472,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table] {
  * @tparam T the parametric type of rows in the table.
  * @param rp an implicit `RowParser`, which defines the logic for parsing individual rows of type `T` from strings.
  */
-abstract class HeadedCSVTableParser[T](using rp: RowParser[T, String]) extends StringTableParser[Table[T]] {
+abstract class HeadedCSVTableParser[T](using rp: RowParser[T, String]) extends StringTableParser[Table[T]]:
   type Row = T
 
   /**
@@ -514,7 +493,6 @@ abstract class HeadedCSVTableParser[T](using rp: RowParser[T, String]) extends S
    * @return a RowParser[Row, Input].
    */
   val rowParser: RowParser[T, String] = summon[RowParser[T, String]]
-}
 
 /**
  * Abstract class to extend AbstractTableParser but with Input = Strings
@@ -522,7 +500,7 @@ abstract class HeadedCSVTableParser[T](using rp: RowParser[T, String]) extends S
  *
  * @tparam Table the table type.
  */
-abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
+abstract class StringsTableParser[Table] extends AbstractTableParser[Table]:
   type Input = Strings
 
   /**
@@ -547,7 +525,6 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
    * @return a Try[Table].
    */
   override def parse(xs: Iterator[Strings], n: Int = headerRowsToRead): Try[Table] = super.parse(xs, n)
-}
 
 /**
  * TableParserHelper: abstract class to help with defining an implicit TableParser of Table[X].
@@ -567,7 +544,7 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table] {
  *                           are logged but otherwise do not affect the success of the overall parsing.
  * @tparam X the type for which we require a TableParser[X].
  */
-abstract class TableParserHelper[X](sourceHasHeaderRow: Boolean = true, forgiving: Boolean = false)(using fieldNames: => FieldNames[X]) extends CellParsers {
+abstract class TableParserHelper[X](sourceHasHeaderRow: Boolean = true, forgiving: Boolean = false)(using fieldNames: => FieldNames[X]) extends CellParsers:
 
   /**
    * Abstract method which will return a CellParser[X].
@@ -581,7 +558,6 @@ abstract class TableParserHelper[X](sourceHasHeaderRow: Boolean = true, forgivin
 
   given ptp: TableParser[Table[X]] =
     if (sourceHasHeaderRow) PlainTextHeadedStringTableParser[X](None, forgiving) else HeadedStringTableParser.create[X](forgiving)(using xp, fieldNames)
-}
 
 // NOTE: not currently instantiated
 case class TableParserException(msg: String, e: Option[Throwable] = None) extends Exception(msg, e.orNull)

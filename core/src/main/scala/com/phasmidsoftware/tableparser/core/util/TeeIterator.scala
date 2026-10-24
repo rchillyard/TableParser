@@ -16,7 +16,7 @@ package com.phasmidsoftware.tableparser.core.util
  * @param xs the input iterator.
  * @tparam X the underlying type.
  */
-class TeeIterator[X](n: Int)(xs: Iterator[X]) extends Iterator[X] {
+class TeeIterator[X](n: Int)(xs: Iterator[X]) extends Iterator[X]:
   /**
    * A sequence that contains the first `n` elements from the underlying iterator. This is
    * achieved by iterating up to `n` times (or until the iterator has no more elements).
@@ -47,7 +47,6 @@ class TeeIterator[X](n: Int)(xs: Iterator[X]) extends Iterator[X] {
    */
   def next(): X =
     xs.next()
-}
 
 /**
  * TESTME
@@ -69,9 +68,8 @@ class DebugIterator[X](xs: Iterator[X]) extends Iterator[X] {
    *
    * @return the next element of type X from the iterator.
    */
-  def next(): X = {
+  def next(): X =
     val x = xs.next()
     println(x)
     x
-  }
 }

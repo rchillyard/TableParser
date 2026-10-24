@@ -11,7 +11,7 @@ import com.phasmidsoftware.tableparser.core.table.{CsvAttributes, HasKey, Table}
 import java.nio.file.Path
 import scala.language.postfixOps
 
-object TableCrypt {
+object TableCrypt:
 
   /**
    * Method to render this Table[T] as a CSV file with (maybe) header.
@@ -27,4 +27,3 @@ object TableCrypt {
    */
   def writeCSVFileEncrypted[A: HexEncryption, Row](table: Table[Row])(path: Path)(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], hasKey: HasKey[Row], csvAttributes: CsvAttributes): Unit =
     CsvTableEncryptedFileRenderer[Row, A](path.toFile).render(table)
-}

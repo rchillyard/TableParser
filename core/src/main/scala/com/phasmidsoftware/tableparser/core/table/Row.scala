@@ -14,10 +14,9 @@ import scala.util.{Failure, Try}
  * @param ws  the (raw) Strings that make up the row.
  * @param hdr is the Header containing the column names.
  */
-case class Row(ws: Seq[String], hdr: Header, index: Int) extends BaseRow(ws, hdr) {
+case class Row(ws: Seq[String], hdr: Header, index: Int) extends BaseRow(ws, hdr):
   override def toString(): String =
     s"""Row: $index: ${ws.mkString("[", ",", "]")} with header=$hdr"""
-}
 
 /**
  * Abstract class to represent a (raw) row from a table.
@@ -25,7 +24,7 @@ case class Row(ws: Seq[String], hdr: Header, index: Int) extends BaseRow(ws, hdr
  * @param ws  the (raw) Strings that make up the row.
  * @param hdr is the Header containing the column names.
  */
-abstract class BaseRow(ws: Seq[String], hdr: Header) extends (String => Try[String]) {
+abstract class BaseRow(ws: Seq[String], hdr: Header) extends (String => Try[String]):
 
   /**
    * Method to yield the value for a given column name
@@ -44,12 +43,11 @@ abstract class BaseRow(ws: Seq[String], hdr: Header) extends (String => Try[Stri
    * @param x an index from 0 thru length-1.
    * @return the value as a String.
    */
-  def apply(x: Int): Try[String] = Try(ws(x)) recoverWith {
+  def apply(x: Int): Try[String] = Try(ws(x)) recoverWith:
     case e: IndexOutOfBoundsException if x == -1 =>
       Failure(e)
     case _: IndexOutOfBoundsException =>
       Failure(ParserException(s"Row: index out of range: $x (there are ${ws.size} elements)"))
-  }
 
   /**
    * Method to get the index of a column name
@@ -67,13 +65,12 @@ abstract class BaseRow(ws: Seq[String], hdr: Header) extends (String => Try[Stri
    */
   override def toString(): String =
     s"""Row: ${ws.mkString("[", ",", "]")} with header=$hdr"""
-}
 
 /**
  * Companion object for the `Row` class, providing utilities for working with rows,
  * including CSV rendering and generation.
  */
-object Row {
+object Row:
 
   /**
    * Method to yield a CsvGenerator[T] from an instance of Header.
@@ -82,7 +79,7 @@ object Row {
    * @param c   CsvAttributes.
    * @return a new CsvGenerator[T].
    */
-  def csvGenerator[T](hdr: Header)(using c: CsvAttributes): CsvGenerator[T] = new CsvGenerator[T] {
+  def csvGenerator[T](hdr: Header)(using c: CsvAttributes): CsvGenerator[T] = new CsvGenerator[T]:
     val csvAttributes: CsvAttributes = c
 
     /**
@@ -96,13 +93,10 @@ object Row {
      * @return A string representing the fully qualified column name based on the header and delimiter configuration.
      */
     def toColumnName(po: Option[String], name: String): String = ((hdr.xs +: hdr.xss) map (_.mkString(c.delimiter))).mkString(c.newline)
-  }
-}
 
-case class RawRow(ws: Seq[String], header: Header) extends BaseRow(ws, header) {
+case class RawRow(ws: Seq[String], header: Header) extends BaseRow(ws, header):
   override def toString(): String = RowValues(Row(ws, header, 0), header).toString
 //    s"""RawRow: ${ws.mkString("[", ",", "]")} with header=$header"""
-}
 
 /**
  * A wrapper class to index a T.

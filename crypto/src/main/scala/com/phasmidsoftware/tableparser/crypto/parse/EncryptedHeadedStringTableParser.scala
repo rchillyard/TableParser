@@ -35,7 +35,7 @@ import scala.util.Try
  * @tparam X the underlying row type for which there must be evidence of a CellParser.
  */
 case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](encryptedRowPredicate: String => Boolean, keyFunction: String => String, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
-        extends HeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead) {
+        extends HeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead):
 
   private val phase2Parser: PlainTextHeadedStringTableParser[X] = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
 
@@ -47,13 +47,11 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
    *           If n == 0 == maybeHeader.empty then there is a logic error.
    * @return an IO[Table]
    */
-  def parseIO(xr: Iterator[String], n: Int): IO[Table[X]] = {
-    def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] = {
-      phase2Parser match {
+  def parseIO(xr: Iterator[String], n: Int): IO[Table[X]] =
+    def decryptAndParse(h: Header, xt: RawTable): IO[Table[X]] =
+      phase2Parser match
         case p: TableParser[?] => for (wt <- decryptTable(xt); xt <- IO.fromTry(p.parseRows(wt.iterator, h))) yield xt
-      }
 
-    }
 
 
 
@@ -61,7 +59,6 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
     val hi: IO[Header] = IO.fromTry(parseHeader(sr.tee))
     val xti: IO[RawTable] = IO.fromTry(createPhase1Parser.parse(sr, 1)) // NOTE n=1 is a guess
     for (h <- hi; xt1 <- xti; xt2 <- decryptAndParse(h, xt1)) yield xt2
-  }
 
   /**
    * Set the Header for the plaintext TableParser.
@@ -114,7 +111,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
    */
   def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] = phase2Parser.setRowParser(rp)
 
-  private def createPhase1Parser = {
+  private def createPhase1Parser =
     def rawPredicate(ry: Try[RawRow]): Boolean = ry.map(r => encryptedRowPredicate(r.ws.head)).toOption.getOrElse(false)
 
     val encryptionHeader: Header = Header(Seq("key", "value"), Nil)
@@ -122,12 +119,9 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
     given rawRowCellParser: CellParser[RawRow] = StdCellParsers.rawRowCellParser
     val lineParser: LineParser = LineParser.apply(using rowConfig)
     RawTableParser(rawPredicate, Some(encryptionHeader), forgiving = false, multiline = false, headerRowsToRead).setRowParser(StandardRowParser[RawRow](lineParser))
-  }
 
   import cats.effect.IO
 
-  private def decryptTable(xt: RawTable): IO[Table[String]] = {
+  private def decryptTable(xt: RawTable): IO[Table[String]] =
     val wit: Table[IO[String]] = xt.map(row => HexEncryption.decryptRow(keyFunction)(row.ws))
     for (ws <- IO.parSequenceN(2)(wit.toSeq)) yield wit.unit(ws)
-  }
-}

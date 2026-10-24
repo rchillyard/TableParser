@@ -18,7 +18,7 @@ import scala.util.{Failure, Success, Try}
  * @tparam Row the type that each row will be processed into.
  */
 @implicitNotFound(msg = "Cannot find an implicit instance of RowProcessor[${Row}]. Typically, you should define an instance of StringRowProcessor or, for example, MovieRowProcessor.")
-trait RowProcessor[Row] {
+trait RowProcessor[Row]:
 
   /**
    * The input type, typically `String`.
@@ -64,7 +64,6 @@ trait RowProcessor[Row] {
    * @return a RowParser[Row, Input].
    */
   protected val rowParser: RowParser[Row, Input]
-}
 
 /**
  * Abstract class representing a row processor for handling input rows and parsing them into a specified row type.
@@ -75,7 +74,7 @@ trait RowProcessor[Row] {
  *
  * @tparam Row the type of rows output by this processor.
  */
-abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
+abstract class AbstractRowProcessor[Row] extends RowProcessor[Row]:
 
   /**
    * Processes an iterator of input rows with an optional header and parses them into rows.
@@ -101,20 +100,18 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    * @return a `Try` containing an iterator of parsed `Row` objects if the parsing succeeds,
    *         or a failure if any step of the process encounters an error (e.g., invalid header or processing logic).
    */
-  def process(xs: Iterator[Input], n: Int)(using ev: Joinable[Input]): Iterator[Row] = maybeHeader match {
+  def process(xs: Iterator[Input], n: Int)(using ev: Joinable[Input]): Iterator[Row] = maybeHeader match
     case Some(h) =>
       doProcessRows(xs, rowParser.parseIndexed(h))
     case None if n > 0 =>
       val yr: TeeIterator[Input] = new TeeIterator(n)(xs)
-      rowParser.parseHeader(yr.tee) match {
+      rowParser.parseHeader(yr.tee) match
         case Success(h) =>
           doProcessRows(yr, rowParser.parseIndexed(h))
         case Failure(exception) =>
           throw exception
-      }
     case _ =>
       throw RowProcessorException("parse: logic error: no header")
-  }
 
   /**
    * Processes an iterator of input rows based on a provided header and a transformation function.
@@ -136,13 +133,11 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
    *               `Joinable` type class, which provides methods to join or validate input elements.
    * @return an iterator of successfully processed rows of type `Row`.
    */
-  private def doProcessRows(ts: Iterator[Input], f: ((Input, Int)) => Try[Row])(using ev: Joinable[Input]): Iterator[Row] = {
+  private def doProcessRows(ts: Iterator[Input], f: ((Input, Int)) => Try[Row])(using ev: Joinable[Input]): Iterator[Row] =
 
     val inputTransformer = new IndexedInputToRowsTransformer(f, multiline)
 
     for (rs <- inputTransformer.processInput(ts)) yield rs
-  }
-}
 
 /**
  * Abstract class to extend AbstractTableParser but with Input = String.
@@ -150,7 +145,7 @@ abstract class AbstractRowProcessor[Row] extends RowProcessor[Row] {
  *
  * @tparam Row the row type.
  */
-abstract class StringRowProcessor[Row](using rp: RowParser[Row, String]) extends AbstractRowProcessor[Row] {
+abstract class StringRowProcessor[Row](using rp: RowParser[Row, String]) extends AbstractRowProcessor[Row]:
   type Input = String
 
   val rowParser: RowParser[Row, String] = summon[RowParser[Row, String]]
@@ -179,7 +174,6 @@ abstract class StringRowProcessor[Row](using rp: RowParser[Row, String]) extends
    *         or a failure if any step of the process encounters an error (e.g., invalid header or processing logic).
    */
   override def process(xs: Iterator[String], n: Int)(using ev: Joinable[String]): Iterator[Row] = super.process(xs, n)
-}
 
 // NOTE: not currently instantiated
 case class RowProcessorException(msg: String, e: Option[Throwable] = None) extends Exception(msg, e.orNull)

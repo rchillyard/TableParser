@@ -31,15 +31,14 @@ import java.net.URL
  */
 case class TeamProject(team: Team, grade: Grade, remarks: String, repository: URL)
 
-object TeamProject {
+object TeamProject:
   implicit val orderingTeamProject: Ordering[TeamProject] = Ordering.by[TeamProject, Int](p => p.team.number)
-}
 
 case class Team(number: Int, member_1: String, member_2: Option[String], member_3: Option[String], member_4: Option[String])
 
 case class Grade(totalScore: Double, onTime: Double, scopeScale: Double, planningPresentation: Double, presentation: Double, idea: Double, useCases: Double, acceptanceCriteria: Double, teamExecution: Double, code: Double, unitTests: Double, repo: Double)
 
-object TeamProjectParser extends CellParsers {
+object TeamProjectParser extends CellParsers:
 
   private val camelToSnakeCaseColumnNameMapper: String => String = _.replaceAll("([A-Z\\d])", "_$1")
 
@@ -57,9 +56,8 @@ object TeamProjectParser extends CellParsers {
   implicit val teamProjectConfig: RowConfig = RowConfig(listEnclosure = "")
 
   val parser: StandardRowParser[TeamProject] = StandardRowParser.create[TeamProject]
-}
 
-sealed trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]] {
+sealed trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]]:
   type Row = TeamProject
 
   override val maybeHeader: Option[Header] = None
@@ -71,6 +69,5 @@ sealed trait TeamProjectTableParser extends StringTableParser[Table[TeamProject]
   val rowParser: RowParser[Row, String] = TeamProjectParser.parser
 
   protected def builder(rows: Iterator[TeamProject], header: Header): Table[Row] = HeadedTable(rows, header)
-}
 
 object TeamProjectTableParser extends TeamProjectTableParser

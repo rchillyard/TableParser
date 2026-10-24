@@ -9,19 +9,17 @@ import java.nio.file.Path
  * Implicit single-file analyzer factory implementation.
  * In scope when you `import com.phasmidsoftware.tableparser.parquet._`
  */
-given singleFileFactory: SingleFileAnalyzerFactory = new SingleFileAnalyzerFactory {
+given singleFileFactory: SingleFileAnalyzerFactory = new SingleFileAnalyzerFactory:
   def apply(path: Path): Analyzer =
     ParquetAnalyzer[Nothing](path).asInstanceOf[Analyzer]
-}
 
 /**
  * Implicit dataset analyzer factory implementation.
  * In scope when you `import com.phasmidsoftware.tableparser.parquet._`
  */
-given datasetFactory: DatasetAnalyzerFactory = new DatasetAnalyzerFactory {
+given datasetFactory: DatasetAnalyzerFactory = new DatasetAnalyzerFactory:
   def apply(path: Path): Analyzer =
     ParquetDatasetAnalyzer[Nothing](path).asInstanceOf[Analyzer]
-}
 
 /**
  * Implicit ColumnStatisticsProvider for Parquet sources.

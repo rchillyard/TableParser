@@ -13,15 +13,14 @@ import scala.util.Try
 /**
  * This tests one aspect of TableParserHelper which cannot be conveniently tested in the same module as the other.
  */
-class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
+class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
   behavior of "TableParserHelper without a header row in the input file"
 
-  case class Player(first: String, last: String) {
+  case class Player(first: String, last: String):
     def nickname: String = s"$first ${last.head}"
-  }
 
-  object Player extends TableParserHelper[Player](false) {
+  object Player extends TableParserHelper[Player](false):
     lazy val cellParser: CellParser[Player] = CellParser.derived[Player]
 
     /**
@@ -38,30 +37,23 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers {
      * @return a Table[Partnership]
      */
     def convertTable(pt: Table[Player]): Table[Partnership] = pt.processRows(xs => Content((xs.toSeq grouped 2).map(r => Partnership(r)).toList))
-  }
 
-  case class Partnership(playerA: String, playerB: String) {
+  case class Partnership(playerA: String, playerB: String):
     def asArray: Array[String] = Array(playerA, playerB)
-  }
 
-  object Partnership {
+  object Partnership:
     def apply(players: Iterable[Player]): Partnership = Partnership(players.head.nickname, players.last.nickname)
-  }
 
-  case class Partnerships(partners: Array[Array[String]]) {
+  case class Partnerships(partners: Array[Array[String]]):
     def size: Int = partners.length
-  }
 
-  it should "support fixed header" in {
+  it should "support fixed header" in:
     val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
     val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
-    matchTry(pty) {
+    matchTry(pty):
       case pt@HeadedTable(_, _) =>
         val sht: Table[Partnership] = Player.convertTable(pt)
         val partnerships: Partnerships = Partnerships((for (t <- sht) yield t.asArray).toArray)
         partnerships.size shouldBe 2
         partnerships.partners.head shouldBe Array("Adam S", "Amy A")
         partnerships.partners.last shouldBe Array("Ann P", "Barbara G")
-    }
-  }
-}

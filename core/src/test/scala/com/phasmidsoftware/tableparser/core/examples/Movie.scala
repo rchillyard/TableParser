@@ -80,7 +80,7 @@ case class Movie(title: String, format: Format, production: Production, reviews:
  *   val csvRepresentation = movieCsvGenerator.generate(movie)
  * }}}
  */
-object Movie extends CellParsers with CsvGenerators with CsvRenderers {
+object Movie extends CellParsers with CsvGenerators with CsvRenderers:
   val missing: Movie = apply("", Format.none, Production.none, Reviews.none, Principal.nemo, Principal.nemo, Principal.nemo, None, AttributeSet.none, AttributeSet.none, "")
   val header = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
   implicit val helper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapperLower,
@@ -109,9 +109,8 @@ object Movie extends CellParsers with CsvGenerators with CsvRenderers {
    * This trait serves as the foundation for parsing movie-related tables, enabling seamless integration with libraries
    * and frameworks that require structured table parsing capabilities.
    */
-  trait MovieTableParser extends HeadedCSVTableParser[Movie] {
+  trait MovieTableParser extends HeadedCSVTableParser[Movie]:
     override val forgiving: Boolean = true
-  }
 
   /**
    * An implicit object that extends the `MovieTableParser` trait to provide an implicit parser for converting
@@ -148,9 +147,8 @@ object Movie extends CellParsers with CsvGenerators with CsvRenderers {
    * - `headerRowsToRead`: Specifies the number of rows to consume when detecting a dynamic header.
    * - `forgiving`: Configures fault-tolerance for processing, set to `true` by default.
    * - `rowParser`: An implicit instance of `RowParser */
-  trait MovieRowProcessor extends StringRowProcessor[Movie] {
+  trait MovieRowProcessor extends StringRowProcessor[Movie]:
     override val forgiving: Boolean = true
-  }
 
   /**
    * `MovieRowProcessor` is an implicit object that extends the `MovieRowProcessor` trait, providing
@@ -175,7 +173,6 @@ object Movie extends CellParsers with CsvGenerators with CsvRenderers {
    * @see `Movie` for the detailed representation of the processed row data.
    */
   implicit object MovieRowProcessor extends MovieRowProcessor
-}
 
 /**
  * Represents the format attributes associated with a movie, such as its color, language, aspect ratio, and duration.
@@ -205,10 +202,9 @@ object Movie extends CellParsers with CsvGenerators with CsvRenderers {
  * println(defaultFormat) // Outputs: ,,,None,None
  * }}}
  */
-case class Format(color: String, language: String, aspectRatio: Option[Double], duration: Option[Int]) {
+case class Format(color: String, language: String, aspectRatio: Option[Double], duration: Option[Int]):
   override def toString: String =
     s"$color,$language,$aspectRatio,$duration"
-}
 
 /**
  * The `Format` object provides a predefined constant for representing a default `Format` instance.
@@ -219,7 +215,7 @@ case class Format(color: String, language: String, aspectRatio: Option[Double], 
  *
  * @see Format The case class representing the format attributes such as color, language, aspect ratio, and duration.
  */
-object Format extends CellParsers with CsvGenerators with CsvRenderers {
+object Format extends CellParsers with CsvGenerators with CsvRenderers:
   val none: Format = Format("", "", None, None)
   implicit val helper: ColumnHelper[Format] = columnHelper(camelToSnakeCaseColumnNameMapperLower)
   implicit val parser: CellParser[Format] = CellParser.derived[Format]
@@ -230,7 +226,6 @@ object Format extends CellParsers with CsvGenerators with CsvRenderers {
   implicit val generatorOptDouble: CsvGenerator[Option[Double]] = optionGenerator
   implicit val generatorOptString: CsvGenerator[Option[String]] = optionGenerator
   implicit val generator: CsvGenerator[Format] = CsvGenerator.derived[Format]
-}
 
 /**
  * The `Production` case class represents the metadata associated with a creative production,
@@ -255,12 +250,10 @@ object Format extends CellParsers with CsvGenerators with CsvRenderers {
  * println(production2.isKiwi) // Output: false
  * }}}
  */
-case class Production(country: String, budget: Option[Int], gross: Option[Int], titleYear: Option[Int]) {
-  def isKiwi: Boolean = this match {
+case class Production(country: String, budget: Option[Int], gross: Option[Int], titleYear: Option[Int]):
+  def isKiwi: Boolean = this match
     case Production("New Zealand", _, _, _) => true
     case _ => false
-  }
-}
 
 /**
  * The `Production` object serves as a companion object for the `Production` case class.
@@ -273,13 +266,12 @@ case class Production(country: String, budget: Option[Int], gross: Option[Int], 
  *
  * @see [[Production]] case class for the associated data structure and detailed behavior.
  */
-object Production extends CellParsers with CsvGenerators with CsvRenderers {
+object Production extends CellParsers with CsvGenerators with CsvRenderers:
   val none: Production = Production("", None, None, None)
   implicit val helper: ColumnHelper[Production] = columnHelper(camelToSnakeCaseColumnNameMapperLower)
   implicit val parser: CellParser[Production] = CellParser.derived[Production]
   implicit val renderer: CsvRenderer[Production] = CsvRenderer.derived[Production]
   implicit val generator: CsvGenerator[Production] = CsvGenerator.derived[Production]
-}
 
 /**
  * The `Reviews` case class represents aggregated review and user feedback data for a movie,
@@ -302,7 +294,7 @@ case class Reviews(imdbScore: Double, facebookLikes: Int, contentRating: Rating,
  * This object is primarily used to define default or placeholder instances of `Reviews`, such as the `none` value,
  * which represents a `Reviews` instance with default or empty data.
  */
-object Reviews extends CellParsers with CsvGenerators with CsvRenderers {
+object Reviews extends CellParsers with CsvGenerators with CsvRenderers:
   val none: Reviews = Reviews(0, 0, Rating(""), None, 0, None, 0)
   implicit val helper: ColumnHelper[Reviews] = columnHelper(camelToSnakeCaseColumnNameMapperLower,
     "facebookLikes" -> "movie_facebook_likes",
@@ -313,7 +305,6 @@ object Reviews extends CellParsers with CsvGenerators with CsvRenderers {
   implicit val parser: CellParser[Reviews] = CellParser.derived[Reviews]
   implicit val renderer: CsvRenderer[Reviews] = CsvRenderer.derived[Reviews]
   implicit val generator: CsvGenerator[Reviews] = CsvGenerator.derived[Reviews]
-}
 /**
  * Represents a principal entity involved in a production. This entity is characterized by its name
  * and the number of Facebook likes it has received. Typically, the `Principal` class is used to model
@@ -333,9 +324,8 @@ object Reviews extends CellParsers with CsvGenerators with CsvRenderers {
  *       Additionally, a default instance of `Principal` may be provided in an accompanying
  *       companion object for known default values.
  */
-case class Principal(name: Name, facebookLikes: Int) {
+case class Principal(name: Name, facebookLikes: Int):
   override def toString = s"$name ($facebookLikes likes)"
-}
 
 /**
  * Companion object for the `Principal` case class, providing default values and utility objects
@@ -360,7 +350,7 @@ case class Principal(name: Name, facebookLikes: Int) {
  *          Works in conjunction with the `Principal` case class and is associated with other models in parsing, processing,
  *          and rendering movie-related data structures.
  */
-object Principal extends CellParsers with CsvGenerators with CsvRenderers {
+object Principal extends CellParsers with CsvGenerators with CsvRenderers:
   val nemo: Principal = Principal(Name.nemo, 0)
   implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapperLower, Some("$x_$c"))
   implicit val parser: CellParser[Principal] = CellParser.derived[Principal]
@@ -370,7 +360,6 @@ object Principal extends CellParsers with CsvGenerators with CsvRenderers {
   // An optional Principal (e.g. actor3) has the same columns as a Principal: when it is missing, they are empty.
   implicit val rendererOpt: CsvRenderer[Option[Principal]] = optionProductRenderer[Principal]
   implicit val generatorOpt: CsvGenerator[Option[Principal]] = optionProductGenerator[Principal]
-}
 
 /**
  * A case class representing a person's name with optional middle name and suffix.
@@ -394,24 +383,19 @@ object Principal extends CellParsers with CsvGenerators with CsvRenderers {
  * println(simpleName.toString) // Output: "Jane Smith"
  * }}}
  */
-case class Name(first: String, middle: Option[String], last: String, suffix: Option[String]) {
-  override def toString: String = {
-    case class Result(r: StringBuffer) {
+case class Name(first: String, middle: Option[String], last: String, suffix: Option[String]):
+  override def toString: String =
+    case class Result(r: StringBuffer):
       def append(s: String): Unit = r.append(" " + s)
 
       override def toString: String = r.toString
-    }
     val r: Result = Result(new StringBuffer(first))
-    middle foreach {
+    middle foreach:
       r.append
-    }
     r.append(last)
-    suffix foreach {
+    suffix foreach:
       r.append
-    }
     r.toString
-  }
-}
 
 /**
  * Companion object for the `Name` case class, providing factory methods for parsing strings into `Name` instances.
@@ -451,12 +435,12 @@ case class Name(first: String, middle: Option[String], last: String, suffix: Opt
  *  - Rendering movie-related data via `CsvRendererMovie` involves the `rendererName` generator, built around `Name`.
  * @note The `Name` case class has a corresponding custom `toString` implementation for formatted string representation.
  */
-object Name extends CellParsers with CsvGenerators with CsvRenderers {
+object Name extends CellParsers with CsvGenerators with CsvRenderers:
   // NOTE: this regex will not parse all names in the Movie database correctly. Still, it gets most of them.
   private val rName =
     """^([\p{L}\-']+\.?)\s*(([\p{L}\-]+\.?)\s)?([\p{L}\-']+\.?)(\s([\p{L}\-]+\.?))?$""".r
 
-  def apply(name: String): Name = name match {
+  def apply(name: String): Name = name match
     case rName(first, _, null, last, _, null) =>
       apply(first, None, last, None)
     case rName(first, _, middle, last, _, null) =>
@@ -467,14 +451,12 @@ object Name extends CellParsers with CsvGenerators with CsvRenderers {
       apply(first, Some(middle), last, Some(suffix))
     case _ =>
       throw new Exception(s"""parse error in Name: '$name'""")
-  }
 
   val nemo: Name = Name("ne mo")
   implicit val parser: CellParser[Name] = cellParser(apply)
   // A Name is parsed from one cell, so it is written as one cell, using its toString.
   implicit val renderer: CsvRenderer[Name] = new CsvRenderers.StandardCsvRenderer[Name] {}
   implicit val generator: CsvGenerator[Name] = new StandardCsvGenerator[Name]
-}
 
 /**
  * Represents a content rating, typically used to signify the suitability of media content
@@ -485,18 +467,17 @@ object Name extends CellParsers with CsvGenerators with CsvRenderers {
  * @param age  An optional integer specifying the age restriction for the content, if applicable
  *             (e.g., a value of `13` for "PG-13").
  */
-case class Rating(code: String, age: Option[Int]) {
+case class Rating(code: String, age: Option[Int]):
   override def toString: String = code + (age match {
     case Some(x) => "-" + x
     case _ => ""
   })
-}
 
 /**
  * Companion object for the `Rating` case class.
  * This object provides utility methods to construct `Rating` instances and to parse rating strings into `Rating`.
  */
-object Rating extends CellParsers with CsvGenerators with CsvRenderers {
+object Rating extends CellParsers with CsvGenerators with CsvRenderers:
   /**
    * Alternative apply method for the Rating class such that a single String is decoded
    *
@@ -504,18 +485,16 @@ object Rating extends CellParsers with CsvGenerators with CsvRenderers {
    * @return a Rating
    */
   def apply(s: String): Rating =
-    s match {
+    s match
       case rRating(code, _, null) =>
         apply(code, None)
       case rRating(code, _, age) =>
         apply(code, Try(age.toInt).toOption)
       case _ =>
         throw new Exception(s"""parse error in Rating: '$s'""")
-    }
 
   implicit val parser: CellParser[Rating] = cellParser(apply)
   // A Rating is parsed from one cell, so it is written as one cell, using its toString.
   implicit val renderer: CsvRenderer[Rating] = new CsvRenderers.StandardCsvRenderer[Rating] {}
   implicit val generator: CsvGenerator[Rating] = new StandardCsvGenerator[Rating]
   private val rRating = """^(\w*)(-(\d\d))?$""".r
-}
