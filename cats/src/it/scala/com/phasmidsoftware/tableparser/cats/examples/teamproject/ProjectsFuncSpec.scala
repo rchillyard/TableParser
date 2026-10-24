@@ -165,8 +165,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
               |1,Leonhard Euler,Daniel Bernoulli,Isaac Newton,Srinivas Ramanujan,,Presentation long and detailed.  Project excellent overall. Need to actually run UI myself.,https://github.com/youngbai/CSYE7200-MovieRecommendation
               |""".stripMargin.replace("\n", "\r\n")
 
-  // FIXME Issue #50
-  ignore should "parse and filter the team projects from the encrypted dataset" in:
+  it should "parse and filter the team projects from the encrypted dataset" in:
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
 
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
@@ -186,8 +185,7 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
    * These are application-specific and are not indicative of any bugs in the
    * TableParser library itself.
    */
-  // FIXME Issue #50
-  ignore should "parse and filter the team projects from the encrypted dataset using RawRow" in:
+  it should "parse and filter the team projects from the encrypted dataset using RawRow" in:
 
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
 
