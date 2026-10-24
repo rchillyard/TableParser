@@ -54,9 +54,7 @@ object TeamProjectParser extends CellParsers {
   implicit val attributesParser: CellParser[AttributeSet] = cellParser(AttributeSet.apply: String => AttributeSet)
   implicit val teamProjectParser: CellParser[TeamProject] = CellParser.derived[TeamProject]
 
-  implicit object TeamProjectConfig extends DefaultRowConfig {
-    override val listEnclosure: String = ""
-  }
+  implicit val teamProjectConfig: RowConfig = RowConfig(listEnclosure = "")
 
   val parser: StandardRowParser[TeamProject] = StandardRowParser.create[TeamProject]
 }

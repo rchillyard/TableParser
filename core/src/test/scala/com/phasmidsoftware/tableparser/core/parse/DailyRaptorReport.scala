@@ -4,7 +4,6 @@ import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvGenerators,
 import com.phasmidsoftware.tableparser.core.table._
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
@@ -46,12 +45,7 @@ object DailyRaptorReport extends CellParsers with CsvRenderers with CsvGenerator
   implicit val csvGenerator: CsvProductGenerator[DailyRaptorReport] =
     CsvGenerator.derived[DailyRaptorReport]
 
-  trait DailyRaptorReportConfig extends DefaultRowConfig {
-    override val string: Regex = """[\w/\- ]+""".r
-    override val delimiter: Regex = """\t""".r
-  }
-
-  implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+  implicit val dailyRaptorReportConfig: RowConfig = RowConfig(delimiter = '\t')
 
   implicit val parser: StandardRowParser[DailyRaptorReport] =
     StandardRowParser[DailyRaptorReport](LineParser.apply)

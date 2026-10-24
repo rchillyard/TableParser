@@ -8,7 +8,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
-import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 import java.nio.file.Paths
@@ -273,12 +272,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
     import DailyRaptorReportParser._
 
-    trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w/\- ]+""".r
-      override val delimiter: Regex = """\t""".r
-    }
-
-    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+    implicit val dailyRaptorReportConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
 
@@ -358,12 +352,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers {
 
     import NestedRaptorReportParser._
 
-    trait NestedRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w/\- ]+""".r
-      override val delimiter: Regex = """\t""".r
-    }
-
-    implicit object NestedRaptorReportConfig extends NestedRaptorReportConfig
+    implicit val nestedRaptorReportConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardRowParser[NestedRaptorReport] = StandardRowParser[NestedRaptorReport](LineParser.apply)
 

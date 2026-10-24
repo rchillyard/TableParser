@@ -15,7 +15,6 @@ import java.time.format.DateTimeFormatter
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import scala.io.{Codec, Source}
-import scala.util.matching.Regex
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
 
@@ -103,12 +102,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     import DailyRaptorReportParser._
 
-    trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w/\- ]+""".r
-      override val delimiter: Regex = """\t""".r
-    }
-
-    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+    implicit val dailyRaptorReportConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardRowParser[DailyRaptorReport] =
       StandardRowParser[DailyRaptorReport](LineParser.apply)
@@ -177,7 +171,8 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
   it should "fail empty sequence" in {
     import DailyRaptorReport._
 
-    Table.parse(Seq(headerRaptors, "")) should matchPattern { case Failure(_: ParserException) => }
+    // The blank line is one empty field (as with any delimiter), which cannot be read as a date.
+    Table.parse(Seq(headerRaptors, "")) should matchPattern { case Failure(_: InvalidParseException) => }
   }
 
   it should "parse empty sequence" in {
@@ -209,12 +204,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     import DailyRaptorReportParser._
 
-    trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w/\- ]+""".r
-      override val delimiter: Regex = """\t""".r
-    }
-
-    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+    implicit val dailyRaptorReportConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardStringsParser[DailyRaptorReport] =
       StandardStringsParser[DailyRaptorReport]()
@@ -263,12 +253,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
     import DailyRaptorReportParser._
 
-    trait DailyRaptorReportConfig extends DefaultRowConfig {
-      override val string: Regex = """[\w/\- ]+""".r
-      override val delimiter: Regex = """\t""".r
-    }
-
-    implicit object DailyRaptorReportConfig extends DailyRaptorReportConfig
+    implicit val dailyRaptorReportConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardRowParser[DailyRaptorReport] = StandardRowParser[DailyRaptorReport](LineParser.apply)
 
@@ -380,10 +365,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
     implicit val optionalAnswerParser: CellParser[Option[String]] = cellParserOption
     implicit val submissionParser: CellParser[Submission] = CellParser.derived[Submission]
 
-    implicit object SubmissionConfig extends DefaultRowConfig {
-      override val string: Regex = """[^\t]*""".r
-      override val delimiter: Regex = """\t""".r
-    }
+    implicit val submissionConfig: RowConfig = RowConfig(delimiter = '\t')
 
     implicit val parser: StandardRowParser[Submission] = StandardRowParser.create[Submission]
 

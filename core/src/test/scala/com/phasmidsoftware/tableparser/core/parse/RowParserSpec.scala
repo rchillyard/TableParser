@@ -7,7 +7,6 @@ package com.phasmidsoftware.tableparser.core.parse
 import com.phasmidsoftware.tableparser.core.table.Header
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
-import scala.util.matching.Regex
 import scala.util.{Success, Try}
 
 class RowParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
@@ -24,10 +23,7 @@ class RowParserSpec extends flatspec.AnyFlatSpec with should.Matchers {
 
   it should "parse regex string" in {
     import HawkCountParser._
-    trait HawkCountRowConfig extends DefaultRowConfig {
-      override val string: Regex = """[a-zA-Z0-9 -]*""".r
-    }
-    implicit object HawkCountRowConfig extends HawkCountRowConfig
+    implicit val hawkCountRowConfig: RowConfig = RowConfig.default withString """[a-zA-Z0-9 -]*""".r
 
     val parser = StandardRowParser[HawkCount](LineParser.apply)
     val hawkCount: Try[HawkCount] = parser.parseIndexed(header)(("""Red-tailed Hawk,1027""", 0))

@@ -150,9 +150,15 @@ These decide what can change without notice, and what needs a migration path.
       - **TODO: resolve the five open GitHub issues** (fix each, or close it with a note on why it no longer applies):
         - [#44](https://github.com/rchillyard/TableParser/issues/44) Incompatible with Scala Parser Combinators version 2. **Closed** (2.x builds with scala-parser-combinators 2.5.0).
         - [#12](https://github.com/rchillyard/TableParser/issues/12) Header-related code is inconsistent and confusing. **Done on `2_0_0_finish`**: the leftovers of an abandoned approach to letter names are gone (`multiply`, `prepend`, `alphabet`), `++` joins the extra header lines pairwise (it made their cartesian product), and `Header`'s Scaladoc lists the ways to make one. Excel-style headers (`Header(letters, length)`) already worked, and are now tested past ZZ. Close it when the PR is merged.
-        - [#48](https://github.com/rchillyard/TableParser/issues/48) Need method for default RowConfig. Changing the delimiter should change the string regex too.
-        - [#38](https://github.com/rchillyard/TableParser/issues/38) CSV parsing should use CsvAttributes. Parsing (`RowConfig`) and rendering (`CsvAttributes`) describe the delimiter and quote separately: probably best done together with #48.
-        - [#32](https://github.com/rchillyard/TableParser/issues/32) The way parsers are configured does not use lens pattern.
+        - [#48](https://github.com/rchillyard/TableParser/issues/48) Need method for default RowConfig, [#38](https://github.com/rchillyard/TableParser/issues/38) CSV parsing should use CsvAttributes, and [#32](https://github.com/rchillyard/TableParser/issues/32) The way parsers are configured does not use lens pattern. **Done on `2_0_0_finish`** (Robin chose a case class):
+          - `RowConfig` is a case class of characters (`delimiter`, `quote`, `listSep`, `listEnclosure`, `trim`, and an optional explicit `string` regex).
+          - The regexes are derived from them, so changing the delimiter changes the string regex too (#48).
+          - `withDelimiter` etc. are copy methods (#32; `TableParser`'s `setX` methods already worked this way).
+          - `RowConfig.csvAttributes` and `CsvAttributes.rowConfig` convert between reading and writing (#38).
+          - `DefaultRowConfig` is gone: `given RowConfig = RowConfig(delimiter = '\t')` replaces `extends DefaultRowConfig { override val ... }`.
+          - Trimming (`trim = true`, as in 1.x) now drops spaces before a delimiter as well as after it.
+          
+          Close the three when the PR is merged.
 
    (The earliest PRs used an older numbering: "stage 3" was derivation for parsing, "stage 4" derivation for rendering, and "stage 2" the idioms.)
 5. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
