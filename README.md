@@ -117,7 +117,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 2.0.0.
+This version of the README.md file refers to version: 2.0.1.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only (it is built with Scala 3.3 LTS, so it can be used from any later Scala 3 version),
 and it needs Java 21 or later.
@@ -127,12 +127,12 @@ To use it, add the modules you need to your _build.sbt_:
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "2.0.0"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "2.0.0"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "2.0.0"     // ZIO support
-  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.0.0"  // encryption
-  , "com.phasmidsoftware" %% "tableparser-json" % "2.0.0"    // JSON (circe)
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.0.0" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "2.0.1"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "2.0.1"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "2.0.1"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.0.1"  // encryption
+  , "com.phasmidsoftware" %% "tableparser-json" % "2.0.1"    // JSON (circe)
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.0.1" // Parquet files
 )
 ```
 
@@ -929,6 +929,15 @@ For more examples (numbers, dates, nested case classes, and bad input), see _Tab
 
 Release Notes
 =============
+V2.0.0 -> V2.0.1
+* The cats and zio modules now behave as effects should:
+  * _IOTable_ does its work when the _IO_ is run (and each time it is run), not when the _IO_ is made:
+    _writeCSVFileIO_, for example, wrote the file even if the _IO_ was never run.
+  * _ZIOTable_ closes the files (and streams) that it reads: it used to leave them open.
+  * _ZIOTable_ reports a file that can't be opened as a failure (which _catchAll_ etc. can handle), not as a defect.
+  * Reading and writing files runs on the blocking thread pool (_IO.blocking_, _ZIO.attemptBlocking_).
+  * _ZIOTable_ now has _toCSV_, _writeCSVFileIO_ and _writeCSVFileRow_, and both modules have _parseSequence_ (they were commented out).
+
 V1.7.x -> V2.0.0
 * Scala 3 only (built with Scala 3.3 LTS; tested on 3.9 too), and Java 21. For Scala 2.13, Java 17 or Spark, use the 1.x line.
   See [Migrating from 1.x](#migrating-from-1x) for what changes in your code.

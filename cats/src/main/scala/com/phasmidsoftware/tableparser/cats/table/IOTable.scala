@@ -30,7 +30,7 @@ object IOTable {
    * @param csvAttributes implicit value of CsvAttributes.
    */
   def writeCSVFileIO(table: Table[Row])(file: File)(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): IO[FileWriter] =
-    IO.fromTry(CsvTableFileRenderer[Row](file).render(table) map { f => f.flush(); f })
+    blockingTry(CsvTableFileRenderer[Row](file).render(table) map { f => f.flush(); f })
 
   /**
    * Method to render this Table[T] as a CSV String with (maybe) header.
@@ -41,7 +41,7 @@ object IOTable {
    * @return a String.
    */
   def toCSV[T: CsvRenderer : CsvGenerator](t: Table[T])(using csvAttributes: CsvAttributes): IO[String] =
-    IO.fromTry(CsvTableStringRenderer[T]().render(t) map (_.toString))
+    delayTry(CsvTableStringRenderer[T]().render(t) map (_.toString))
 
   /**
    * Primary method to parse a table from an Iterator of String.
@@ -51,10 +51,7 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterator[String], n: Int): IO[T] = summon[TableParser[T]] match {
-    case parser: StringTableParser[T] => IO.fromTry(parser.parse(ws, n))
-    case x => IO.raiseError(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
-  }
+  def parse[T: TableParser](ws: Iterator[String], n: Int): IO[T] = delayTry(parseTry(ws, n))
 
   /**
    * Method to parse a table from an Iterator of String, reading as many header rows as the TableParser expects.
@@ -72,7 +69,7 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parse[T: TableParser](ws: Iterable[String]): IO[T] = parse(ws.iterator)
+  def parse[T: TableParser](ws: Iterable[String]): IO[T] = IO.defer(parse(ws.iterator))
 
   /**
    * Method to parse a table from a Source.
@@ -83,7 +80,7 @@ object IOTable {
    * @tparam T the type of the resulting table.
    * @return an IO[T]
    */
-  def parseSource[T: TableParser](x: => Source): IO[T] = for (y <- parse(x.getLines())) yield y
+  def parseSource[T: TableParser](x: => Source): IO[T] = blockingTry(parseTry(x.getLines(), summon[TableParser[T]].headerRowsToRead))
 
   /**
    * Method to parse a table from a Source (with proper resource management of the source).
@@ -228,21 +225,14 @@ object IOTable {
     given codec: Codec = Codec(enc)
     parseResource(u)
   }
-//
-//  /**
-//   * Method to parse a table from a Seq of Seq of String.
-//   *
-//   * @param wss the Sequence of Strings.
-//   * @tparam T the type of the resulting table.
-//   * @return an IO[T]
-//   */
-//  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): IO[T] = {
-//    val tableParser = summon[TableParser[T]]
-//    tableParser match {
-//      case parser: TableParserIO[T] => parser.parseIO(wss, 1)
-//      case _ => IO.raiseError(ParserException(s"parseSequence method for Seq[Seq[String]] incompatible with tableParser: $tableParser"))
-//    }
-//  }
+  /**
+   * Method to parse a table from a sequence of sequences of String (one per row, already split into cells).
+   *
+   * @param wss the rows, each a sequence of Strings.
+   * @tparam T the type of the resulting table.
+   * @return an IO[T]
+   */
+  def parseSequence[T: TableParser](wss: Iterator[Seq[String]]): IO[T] = delayTry(Table.parseSequence(wss))
 
   /**
    * Method to parse a table from a File as a table of Seq[String].
@@ -321,8 +311,7 @@ object IOTable {
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
         import com.phasmidsoftware.tableparser.core.render.CsvRenderer.CsvRendererRow
-//        import Row.CsvRendererRow
-        IO.fromTry(t.toCSV)
+        delayTry(t.toCSV)
       case _ => IO.raiseError(TableException("toCSVRow: cannot write this Table to CSV (no header)"))
     }
   }
@@ -339,9 +328,7 @@ object IOTable {
     t.maybeHeader match {
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
-        // CONSIDER this is a bit ugly
-        val q: IO[FileWriter] = IOTable.writeCSVFileIO(t)(file)
-        q map { f => f.close(); f }
+        IOTable.writeCSVFileIO(t)(file) flatMap (f => IO.blocking(f.close()).as(f))
       case _ => IO.raiseError(TableException("writeCSVFileRow: cannot write this Table to CSV (no header)"))
     }
 
@@ -351,7 +338,18 @@ object IOTable {
    * @param s an InputStream.
    * @return an IO[Source].
    */
-  private def sourceFromInputStream(s: => InputStream)(using codec: Codec): IO[Source] = IO(Source.fromInputStream(s))
+  // NOTE: work is suspended (and so done each time the IO is run, not when it's made):
+  // reading or writing a file is blocking, so it runs on the blocking pool.
+  private def delayTry[A](t: => Try[A]): IO[A] = IO.defer(IO.fromTry(t))
+
+  private def blockingTry[A](t: => Try[A]): IO[A] = IO.blocking(t).flatMap(IO.fromTry)
+
+  private def parseTry[T: TableParser](ws: Iterator[String], n: Int): Try[T] = summon[TableParser[T]] match {
+    case parser: StringTableParser[T] => parser.parse(ws, n)
+    case x => Failure(ParserException(s"parse method for Seq[String] incompatible with tableParser: $x"))
+  }
+
+  private def sourceFromInputStream(s: => InputStream)(using codec: Codec): IO[Source] = IO.blocking(Source.fromInputStream(s))
 
   /**
    * Method to open source defined by a URI.
@@ -359,7 +357,7 @@ object IOTable {
    * @param u a URI.
    * @return an IO[Source].
    */
-  private def sourceFromURI(u: => URI)(using codec: Codec): IO[Source] = IO(Source.fromURI(u))
+  private def sourceFromURI(u: => URI)(using codec: Codec): IO[Source] = IO.blocking(Source.fromURI(u))
 
   /**
    * Method to open source defined by a File.
@@ -367,7 +365,7 @@ object IOTable {
    * @param f a File.
    * @return an IO[Source].
    */
-  private def sourceFromFile(f: => File)(using codec: Codec): IO[Source] = IO(Source.fromFile(f))
+  private def sourceFromFile(f: => File)(using codec: Codec): IO[Source] = IO.blocking(Source.fromFile(f))
 
   /**
    * Method to open source defined by a File.
@@ -375,7 +373,7 @@ object IOTable {
    * @param filename a File.
    * @return an IO[Source].
    */
-  private def sourceFromFilename(filename: => String)(using codec: Codec): IO[Source] = IO(Source.fromFile(filename))
+  private def sourceFromFilename(filename: => String)(using codec: Codec): IO[Source] = IO.blocking(Source.fromFile(filename))
 
   /**
    * Method to open a source defined by a Class and a resource name.
@@ -384,7 +382,7 @@ object IOTable {
    * @param clazz the class.
    * @return an IO[Source].
    */
-  private def sourceFromClassResource(w: String, clazz: Class[?])(using codec: Codec): IO[Source] = IO.fromTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
+  private def sourceFromClassResource(w: String, clazz: Class[?])(using codec: Codec): IO[Source] = blockingTry(Try(Source.fromURL(clazz.getResource(w))).recoverWith {
     case _: java.lang.NullPointerException => Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
   })
 }

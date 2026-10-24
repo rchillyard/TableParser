@@ -3,7 +3,7 @@ package com.phasmidsoftware.tableparser.cats.table
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given
-import com.phasmidsoftware.tableparser.core.parse.TableParser
+import com.phasmidsoftware.tableparser.core.parse.{CellParser, CellParsers, RowParser, StandardStringsParser, StringsTableParser, TableParser}
 import com.phasmidsoftware.tableparser.core.render.CsvProduct
 import com.phasmidsoftware.tableparser.core.table._
 import java.io.{ByteArrayInputStream, File}
@@ -124,12 +124,73 @@ class IOTableSpec extends AnyFlatSpec with should.Matchers {
     IOTable.toCSVRow(table).attempt.unsafeRunSync() should matchPattern { case Left(_: TableException) => }
     IOTable.writeCSVFileRow(table, file).attempt.unsafeRunSync() should matchPattern { case Left(_: TableException) => }
   }
+
+  behavior of "IOTable effects"
+
+  // Up to 2.0.0, IO.fromTry made the work happen when the IO was made, not when it was run.
+  it should "write a file only when the IO is run, and each time it's run" in {
+    val out = File.createTempFile("points-lazy", ".csv")
+    out.deleteOnExit()
+    out.delete()
+    val io = IOTable.writeCSVFileRow(pointRows, out)
+    out.exists() shouldBe false
+    io.unsafeRunSync()
+    out.exists() shouldBe true
+    out.delete()
+    io.unsafeRunSync()
+    out.exists() shouldBe true
+  }
+
+  it should "parse each time the IO is run" in {
+    val io = IOTable.parse[RawTable](csv.split("\n").toSeq)
+    rows(io) shouldBe expected
+    rows(io) shouldBe expected
+  }
+
+  it should "close the stream that it reads" in {
+    val stream = new ClosingStream(csv)
+    rows(IOTable.parseInputStream[RawTable](stream)) shouldBe expected
+    stream.closed shouldBe true
+  }
+
+  it should "parseSequence" in {
+    import PointSeq.given
+    IOTable.parseSequence[Table[Point]](Seq(Seq("x", "y"), Seq("1", "2"), Seq("3", "4")).iterator).unsafeRunSync().toSeq shouldBe Seq(Point(1, 2), Point(3, 4))
+  }
 }
 
 object IOTableSpec {
+
+  /**
+   * An InputStream which remembers whether it has been closed.
+   */
+  class ClosingStream(w: String) extends ByteArrayInputStream(w.getBytes(StandardCharsets.UTF_8)) {
+    var closed = false
+
+    override def close(): Unit = {
+      closed = true
+      super.close()
+    }
+  }
+
   val csv: String = "x,y\n1,2\n3,4\n"
 
   case class Point(x: Int, y: Int) derives CsvProduct
+
+  // A TableParser for rows which are already split into cells (for parseSequence).
+  object PointSeq extends CellParsers {
+    given CellParser[Point] = CellParser.derived[Point]
+
+    given StandardStringsParser[Point] = StandardStringsParser[Point]()
+
+    given StringsTableParser[Table[Point]] with {
+      type Row = Point
+
+      val rowParser: RowParser[Row, Seq[String]] = summon[RowParser[Row, Seq[String]]]
+
+      protected def builder(rows: Iterator[Point], header: Header): Table[Row] = HeadedTable(rows, header)
+    }
+  }
 
   private val hdr = Header.create("x", "y")
 
