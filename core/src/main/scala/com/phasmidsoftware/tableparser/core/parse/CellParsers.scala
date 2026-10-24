@@ -39,15 +39,15 @@ trait CellParsers {
    */
   def cellParserRepetition[P: CellParser](start: Int = 1): CellParser[Seq[P]] = 
     new MultiCellParser[Seq[P]] {
-    // XXX used only for debugging
-    override def toString: String = "MultiCellParser: cellParserRepetition"
+      // XXX used only for debugging
+      override def toString: String = "MultiCellParser: cellParserRepetition"
 
-    def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = {
-      def getTryP(i: Int) = summon[CellParser[P]].parse(Some(s"$i"), row, columns)
+      def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = {
+        def getTryP(i: Int) = summon[CellParser[P]].parse(Some(s"$i"), row, columns)
 
-      FP.sequence(LazyList.from(start).map(getTryP).takeWhile(_.isSuccess))
+        FP.sequence(LazyList.from(start).map(getTryP).takeWhile(_.isSuccess))
+      }
     }
-  }
 
   /**
    * Method to return a CellParser[Seq[P].
@@ -59,12 +59,12 @@ trait CellParsers {
    */
   def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = 
     new MultiCellParser[Seq[P]] {
-    // XXX used only for debugging
-    override def toString: String = "MultiCellParser: cellParserSeq"
+      // XXX used only for debugging
+      override def toString: String = "MultiCellParser: cellParserSeq"
 
-    def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = 
-      FP.sequence(for (w <- row.ws) yield summon[CellParser[P]].parse(CellValue(w)))
-  }
+      def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = 
+        FP.sequence(for (w <- row.ws) yield summon[CellParser[P]].parse(CellValue(w)))
+    }
 
   /**
    * Method to return a `CellParser[Option[P]]`.
@@ -76,23 +76,23 @@ trait CellParsers {
    */
   def cellParserOption[P: CellParser]: CellParser[Option[P]] = 
     new SingleCellParser[Option[P]] {
-    // XXX used only for debugging
-    override def toString: String = s"cellParserOption with $cp"
+      // XXX used only for debugging
+      override def toString: String = s"cellParserOption with $cp"
 
-    private val cp: CellParser[P] = summon[CellParser[P]]
+      private val cp: CellParser[P] = summon[CellParser[P]]
 
-    def convertString(w: String): Try[Option[P]] = 
-      convertToOptionP(cp.parse(CellValue(w)))
+      def convertString(w: String): Try[Option[P]] = 
+        convertToOptionP(cp.parse(CellValue(w)))
 
-    override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[P]] = 
-      convertToOptionP(cp.parse(wo, row, columns))
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[P]] = 
+        convertToOptionP(cp.parse(wo, row, columns))
 
-    private def convertToOptionP(py: Try[P]) = 
-      py.map(Some(_)).recoverWith {
-      case _: ParseableException => 
-        Success(None)
+      private def convertToOptionP(py: Try[P]) = 
+        py.map(Some(_)).recoverWith {
+          case _: ParseableException => 
+            Success(None)
+        }
     }
-  }
 
   /**
    * Method to return a CellParser[Option[String].
@@ -105,26 +105,26 @@ trait CellParsers {
    */
   lazy val cellParserOptionNonEmptyString: CellParser[Option[String]] = 
     new SingleCellParser[Option[String]] {
-    // NOTE used only for debugging
-    override def toString: String = s"cellParserOptionNonEmptyString"
+      // NOTE used only for debugging
+      override def toString: String = s"cellParserOptionNonEmptyString"
 
-    private val cp: CellParser[String] = 
-      new CellParser[String]() {
-      def convertString(w: String): Try[String] = 
-        Success(if (w.isEmpty) null else w)
+      private val cp: CellParser[String] = 
+        new CellParser[String]() {
+          def convertString(w: String): Try[String] = 
+            Success(if (w.isEmpty) null else w)
+
+          // NOTE not used
+          def parse(wo: Option[String], row: Row, columns: Header): Try[String] = 
+            Failure(new UnsupportedOperationException)
+        }
+
+      def convertString(w: String): Try[Option[String]] = 
+        cp.convertString(w).map(Option(_))
 
       // NOTE not used
-      def parse(wo: Option[String], row: Row, columns: Header): Try[String] = 
-        Failure(new UnsupportedOperationException)
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[String]] = 
+        cp.parse(wo, row, columns).map(Option(_))
     }
-
-    def convertString(w: String): Try[Option[String]] = 
-      cp.convertString(w).map(Option(_))
-
-    // NOTE not used
-    override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[String]] = 
-      cp.parse(wo, row, columns).map(Option(_))
-  }
 
   /**
    * Method to return a CellParser[T] based on a function to convert a P into a T
@@ -136,12 +136,12 @@ trait CellParsers {
    */
   def cellParser[P: CellParser, T](construct: P => T): CellParser[T] = 
     new SingleCellParser[T] {
-    // NOTE used only for debugging
-    override def toString: String = "SingleCellParser (from a construct function)"
+      // NOTE used only for debugging
+      override def toString: String = "SingleCellParser (from a construct function)"
 
-    def convertString(w: String): Try[T] = 
-      summon[CellParser[P]].parse(CellValue(w)).map(construct)
-  }
+      def convertString(w: String): Try[T] = 
+        summon[CellParser[P]].parse(CellValue(w)).map(construct)
+    }
 
   /**
    * Method to return a `CellParser[T]` where `T` is a 2-ary `Product` and which is based on a function to convert a `(K,P)` into a `T`.
@@ -196,10 +196,10 @@ trait CellParsers {
    */
   def columnHelper[T](columnNameMapper: String => String, maybePrefix: Option[String], aliases: (String, String)*): ColumnHelper[T] = 
     new ColumnHelper[T] {
-    val _maybePrefix: Option[String] = maybePrefix
-    val _aliases: Seq[(String, String)] = aliases
-    val _columnNameMapper: String => String = columnNameMapper
-  }
+      val _maybePrefix: Option[String] = maybePrefix
+      val _aliases: Seq[(String, String)] = aliases
+      val _columnNameMapper: String => String = columnNameMapper
+    }
 
   /**
    * Method to yield a ColumnHelper[T] based on some number of explicit aliases,

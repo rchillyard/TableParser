@@ -400,8 +400,8 @@ abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]] {
    */
   def parse(s: String, optModifier: Option[String]): Try[Option[T]] =
     summon[Parseable[T]].parse(s, optModifier).map(Option(_)).recoverWith {
-    case _: BlankException => Success(None)
-  }
+      case _: BlankException => Success(None)
+    }
 }
 
 /**

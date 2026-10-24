@@ -40,8 +40,8 @@ trait HierarchicalRenderers {
    */
   def rendererExplicit[T](style: String, attrs: Map[String, String] = Map())(f: T => String): HierarchicalRenderer[T] = 
     new TaggedHierarchicalRenderer[T](style, attrs) {
-    override def asString(t: T): String = f(t)
-  }
+      override def asString(t: T): String = f(t)
+    }
 
   /**
    * Method to return a HierarchicalRenderer[Header].
@@ -55,21 +55,21 @@ trait HierarchicalRenderers {
   def headerRenderer(style: String, attrs: Map[String, String] = Map(), sequenced: Boolean)(renderer: HierarchicalRenderer[String]): HierarchicalRenderer[Header] = 
     new TaggedHierarchicalRenderer[Header](style, attrs) {
 
-    /**
-     * CONSIDER should we define a different sub-class of HierarchicalRenderer for this case?
-     *
-     * @param h     the Header.
-     * @param attrs a map of attributes for this kind of output.
-     * @return an instance of type String.
-     */
-      override def render(h: Header, attrs: Map[String, String]): Node =
-        write.Node(this.style, attrs, headerElements(h).map((t: String) => renderer.render(t)))
+      /**
+       * CONSIDER should we define a different sub-class of HierarchicalRenderer for this case?
+       *
+       * @param h     the Header.
+       * @param attrs a map of attributes for this kind of output.
+       * @return an instance of type String.
+       */
+        override def render(h: Header, attrs: Map[String, String]): Node =
+          write.Node(this.style, attrs, headerElements(h).map((t: String) => renderer.render(t)))
 
-      private def headerElements(h: Header): Seq[String] =
-        if (sequenced)
-          "" +: h.xs
-        else
-          h.xs
+        private def headerElements(h: Header): Seq[String] =
+          if (sequenced)
+            "" +: h.xs
+          else
+            h.xs
     }
 
   /**
@@ -94,24 +94,24 @@ trait HierarchicalRenderers {
    */
   def indexedRenderer[T: HierarchicalRenderer](overallStyle: String, indexStyle: String): HierarchicalRenderer[Indexed[T]] = 
     new HierarchicalRenderer[Indexed[T]] {
-    /**
-     * Render an instance of Indexed[T] as a U.
-     *
-     * @param ti    the input parameter, i.e. the object to be rendered.
-     * @param attrs a map of attributes for this value of U.
-     * @return a new instance of U.
-     */
-    def render(ti: Indexed[T], attrs: Map[String, String]): Node = {
-      val sequence = new TaggedHierarchicalRenderer[Int](indexStyle) {}.render(ti.i)
-      val value = summon[HierarchicalRenderer[T]].render(ti.t)
-      write.Node(style, attrs, Seq(sequence, value))
-    }
+      /**
+       * Render an instance of Indexed[T] as a U.
+       *
+       * @param ti    the input parameter, i.e. the object to be rendered.
+       * @param attrs a map of attributes for this value of U.
+       * @return a new instance of U.
+       */
+      def render(ti: Indexed[T], attrs: Map[String, String]): Node = {
+        val sequence = new TaggedHierarchicalRenderer[Int](indexStyle) {}.render(ti.i)
+        val value = summon[HierarchicalRenderer[T]].render(ti.t)
+        write.Node(style, attrs, Seq(sequence, value))
+      }
 
-    /**
-     * Defines the default style for type T.
-     */
-    val style: String = overallStyle
-  }
+      /**
+       * Defines the default style for type T.
+       */
+      val style: String = overallStyle
+    }
 
   /**
    * Method to return a HierarchicalRenderer[ Option[T] ].
@@ -122,11 +122,11 @@ trait HierarchicalRenderers {
    */
   def optionRenderer[T: HierarchicalRenderer](style: String, attrs: Map[String, String] = Map()): HierarchicalRenderer[Option[T]] = 
     new TaggedHierarchicalRenderer[Option[T]](style, attrs) {
-    override def render(to: Option[T], attrs: Map[String, String]): Node = to match {
-      case Some(t) => 
-        write.Node(this.style, attrs, Seq(summon[HierarchicalRenderer[T]].render(t)))
-      case None => 
-        Node("", None, Map(), Nil)
+      override def render(to: Option[T], attrs: Map[String, String]): Node = to match {
+        case Some(t) => 
+          write.Node(this.style, attrs, Seq(summon[HierarchicalRenderer[T]].render(t)))
+        case None => 
+          Node("", None, Map(), Nil)
+      }
     }
-  }
 }

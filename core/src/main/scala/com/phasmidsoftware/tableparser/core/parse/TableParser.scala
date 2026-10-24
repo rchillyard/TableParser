@@ -293,8 +293,8 @@ case class PlainTextHeadedStringTableParser[X: CellParser](override val maybeHea
 
   def setPredicate(p: Try[X] => Boolean): PlainTextHeadedStringTableParser[X] =
     new PlainTextHeadedStringTableParser[X](maybeHeader, forgiving) {
-    override val predicate: Try[X] => Boolean = p
-  }
+      override val predicate: Try[X] => Boolean = p
+    }
 
   def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] =
     new PlainTextHeadedStringTableParser[X] {
