@@ -361,7 +361,9 @@ trait Table[Row] extends Iterable[Row]:
    * @throws TableException if the CSV file cannot be written to the specified output path
    */
   def writeCSVPath(outputPath: Path)(using r: CsvRenderer[Row], g: CsvGenerator[Row], ca: CsvAttributes): Unit =
-    CsvTableFileRenderer[Row](outputPath).render(this).map(_.close()).getOrElse(throw TableException(s"Failed to write CSV to $outputPath"))
+    CsvTableFileRenderer[Row](outputPath).render(this).map(_.close()) match
+      case Failure(x) => throw TableException(s"Failed to write CSV to $outputPath: $x")
+      case _ => ()
 
   /**
    * Writes the contents of the current table to a CSV file at the specified path.
@@ -371,9 +373,11 @@ trait Table[Row] extends Iterable[Row]:
    * @param generator     Implicit parameter that is used to generate CSV rows from the data.
    * @param csvAttributes Implicit parameter containing attributes for customizing the CSV formatting.
    * @return Unit, indicating the operation does not return a value.
+   * @throws TableException if the CSV file cannot be written.
    */
   def writeCSVFile(path: Path)(using renderer: CsvRenderer[Row], generator: CsvGenerator[Row], csvAttributes: CsvAttributes): Unit =
-    CsvTableFileRenderer[Row](path).render(this)
+    // NOTE up to 2.0.2, this didn't close the file (so what it wrote might never reach it), nor report a failure.
+    writeCSVPath(path)
 
   /**
    * Retrieves an optional sequence of column names derived from a possible header.

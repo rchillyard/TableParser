@@ -120,3 +120,20 @@ class EncryptionUTF8AES128CTRSpec extends AnyFlatSpec with should.Matchers:
     // TODO eliminate use of unsafe methods
     a[TableParserException] shouldBe thrownBy(wi.unsafeRunSync())
 
+
+  behavior of "HexEncryption with keys"
+
+  it should "encrypt with a random key, and decrypt with that key" in:
+    val encryption = EncryptionUTF8AES128CTR
+    val (rawKey, hex, ok) = encryption.encryptWithRandomKey("Hello, World!").unsafeRunSync()
+    ok shouldBe true
+    rawKey.length shouldBe 16
+    encryption.decryptHex(rawKey, hex).unsafeRunSync() shouldBe "Hello, World!"
+
+  it should "encrypt with a given key (encryptHex), and decrypt with it (decryptHex)" in:
+    val encryption = EncryptionUTF8AES128CTR
+    val hex = encryption.encryptHex("k0JCcO$SY5OI50uj", "Hello, World!").unsafeRunSync()
+    encryption.decryptHex("k0JCcO$SY5OI50uj", hex).unsafeRunSync() shouldBe "Hello, World!"
+
+  it should "reject a key of the wrong size" in:
+    a[RuntimeException] should be thrownBy EncryptionUTF8AES128CTR.buildKey("too short")
