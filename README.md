@@ -1,5 +1,5 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/app/scalaprof/TableParser?utm_source=github.com&utm_medium=referral&utm_content=rchillyard/TableParser&utm_campaign=Badge_Grade_Settings)
-[![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_2.13.svg?color=blue&label=maven-central%20(2.13))](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_2.13)
+[![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_2.13.svg?color=blue&label=maven-central%20(2.13%2C%201.x))](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_2.13)
 [![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_3.svg?color=blue&label=maven-central%20(3))](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_3)
 ![GitHub Top Languages](https://img.shields.io/github/languages/top/rchillyard/TableParser)
 ![GitHub](https://img.shields.io/github/license/rchillyard/TableParser)
@@ -23,8 +23,8 @@
 > To read data whose fields are separated by `", "` (for example, written by 1.x with `CsvAttributes(", ")`), use `RowConfig.trimmingRowConfig`, which ignores spaces next to commas, as 1.x did.
 > To write LF line endings instead of CRLF, use `CsvAttributes(",", "\"", "\n")`.
 
-Full Scaladoc is available via javadoc.io, for [Scala 2.13](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13)
-and [Scala 3](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_3).
+Full Scaladoc is available via javadoc.io, for [Scala 3](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_3)
+(and, for the 1.x line, [Scala 2.13](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13)).
 
 A functional parser of tables, implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.
@@ -35,18 +35,18 @@ design document for more information.
 
 _TableParser_ aims to make it as simple as possible to ingest a fully typed tabular dataset.
 The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
-All conversions from strings to standard types are performed automatically.
-For non-standard types, it suffices simply to provide an implicit converter of the form _String=>T_.
+All conversions from strings to standard types are performed automatically,
+and the parsers (and renderers) of case classes are derived by the compiler, with no limit on the number of fields.
+For non-standard types, it suffices simply to provide a converter of the form _String=>T_.
 
 It is possible to parse sequences of _String_ (one per row)--
 the typical situation for a CSV file--or sequences of
 _String_ (where the table corresponds to a matrix of cells).
  
-This library makes extensive use of type classes and other implicit mechanisms.
+This library makes extensive use of type classes (given instances, and derivation from a case class's _Mirror_).
 Indeed, it is implemented very similarly to JSON readers.
-There is a row-parser configuration mechanism that allows
-the programmer to vary the regular expressions for recognizing
-strings and delimiters and also to vary the quote character.
+There is a row-parser configuration (_RowConfig_) that allows
+the programmer to vary the delimiter, the quote character, and how lists within a cell are written.
 
 In addition to parsing,
 _TableParser_ provides a mechanism for rendering a table in _hierarchical_ form (for example for
@@ -57,13 +57,15 @@ quite easily using the rows of the table, together with something like, for inst
 Package Structure
 ===========
 
-As of version 1.3.0, the code is made up of five packages: _core_, _cats_, _parquet_, _zio_, and _spark_.
-Most of the remainder of this README file refers to the _core_ package.
-The _cats_ package is for use with Cats Effect, particularly _IO_.
-All usage of _cats-effect IO_ and encryption have been moved into the _cats_ package.
-The _spark_ package is for use with Apache Spark (beginning with 1.2.0).
-The _zio_ package is for use with ZIO.
-The _parquet_ package is for use with Apache Parquet (beginning with 1.3.0).
+As of version 2.0.0, the code is made up of six modules (each published as _tableparser-<module>_):
+* _core_: parsing and rendering tables. Most of the remainder of this README file refers to the _core_ module.
+* _cats_: for use with Cats Effect, particularly _IO_ (see _IOTable_).
+* _zio_: for use with ZIO (see _ZIOTable_).
+* _crypto_: encryption of tables (e.g., of the rows of a CSV file), using tsec and Cats Effect (new in 2.0.0: in 1.x, this was part of _cats_).
+* _json_: reading and writing tables as JSON, using circe (new in 2.0.0: in 1.x, JSON support, using spray-json, was part of _core_).
+* _parquet_: for use with Apache Parquet (beginning with 1.3.0).
+
+The _spark_ module (for use with Apache Spark) is on the 1.x line only, because Spark is not published for Scala 3.
 
 Quick Intro
 ===========
@@ -83,7 +85,7 @@ using as many defaults as possible is:
     case class Player(first: String, last: String)
 
     object Player extends TableParserHelper[Player]() {
-      def cellParser: CellParser[Player] = cellParser2(apply)
+      def cellParser: CellParser[Player] = CellParser.derived[Player]
     }
 
     val pty: Try[Table[Player]] = Table.parseFile("players.csv")
@@ -109,33 +111,61 @@ others are ignored):
 etc...
 
 Note that columns not needed for the _Player_ case class are simply ignored.
-Also, note that a column whose name matches exactly is preferred, but otherwise the case of the column names is not important.
+Also, note that a column whose name matches exactly is preferred; only if there is none is the case of the column names ignored.
 
 For another simple use case _TableParser_, please see my blog at: https://scalaprof.blogspot.com/2019/04/new-projects.html 
 
 # User Guide
 
-This version of the README.md file refers to version: 1.7.0.
+This version of the README.md file refers to version: 2.0.0.
 
-From version 1.6.0, the core, cats, parquet and zio modules are published for both Scala 2.13 and Scala 3
-(e.g. _tableparser-core_2.13_ and _tableparser-core_3_; the Scala 3 artifacts are built with Scala 3.3 LTS).
-The spark module remains Scala 2.13 only, because Spark is not published for Scala 3.
+From version 2.0.0, _TableParser_ is for Scala 3 only (it is built with Scala 3.3 LTS, so it can be used from any later Scala 3 version),
+and it needs Java 21 or later.
+For Scala 2.13 (or Java 17), and for the spark module, use the 1.x line (the latest is 1.7.2), which is on the _1.x_ branch.
 
-To use it, add the modules you need to your _build.sbt_.
-The `%%` operator picks the artifact that matches your project's Scala version:
+To use it, add the modules you need to your _build.sbt_:
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "1.7.0"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "1.7.0"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "1.7.0"     // ZIO support
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "1.7.0" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "2.0.0"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "2.0.0"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "2.0.0"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.0.0"  // encryption
+  , "com.phasmidsoftware" %% "tableparser-json" % "2.0.0"    // JSON (circe)
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.0.0" // Parquet files
 )
 ```
 
-For Spark (Scala 2.13 only), add `"com.phasmidsoftware" %% "tableparser-spark" % "1.7.0"`.
+If you are moving from 1.x, see [Migrating from 1.x](#migrating-from-1x) below.
+See the release notes (at the end) for history.
 
-See release notes below for history.
+## Migrating from 1.x
+
+2.0.0 is for Scala 3, and makes the most of it: almost everything that was written out by hand for each case class in 1.x is now derived by the compiler.
+In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces it.
+
+| Topic | 1.x | 2.0 |
+|---|---|---|
+| Scala and Java | Scala 2.13 or 3; Java 17 | Scala 3 only (3.3 LTS or later); Java 21 |
+| Parsing a case class | `cellParser2(apply)` ... `cellParser13(apply)` (at most 13 fields) | `CellParser.derived[T]` (or `derives CellParser`), with no limit on the number of fields |
+| Rendering a case class as CSV | `renderer2(apply)`, `generator2(apply)` ... (at most 19 fields) | `CsvRenderer.derived[T]`, `CsvGenerator.derived[T]`, or both at once with `derives CsvProduct` |
+| Hierarchical rendering of a case class | `renderer2("tr")(apply)` etc. | `HierarchicalRenderer.derived[T]("tr")` |
+| Parquet: grouped case classes | `converter2(apply)` ... `converter8(apply)`, and `converterMap`/`groupedHelpers` | derived automatically (`ParquetCellConverter.derived`): each case class needs only its `ColumnHelper` |
+| Field names | found by reflection (`Reflection.extractFieldNames`, with a `ClassTag`) | from the case class's `Mirror`, at compile time (the `FieldNames[T]` type class); `Reflection` is gone |
+| Implicits | `implicit val`, `implicitly` | `given`, `summon` (an `implicit val` still works, of course). Note that a wildcard import doesn't bring givens: use `import X.{given, *}` |
+| Configuring how rows are read | `implicit object C extends DefaultRowConfig { override val delimiter = """\t""".r; override val string = ... }` | `given RowConfig = RowConfig(delimiter = '\t')`: `RowConfig` is a case class, whose regexes are derived from its characters (`withDelimiter` etc. change one property). `DefaultRowConfig` is gone |
+| CSV format | spaces next to a comma were ignored; LF line endings | RFC 4180: spaces are part of a field (use `RowConfig.trimmingRowConfig` for 1.x behavior); CRLF when writing (`CsvAttributes(",", "\"", "\n")` for LF) |
+| Reading and writing in the same format | `RowConfig` and `CsvAttributes` were unrelated | `rowConfig.csvAttributes` and `csvAttributes.rowConfig` |
+| Column names when writing | the field names (with dots for nested case classes) | the names the parser looks up (via `ColumnHelper`), so a table that is written can be read back |
+| Row order | `Content` was a `ParIterable` (rows could come back in any order) | `Content` is a `Vector`, in the order the rows were read; `content.par` for parallelism |
+| Dates | Joda-Time (`org.joda.time.LocalDate`) | `java.time.LocalDate` |
+| JSON | spray-json, in core (`TableJsonFormat`) | circe, in the new _tableparser-json_ module (`TableCodecs`) |
+| Encryption | in _tableparser-cats_ | in the new _tableparser-crypto_ module (package `com.phasmidsoftware.tableparser.crypto`) |
+| `MaybeStatistics` | a sealed trait | an enum |
+| `Sequential`, `Sequence`, the examples, `table.Main`, `EvaluateZIO` | deprecated in 1.7.0 | removed (the examples are now in the tests) |
+| A blank `Option[URL]` cell | a failure | `None`, as for every other type |
+| `StringConverter`'s instances, `Header.multiply`/`prepend`/`alphabet` | public | removed (unused) |
+| Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
 
 ## Parsing
 
@@ -174,10 +204,9 @@ And the default for raw row parsing is to allow quoted strings to span multiple 
 
 But, if not parsing as raw rows,
 you will need to design a class hierarchy to model the columns of the table.
-_TableParser_ will take care of any depth of case classes/tuples.
-Currently, there is a limit of 13 parameters per case class/tuple,
-so with a depth of _h_ classes/tuples you could
-theoretically handle _13^h_ attributes altogether.
+_TableParser_ will take care of any depth of case classes.
+There is no limit on the number of parameters of a case class
+(see _UnstructuredMovie_, in the tests, which has a field for each of the 28 columns of the movie database).
 
 The names of the parameters of a case class do not necessarily
 have to be the same as the column from which the value derives.
@@ -193,26 +222,21 @@ in the cell in question.
 _T_ is covariant so that if you have alternative parsers which generate different subclasses of trait,
 for instance, this can be done.
 
-In order for _TableParser_ to know how to construct a case class (or tuple) from a set of values,
-an implicit instance of _CellParser\[T]_ must be in scope.
-This is achieved via invoking a method (from object _Parsers_) of the following form:
-where _f_ is a function that takes _N_ parameters of types _P1, P2, ... Pn_ respectively,
-and where _T_ is the type to be constructed:
+In order for _TableParser_ to know how to construct a case class from a set of values,
+an instance of _CellParser\[T]_ must be in scope.
+It is derived from the case class (using its _Mirror_):
 
-    cellParserN[T,P1,P2,...Pn](f)
- 
-Typically, the function _f_ is the _apply_ method of the case class _T_,
-although you may have to explicitly refer to a particular function/method with a specific signature.
-When you have created a companion object to the case class,
-you will simply use the method name (typically _apply_) as in _Name.apply_ (see example below).
-If you have created additional apply methods,
-you will need to define a function of a specific type and pass that in.
-Or, more simply, do as for _ratingParser_ in the example below.
+    given CellParser[T] = CellParser.derived[T]
 
-Note that _P1_, _P2_, ... _Pn_ each have a context bound on _CellParser_ (that's to say, there is implicit
-evidence of type _CellParser\[P]_).
-This is the mechanism that saves the programmer from having to specify explicit conversions.
-_T_ is bound to be a subtype of _Product_ and has two context bounds: _ClassTag_ and _ColumnHelper_.
+or, equivalently, `case class T(...) derives CellParser`.
+The parsers of the fields come from their own types (each must have a _CellParser_),
+and a field which is itself a case class (with no _CellParser_ of its own) is derived in turn.
+Each field is read from the column whose name is given by the _ColumnHelper\[T]_ for that field's name.
+
+NOTE: for a case class which is defined locally (inside a method),
+don't derive its _CellParser_ inside a companion object that you write for it:
+initializing that object would refer to itself (a _StackOverflowError_).
+Use `derives CellParser`, or define the given alongside the case class.
 
 See the section on _CellParsers_ below.
 
@@ -242,16 +266,17 @@ The _Table_ class, which extends _Iterable\[Row]_, also has several methods for 
 
 * def content: Content\[Row]
 * def maybeHeader: Option\[Header]
-* def toCSV(implicit renderer: CsvRenderer\[Row], generator: CsvProductGenerator\[Row], csvAttributes: CsvAttributes): Iterable\[String]
+* def toCSV(using renderer: CsvRenderer\[Row], generator: CsvGenerator\[Row], csvAttributes: CsvAttributes): Try\[String]
 * def maybeColumnNames: Option\[Seq\[String]]
 * def column(name: String): Iterator\[Option\[String]]
-* writeCSVFile(file: File)(implicit renderer: CsvRenderer\[Row], generator: CsvGenerator\[Row], ordering: Ordering\[Row], csvAttributes: CsvAttributes): Unit
-* def writeCSVFileEncrypted[A: HexEncryption](file: File)(implicit renderer: CsvRenderer\[Row], generator: CsvGenerator\[Row], ordering: Ordering\[Row], hasKey: HasKey\[Row], csvAttributes: CsvAttributes): Unit
+* def writeCSVFile(path: Path)(using renderer: CsvRenderer\[Row], generator: CsvGenerator\[Row], csvAttributes: CsvAttributes): Unit
+
+To write a table encrypted, see _TableCrypt.writeCSVFileEncrypted_ in the _crypto_ module.
 
 ### transformation methods
 * def filter(p: Row => Boolean): Table\[Row]
 * def filterNot(p: Row => Boolean): Table\[Row]
-* def filterValid(implicit rv: Validity\[Row]): Table\[Row]
+* def filterValid(using rv: Validity\[Row]): Table\[Row]
 * def map\[S](f: Row => S): Table\[S]
 * def flatMap\[U](f: Row => Iterable\[U]): Table\[U]
 * def mapOptional\[S](f: Row => Option\[S]): Table\[S]
@@ -268,7 +293,7 @@ The _Table_ class, which extends _Iterable\[Row]_, also has several methods for 
 * def dropWhile(p: Row => Boolean): Table\[Row]
 * def take(n: Int): Table\[Row]
 * def takeWhile(p: Row => Boolean): Table\[Row]
-* def sample(n: Int)(implicit random: Random): Table\[Row]
+* def sample(n: Int)(using random: Random): Table\[Row]
 * def slice(from: Int, until: Int): Table\[Row]
 * lazy val shuffle: Table\[Row]
 
@@ -277,23 +302,23 @@ It is to be expected that _join_ methods will be added later
 (based upon the second signature of processRows).
 
 The following **object** methods are available for parsing text:
-*  def parse\[T: TableParser](ws: Seq\[String]): Try\[T]
+*  def parse\[T: TableParser](ws: Iterable\[String]): Try\[T]
 *  def parse\[T: TableParser](ws: Iterator\[String]): Try\[T]
-*  def parse\[T: TableParser](x: => Source): Try\[T]
-*  def parse\[T: TableParser](u: URI)(implicit codec: Codec): Try\[T]
-*  def parse\[T: TableParser](u: URI, enc: String): Try\[T]
-*  def parseInputStream\[T: TableParser](i: InputStream)(implicit codec: Codec): Try\[T]
-*  def parseInputStream\[T: TableParser](i: InputStream, enc: String): Try\[T]
-*  def parseFile\[T: TableParser](path: Path)(implicit codec: Codec): Try\[T]
+*  def parseSource\[T: TableParser](x: => Source): Try\[T]
+*  def parse\[T: TableParser](sy: => Try\[Source]): Try\[T]
+*  def parse\[T: TableParser](u: => URI)(using codec: Codec): Try\[T]
+*  def parse\[T: TableParser](u: => URI, enc: String): Try\[T]
+*  def parseInputStream\[T: TableParser](i: => InputStream)(using codec: Codec): Try\[T]
+*  def parseInputStream\[T: TableParser](si: Try\[InputStream], enc: String): Try\[T]
+*  def parseFile\[T: TableParser](path: Path)(using codec: Codec): Try\[T]
 *  def parseFile\[T: TableParser](path: Path, enc: String): Try\[T]
-*  def parseResource\[T: TableParser](s: String, clazz: Class\[_] = getClass)(implicit codec: Codec): Try\[T]
-*  def parseResource\[T: TableParser](u: URL, enc: String): Try\[T]
-*  def parseResource\[T: TableParser](u: URL)(implicit codec: Codec): Try\[T]
-*  def parseSequence\[T: TableParser](wss: Seq\[Seq\[String]]): Try\[T]
-*  @deprecated def parseFile\[T: TableParser](f: File)(implicit codec: Codec): Try\[T]
-*  @deprecated def parseFile\[T: TableParser](f: File, enc: String): Try\[T]
-*  @deprecated def parseFile\[T: TableParser](pathname: String)(implicit codec: Codec): Try\[T]
-*  @deprecated def parseFile\[T: TableParser](pathname: String, enc: String): Try\[T]
+*  def parseResource\[T: TableParser](w: String, clazz: Class\[?] = getClass)(using codec: Codec): Try\[T]
+*  def parseResource\[T: TableParser](u: => URL)(using codec: Codec): Try\[T]
+*  def parseResource\[T: TableParser](u: => URL, enc: String): Try\[T]
+*  def parseSequence\[T: TableParser](wss: Iterator\[Seq\[String]]): Try\[T]
+
+and, for raw tables (of _RawRow_): _parseRaw_, _parsePathRaw_, _parseFileRaw_ and _parseResourceRaw_.
+_IOTable_ (in the _cats_ module) and _ZIOTable_ (in the _zio_ module) have the same methods, giving an _IO_ or a _Task_.
 
 Please note that, in the case of a parameter being an Auto-closeable object such as _InputStream_ or Source,
 it is the caller's responsibility to close it after parsing.
@@ -303,13 +328,13 @@ the parse method will be closed.
 This applies also to the _parseInputStream_ methods:
 the internally defined _Source_ will be closed (but not the stream).
 
-Additionally, there is an implicit class called _ImplicitParser_ (defined in the _TableParser_ companion object)
+Additionally, there is an extension method _parse_ (defined in the _TableParser_ companion object)
 which allows for expressions such as:
 
     parser parse source
 
 This is the recommended way to parse because it is the simplest.
-It also allows chaining of "lens" methods to configure the parser, for example:
+It also allows chaining of copy (or "lens") methods to configure the parser, for example:
 
     val parser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
 
@@ -400,7 +425,18 @@ These define, respectively, the delimiter regex, the string regex, list enclosur
 the list separator, and the quote character.
 Rather than invoke the constructor directly,
 it is easier to invoke the companion object's _apply_ method,
-which takes a single implicit parameter: a _RowConfig_.
+which takes a single _using_ parameter: a _RowConfig_.
+
+_RowConfig_ is a case class of characters, from which the regexes are derived:
+
+    case class RowConfig(delimiter: Char = ',', quote: Char = '"', listSep: Char = '|', listEnclosure: String = "{}",
+                         trim: Boolean = false, maybeString: Option[Regex] = None)
+
+The default (_RowConfig.default_) reads RFC 4180.
+To read, for example, tab-separated values, define `given RowConfig = RowConfig(delimiter = '\t')`
+(or `RowConfig.default withDelimiter '\t'`): the regex for an unquoted field changes with the delimiter.
+If _trim_ is true (as in _RowConfig.trimmingRowConfig_), spaces next to a delimiter are ignored, as in 1.x.
+_rowConfig.csvAttributes_ gives the _CsvAttributes_ which write tables in the same format (and _csvAttributes.rowConfig_ the reverse).
 Two consecutive quote characters, within a quoted string,
 will be parsed as a single quote character.
 The _LineParser_ constructor will perform some basic checks that its parameters are consistent.
@@ -423,26 +459,17 @@ The methods of _StringsParser_ are:
 There are a number of methods which return an instance of _CellParser_ for various situations:
 
 * def rawRowCellParser: CellParser\[RawRow]
-* def cellParserRepetition\[P: CellParser : ColumnHelper](start: Int = 1): CellParser\[Seq\[P]]
+* def cellParserRepetition\[P: CellParser](start: Int = 1): CellParser\[Seq\[P]]
 * def cellParserSeq\[P: CellParser]: CellParser\[Seq\[P]]
 * def cellParserOption\[P: CellParser]: CellParser\[Option\[P]]
 * lazy val cellParserOptionNonEmptyString: CellParser\[Option\[String]]
-* def cellParser\[P: CellParser, T: ClassTag](construct: P => T): CellParser\[T]
-* def cellParser1\[P1: CellParser, T <: Product : ClassTag : ColumnHelper](construct: P1 => T, fields: Seq\[String] = Nil): CellParser\[T]
-* etc. through cellParser13...
-* def cellParser2Conditional\[K: CellParser, P, T <: Product : ClassTag : ColumnHelper](construct: (K, P) => T, parsers: Map\[K, CellParser\[P]], fields: Seq\[String] = Nil): CellParser\[T]
+* def cellParser\[P: CellParser, T](construct: P => T): CellParser\[T]
+* inline def cellParser2Conditional\[K, P, T](construct: (K, P) => T, parsers: Map\[K, CellParser\[P]]): CellParser\[T]
 * def columnHelper\[T](maybePrefix: Option\[String], aliases: (String, String)*): ColumnHelper\[T]
 * etc. including other ways to instantiate a ColumnHelper\[T].
 
-The methods of form _cellParserN_ are the parsers that are used to parse into case classes.
-Ensure that you have the correct number for N:
-the number of fields/parameters in the case class you are instantiating.
-If you don't, the compiler, or your IDE, will warn you.
-In some situations,
-the reflection code is unable to get the field names in order (for example,
-when there are public  lazy values).
-In such a case, add the second parameter to _explicitly_ define the order of the field names.
-Normally, of course, you can leave this parameter unset.
+The parser of a case class itself is derived: see _CellParser.derived_ above
+(it replaces 1.x's _cellParser1_ ... _cellParser13_).
 
 There is one additional method to handle the situation where you want to vary the parser
 for a set of cells according
@@ -454,8 +481,8 @@ For an example of this, please see the example in _CellParsersSpec_ ("conditiona
 
 ### Implicits
 
-Keep in mind when using implicit values that the best practice
-is to define an implicit involving a type T,
+Keep in mind when using given (implicit) values that the best practice
+is to define a given involving a type T,
 for example, _CellParser\[T]_, in the companion object of _T_.
 This will tend to eliminate any ambiguously defined implicits,
 and it also tends to avoid any problems with  initialization.
@@ -470,50 +497,11 @@ you will see that this is also the place to define optional parsers, sequential 
 
 The rows of a _Table_ are represented by a case class called _Content_:
 
-    case class Content[+Row](private val xs: ParIterable[Row])
+    case class Content[+Row](private val xs: Vector[Row])
 
-Currently, the internal rows are represented by a _ParIterable\[Row]_ which holds the rows in parallel partitions.
-This necessarily shuffles the ordering of the rows.
-
-### Sequence and Sequential
-
-Tables can be ordered explicitly or they can be ordered by a _Sequence_ member whose values are generated by the parser.
-The trait _Sequential_ enables the definition of type constructors which can provide evidence of the 
-corresponding order.
-
-For an example of this in use, see the _Crime_ class:
-
-    case class Crime(sequence: Sequence,
-        maybeCrimeId: Option[BigInt],
-        month: String,
-        reportedBy: String,
-        fallsWithin: String,
-        maybeLocation: Option[CrimeLocation],
-        crimeType: String,
-        lastOutcomeCategory: String,
-        context: String) extends Sequential
-
-There is no column in the CSV corresponding to _sequence_.
-However, the parser auto-generates that column.
-
-We can parse the file and write out a one-tenth sample with something like the following:
-
-    import CrimeParser._
-    import cats.effect.unsafe.implicits.global
-    implicit val random: Random = new Random(0)
-    val sampleFile = "2023-01-metropolitan-street-sample.csv"
-    val outputFile = "tmp/Crime.use.Resource.csv"
-    val writeResource = Resource.make(IO(new FileWriter(outputFile)))(fw => IO(fw.close()))
-    val wi: IO[Unit] = for {
-      url <- ioResource[Crime](sampleFile)
-      readResource = Resource.make(IO(Source.fromURL(url)))(src => IO(src.close()))
-      ct <- readResource.use(src => Table.parseSource(src))
-      lt <- IO(ct.mapOptional(m => m.brief))
-      st <- IO(lt.filter(FP.sampler(10)))
-      w <- st.toCSV
-      _ <- writeResource.use(fw => IO(fw.write(w)))
-    } yield ()
-    wi.unsafeRunSync()
+The rows are kept in the order they were read.
+(In 1.x, they were held in a _ParIterable_, which shuffled them.)
+For parallel processing, _content.par_ gives the rows as a parallel collection.
 
 ## Caveats
 
@@ -529,13 +517,13 @@ must be defined using _def_.
 In this example, we parse the IMDB Movie dataset from Kaggle.
 The basic structure of the application code will look something like this:
 
-        import MovieParser._
-        val x: IO[Table[Movie]] = Table.parseResource("movie_metadata.csv")
+        import Movie._
+        val x: Try[Table[Movie]] = Table.parseResource[Table[Movie]]("movie_metadata.csv", classOf[Movie])
      
 In this example, the row type is _Movie_, a case class with eleven parameters.
 The data can be found in a local resource (relative to this class) called movie_metadata.csv.
-All the (implicit) details that characterize this particular table input are provided
-in the _MovieParser_ object.
+All the (given) details that characterize this particular table input are provided
+in the _Movie_ companion object.
 
 The _Movie_ class looks like this:
 
@@ -549,12 +537,12 @@ The following is the required code:
     object Movie extends CellParsers with CsvGenerators with CsvRenderers {
         val missing: Movie = apply("", Format.none, Production.none, Reviews.none, Principal.nemo, Principal.nemo, Principal.nemo, None, AttributeSet.none, AttributeSet.none, "")
         val header = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes"
-        implicit val helper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapper,
+        implicit val helper: ColumnHelper[Movie] = columnHelper(camelToSnakeCaseColumnNameMapperLower,
             "title" -> "movie_title",
             "imdb" -> "movie_imdb_link")
-        implicit val parser: CellParser[Movie] = cellParser11(apply)
-        implicit val renderer: CsvRenderer[Movie] = renderer11(apply)
-        implicit val generator: CsvGenerator[Movie] = generator11(apply)
+        implicit val parser: CellParser[Movie] = CellParser.derived[Movie]
+        implicit val renderer: CsvRenderer[Movie] = CsvRenderer.derived[Movie]
+        implicit val generator: CsvGenerator[Movie] = CsvGenerator.derived[Movie]
 
         // Additional code shown below for parsing tables or processing rows.
     }
@@ -577,20 +565,23 @@ requires a companion object that looks like this:
 
     object Principal extends CellParsers with CsvGenerators with CsvRenderers {
         val nemo: Principal = Principal(Name.nemo, 0)
-        implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapper, Some("$x_$c"))
-        implicit val parser: CellParser[Principal] = cellParser2(apply)
+        implicit val helper: ColumnHelper[Principal] = columnHelper(camelToSnakeCaseColumnNameMapperLower, Some("$x_$c"))
+        implicit val parser: CellParser[Principal] = CellParser.derived[Principal]
         implicit val parserOpt: CellParser[Option[Principal]] = cellParserOption
-        implicit val renderer: CsvRenderer[Principal] = renderer2(apply)
-        implicit val rendererOpt: CsvRenderer[Option[Principal]] = optionRenderer()
-        implicit val generator: CsvGenerator[Principal] = generator2(apply)
-        implicit val generatorOpt: CsvGenerator[Option[Principal]] = optionGenerator
+        implicit val renderer: CsvRenderer[Principal] = CsvRenderer.derived[Principal]
+        implicit val generator: CsvGenerator[Principal] = CsvGenerator.derived[Principal]
+        // An optional Principal (e.g. actor3) has the same columns as a Principal: when it is missing, they are empty.
+        implicit val rendererOpt: CsvRenderer[Option[Principal]] = optionProductRenderer[Principal]
+        implicit val generatorOpt: CsvGenerator[Option[Principal]] = optionProductGenerator[Principal]
     }
 
 Like _Movie_, it has a default value (_nemo_), as well as a _helper_ to get the column names correct.
 We need to define parsers, renderers, etc. for optional *Principal*s.
 Unlike with primitive values such as _Int_, _Double_, we do have to add additional
 _implicit_ definitions to accomplish this.
-Note that _optionRenderer_ takes an optional parameter that defines a _String_ to be used when the object
+Note that _optionProductRenderer_ (and _optionProductGenerator_) are for an optional case class, which has several columns:
+_None_ is written as the right number of empty cells.
+For an optional value with one column, use _optionRenderer_, which takes an optional parameter that defines a _String_ to be used when the value
 is missing.
  
 The other case classes look like this:
@@ -610,9 +601,7 @@ The _Movie_ object has additional code like this:
         // Required code as shown above
 
         // First, we need a StringParser[Movie]...
-        implicit object MovieConfig extends DefaultRowConfig {
-            override val listEnclosure: String = ""
-        }
+        implicit val movieConfig: RowConfig = RowConfig(listEnclosure = "")
         implicit val stringParser: StringParser[Movie] = StandardRowParser.create[Movie]
 
         // Next, if we want to be able to parse rows into a Table[Movie], we will need a TableParser[Movie]...
@@ -643,10 +632,9 @@ and then returned as strings
 in the form "{" element "," element ... "}"
 The parsing from the original string obeys the _RowConfig_ parameters of _listSep_ and _listEnclosure_.
 
-In this case, the row config object is defined as _MovieConfig_.
-There, you also see the parameters _string_ which is a regular expression for a string in a table cell;
-and _delimiter_ which is a regular expression which defines the separator between table columns;
-and _quote_ the quote character which can be used to include cell values which enclose the separator.
+In this case, the row config is defined as _movieConfig_, whose lists are not enclosed (in 1.x, they were enclosed in "{}" by default).
+A _RowConfig_ also defines the _delimiter_ character which separates the columns,
+and the _quote_ character which can be used to include cell values which contain the delimiter.
 
 A parameter can be optional, for example, in the _Movie_ example, the _Production_ class is defined thus:
 
@@ -656,7 +644,7 @@ In this example, some movies do not have a budget provided.
 All you have to do is declare it optional in the case class,
 and _TableParser_ will specify it as _Some(x)_ if valid, else _None_.
 
-Note that there is a default, implicit _RowConfig_ object defined in the object _RowConfig_.
+Note that there is a default given _RowConfig_ (_RowConfig.default_) defined in the object _RowConfig_.
 
 If, instead of building a _Table\[Movie]_, you prefer to process rows into an _Iterator\[Movie]_,
 then you should define the following instead of the _MovieTableParser_:
@@ -686,7 +674,7 @@ Only one question is included in this example.
 
     object Submission extends CellParsers {
         implicit val submissionColumnHelper: ColumnHelper[Submission] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, Some("$c $x"))
-        implicit val submissionParser: CellParser[Submission] = cellParser4(apply)
+        implicit val submissionParser: CellParser[Submission] = CellParser.derived[Submission]
         implicit val parser: StandardStringsParser[Submission] = StandardStringsParser[Submission]()
 
         implicit object TableParser extends StringsTableParser[Table[Submission]] {
@@ -696,7 +684,7 @@ Only one question is included in this example.
 
           override val forgiving: Boolean = false
 
-          val rowParser: RowParser[Row, Seq[String]] = implicitly[RowParser[Row, Seq[String]]]
+          val rowParser: RowParser[Row, Seq[String]] = summon[RowParser[Row, Seq[String]]]
         }
     }
 
@@ -706,7 +694,7 @@ Only one question is included in this example.
         private val mapper: String => String = _.replaceAll("(_)", " ")
         implicit val helper: ColumnHelper[Question] = columnHelper(mapper, Some("$c $x"), "questionId" -> "question_ID")
         implicit val optParserString: CellParser[Option[String]] = cellParserOption
-        implicit val parser: CellParser[Question] = cellParser6(apply)
+        implicit val parser: CellParser[Question] = CellParser.derived[Question]
         implicit val seqParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
     }
 
@@ -726,12 +714,6 @@ To test this example, we run a unit test as follows (using scalatest):
         }
     }
 
-Note the use of _cellParserRepetition_. 
-The parameter allows the programmer to define the start value of the sequence number for the 
-columns.
-      import Submissions._
-      val qty: IO[Table[Submission]] = Table.parseSequence(rows)
-
 Note the use of _cellParserRepetition_. The parameter allows the programmer to define the start value of the sequence number for the columns.
 In this case, we use the default value: 1 and so don't have to explicitly specify it.
 Also, note that the instance of _ColumnHelper_ defined here has the formatter defined as "$c $x",
@@ -741,8 +723,8 @@ Rendering
 =========
 
 _TableParser_ provides a general mechanism for rendering (serializing to text) tables.
-Indeed, _Table\[Row]_ extends _Renderable\[Row]_,
-which supports the _render(implicit rs: StringRenderer\[Row])_ method. 
+Indeed, the tables built by the parsers extend _TableRenderable\[Row]_,
+which supports the _render(using ev: Renderer\[Table\[Row], O])_ method. 
 There are two distinct mechanisms for rendering a table:
 * one to a straight serialized output, for example, when rendering a table as a CSV file.
 * the other to a hierarchical (i.e., tree-structured) output, such as an HTML file.
@@ -759,7 +741,7 @@ It's intended more as a straight, quick-and-dirty output mechanism to a CSV file
 
 Here, for example, is an appropriate definition.
 
-	implicit object StringBuilderWriteable extends Writable[StringBuilder] {
+	given StringBuilderWriteable: Writable[StringBuilder] with {
 		def writeRaw(o: StringBuilder)(x: CharSequence): StringBuilder = o.append(x.toString)
 		def unit: StringBuilder = new StringBuilder
 		override def delimiter: CharSequence = "|"
@@ -783,29 +765,27 @@ you will need to override the _writeRow_ method of _Writable_.
 A type class called _TreeWriter_ is the main type for hierarchical rendering.
 One of the instance methods of _Table\[Row]_ is a method as follows:
 
-    def renderHierarchical\[U: TreeWriter](style: String)(implicit rr: HierarchicalRenderer[Row]): U
+    def renderHierarchical[U: TreeWriter](style: String, attributes: Map[String, String] = Map())(using rr: HierarchicalRenderer[Row]): U
     
-Providing that you have defined an implicit object of type _TreeWriter\[U]_
+Providing that you have defined a given of type _TreeWriter\[U]_
 and a _HierarchicalRenderer\[Row]_,
 then the _renderHierarchical_ method will produce an instance of _U_ which
 will be a tree containing all the rows of this table.
 
 What sort of type is _U_?
 An XML node would be appropriate.
-The specifications use a type called HTML which is provided in package _parse.render.tag_
+The specifications use a type called HTML which is provided in package _core.render.tag_
 more as an exemplar rather than something definitive.
 
-    case class HTML(tag: String, content: Option[String], attributes: Map[String, String], hs: Seq[HTML])
+    case class HTML(name: String, attributes: Seq[Attribute], content: Option[String], tags: Seq[Tag])
 
-The example _TreeWriter_ for this type is reproduced here:
+The example _TreeWriter_ for this type (from _HierarchicalRendererSpec_) is reproduced here:
 
-    trait TreeWriterHTML$ extends TreeWriter[HTML] {
-    	def addChild(parent: HTML, child: HTML): HTML = parent match {
-    		case HTML(t, co, as, hs) => HTML(t, co, as, hs :+ child)
-    	}
-    	def node(tag: String, content: Option[String], attributes: Map[String, String], children: Seq[HTML]): HTML = HTML(tag, content, attributes, children)
-    	
-    implicit object TreeWriterHTML$ extends TreeWriterHTML$
+    trait TreeWriterHTML extends TreeWriter[HTML] {
+      def evaluate(node: Node): HTML = HTML(node.style, node.attributes.toSeq.map(kv => Attribute(kv)), node.content, node.children.toSeq map evaluate)
+    }
+
+    implicit object treeWriterHTML extends TreeWriterHTML
 
 If we have a row type as, for example:
 
@@ -813,8 +793,8 @@ If we have a row type as, for example:
 	
 Then, we should define appropriate renderers along the following lines:
 
-	implicit val valueRenderer: HierarchicalRenderer[Double] = renderer("td")
-	implicit val complexRenderer: HierarchicalRenderer[Complex] = renderer2("tr")(Complex)
+	implicit val valueRenderer: HierarchicalRenderer[Double] = renderer[Double]("td")
+	implicit val complexRenderer: HierarchicalRenderer[Complex] = HierarchicalRenderer.derived[Complex]("tr")
 
 We can then write something like:
 
@@ -836,39 +816,39 @@ the conversion between instances of types (especially case classes) and
 Strings is hierarchical (recursive).
 
 If you need to set HTML attributes for a specific type, for example, a row in the above example,
-then an attribute map can be defined for the _renderer2_ method.
+then an attribute map can be passed to _HierarchicalRenderer.derived_ (its second parameter).
 
 ## CSV Rendering
 
 If you simply need to write a table to CSV (comma-separated value) format as a _String_,
-then use the _toCsv_ method of _Table\[T]_.
-Note that there is also an object method of _Table_ called _toCsvRow_,
+then use the _toCSV_ method of _Table\[T]_.
+Note that there is also an object method of _Table_ called _toCSVRow_,
 which can be used for instances of _Table\[Row]_.
 More control can be gained by using _CsvTableStringRenderer\[T]_ or _CsvTableFileRenderer\[T]_
 for a particular type _T_.
 
 These require customizable (implicit) evidence parameters and are defined as follows:
 
-    case class CsvTableStringRenderer[T: CsvRenderer : CsvGenerator]()(implicit csvAttributes: CsvAttributes)
-        extends CsvTableRenderer[T, StringBuilder]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.stringBuilderWritable(csvAttributes.delimiter, csvAttributes.quote), csvAttributes)
-    case class CsvTableFileRenderer[T: CsvRenderer : CsvGenerator](path: Path)(implicit csvAttributes: CsvAttributes)
-        extends CsvTableRenderer[T, FileWriter]()(implicitly[CsvRenderer[T]], implicitly[CsvGenerator[T]], Writable.fileWritable(file), csvAttributes)
-    abstract class CsvTableRenderer[T: CsvRenderer : CsvGenerator, O: Writable]()(implicit csvAttributes: CsvAttributes) extends Renderer[Table[T], O] {...}
+    case class CsvTableStringRenderer[T]()(using CsvRenderer[T], CsvGenerator[T], CsvAttributes) extends CsvTableRenderer[T, StringBuilder] ...
+    case class CsvTableFileRenderer[T](path: Path)(using CsvRenderer[T], CsvGenerator[T], CsvAttributes) extends CsvTableRenderer[T, FileWriter] ...
+    abstract class CsvTableRenderer[T, O]()(using CsvRenderer[T], CsvGenerator[T], Writable[O], CsvAttributes) extends Renderer[Table[T], O] {...}
 
 _CsvRenderer\[T]_ determines the layout of the rows,
 while _CsvGenerator\[T]_ determines the header.
 _CsvAttributes_ specify the delimiter and quote characters for the output.
-Instances of each can be created using methods in _CsvRenderers_ and _CsvGenerators_ respectively.
-Appropriate methods are:
-* sequenceRenderer, optionRenderer, renderer1,  renderer2, renderer3, etc. up to renderer12.
-* sequenceGenerator, optionGenerator, generator1,  generator2, generator3, etc. up to generator12.
+For a case class, these are derived: _CsvRenderer.derived\[T]_ and _CsvGenerator.derived\[T]_,
+or `derives CsvProduct` for both at once (they replace 1.x's _renderer1_ ... _renderer19_ and _generator1_ ... _generator19_).
+The column names come from the same _ColumnHelper_ that parsing uses, so a table that is written can be read back.
+Other instances can be created using methods in _CsvRenderers_ and _CsvGenerators_ respectively:
+* sequenceRenderer, optionRenderer, optionProductRenderer.
+* sequenceGenerator, optionGenerator, optionProductGenerator.
 
 In some situations,
 you will want to omit values (and corresponding header columns) when outputting a CSV file.
 You may use the following methods (from the same types as above):
 
-    def skipRenderer[T](alignment: Int = 1)(implicit ca: CsvAttributes): CsvRenderer[T] 
-    def skipGenerator[T](implicit ca: CsvAttributes): CsvGenerator[T]
+    def skipRenderer[T](alignment: Int = 1)(using ca: CsvAttributes): CsvRenderer[T]
+    def skipGenerator[T](using ca: CsvAttributes): CsvGenerator[T]
     
 Note that, when rendering a CSV row, you may want to simply render some number of delimiters
 (this would be in the case where you have a fixed header).
@@ -949,6 +929,45 @@ For more examples (numbers, dates, nested case classes, and bad input), see _Tab
 
 Release Notes
 =============
+V1.7.x -> V2.0.0
+* Scala 3 only (built with Scala 3.3 LTS; tested on 3.9 too), and Java 21. For Scala 2.13, Java 17 or Spark, use the 1.x line.
+  See [Migrating from 1.x](#migrating-from-1x) for what changes in your code.
+* Derivation: the parsers and renderers of case classes (_CellParser_, _CsvRenderer_, _CsvGenerator_, _HierarchicalRenderer_,
+  and parquet's _ParquetCellConverter_) are derived from the case class's _Mirror_.
+  This replaces the _cellParserN_, _rendererN_, _generatorN_ and _converterN_ families, removes their limits on the number of fields,
+  and replaces reflection (_Reflection_ is gone).
+* RFC 4180: CSV is read and written as the RFC defines it, by default (see the top of this file).
+* Round trip: a table that is written can be read back: the column names written are those that the parser looks up.
+* _RowConfig_ is a case class, whose regexes are derived from its delimiter and quote, and which converts to and from _CsvAttributes_
+  (issues #48, #38, #32). Trimming (_RowConfig.trimmingRowConfig_) now ignores spaces before a delimiter as well as after it.
+* _Content_ keeps the rows in order (it is a _Vector_; _par_ gives a parallel collection).
+* New modules: _tableparser-crypto_ (encryption, from _cats_) and _tableparser-json_ (circe, replacing spray-json in _core_).
+* _java.time_ instead of Joda-Time (nscala-time is no longer a dependency).
+* Scala 3 idioms throughout: given/using, extension methods, enums, top-level definitions, _infix_ methods.
+* _Header_ (issue #12): the leftovers of an old approach to letter names are gone, and _++_ joins extra header lines pairwise.
+* Bug fixes:
+  * _Table.parse(uri, enc)_ and _parseInputStream(..., enc)_ (and the cats and zio versions) ignored the encoding.
+  * _parseRaw_ (and _parseFileRaw_, etc.), given a fixed header, dropped the first row of data.
+  * _IOTable_ and _ZIOTable_'s _parse_ (of strings or a _Source_) failed for a parser which reads its header from the input.
+  * _IOTable.toCSVRow_ and _writeCSVFileRow_ threw, rather than failing in _IO_, for a table with no header.
+  * _HeadedStringTableParser_ ignored its fixed header.
+  * _hexStringToBytes_ lost leading zero bytes, so about 1 in 256 encrypted rows couldn't be decrypted (also fixed in 1.7.2).
+* A blank _Option\[URL]_ cell is now _None_ (it was a failure).
+* Tests: about 500, now including every method of _IOTable_ and _ZIOTable_; statement coverage is 82%.
+
+V1.7.1 -> V1.7.2
+* Bug fix, back-ported from 2.0: decrypting a Hex string failed whenever the ciphertext began with a zero byte
+  (_HexEncryption.hexStringToBytes_ dropped leading zero bytes), so about 1 in 256 encrypted rows couldn't be decrypted.
+
+V1.7.0 -> V1.7.1
+* Bug fixes, back-ported from 2.0:
+  * When writing CSV, a String (or a column name) is quoted when it has to be, as in RFC 4180: when it contains the delimiter,
+    a quote or a line break, or starts or ends with whitespace (quotes inside it are doubled).
+    Up to 1.7.0, a String containing a comma or a quote was written as a broken row.
+  * In multiline mode, the line break inside a quoted field is kept (it used to be dropped).
+  * A column whose name matches exactly is preferred to one which differs only in case.
+* New: _CsvRenderers.optionProductRenderer_ and _CsvGenerators.optionProductGenerator_, for an optional field with several columns
+  (e.g. a case class): None is written as the right number of empty cells.
 V1.6.0 -> V1.7.0
 * The last release planned for Scala 2.13. 2.0.0 will be for Scala 3 only (see [the plan](docs/code-review-2026.md));
   the spark module stays on the 1.x line.
