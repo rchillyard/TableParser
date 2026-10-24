@@ -117,7 +117,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 2.0.1.
+This version of the README.md file refers to version: 2.0.2.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only (it is built with Scala 3.3 LTS, so it can be used from any later Scala 3 version),
 and it needs Java 21 or later.
@@ -127,12 +127,12 @@ To use it, add the modules you need to your _build.sbt_:
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "2.0.1"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "2.0.1"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "2.0.1"     // ZIO support
-  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.0.1"  // encryption
-  , "com.phasmidsoftware" %% "tableparser-json" % "2.0.1"    // JSON (circe)
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.0.1" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "2.0.2"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "2.0.2"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "2.0.2"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.0.2"  // encryption
+  , "com.phasmidsoftware" %% "tableparser-json" % "2.0.2"    // JSON (circe)
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.0.2" // Parquet files
 )
 ```
 
@@ -929,6 +929,20 @@ For more examples (numbers, dates, nested case classes, and bad input), see _Tab
 
 Release Notes
 =============
+V2.0.1 -> V2.0.2
+* Encrypted tables (the crypto module) can be written and read again (both had been broken since the modules were split):
+  * _TableCrypt.writeCSVFileEncrypted_ takes a key function (from the key of a row to its encryption key), as
+    _EncryptedHeadedStringTableParser_ does, so the same key map writes and reads.
+    It returns a _Try\[Unit]_: up to 2.0.1, it failed without saying so, and wrote nothing.
+  * _Table.parse_ (and _parseFile_, _parseResource_, etc.) decrypts with an _EncryptedHeadedStringTableParser_:
+    up to 2.0.1, it gave the encrypted rows. Its _parseIO_ no longer drops the first encrypted row.
+  * New: _HexEncryption.encryptHex_ (the inverse of _decryptHex_) and _WritableCrypt.fileWritableCrypt_.
+* A table whose rows are _List_s (or other _Seq_s) is rendered correctly: a row was written as, e.g., "1,List(2)".
+* _LineParser_'s construction check finds the delimiter of _RowConfig_'s regexes (it took it to be "Q" or "s"),
+  and no longer makes the constructor fail for a delimiter which has no single character.
+* The code uses Scala 3's indentation syntax (a layout-only change).
+* Tests: 542 (and 18 integration tests); statement coverage is 87.5% (branch coverage 81.3%).
+
 V2.0.0 -> V2.0.1
 * The cats and zio modules now behave as effects should:
   * _IOTable_ does its work when the _IO_ is run (and each time it is run), not when the _IO_ is made:
