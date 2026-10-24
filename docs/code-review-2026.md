@@ -162,7 +162,21 @@ These decide what can change without notice, and what needs a migration path.
           Close the three when the PR is merged.
 
    (The earliest PRs used an older numbering: "stage 3" was derivation for parsing, "stage 4" derivation for rendering, and "stage 2" the idioms.)
-5. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
+5. **2.1.0 (possible)**: features which build on 2.0.
+   - **TODO: RFC 7111** ([URI fragment identifiers for `text/csv`](https://www.rfc-editor.org/rfc/rfc7111)), the companion to RFC 4180. A fragment selects part of a CSV file: rows (`#row=5-7`, `#row=10-*`), columns (`#col=2-4`), cells (`#cell=4,1-6,2`, a rectangle), or several at once (`#row=5-7;row=10`). Rows and columns are numbered from 1. Check in the RFC whether the header line counts as row 1.
+     1. A `CsvFragment` type (selections of rows, columns or cells, as ranges), with a parser for the fragment string (parser combinators, as `LineParser` uses).
+     2. `table.select(fragment)`: rows map onto the existing `select`/`slice`; columns onto the header.
+     3. `Table.parse(uri)` (and `IOTable`/`ZIOTable`) applies the URI's fragment, which it currently ignores. A column selection can't always make a `T`, so: rows for any table, columns and cells for raw tables only (or applied to the raw rows before they're converted).
+     4. An `Rfc7111Spec` beside `Rfc4180Spec`, working through the RFC's examples (which would back a badge, as for RFC 4180).
+   - **TODO: streaming in the cats and zio modules.** Today `IOTable` and `ZIOTable` only wrap core's `Try` methods (after 2.0.1's fixes, they at least do so lazily and close their sources), and they read the whole table into memory, as core does. What an effect library offers for CSV is reading a large file row by row, in constant memory, with the file closed reliably:
+     1. cats: `IOTable.stream[Row]: fs2.Stream[IO, Row]` (adds an fs2 dependency to _tableparser-cats_), with the source as a `Resource`.
+     2. zio: `ZIOTable.stream[Row]: ZStream[Any, Throwable, Row]` (ZStream is part of ZIO), with the source scoped.
+     3. Both: the header from the first row(s), then each line parsed by the `RowParser`; in forgiving mode, bad rows are logged and skipped, otherwise the stream fails. Multiline rows (quoted line breaks) must be joined as `Joinable.incomplete` does in core.
+     4. Writing: a `Pipe`/`ZSink` that writes rows as CSV (with the header first).
+     5. Consider a typed error channel for zio (e.g. `ZStream[Any, ParserException, Row]`) rather than `Throwable`.
+     6. Whether the two modules could share one implementation over cats-effect's `Sync[F]` (zio-interop-cats gives `Sync[Task]`): that would make zio users depend on cats, so probably not.
+     No known user (§5) uses either module yet, so their APIs can change freely.
+6. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
 
 ## Appendix: how the figures were measured
 
