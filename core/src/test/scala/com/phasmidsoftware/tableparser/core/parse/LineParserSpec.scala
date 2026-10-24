@@ -116,3 +116,43 @@ class LineParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
     println(parseResult)
     parseResult should matchPattern { case lineParser.Success(_, _) => }
 
+
+  behavior of "LineParser (delimiters and failures)"
+
+  private def lineParser(delimiter: String): LineParser = new LineParser(delimiter.r, """[^,"]*""".r, "{}", '|', quote = '"')
+
+  it should "find the delimiter character of a Regex" in:
+    lineParser(",").getDelimiterChar shouldBe ','
+    lineParser("[,]").getDelimiterChar shouldBe ','
+    lineParser("""\|""").getDelimiterChar shouldBe '|'
+    lineParser("""\t""").getDelimiterChar shouldBe '\t'
+    lineParser("""\n""").getDelimiterChar shouldBe '\n'
+    lineParser("""\r""").getDelimiterChar shouldBe '\r'
+    lineParser("""\f""").getDelimiterChar shouldBe '\f'
+    lineParser("""\\""").getDelimiterChar shouldBe '\\'
+
+  // Up to 2.0.1, these gave 'Q' and 's' (so the construction check tested the wrong character).
+  it should "find the delimiter character of RowConfig's Regexes" in:
+    LineParser.apply(using RowConfig.default).getDelimiterChar shouldBe ','
+    LineParser.apply(using RowConfig.trimmingRowConfig).getDelimiterChar shouldBe ','
+    LineParser.apply(using RowConfig(delimiter = '\t')).getDelimiterChar shouldBe '\t'
+    LineParser.apply(using RowConfig(delimiter = '|')).getDelimiterChar shouldBe '|'
+
+  // Up to 2.0.1, the constructor failed for such a delimiter.
+  it should "construct a LineParser whose delimiter has no single character" in:
+    val p = new LineParser("[^a-z]".r, "[a-z]*".r, "{}", '|', quote = '"')
+    a[ParserException] should be thrownBy p.getDelimiterChar
+    p.parseRow(("a1b", 0)) should matchPattern { case Success(Seq("a", "b")) => }
+
+  it should "fail with a MultiLineException for an unterminated quote" in:
+    val p = LineParser.apply(using RowConfig.default)
+    p.parseRow(("\"Hello, Goodbye", 3)) should matchPattern { case scala.util.Failure(MultiLineException(("\"Hello, Goodbye", 3))) => }
+
+  it should "fail with a ParserException for a row which cannot be parsed" in:
+    val p = LineParser.apply(using RowConfig.default)
+    p.parseRow(("Hello\"Goodbye", 7)) should matchPattern { case scala.util.Failure(x: ParserException) if x.getMessage.contains("Cannot parse row 7") => }
+    p.parseRow(("a,\"b\"c", 8)) should matchPattern { case scala.util.Failure(_: ParserException) => }
+
+  it should "construct verbosely, and describe itself" in:
+    val p = new LineParser(",".r, """[^,"]*""".r, "{}", '|', quote = '"', verbose = true)
+    p.toString should startWith("LineParser: delimiter=,")

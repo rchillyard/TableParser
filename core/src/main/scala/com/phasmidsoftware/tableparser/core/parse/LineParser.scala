@@ -206,12 +206,18 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   override def toString: String =
     s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 
-  private lazy val getDelimiterChar: Char =
+  /**
+   * The character which the delimiter Regex matches (used only by the construction checks), for example ',' from
+   * the regexes ",", "\Q,\E" (as RowConfig makes them) and "\s*,\s*" (when RowConfig trims spaces).
+   */
+  private[parse] lazy val getDelimiterChar: Char =
     @tailrec
     def inner(w: Seq[Char], escaped: Boolean): Char =
       w match
         case h :: t =>
           if (escaped) h match
+            case 'Q' => inner(t, escaped = false) // the start of a quoted literal: the character follows
+            case 's' => inner(t.dropWhile(c => c == '*' || c == '+'), escaped = false) // whitespace, which is skipped
             case 't' => '\t'
             case '\\' => '\\'
             case 'n' => '\n'
@@ -255,8 +261,12 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
 
     //        check(cell, "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1", "http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1") &&
     // NOTE the check only makes sense when an unquoted "Hello" is a valid string (it isn't, e.g., for hexadecimal data).
+    // NOTE the second check is skipped if the delimiter is a Regex from which no single character can be found.
     if (string.matches("Hello"))
-      (check(cell, "Hello", "Hello") && check(quotedString, s"""${quote}Hello${getDelimiterChar}Goodbye$quote""", s"""Hello${getDelimiterChar}Goodbye""")).squawk()
+      val checkDelimiter = Try(getDelimiterChar) match
+        case scala.util.Success(d) => check(quotedString, s"""${quote}Hello${d}Goodbye$quote""", s"""Hello${d}Goodbye""")
+        case _ => scala.util.Success(())
+      (check(cell, "Hello", "Hello") && checkDelimiter).squawk()
 
 
 /**
