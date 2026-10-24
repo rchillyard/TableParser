@@ -6,13 +6,13 @@ ThisBuild / version := "2.0.0-SNAPSHOT"
 // CircleCI also runs the tests on the current LTS (3.9).
 ThisBuild / scalaVersion := "3.3.8"
 ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature")
-ThisBuild / scalacOptions ++= Seq("-java-output-version", "17")
-ThisBuild / javacOptions ++= Seq("-source", "17", "-target", "17")
+ThisBuild / scalacOptions ++= Seq("-java-output-version", "21")
+ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
 
-// Enforce Java 17 minimum
+// Enforce Java 21 minimum (2.x targets Java 21; for Java 17, use the 1.x line)
 ThisBuild / initialize := {
   val _ = initialize.value
-  val required = "17"
+  val required = "21"
   val current = sys.props("java.specification.version")
   assert(
     current.toDouble >= required.toDouble,

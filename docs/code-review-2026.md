@@ -145,7 +145,7 @@ These decide what can change without notice, and what needs a migration path.
    4. **RFC 4180** (#74, merged into #73): reading and writing CSV as RFC 4180 defines it, by default.
    5. **Scala 3 idioms** (#76): `given`/`using`, extension methods, enums, top-level definitions, `infix def`.
    6. **Core types:** `Content` sequential by default, `Table.scala` split, casts and `ClassTag`s removed (in core, cats and zio; `Header[X]()` uses a new `FieldNames` type class instead of reflection).
-   7. **Dependencies:** circe for spray-json (tableparser-json), an encryption module (tableparser-crypto), `java.time` for Joda-Time; and parquet's mapping of columns to case-class fields from the `Mirror` (it still uses `Reflection` and `ClassTag`s).
+   7. **Dependencies:** circe for spray-json (tableparser-json), an encryption module (tableparser-crypto), `java.time` for Joda-Time, Java 21 (from 17); and parquet's mapping of columns to case-class fields from the `Mirror` (it still uses `Reflection` and `ClassTag`s).
    8. **Finish:** `-Wunused:all`, the indentation-syntax rewrite, coverage, the README with a migration table, and the release.
 
    (The earliest PRs used an older numbering: "stage 3" was derivation for parsing, "stage 4" derivation for rendering, and "stage 2" the idioms.)
