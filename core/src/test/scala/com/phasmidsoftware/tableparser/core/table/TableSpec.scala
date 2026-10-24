@@ -82,6 +82,15 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers {
     }
   }
 
+  // Up to 2.0, a fixed header made parseRaw (and parseFileRaw, etc.) drop the first row of the data, as if it were a header.
+  it should "parseRaw with a fixed header, keeping every row" in {
+    matchTry(Table.parseRaw(Seq("1,2", "3,4"), TableParser.includeAll, Some(Header.create("x", "y")))) {
+      case rt@HeadedTable(_, _) =>
+        rt.toSeq.map(_.ws) shouldBe Seq(Seq("1", "2"), Seq("3", "4"))
+        rt.maybeHeader shouldBe Some(Header.create("x", "y"))
+    }
+  }
+
   // Up to 2.0, the encoding given to parse(URI, enc) and parseInputStream(..., enc) was ignored (the platform default was used).
   it should "parse an input stream using the given encoding" in {
     import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.given

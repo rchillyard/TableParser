@@ -632,7 +632,7 @@ object Table {
    * @return a `Try` containing the parsed `Table[RawRow]` on success or an exception on failure
    */
   def parsePathRaw(path: Path, predicate: Try[RawRow] => Boolean, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true)(using codec: Codec): Try[Table[RawRow]] = {
-    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseFile[Table[RawRow]](path)
   }
 
@@ -644,7 +644,7 @@ object Table {
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseFileRaw(pathname: String, predicate: Try[RawRow] => Boolean)(using codec: Codec): Try[Table[RawRow]] = {
-    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, None)
+    given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, None)
     parseFile[Table[RawRow]](Paths.get(pathname))
   }
 
@@ -659,7 +659,7 @@ object Table {
    * @return an Try of Table[RawRow] where RawRow is a Seq[String].
    */
   def parseResourceRaw(s: String, predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, clazz: Class[?] = getClass)(using codec: Codec): Try[Table[RawRow]] = {
-    given z: TableParser[Table[RawRow]] = RawTableParser(predicate, maybeFixedHeader, forgiving)
+    given z: TableParser[Table[RawRow]] = RawTableParser.create(predicate, maybeFixedHeader, forgiving)
     parseResource[Table[RawRow]](s, clazz)
   }
 
@@ -670,7 +670,7 @@ object Table {
    * @return an Try of Table of RawRow
    */
   def parseRaw(ws: Iterable[String], predicate: Try[RawRow] => Boolean = includeAll, maybeFixedHeader: Option[Header] = None, forgiving: Boolean = true, multiline: Boolean = true): Try[RawTable] = {
-    given z: TableParser[RawTable] = RawTableParser(predicate, maybeFixedHeader, forgiving, multiline)
+    given z: TableParser[RawTable] = RawTableParser.create(predicate, maybeFixedHeader, forgiving, multiline)
     parse(ws.iterator)
   }
 

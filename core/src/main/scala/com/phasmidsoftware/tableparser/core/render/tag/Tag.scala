@@ -86,8 +86,6 @@ abstract class BaseTag(name: String, attributes: Seq[Attribute], content: Option
 object Attribute {
 
   /**
-   * TESTME
-   *
    * @param m a Map of attributes.
    * @return a Seq[Attribute].
    */
