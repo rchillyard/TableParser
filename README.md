@@ -101,7 +101,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 1.7.1.
+This version of the README.md file refers to version: 1.7.2.
 
 From version 1.6.0, the core, cats, parquet and zio modules are published for both Scala 2.13 and Scala 3
 (e.g. _tableparser-core_2.13_ and _tableparser-core_3_; the Scala 3 artifacts are built with Scala 3.3 LTS).
@@ -112,14 +112,14 @@ The `%%` operator picks the artifact that matches your project's Scala version:
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "1.7.1"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "1.7.1"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "1.7.1"     // ZIO support
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "1.7.1" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "1.7.2"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "1.7.2"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "1.7.2"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "1.7.2" // Parquet files
 )
 ```
 
-For Spark (Scala 2.13 only), add `"com.phasmidsoftware" %% "tableparser-spark" % "1.7.1"`.
+For Spark (Scala 2.13 only), add `"com.phasmidsoftware" %% "tableparser-spark" % "1.7.2"`.
 
 See release notes below for history.
 
@@ -900,6 +900,10 @@ The following example from _JsonRendererSpec.scala_ shows how we can take the fo
 
 Release Notes
 =============
+V1.7.1 -> V1.7.2
+* Bug fix, back-ported from 2.0: decrypting a Hex string failed whenever the ciphertext began with a zero byte
+  (_HexEncryption.hexStringToBytes_ dropped leading zero bytes), so about 1 in 256 encrypted rows couldn't be decrypted.
+
 V1.7.0 -> V1.7.1
 * Bug fixes, back-ported from 2.0:
   * When writing CSV, a String (or a column name) is quoted when it has to be, as in RFC 4180: when it contains the delimiter,
