@@ -162,7 +162,13 @@ These decide what can change without notice, and what needs a migration path.
           Close the three when the PR is merged.
 
    (The earliest PRs used an older numbering: "stage 3" was derivation for parsing, "stage 4" derivation for rendering, and "stage 2" the idioms.)
-5. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
+5. **2.1.0 (possible)**: features which build on 2.0.
+   - **TODO: RFC 7111** ([URI fragment identifiers for `text/csv`](https://www.rfc-editor.org/rfc/rfc7111)), the companion to RFC 4180. A fragment selects part of a CSV file: rows (`#row=5-7`, `#row=10-*`), columns (`#col=2-4`), cells (`#cell=4,1-6,2`, a rectangle), or several at once (`#row=5-7;row=10`). Rows and columns are numbered from 1. Check in the RFC whether the header line counts as row 1.
+     1. A `CsvFragment` type (selections of rows, columns or cells, as ranges), with a parser for the fragment string (parser combinators, as `LineParser` uses).
+     2. `table.select(fragment)`: rows map onto the existing `select`/`slice`; columns onto the header.
+     3. `Table.parse(uri)` (and `IOTable`/`ZIOTable`) applies the URI's fragment, which it currently ignores. A column selection can't always make a `T`, so: rows for any table, columns and cells for raw tables only (or applied to the raw rows before they're converted).
+     4. An `Rfc7111Spec` beside `Rfc4180Spec`, working through the RFC's examples (which would back a badge, as for RFC 4180).
+6. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
 
 ## Appendix: how the figures were measured
 
