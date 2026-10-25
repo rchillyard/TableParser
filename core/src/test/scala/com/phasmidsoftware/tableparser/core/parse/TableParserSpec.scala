@@ -390,13 +390,13 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
     def size: Int = partners.length
 
   it should "support header defined in a header row in the input" in:
-    val strings = List("First,Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("First,Last", "Abel,Sumac", "Alma,Alder", "Anya,Pine", "Beatrix,Gorse")
     matchTry(Table.parse[Table[Player]](strings.iterator)):
       case pt@HeadedTable(_, _) =>
         val partnerships: Partnerships = Partnerships((for (t <- Player.convertTable(pt)) yield t.asArray).toArray)
         partnerships.size shouldBe 2
-        partnerships.partners.head shouldBe Array("Adam S", "Amy A")
-        partnerships.partners.last shouldBe Array("Ann P", "Barbara G")
+        partnerships.partners.head shouldBe Array("Abel S", "Alma A")
+        partnerships.partners.last shouldBe Array("Anya P", "Beatrix G")
 
   behavior of "RawTableParser"
   it should "header should be set" in:

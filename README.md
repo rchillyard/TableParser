@@ -104,9 +104,9 @@ The input file looks something like this (the first and last columns are require
 others are ignored):
 
     Id,First,Last,
-    1,Adam,Sullivan,
-    2,Amy,Avagadro,
-    3,Anna,Peterson,
+    1,Abel,Sumac,
+    2,Alma,Alder,
+    3,Anya,Pine,
 
 etc...
 

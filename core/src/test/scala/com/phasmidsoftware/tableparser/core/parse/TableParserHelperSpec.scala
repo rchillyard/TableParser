@@ -48,12 +48,12 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers:
     def size: Int = partners.length
 
   it should "support fixed header" in:
-    val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("Abel,Sumac", "Alma,Alder", "Anya,Pine", "Beatrix,Gorse")
     val pty: Try[Table[Player]] = Table.parse[Table[Player]](strings.iterator)
     matchTry(pty):
       case pt@HeadedTable(_, _) =>
         val sht: Table[Partnership] = Player.convertTable(pt)
         val partnerships: Partnerships = Partnerships((for (t <- sht) yield t.asArray).toArray)
         partnerships.size shouldBe 2
-        partnerships.partners.head shouldBe Array("Adam S", "Amy A")
-        partnerships.partners.last shouldBe Array("Ann P", "Barbara G")
+        partnerships.partners.head shouldBe Array("Abel S", "Alma A")
+        partnerships.partners.last shouldBe Array("Anya P", "Beatrix G")
