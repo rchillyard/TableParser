@@ -14,6 +14,7 @@ import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.util.{Failure, Try}
 import zio._
+import zio.stream.{ZPipeline, ZSink, ZStream}
 
 /**
  * The methods here are basically copies of the same methods in Table, but resulting in IO rather than Try.
@@ -327,6 +328,94 @@ object ZIOTable:
    * @param s an InputStream.
    * @return an Task[Source].
    */
+  // ── Streaming (ZStream) ─────────────────────────────────────────────────────
+
+  /**
+   * Method to stream the rows of a table, as they are read: the whole table is never in memory.
+   * The source is opened when the stream is run, and closed when it ends (whether it completes, fails or is interrupted).
+   * The header is read first (as parser reads it); then each row is parsed as it is pulled.
+   * The parser's predicate selects the rows; if the parser is forgiving, a row which can't be parsed is logged and left out,
+   * otherwise the stream fails with its exception.
+   *
+   * The parser is passed as a value (not a given) so that the type of its rows is known: for example,
+   * `ZIOTable.stream(MovieTableParser)(source)` is a `ZStream[Any, Throwable, Movie]`.
+   *
+   * @param parser a StringTableParser (e.g. a HeadedCSVTableParser, or a RawTableParser).
+   * @param source the Source (call-by-name: it is made when the stream is run).
+   * @return a ZStream[Any, Throwable, parser.Row].
+   */
+  def stream(parser: StringTableParser[?])(source: => Source): ZStream[Any, Throwable, parser.Row] =
+    for
+      s <- ZStream.acquireReleaseWith(ZIO.attemptBlocking(source))(s => ZIO.attemptBlocking(s.close()).orDie)
+      hrs <- ZStream.fromZIO(ZIO.attemptBlocking(parser.rows(s.getLines())).flatMap(ZIO.fromTry(_)))
+      row <- ZStream.blocking(ZStream.fromIterator(hrs._2, chunkSize)).mapZIO(ZIO.fromTry(_))
+    yield row
+
+  /**
+   * Method to stream the rows of a file (see stream).
+   *
+   * @param parser a StringTableParser.
+   * @param path   the path of the file.
+   * @param codec  (implicit) the encoding.
+   * @return a ZStream[Any, Throwable, parser.Row].
+   */
+  def streamFile(parser: StringTableParser[?])(path: java.nio.file.Path)(using codec: Codec): ZStream[Any, Throwable, parser.Row] =
+    stream(parser)(Source.fromFile(path.toFile))
+
+  /**
+   * Method to stream the rows of a resource (see stream).
+   *
+   * @param parser a StringTableParser.
+   * @param w      the name of the resource.
+   * @param clazz  the class relative to which the resource is found.
+   * @param codec  (implicit) the encoding.
+   * @return a ZStream[Any, Throwable, parser.Row].
+   */
+  def streamResource(parser: StringTableParser[?])(w: String, clazz: Class[?] = getClass)(using codec: Codec): ZStream[Any, Throwable, parser.Row] =
+    ZStream.fromZIO(sourceFromClassResource(w, clazz)).flatMap(s => stream(parser)(s))
+
+  /**
+   * Method to stream the rows of some lines (see stream).
+   *
+   * @param parser a StringTableParser.
+   * @param ws     the lines.
+   * @return a ZStream[Any, Throwable, parser.Row].
+   */
+  def streamLines(parser: StringTableParser[?])(ws: Iterable[String]): ZStream[Any, Throwable, parser.Row] =
+    stream(parser)(Source.fromIterable(ws.view.flatMap(w => s"$w\n")))
+
+  /**
+   * A ZPipeline which renders rows as the lines of a CSV file: the header first, then one line for each row
+   * (without line endings: see writeCSVFile).
+   *
+   * @param renderer  implicit CsvRenderer[X].
+   * @param generator implicit CsvGenerator[X] (for the header).
+   * @tparam X the row type.
+   * @return a ZPipeline[Any, Nothing, X, String].
+   */
+  def csvLines[X](using renderer: CsvRenderer[X], generator: CsvGenerator[X]): ZPipeline[Any, Nothing, X, String] =
+    val header: String = generator match
+      case g: CsvProductGenerator[?] => g.toColumnNames(None, None)
+      case g => g.toColumnName(None, "")
+    ZPipeline.map[X, String](x => renderer.render(x, Map())) >>> ZPipeline.prepend(Chunk.single(header))
+
+  /**
+   * A ZSink which writes rows to a CSV file, as they come: the header first, then one line for each row,
+   * each line ending with the CsvAttributes newline. The file is closed when the stream ends.
+   *
+   * @param path          the path of the file.
+   * @param renderer      implicit CsvRenderer[X].
+   * @param generator     implicit CsvGenerator[X] (for the header).
+   * @param csvAttributes implicit CsvAttributes.
+   * @tparam X the row type.
+   * @return a ZSink which yields the number of bytes written.
+   */
+  def writeCSVFile[X](path: java.nio.file.Path)(using renderer: CsvRenderer[X], generator: CsvGenerator[X], csvAttributes: CsvAttributes): ZSink[Any, Throwable, X, Byte, Long] =
+    csvLines[X] >>> ZPipeline.map[String, String](_ + csvAttributes.newline) >>> ZPipeline.utf8Encode >>> ZSink.fromPath(path)
+
+  // The number of rows parsed at a time, on the blocking pool, by a stream.
+  private val chunkSize = 256
+
   // NOTE: opening a Source can fail (e.g. there is no such file), so it's attempted (a failure, not a defect),
   // and reading or writing a file is blocking, so it runs on the blocking pool.
   private def parseTry[T: TableParser](ws: Iterator[String], n: Int): Try[T] = summon[TableParser[T]] match
