@@ -338,6 +338,31 @@ It also allows chaining of copy (or "lens") methods to configure the parser, for
 
     val parser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
 
+## Streaming
+
+Parsing into a _Table_ reads the whole table into memory.
+For a large file, the _cats_ module can instead stream the rows, as they are read, with [fs2](https://fs2.io):
+
+    import com.phasmidsoftware.tableparser.cats.table.IOTable
+
+    val movies: fs2.Stream[IO, Movie] = IOTable.streamFile(MovieTableParser)(Paths.get("movie_metadata.csv"))
+    val count: IO[Long] = movies.filter(_.production.country == "USA").compile.count
+
+The header is read first; then each row is parsed only when the stream pulls it, so the whole table is never in memory
+(a stream can even read endless input, with _take_).
+The file is opened when the stream is run, and closed when it ends, however it ends.
+The parser's predicate selects the rows; if the parser is forgiving, a row which can't be parsed is logged and left out,
+otherwise the stream fails at that row.
+The parser is passed as a value (not a given), so that the type of the rows is known: here, _Movie_.
+There are also _stream_ (from any _Source_), _streamResource_ and _streamLines_.
+
+To write a stream of rows as CSV, use the pipes _IOTable.csvLines_ (the header, then a line for each row)
+and _IOTable.writeCSVFile_:
+
+    movies.through(IOTable.writeCSVFile[Movie](Paths.get("movies.csv"))).compile.drain
+
+These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
+
 ## TableParser
 
 _TableParser_ is also the name of a trait that takes a parametric type called "Table" in its definition.

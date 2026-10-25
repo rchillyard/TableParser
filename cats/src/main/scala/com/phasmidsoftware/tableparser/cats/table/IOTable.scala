@@ -5,6 +5,8 @@
 package com.phasmidsoftware.tableparser.cats.table
 
 import cats.effect.IO
+import fs2.io.file.Files
+import fs2.{Pipe, Stream, text}
 import com.phasmidsoftware.tableparser.cats.util.IOUsing
 import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
@@ -325,6 +327,94 @@ object IOTable:
    * @param s an InputStream.
    * @return an IO[Source].
    */
+  // ── Streaming (fs2) ─────────────────────────────────────────────────────────
+
+  /**
+   * Method to stream the rows of a table, as they are read: the whole table is never in memory.
+   * The source is opened when the stream is run, and closed when it ends (whether it completes, fails or is cancelled).
+   * The header is read first (as parser reads it); then each row is parsed as it is pulled.
+   * The parser's predicate selects the rows; if the parser is forgiving, a row which can't be parsed is logged and left out,
+   * otherwise the stream fails with its exception.
+   *
+   * The parser is passed as a value (not a given) so that the type of its rows is known: for example,
+   * `IOTable.stream(MovieTableParser)(source)` is a `Stream[IO, Movie]`.
+   *
+   * @param parser a StringTableParser (e.g. a HeadedCSVTableParser, or a RawTableParser).
+   * @param source the Source (call-by-name: it is made when the stream is run).
+   * @return a Stream[IO, parser.Row].
+   */
+  def stream(parser: StringTableParser[?])(source: => Source): Stream[IO, parser.Row] =
+    for
+      s <- Stream.bracket(IO.blocking(source))(s => IO.blocking(s.close()))
+      hrs <- Stream.eval(IO.blocking(parser.rows(s.getLines())).flatMap(IO.fromTry))
+      row <- Stream.fromBlockingIterator[IO](hrs._2, chunkSize).evalMap(IO.fromTry)
+    yield row
+
+  /**
+   * Method to stream the rows of a file (see stream).
+   *
+   * @param parser a StringTableParser.
+   * @param path   the path of the file.
+   * @param codec  (implicit) the encoding.
+   * @return a Stream[IO, parser.Row].
+   */
+  def streamFile(parser: StringTableParser[?])(path: java.nio.file.Path)(using codec: Codec): Stream[IO, parser.Row] =
+    stream(parser)(Source.fromFile(path.toFile))
+
+  /**
+   * Method to stream the rows of a resource (see stream).
+   *
+   * @param parser a StringTableParser.
+   * @param w      the name of the resource.
+   * @param clazz  the class relative to which the resource is found.
+   * @param codec  (implicit) the encoding.
+   * @return a Stream[IO, parser.Row].
+   */
+  def streamResource(parser: StringTableParser[?])(w: String, clazz: Class[?] = getClass)(using codec: Codec): Stream[IO, parser.Row] =
+    Stream.eval(sourceFromClassResource(w, clazz)).flatMap(s => stream(parser)(s))
+
+  /**
+   * Method to stream the rows of some lines (see stream).
+   *
+   * @param parser a StringTableParser.
+   * @param ws     the lines.
+   * @return a Stream[IO, parser.Row].
+   */
+  def streamLines(parser: StringTableParser[?])(ws: Iterable[String]): Stream[IO, parser.Row] =
+    stream(parser)(Source.fromIterable(ws.view.flatMap(w => s"$w\n")))
+
+  /**
+   * A Pipe which renders rows as the lines of a CSV file: the header first, then one line for each row
+   * (without line endings: see writeCSVFile).
+   *
+   * @param renderer  implicit CsvRenderer[X].
+   * @param generator implicit CsvGenerator[X] (for the header).
+   * @tparam X the row type.
+   * @return a Pipe[IO, X, String].
+   */
+  def csvLines[X](using renderer: CsvRenderer[X], generator: CsvGenerator[X]): Pipe[IO, X, String] =
+    val header: String = generator match
+      case g: CsvProductGenerator[?] => g.toColumnNames(None, None)
+      case g => g.toColumnName(None, "")
+    xs => Stream.emit(header) ++ xs.map(x => renderer.render(x, Map()))
+
+  /**
+   * A Pipe which writes rows to a CSV file, as they come: the header first, then one line for each row,
+   * each line ending with the CsvAttributes newline. The file is closed when the stream ends.
+   *
+   * @param path          the path of the file.
+   * @param renderer      implicit CsvRenderer[X].
+   * @param generator     implicit CsvGenerator[X] (for the header).
+   * @param csvAttributes implicit CsvAttributes.
+   * @tparam X the row type.
+   * @return a Pipe[IO, X, Nothing].
+   */
+  def writeCSVFile[X](path: java.nio.file.Path)(using renderer: CsvRenderer[X], generator: CsvGenerator[X], csvAttributes: CsvAttributes): Pipe[IO, X, Nothing] =
+    _.through(csvLines[X]).map(_ + csvAttributes.newline).through(text.utf8.encode).through(Files[IO].writeAll(fs2.io.file.Path.fromNioPath(path)))
+
+  // The number of rows parsed at a time, on the blocking pool, by a stream.
+  private val chunkSize = 256
+
   // NOTE: work is suspended (and so done each time the IO is run, not when it's made):
   // reading or writing a file is blocking, so it runs on the blocking pool.
   private def delayTry[A](t: => Try[A]): IO[A] = IO.defer(IO.fromTry(t))

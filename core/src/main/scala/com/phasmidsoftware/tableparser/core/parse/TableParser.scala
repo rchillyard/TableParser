@@ -456,6 +456,37 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table]:
     doParseRows(ws, header, rowParser.parseIndexed(header))
 
   /**
+   * Method to parse the input lazily, as a stream of rows rather than a Table (see, e.g., IOTable.stream).
+   * The header is read now (from the first n lines, unless this parser has a fixed header);
+   * each row is parsed only when it is pulled from the iterator.
+   * As in parse, the predicate selects the rows; and, if this parser is forgiving, a row which can't be parsed
+   * is logged and left out. Otherwise, it is a Failure in the iterator.
+   *
+   * @param xs the lines of the input.
+   * @param n  the number of header lines (defaults to headerRowsToRead).
+   * @return a Try of the header and an Iterator of the rows (each a Try).
+   */
+  def rows(xs: Iterator[String], n: Int = headerRowsToRead): Try[(Header, Iterator[Try[Row]])] =
+    def lazyRows(h: Header, ys: Iterator[String]): (Header, Iterator[Try[Row]]) =
+      val rys = new IndexedInputToRowsTransformer[String, Row](rowParser.parseIndexed(h), multiline).triedRows(ys)
+      val checked = if (forgiving) rys filter:
+        case Failure(x) =>
+          AbstractTableParser.logException(x)
+          false
+        case _ => true
+      else rys
+      h -> (checked filter predicate)
+
+    maybeHeader match
+      case Some(h) =>
+        Success(lazyRows(h, xs drop n))
+      case None if n > 0 =>
+        val yr: TeeIterator[String] = new TeeIterator(n)(xs)
+        rowParser.parseHeader(yr.tee) map (h => lazyRows(h, yr))
+      case _ =>
+        Failure(TableParserException("rows: logic error (no header, and no header lines to read)"))
+
+  /**
    * Method to parse a table based on a sequence of Inputs.
    * NOTE: this is required so that we can invoke this method with an Iterator[String].
    *
