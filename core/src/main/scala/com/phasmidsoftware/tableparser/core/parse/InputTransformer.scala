@@ -294,3 +294,13 @@ class IndexedInputToRowsTransformer[Input: Joinable, Row](f: ((Input, Int)) => T
    */
   def processInput(xs: Iterator[Input]): Iterator[Row] =
     processTriedRows(mapTsToRows(xs)(multiline)(f))
+
+  /**
+   * Method to parse the input lazily, into rows, each a Try (joining lines which make up one row if multiline).
+   * Nothing is read until the result is iterated.
+   *
+   * @param xs the input (after any header lines).
+   * @return an Iterator of Try[Row].
+   */
+  def triedRows(xs: Iterator[Input]): Iterator[Try[Row]] =
+    mapTsToRows(xs)(multiline)(f)

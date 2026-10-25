@@ -35,6 +35,7 @@ val slf4jVersion = "2.0.20"
 val parquetVersion = "1.18.1"
 val hadoopVersion = "3.4.3"
 val circeVersion = "0.14.17"
+val fs2Version = "3.14.0"
 
 lazy val core = project.settings(
   name := "tableparser-core",
@@ -53,6 +54,8 @@ lazy val cats = project.dependsOn(core % "compile->compile;test->test").settings
   name := "tableparser-cats",
   libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-effect" % catsVersion,
+    "co.fs2" %% "fs2-core" % fs2Version,
+    "co.fs2" %% "fs2-io" % fs2Version,
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
     "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
