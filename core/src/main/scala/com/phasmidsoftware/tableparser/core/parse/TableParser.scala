@@ -5,7 +5,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.table._
-import com.phasmidsoftware.tableparser.core.util.{FieldNames, Joinable, TeeIterator, TryUsing}
+import com.phasmidsoftware.tableparser.core.util.{FP, FieldNames, Joinable, TeeIterator, TryUsing}
 import org.slf4j.{Logger, LoggerFactory}
 import scala.annotation.implicitNotFound
 import scala.io.Source
@@ -462,13 +462,16 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table]:
    * As in parse, the predicate selects the rows; and, if this parser is forgiving, a row which can't be parsed
    * is logged and left out. Otherwise, it is a Failure in the iterator.
    *
-   * @param xs the lines of the input.
-   * @param n  the number of header lines (defaults to headerRowsToRead).
+   * The selection (of RFC 7111 rows: see CsvFragment) applies before the predicate, since its row numbers are those of the input.
+   *
+   * @param xs        the lines of the input.
+   * @param n         the number of header lines (defaults to headerRowsToRead).
+   * @param selection the rows to select (by default, all of them).
    * @return a Try of the header and an Iterator of the rows (each a Try).
    */
-  def rows(xs: Iterator[String], n: Int = headerRowsToRead): Try[(Header, Iterator[Try[Row]])] =
+  def rows(xs: Iterator[String], n: Int = headerRowsToRead, selection: RowSelection = RowSelection.all): Try[(Header, Iterator[Try[Row]])] =
     def lazyRows(h: Header, ys: Iterator[String]): (Header, Iterator[Try[Row]]) =
-      val rys = new IndexedInputToRowsTransformer[String, Row](rowParser.parseIndexed(h), multiline).triedRows(ys)
+      val rys = selection.select(new IndexedInputToRowsTransformer[String, Row](rowParser.parseIndexed(h), multiline).triedRows(ys), n)
       val checked = if (forgiving) rys filter:
         case Failure(x) =>
           AbstractTableParser.logException(x)
@@ -485,6 +488,21 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table]:
         rowParser.parseHeader(yr.tee) map (h => lazyRows(h, yr))
       case _ =>
         Failure(TableParserException("rows: logic error (no header, and no header lines to read)"))
+
+  /**
+   * Method to parse the input into a Table of the selected rows (see rows).
+   * As in parse, if this parser isn't forgiving, a row which can't be parsed makes the result a Failure.
+   *
+   * @param xs        the lines of the input.
+   * @param selection the rows to select (RFC 7111: see CsvFragment).
+   * @param n         the number of header lines (defaults to headerRowsToRead).
+   * @return a Try[Table].
+   */
+  def parseSelected(xs: Iterator[String], selection: RowSelection, n: Int = headerRowsToRead): Try[Table] =
+    for
+      (h, rys) <- rows(xs, n, selection)
+      rs <- FP.sequence(rys)
+    yield builder(rs, h)
 
   /**
    * Method to parse a table based on a sequence of Inputs.

@@ -344,9 +344,27 @@ object IOTable:
    * @return a Stream[IO, parser.Row].
    */
   def stream(parser: StringTableParser[?])(source: => Source): Stream[IO, parser.Row] =
+    streamSelected(parser, RowSelection.all)(source)
+
+  /**
+   * Method to stream the rows of a URI (see stream). If the URI has a fragment identifier which selects rows
+   * (RFC 7111, e.g. "data.csv#row=5-7": see CsvFragment), only those rows are streamed, and the input is read
+   * no further than the last row which could be selected.
+   *
+   * @param parser a StringTableParser.
+   * @param uri    the URI.
+   * @param codec  (implicit) the encoding.
+   * @return a Stream[IO, parser.Row].
+   */
+  def streamURI(parser: StringTableParser[?])(uri: URI)(using codec: Codec): Stream[IO, parser.Row] =
+    val selection = CsvFragment.fromURI(uri) collect { case rs: RowSelection => rs } getOrElse RowSelection.all
+    streamSelected(parser, selection)(Source.fromURI(CsvFragment.withoutFragment(uri)))
+
+  // Stream the selected rows of the source (see stream).
+  private def streamSelected(parser: StringTableParser[?], selection: RowSelection)(source: => Source): Stream[IO, parser.Row] =
     for
       s <- Stream.bracket(IO.blocking(source))(s => IO.blocking(s.close()))
-      hrs <- Stream.eval(IO.blocking(parser.rows(s.getLines())).flatMap(IO.fromTry))
+      hrs <- Stream.eval(IO.blocking(parser.rows(s.getLines(), parser.headerRowsToRead, selection)).flatMap(IO.fromTry))
       row <- Stream.fromBlockingIterator[IO](hrs._2, chunkSize).evalMap(IO.fromTry)
     yield row
 

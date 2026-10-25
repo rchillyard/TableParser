@@ -465,6 +465,9 @@ object Table:
 
   /**
    * Method to parse a table from a URI with an implicit encoding.
+   * If the URI has a fragment identifier which selects rows (RFC 7111, e.g. "data.csv#row=5-7": see CsvFragment),
+   * only those rows are in the table (its header lines are rows 1, etc.).
+   * Up to 2.0.3, a URI with a fragment could not be parsed at all.
    *
    * @param u     the URI.
    * @param codec (implicit) the encoding.
@@ -472,7 +475,15 @@ object Table:
    * @return an Try[T]
    */
   def parse[T: TableParser](u: => URI)(using codec: Codec): Try[T] =
-    parse(sourceFromURI(u))
+    val uri = u
+    val source = sourceFromURI(CsvFragment.withoutFragment(uri))
+    // A fragment which selects rows (RFC 7111) is applied as the table is parsed. Any other fragment is ignored here:
+    // to select columns or cells, parse a RawTable, then use the fragment's select method.
+    (CsvFragment.fromURI(uri), summon[TableParser[T]]) match
+      case (Some(selection: RowSelection), parser: StringTableParser[T]) =>
+        TryUsing(source)(s => parser.parseSelected(s.getLines(), selection))
+      case _ =>
+        parse(source)
 
   /**
    * Method to parse a table from a URI with an explicit encoding.

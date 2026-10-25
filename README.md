@@ -369,6 +369,25 @@ _ZIOTable.csvLines_ is a _ZPipeline_ and _ZIOTable.writeCSVFile_ a _ZSink_:
 
 These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
 
+## Selecting rows, columns and cells (RFC 7111)
+
+[RFC 7111](https://www.rfc-editor.org/rfc/rfc7111) defines fragment identifiers for CSV:
+the part of a URI after "#" can select rows (`data.csv#row=5-7`), columns (`#col=2`) or cells (`#cell=4,1-6,2`),
+and several at once (`#row=3;6`).
+As in the RFC, rows and columns are numbered from 1, the header line is row 1 (so, with one header line, row 2 is the first
+row of data), and "*" means the last row or column.
+A fragment identifier with a syntax error is ignored; so is a specification which selects backwards (`5-4`) or beyond the table.
+
+_Table.parse_ of a URI with a fragment which selects rows parses only those rows
+(as do _IOTable.streamURI_ and _ZIOTable.streamURI_, which read no further than they need to):
+
+    val berkeley: Try[Table[Reading]] = Table.parse[Table[Reading]](URI.create("file:///data/weather.csv#row=5-7"))
+
+_CsvFragment.parse_ parses a fragment identifier (giving _None_ for a syntax error), as a
+_RowSelection_, _ColumnSelection_ or _CellSelection_, each of which can _select_ from a table.
+Rows can be selected from any table; columns and cells only from a raw table (a case class can't lose its fields).
+A selection keeps the header. Since a cell selection may be of several disjoint rectangles, it gives a table for each.
+
 ## TableParser
 
 _TableParser_ is also the name of a trait that takes a parametric type called "Table" in its definition.
