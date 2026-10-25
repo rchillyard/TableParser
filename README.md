@@ -7,6 +7,7 @@
 ![GitHub issues](https://img.shields.io/github/issues-raw/rchillyard/TableParser)
 ![GitHub issues by-label](https://img.shields.io/github/issues/rchillyard/TableParser/bug)
 [![RFC 4180](https://img.shields.io/badge/CSV-RFC%204180-brightgreen)](https://www.rfc-editor.org/rfc/rfc4180)
+[![RFC 7111](https://img.shields.io/badge/CSV%20fragments-RFC%207111-brightgreen)](https://www.rfc-editor.org/rfc/rfc7111)
 
 # Introduction to TableParser
 
@@ -22,6 +23,12 @@
 >
 > To read data whose fields are separated by `", "` (for example, written by 1.x with `CsvAttributes(", ")`), use `RowConfig.trimmingRowConfig`, which ignores spaces next to commas, as 1.x did.
 > To write LF line endings instead of CRLF, use `CsvAttributes(",", "\"", "\n")`.
+>
+> **RFC 7111 too.** From version 2.1.0, a URI's fragment identifier can select part of a CSV file, as defined by
+> [RFC 7111](https://www.rfc-editor.org/rfc/rfc7111): rows (`data.csv#row=5-7`), columns (`#col=2`) or cells (`#cell=4,1-6,2`).
+> Every example of the RFC is tested in [Rfc7111Spec](core/src/test/scala/com/phasmidsoftware/tableparser/core/Rfc7111Spec.scala).
+> Rows can be selected from any table; columns and cells only from a raw table (a case class can't lose its fields).
+> See [Selecting rows, columns and cells](#selecting-rows-columns-and-cells-rfc-7111).
 
 Full Scaladoc is available via javadoc.io, for [Scala 3](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_3)
 (and, for the 1.x line, [Scala 2.13](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13)).
@@ -48,6 +55,9 @@ Indeed, it is implemented very similarly to JSON readers.
 There is a row-parser configuration (_RowConfig_) that allows
 the programmer to vary the delimiter, the quote character, and how lists within a cell are written.
 
+From version 2.1.0, the rows of a large table can also be streamed (with fs2 or ZIO), rather than all read into memory:
+see [Streaming](#streaming).
+
 In addition to parsing,
 _TableParser_ provides a mechanism for rendering a table in _hierarchical_ form (for example for
 XML or HTML).
@@ -59,8 +69,8 @@ Package Structure
 
 As of version 2.0.0, the code is made up of six modules (each published as _tableparser-<module>_):
 * _core_: parsing and rendering tables. Most of the remainder of this README file refers to the _core_ module.
-* _cats_: for use with Cats Effect, particularly _IO_ (see _IOTable_).
-* _zio_: for use with ZIO (see _ZIOTable_).
+* _cats_: for use with Cats Effect, particularly _IO_ (see _IOTable_), including streaming with fs2 (from 2.1.0).
+* _zio_: for use with ZIO (see _ZIOTable_), including streaming with ZStream (from 2.1.0).
 * _crypto_: encryption of tables (e.g., of the rows of a CSV file), using tsec and Cats Effect (new in 2.0.0: in 1.x, this was part of _cats_).
 * _json_: reading and writing tables as JSON, using circe (new in 2.0.0: in 1.x, JSON support, using spray-json, was part of _core_).
 * _parquet_: for use with Apache Parquet (beginning with 1.3.0).
@@ -70,8 +80,8 @@ The _spark_ module (for use with Apache Spark) is on the 1.x line only, because 
 Quick Intro
 ===========
 
-The simplest way to get an introduction to _TableParser_ is to consult the _movie.sc_.
-and _airbnb.sc_ worksheets (the latter is in the _cats_ package).
+The simplest way to get an introduction to _TableParser_ is to consult the _movie.sc_ worksheet
+(in core's tests, beside the _Movie_ example) and the _airbnb.sc_ worksheets (in the tests of the _cats_ and _zio_ modules).
 These give detailed descriptions of each stage of the process.
 
 Another way to see how it works is to look at this application Pairings which takes a CSV file,
@@ -88,7 +98,7 @@ using as many defaults as possible is:
       def cellParser: CellParser[Player] = CellParser.derived[Player]
     }
 
-    val pty: Try[Table[Player]] = Table.parseFile("players.csv")
+    val pty: Try[Table[Player]] = Table.parseFile[Table[Player]](Paths.get("players.csv"))
 
 The _TableParserHelper_ used here is an abstract subclass of _CellParsers_,
 and is customized for the row type (in this case, _Player_).
@@ -185,14 +195,12 @@ you will start with (1) and run an analysis on the columns to help you design th
 
 For the first option, you will do something like the following (see the _AnalysisSpec_ unit tests):
 
-    private val sampleFile = "2023-01-metropolitan-street-sample.csv"
-    private val triedSampleResource: Try[URL] = FP.resource[Analysis](sampleFile)
-    val fraction = 4
-    val parser = RawTableParser().setPredicate(TableParser.sampler(fraction))
-    val ui = IOUsing(for (u <- triedSampleResource) yield Source.fromURL(u)) {
-        s => parser.doParse(s) map (rawTable => println(Analysis(rawTable)))
-    }
-    ui.unsafeRunSync()
+    // Parse a quarter of the rows (chosen at random) as raw rows, and analyze them.
+    val parser = RawTableParser().setPredicate(TableParser.sampler(4))
+    val analysis: Try[ColumnStatistics] =
+      for (rawTable <- parser parse Try(Source.fromFile("2023-01-metropolitan-street-sample.csv"))) yield Analysis(rawTable)
+
+or, to analyze a whole file, simply _Analysis.forCsv(path)_.
 
 This analysis will give you a list of columns, each showing its name,
 whether it is optional (i.e., contains nulls), and (if it's a numerical column),
@@ -394,18 +402,20 @@ _TableParser_ is also the name of a trait that takes a parametric type called "T
 This is NOT the same at the _Table_ type (described above).
 _TableParser_ is defined thus:
 
-    trait TableParser[Table] {
+    trait TableParser[Table] extends TableBuilder[Table]:
       type Row
       type Input
-      protected val maybeHeader: Option[Header] = None
+      val rowParser: RowParser[Row, Input]
       val headerRowsToRead: Int = 1
-      def forgiving: Boolean = false
-      def multiline: Boolean = false
-      val predicate: Try[Row] => Boolean = includeAll
-      def rowParser: RowParser[Row, Input]
-      def builder(rows: Iterator[Row]): Table
+      protected val maybeHeader: Option[Header] = None
+      protected val multiline: Boolean = false
       def parse(xs: Iterator[Input], n: Int = headerRowsToRead): Try[Table]
-}
+
+    trait TableBuilder[Table]:
+      type Row
+      protected def builder(rows: Iterator[Row], header: Header): Table
+      protected val forgiving: Boolean = false
+      protected val predicate: Try[Row] => Boolean = includeAll
 
 The type _Row_ defines the specific row type of the resulting _Table_
 (for example, _Movie_, in the example below).
@@ -462,7 +472,7 @@ The methods of _RowParser_ are:
 
     def parseIndexed(header: Header)(indexedRow: (Input, Int)): Try[Row]
 
-    def parseHeader(w: String): Try[Header]
+    def parseHeader(xs: Seq[Input]): Try[Header]
 
 The parseIndexed method is useful when we care about the sequential aspect of the input.
 This is particularly important if strings are allowed to spread over newlines
@@ -493,16 +503,16 @@ The _LineParser_ constructor will perform some basic checks that its parameters 
 
 ## StringsParser
 
-_StringsParser_ is a trait which defines an alternative mechanism for converting a line of text to a _Row_.
+_StringsParser_ is a _RowParser_ whose input is a row already split into cells (_Seq\[String]_), rather than a line of text.
 As with the _RowParser_, _Row_ is a parametric type which is context-bound to _CellParser_.
 _StringsParser_ is useful when the individual columns have already been split into elements of a sequence.
 Typically, the _StandardStringsParser_ is used.
 
 The methods of _StringsParser_ are:
 
-    def parse(ws: Seq[String])(header: Header): IO[Row]
+    def parse(header: Header)(input: Seq[String]): Try[Row]
 
-    def parseHeader(ws: Seq[String]): IO[Header]
+    def parseHeader(ws: Seq[Seq[String]]): Try[Header]
 
 ## CellParsers
 
@@ -555,12 +565,12 @@ For parallel processing, _content.par_ gives the rows as a parallel collection.
 
 ## Caveats
 
-A case class which represents a row (or part of a row) of the table you want to create from parsing,
-or which you want to render must abide by certain rules:
-* There should not be any fields defined in the body of the case class.
-So, no <i>val, var</i> or <i>lazy val</i>.
-Instead, any behavior you want to add to the class, beyond the parameters (fields) of the class,
-must be defined using _def_.
+A case class which represents a row (or part of a row) of a table is parsed and rendered by its parameters (fields),
+in the order in which they are declared: those are what its _Mirror_ (from which the parsers and renderers are derived) describes.
+So, unlike in 1.x (which found the fields by reflection), you may define _val_s and _lazy val_s in the body of the case class:
+they are not columns.
+If a case class is defined locally (inside a method), derive its _CellParser_ with `derives CellParser`,
+or with a given beside the case class, rather than in a companion object that you write for it (see _CellParser.derived_).
 
 ## Example: Movie
 
