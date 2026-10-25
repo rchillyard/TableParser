@@ -117,7 +117,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 2.0.3.
+This version of the README.md file refers to version: 2.1.0.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only (it is built with Scala 3.3 LTS, so it can be used from any later Scala 3 version),
 and it needs Java 21 or later.
@@ -127,12 +127,12 @@ To use it, add the modules you need to your _build.sbt_:
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "2.0.3"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "2.0.3"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "2.0.3"     // ZIO support
-  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.0.3"  // encryption
-  , "com.phasmidsoftware" %% "tableparser-json" % "2.0.3"    // JSON (circe)
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.0.3" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "2.1.0"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "2.1.0"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "2.1.0"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.1.0"  // encryption
+  , "com.phasmidsoftware" %% "tableparser-json" % "2.1.0"    // JSON (circe)
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.1.0" // Parquet files
 )
 ```
 
@@ -368,6 +368,25 @@ _ZIOTable.csvLines_ is a _ZPipeline_ and _ZIOTable.writeCSVFile_ a _ZSink_:
     movies.run(ZIOTable.writeCSVFile[Movie](Paths.get("movies.csv")))
 
 These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
+
+## Selecting rows, columns and cells (RFC 7111)
+
+[RFC 7111](https://www.rfc-editor.org/rfc/rfc7111) defines fragment identifiers for CSV:
+the part of a URI after "#" can select rows (`data.csv#row=5-7`), columns (`#col=2`) or cells (`#cell=4,1-6,2`),
+and several at once (`#row=3;6`).
+As in the RFC, rows and columns are numbered from 1, the header line is row 1 (so, with one header line, row 2 is the first
+row of data), and "*" means the last row or column.
+A fragment identifier with a syntax error is ignored; so is a specification which selects backwards (`5-4`) or beyond the table.
+
+_Table.parse_ of a URI with a fragment which selects rows parses only those rows
+(as do _IOTable.streamURI_ and _ZIOTable.streamURI_, which read no further than they need to):
+
+    val berkeley: Try[Table[Reading]] = Table.parse[Table[Reading]](URI.create("file:///data/weather.csv#row=5-7"))
+
+_CsvFragment.parse_ parses a fragment identifier (giving _None_ for a syntax error), as a
+_RowSelection_, _ColumnSelection_ or _CellSelection_, each of which can _select_ from a table.
+Rows can be selected from any table; columns and cells only from a raw table (a case class can't lose its fields).
+A selection keeps the header. Since a cell selection may be of several disjoint rectangles, it gives a table for each.
 
 ## TableParser
 
@@ -960,6 +979,18 @@ For more examples (numbers, dates, nested case classes, and bad input), see _Tab
 
 Release Notes
 =============
+V2.0.3 -> V2.1.0
+* Streaming (see [Streaming](#streaming)): the rows of a table can be read as they are parsed, rather than all at once:
+  * cats: _IOTable.stream_ (and _streamFile_, _streamResource_, _streamLines_, _streamURI_) give an fs2 _Stream\[IO, Row]_;
+    the pipes _csvLines_ and _writeCSVFile_ write one. The cats module now depends on fs2 (_fs2-core_, _fs2-io_).
+  * zio: the same methods give a _ZStream_; _csvLines_ is a _ZPipeline_ and _writeCSVFile_ a _ZSink_.
+    The zio module now depends on _zio-streams_.
+  * core: _StringTableParser.rows_ parses lazily (the header, then an _Iterator_ of rows).
+* RFC 7111 (see [Selecting rows, columns and cells](#selecting-rows-columns-and-cells-rfc-7111)): fragment identifiers
+  such as _data.csv#row=5-7_. _Table.parse_ of a URI (and _streamURI_) selects the rows of its fragment;
+  _CsvFragment_ parses fragments, and selects rows (from any table), or columns and cells (from raw tables).
+  Up to 2.0.3, a URI with a fragment could not be parsed at all.
+
 V2.0.2 -> V2.0.3
 * Bug fix: _Table.writeCSVFile_ (and so _Table.writeCSVFileRow_) wrote an empty file: it never closed the file, so what
   it wrote was never flushed. It also ignored any failure. It now closes the file, and throws a _TableException_ on failure.

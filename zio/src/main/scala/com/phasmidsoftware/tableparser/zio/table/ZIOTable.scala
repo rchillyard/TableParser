@@ -345,9 +345,27 @@ object ZIOTable:
    * @return a ZStream[Any, Throwable, parser.Row].
    */
   def stream(parser: StringTableParser[?])(source: => Source): ZStream[Any, Throwable, parser.Row] =
+    streamSelected(parser, RowSelection.all)(source)
+
+  /**
+   * Method to stream the rows of a URI (see stream). If the URI has a fragment identifier which selects rows
+   * (RFC 7111, e.g. "data.csv#row=5-7": see CsvFragment), only those rows are streamed, and the input is read
+   * no further than the last row which could be selected.
+   *
+   * @param parser a StringTableParser.
+   * @param uri    the URI.
+   * @param codec  (implicit) the encoding.
+   * @return a ZStream[Any, Throwable, parser.Row].
+   */
+  def streamURI(parser: StringTableParser[?])(uri: URI)(using codec: Codec): ZStream[Any, Throwable, parser.Row] =
+    val selection = CsvFragment.fromURI(uri) collect { case rs: RowSelection => rs } getOrElse RowSelection.all
+    streamSelected(parser, selection)(Source.fromURI(CsvFragment.withoutFragment(uri)))
+
+  // Stream the selected rows of the source (see stream).
+  private def streamSelected(parser: StringTableParser[?], selection: RowSelection)(source: => Source): ZStream[Any, Throwable, parser.Row] =
     for
       s <- ZStream.acquireReleaseWith(ZIO.attemptBlocking(source))(s => ZIO.attemptBlocking(s.close()).orDie)
-      hrs <- ZStream.fromZIO(ZIO.attemptBlocking(parser.rows(s.getLines())).flatMap(ZIO.fromTry(_)))
+      hrs <- ZStream.fromZIO(ZIO.attemptBlocking(parser.rows(s.getLines(), parser.headerRowsToRead, selection)).flatMap(ZIO.fromTry(_)))
       row <- ZStream.blocking(ZStream.fromIterator(hrs._2, chunkSize)).mapZIO(ZIO.fromTry(_))
     yield row
 

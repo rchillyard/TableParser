@@ -59,6 +59,12 @@ class ZIOTableStreamSpec extends AnyFlatSpec with should.Matchers:
     run(ZIOTable.stream(PointTableParser)(Source.fromInputStream(in)).take(1)) shouldBe List(Point(1, 2))
     in.closed shouldBe true
 
+  it should "stream only the rows selected by a URI's fragment (RFC 7111)" in:
+    val file = tempFile
+    Files.writeString(file.toPath, "x,y\n1,2\n3,4\n5,6\n7,8\n")
+    run(ZIOTable.streamURI(PointTableParser)(new java.net.URI(s"${file.toURI}#row=3-4"))) shouldBe List(Point(3, 4), Point(5, 6))
+    run(ZIOTable.streamURI(PointTableParser)(file.toURI)).size shouldBe 4
+
   it should "stream a resource" in:
     run(ZIOTable.streamResource(PointTableParser)("points.csv", classOf[ZIOTableStreamSpec])) shouldBe List(Point(1, 2), Point(3, 4))
 
