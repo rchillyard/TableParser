@@ -102,6 +102,7 @@ lazy val zio = project.dependsOn(core % "compile->compile;test->test").settings(
   name := "tableparser-zio",
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio" % zioVersion,
+    "dev.zio" %% "zio-streams" % zioVersion,
     "dev.zio" %% "zio-test-junit" % zioVersion % Test,
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
     "dev.zio" %% "zio-test" % zioVersion % Test,

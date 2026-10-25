@@ -361,6 +361,12 @@ and _IOTable.writeCSVFile_:
 
     movies.through(IOTable.writeCSVFile[Movie](Paths.get("movies.csv"))).compile.drain
 
+The _zio_ module has the same methods, with [ZStream](https://zio.dev/reference/stream/) (from _zio-streams_):
+_ZIOTable.streamFile(MovieTableParser)(path)_ is a _ZStream\[Any, Throwable, Movie]_;
+_ZIOTable.csvLines_ is a _ZPipeline_ and _ZIOTable.writeCSVFile_ a _ZSink_:
+
+    movies.run(ZIOTable.writeCSVFile[Movie](Paths.get("movies.csv")))
+
 These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
 
 ## TableParser
