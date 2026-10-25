@@ -117,7 +117,7 @@ For another simple use case _TableParser_, please see my blog at: https://scalap
 
 # User Guide
 
-This version of the README.md file refers to version: 2.0.3.
+This version of the README.md file refers to version: 2.1.0.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only (it is built with Scala 3.3 LTS, so it can be used from any later Scala 3 version),
 and it needs Java 21 or later.
@@ -127,12 +127,12 @@ To use it, add the modules you need to your _build.sbt_:
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "2.0.3"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "2.0.3"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "2.0.3"     // ZIO support
-  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.0.3"  // encryption
-  , "com.phasmidsoftware" %% "tableparser-json" % "2.0.3"    // JSON (circe)
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.0.3" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "2.1.0"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "2.1.0"    // cats-effect IO support
+  , "com.phasmidsoftware" %% "tableparser-zio" % "2.1.0"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.1.0"  // encryption
+  , "com.phasmidsoftware" %% "tableparser-json" % "2.1.0"    // JSON (circe)
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.1.0" // Parquet files
 )
 ```
 
@@ -979,6 +979,18 @@ For more examples (numbers, dates, nested case classes, and bad input), see _Tab
 
 Release Notes
 =============
+V2.0.3 -> V2.1.0
+* Streaming (see [Streaming](#streaming)): the rows of a table can be read as they are parsed, rather than all at once:
+  * cats: _IOTable.stream_ (and _streamFile_, _streamResource_, _streamLines_, _streamURI_) give an fs2 _Stream\[IO, Row]_;
+    the pipes _csvLines_ and _writeCSVFile_ write one. The cats module now depends on fs2 (_fs2-core_, _fs2-io_).
+  * zio: the same methods give a _ZStream_; _csvLines_ is a _ZPipeline_ and _writeCSVFile_ a _ZSink_.
+    The zio module now depends on _zio-streams_.
+  * core: _StringTableParser.rows_ parses lazily (the header, then an _Iterator_ of rows).
+* RFC 7111 (see [Selecting rows, columns and cells](#selecting-rows-columns-and-cells-rfc-7111)): fragment identifiers
+  such as _data.csv#row=5-7_. _Table.parse_ of a URI (and _streamURI_) selects the rows of its fragment;
+  _CsvFragment_ parses fragments, and selects rows (from any table), or columns and cells (from raw tables).
+  Up to 2.0.3, a URI with a fragment could not be parsed at all.
+
 V2.0.2 -> V2.0.3
 * Bug fix: _Table.writeCSVFile_ (and so _Table.writeCSVFileRow_) wrote an empty file: it never closed the file, so what
   it wrote was never flushed. It also ignored any failure. It now closes the file, and throws a _TableException_ on failure.
