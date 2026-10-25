@@ -36,12 +36,15 @@ case object Last extends Position:
   def resolve(last: Int): Int = last
 
 /**
- * A range of positions (a single position, if from and to are the same).
+ * A range of positions: from (the first position wanted) up to, but not including, until (the first position not wanted),
+ * as for Scala's Ranges (e.g. 5 until 8).
+ * So Span(At(5), At(8)) is the positions 5, 6 and 7 (as "5-7" in RFC 7111); a Span whose until is not after its from is empty.
+ * As until, Last means after the last position (so Span(At(5), Last) is from 5 to the end, as "5-*").
  *
- * @param from the first position.
- * @param to   the last position.
+ * @param from  the first position wanted.
+ * @param until the first position not wanted.
  */
-case class Span(from: Position, to: Position):
+case class Span(from: Position, until: Position):
   /**
    * Method to determine whether this Span contains the number i.
    *
@@ -53,8 +56,10 @@ case class Span(from: Position, to: Position):
     (from, maybeLast) match
       case (Last, None) => throw TableException("Span.contains: the last position is unknown")
       case _ =>
-        val last = maybeLast.getOrElse(Int.MaxValue)
-        from.resolve(last) <= i && i <= to.resolve(last)
+        val last = maybeLast.getOrElse(Int.MaxValue - 1)
+        from.resolve(last) <= i && i < (until match
+          case At(n) => n
+          case Last => last + 1)
 
   /**
    * @return true if this Span cannot be evaluated without knowing the last position.
@@ -62,11 +67,23 @@ case class Span(from: Position, to: Position):
   def needsLast: Boolean = from == Last
 
   /**
-   * @return the last number this Span could contain, if it doesn't extend to the end.
+   * @return the first number this Span could not contain, if it doesn't extend to the end.
    */
-  def maybeUpperBound: Option[Int] = to match
+  def maybeEnd: Option[Int] = until match
     case At(n) => Some(n)
     case Last => None
+
+object Span:
+  /**
+   * Method to make a Span from an inclusive range, as RFC 7111 writes them ("5-7" is 5, 6 and 7).
+   *
+   * @param from the first position wanted.
+   * @param to   the last position wanted (as for Scala's Ranges, e.g. 5 to 7).
+   * @return a Span from from until the position after to.
+   */
+  def inclusive(from: Position, to: Position): Span = Span(from, to match
+    case At(n) if n < Int.MaxValue - 1 => At(n + 1)
+    case _ => Last) // after the last (also for a number too large to have a successor)
 
 /**
  * A selection of rows (e.g. "row=5-7;10").
@@ -93,8 +110,8 @@ case class RowSelection(spans: Seq[Span]) extends CsvFragment:
       val all = xs.toList
       selected(all.iterator, Some(all.size + headerLines))
     else
-      // NOTE if every specification has an upper bound, nothing beyond the highest is read.
-      val bounded = if (spans.forall(_.maybeUpperBound.isDefined)) xs.take(math.max(0, spans.flatMap(_.maybeUpperBound).max - headerLines)) else xs
+      // NOTE if every specification has an end, nothing from the furthest end on is read.
+      val bounded = if (spans.forall(_.maybeEnd.isDefined)) xs.take(math.max(0, spans.flatMap(_.maybeEnd).max - 1 - headerLines)) else xs
       selected(bounded, None)
 
   /**
@@ -207,12 +224,12 @@ object CsvFragment:
     lazy val cellsel: Parser[CsvFragment] = "cell=" ~> rep1sep(cellspec, ";") ^^ (cs => CellSelection(cs))
 
     lazy val singlespec: Parser[Span] = position ~ opt("-" ~> position) ^^ {
-      case p ~ maybeQ => Span(p, maybeQ getOrElse p)
+      case p ~ maybeQ => Span.inclusive(p, maybeQ getOrElse p)
     }
 
     lazy val cellspec: Parser[(Span, Span)] = position ~ ("," ~> position) ~ opt("-" ~> position ~ ("," ~> position)) ^^ {
-      case r1 ~ c1 ~ Some(r2 ~ c2) => (Span(r1, r2), Span(c1, c2))
-      case r1 ~ c1 ~ None => (Span(r1, r1), Span(c1, c1))
+      case r1 ~ c1 ~ Some(r2 ~ c2) => (Span.inclusive(r1, r2), Span.inclusive(c1, c2))
+      case r1 ~ c1 ~ None => (Span.inclusive(r1, r1), Span.inclusive(c1, c1))
     }
 
     lazy val position: Parser[Position] = "*" ^^^ Last | """\d+""".r ^^ (w => At(w.toIntOption getOrElse Int.MaxValue))

@@ -26,16 +26,31 @@ class Rfc7111Spec extends AnyFlatSpec with should.Matchers:
   behavior of "CsvFragment.parse (RFC 7111, section 3)"
 
   it should "parse row, column and cell selections" in:
-    CsvFragment.parse("row=4") shouldBe Some(RowSelection(Seq(Span(At(4), At(4)))))
+    // NOTE a Span's until is the first position not wanted: "row=4" is Span(At(4), At(5)).
+    CsvFragment.parse("row=4") shouldBe Some(RowSelection(Seq(Span(At(4), At(5)))))
     CsvFragment.parse("row=5-*") shouldBe Some(RowSelection(Seq(Span(At(5), Last))))
-    CsvFragment.parse("col=1-2") shouldBe Some(ColumnSelection(Seq(Span(At(1), At(2)))))
-    CsvFragment.parse("cell=4,1-6,2") shouldBe Some(CellSelection(Seq((Span(At(4), At(6)), Span(At(1), At(2))))))
-    CsvFragment.parse("row=3;6") shouldBe Some(RowSelection(Seq(Span(At(3), At(3)), Span(At(6), At(6)))))
+    CsvFragment.parse("row=*") shouldBe Some(RowSelection(Seq(Span(Last, Last))))
+    CsvFragment.parse("col=1-2") shouldBe Some(ColumnSelection(Seq(Span(At(1), At(3)))))
+    CsvFragment.parse("cell=4,1-6,2") shouldBe Some(CellSelection(Seq((Span(At(4), At(7)), Span(At(1), At(3))))))
+    CsvFragment.parse("row=3;6") shouldBe Some(RowSelection(Seq(Span(At(3), At(4)), Span(At(6), At(7)))))
+    CsvFragment.parse("row=1-99999999999") shouldBe Some(RowSelection(Seq(Span(At(1), Last))))
 
   // RFC 7111, section 4.1: a fragment identifier with a syntax error must be ignored.
   it should "reject a fragment identifier with a syntax error" in:
     for w <- Seq("", "row=", "rows=1", "Row=1", "row=1-", "row=a", "row=-1", "row=1;col=2", "cell=4", "cell=4,1-6", "row= 1", "row=1 ") do
       CsvFragment.parse(w) shouldBe None
+
+  behavior of "Span"
+
+  it should "contain from up to, but not including, until" in:
+    Span(At(5), At(8)).contains(4, None) shouldBe false
+    (5 to 7) forall (Span(At(5), At(8)).contains(_, None)) shouldBe true
+    Span(At(5), At(8)).contains(8, None) shouldBe false
+    Span(At(5), At(5)).contains(5, None) shouldBe false
+    Span(At(5), Last).contains(1000, None) shouldBe true
+    Span(Last, Last).contains(7, Some(7)) shouldBe true
+    Span(Last, Last).contains(6, Some(7)) shouldBe false
+    Span.inclusive(At(5), At(7)) shouldBe Span(At(5), At(8))
 
   behavior of "row selection (RFC 7111, section 2.1)"
 
