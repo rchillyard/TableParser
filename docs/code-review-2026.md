@@ -1,5 +1,9 @@
 # TableParser: code review and plan for 2.0 (October 2026)
 
+> **Status (October 25, 2026):** the plan is done. 1.7.0, 1.7.1 and 1.7.2 were released on the 1.x line (Scala 2.13 and 3);
+> 2.0.0 (Scala 3 only, in the eight stages of §6, step 4), 2.0.1, 2.0.2, 2.0.3 and 2.1.0 (streaming and RFC 7111, §6, step 5)
+> on the 2.x line. The rest of this document is the review as it was written, at 1.6.0, with the plan as it was carried out.
+
 This is a review of TableParser's code as it stands at 1.6.0, the first release cross-built for Scala 2.13 and Scala 3. It isn't a review of that migration, which followed the Comparer playbook (`docs/scala3-playbook.md` in Comparer).
 
 It has three parts:
