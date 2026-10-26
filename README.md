@@ -6,23 +6,47 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/rchillyard/TableParser)
 ![GitHub issues](https://img.shields.io/github/issues-raw/rchillyard/TableParser)
 ![GitHub issues by-label](https://img.shields.io/github/issues/rchillyard/TableParser/bug)
-[![RFC 4180](https://img.shields.io/badge/CSV-RFC%204180-brightgreen)](https://www.rfc-editor.org/rfc/rfc4180)
-[![RFC 7111](https://img.shields.io/badge/CSV%20fragments-RFC%207111-brightgreen)](https://www.rfc-editor.org/rfc/rfc7111)
+[![RFC 4180](https://img.shields.io/badge/CSV-RFC%204180-brightgreen)](core/src/test/scala/com/phasmidsoftware/tableparser/core/Rfc4180Spec.scala)
+[![RFC 7111](https://img.shields.io/badge/CSV%20fragments-RFC%207111-brightgreen)](core/src/test/scala/com/phasmidsoftware/tableparser/core/Rfc7111Spec.scala)
+
 
 # Introduction to TableParser
 
 A functional parser of tables, implemented in Scala.
 Typically, the input is in the form of a "CSV" (comma-separated-values) file.
-However, it is perfectly possible to parse other formats.
-Indeed, as of 1.3.0, it is possible to parse JSON and Parquet files.
+However, it is perfectly possible to parse other formats:
+Parquet files (from 1.3.0) and, with the _json_ module, JSON (from 2.0.0).
 Please see the **[TableParser Parquet Design](docs/design/TableParserParquetDesign.md)**
-design document for more information.
+design document for more information about Parquet.
 
 _TableParser_ aims to make it as simple as possible to ingest a fully typed tabular dataset.
 The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
 All conversions from strings to standard types are performed automatically,
 and the parsers (and renderers) of case classes are derived by the compiler, with no limit on the number of fields.
 For non-standard types, it suffices simply to provide a converter of the form _String=>T_.
+
+For example, this is all the code you need to read a CSV file of computing pioneers
+(the file is shown [below](#your-first-table)) as a table of _Pioneer_s:
+
+```scala
+case class Pioneer(name: String, born: Int, died: Option[Int], achievement: String)
+
+object Pioneer extends TableParserHelper[Pioneer]():
+  def cellParser: CellParser[Pioneer] = CellParser.derived[Pioneer]
+
+val pioneers: Try[Table[Pioneer]] = Table.parseFile[Table[Pioneer]](Paths.get("pioneers.csv"))
+```
+
+In brief, _TableParser_ can:
+* **read** a table into rows of your own case classes (which may be nested, and may have optional fields),
+  finding each field's column by name, and converting each cell to the field's type;
+* **explore** a table that you don't know yet, as rows of strings, with statistics for each column;
+* **stream** the rows of a large file, rather than read it all into memory (with fs2 or ZIO);
+* **write** a table as CSV, as JSON, or in hierarchical form (for example, as HTML);
+* **select** rows, columns or cells, as RFC 7111 defines it (for example, `data.csv#row=5-7`);
+* read **Parquet** files, and read and write **encrypted** tables.
+
+The quickest way to learn it is the [Getting Started](#getting-started) guide below.
 
 ## RFC Compliance
 
@@ -52,8 +76,8 @@ Full Scaladoc is available via javadoc.io, for [Scala 3](https://javadoc.io/doc/
 
 It is possible to parse sequences of _String_ (one per row)--
 the typical situation for a CSV file--or sequences of
-_String_ (where the table corresponds to a matrix of cells).
- 
+_Seq\[String]_ (where the table corresponds to a matrix of cells).
+
 This library makes extensive use of type classes (given instances, and derivation from a case class's _Mirror_).
 Indeed, it is implemented very similarly to JSON readers.
 There is a row-parser configuration (_RowConfig_) that allows
@@ -68,8 +92,7 @@ XML or HTML).
 An output structure which is itself tabular or sequence-oriented can be generated
 quite easily using the rows of the table, together with something like, for instance, a JSON writer.
 
-Package Structure
-=================
+## Modules
 
 As of version 2.0.0, the code is made up of six modules (each published as _tableparser-<module>_):
 * _core_: parsing and rendering tables. Most of the remainder of this README file refers to the _core_ module.
@@ -81,55 +104,7 @@ As of version 2.0.0, the code is made up of six modules (each published as _tabl
 
 The _spark_ module (for use with Apache Spark) is on the 1.x line only, because Spark is not published for Scala 3.
 
-Quick Intro
-===========
-
-The simplest way to get an introduction to _TableParser_ is to consult the _movie.sc_ worksheet
-(in core's tests, beside the _Movie_ example) and the _airbnb.sc_ worksheets (in the tests of the _cats_ and _zio_ modules).
-These give detailed descriptions of each stage of the process.
-
-Another way to see how it works is to look at this application Pairings which takes a CSV file,
-parses it, transforms the data,
-and outputs a JSON file.
-This way of parsing is a little different from what is shown in the worksheets.
-But both are effective.
-The minimum code necessary to parse the CSV file as a table of "Player"s,
-using as many defaults as possible is:
-
-    case class Player(first: String, last: String)
-
-    object Player extends TableParserHelper[Player]() {
-      def cellParser: CellParser[Player] = CellParser.derived[Player]
-    }
-
-    val pty: Try[Table[Player]] = Table.parseFile[Table[Player]](Paths.get("players.csv"))
-
-The _TableParserHelper_ used here is an abstract subclass of _CellParsers_,
-and is customized for the row type (in this case, _Player_).
-In particular, it defines an implicit _TableParser\[Table\[X]]_,
-where _X_ is the row type (_Player_ in this example).
-This assumes that the source input file ("players.csv")
-contains a header row which includes column names corresponding to the parameters
-of the case class _Player_ (in this case "first" and "last").
-If, for example, your CSV file does not have a header row,
-then you make a minor change to the line _object Player..._
-
-The input file looks something like this (the first and last columns are required,
-others are ignored):
-
-    Id,First,Last,
-    1,Abel,Sumac,
-    2,Alma,Alder,
-    3,Anya,Pine,
-
-etc...
-
-Note that columns not needed for the _Player_ case class are simply ignored.
-Also, note that a column whose name matches exactly is preferred; only if there is none is the case of the column names ignored.
-
-For another simple use case _TableParser_, please see my blog at: https://scalaprof.blogspot.com/2019/04/new-projects.html 
-
-# User Guide
+## Installation
 
 This version of the README.md file refers to version: 2.1.0.
 
@@ -137,54 +112,281 @@ From version 2.0.0, _TableParser_ is for Scala 3 only (it is built with Scala 3.
 and it needs Java 21 or later.
 For Scala 2.13 (or Java 17), and for the spark module, use the 1.x line (the latest is 1.7.2), which is on the _1.x_ branch.
 
-To use it, add the modules you need to your _build.sbt_:
+Add the modules you need to your _build.sbt_ (most programs need only _core_):
 
 ```scala
 libraryDependencies ++= Seq(
     "com.phasmidsoftware" %% "tableparser-core" % "2.1.0"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "2.1.0"    // cats-effect IO support
-  , "com.phasmidsoftware" %% "tableparser-zio" % "2.1.0"     // ZIO support
+  , "com.phasmidsoftware" %% "tableparser-cats" % "2.1.0"    // cats-effect IO support, and streaming with fs2
+  , "com.phasmidsoftware" %% "tableparser-zio" % "2.1.0"     // ZIO support, and streaming with ZStream
   , "com.phasmidsoftware" %% "tableparser-crypto" % "2.1.0"  // encryption
   , "com.phasmidsoftware" %% "tableparser-json" % "2.1.0"    // JSON (circe)
   , "com.phasmidsoftware" %% "tableparser-parquet" % "2.1.0" // Parquet files
 )
 ```
 
-If you are moving from 1.x, see [Migrating from 1.x](#migrating-from-1x) below.
-See the release notes (at the end) for history.
+_TableParser_ logs through SLF4J. To see its log messages (for example, about rows which couldn't be parsed),
+add an SLF4J backend, such as _logback-classic_, to your project.
 
-## Migrating from 1.x
+If you are moving from 1.x, see [Migrating from 1.x](#migrating-from-1x), near the end of this file.
 
-2.0.0 is for Scala 3, and makes the most of it: almost everything that was written out by hand for each case class in 1.x is now derived by the compiler.
-In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces it.
+# Getting Started
 
-| Topic | 1.x | 2.0 |
-|---|---|---|
-| Scala and Java | Scala 2.13 or 3; Java 17 | Scala 3 only (3.3 LTS or later); Java 21 |
-| Parsing a case class | `cellParser2(apply)` ... `cellParser13(apply)` (at most 13 fields) | `CellParser.derived[T]` (or `derives CellParser`), with no limit on the number of fields |
-| Rendering a case class as CSV | `renderer2(apply)`, `generator2(apply)` ... (at most 19 fields) | `CsvRenderer.derived[T]`, `CsvGenerator.derived[T]`, or both at once with `derives CsvProduct` |
-| Hierarchical rendering of a case class | `renderer2("tr")(apply)` etc. | `HierarchicalRenderer.derived[T]("tr")` |
-| Parquet: grouped case classes | `converter2(apply)` ... `converter8(apply)`, and `converterMap`/`groupedHelpers` | derived automatically (`ParquetCellConverter.derived`): each case class needs only its `ColumnHelper` |
-| Field names | found by reflection (`Reflection.extractFieldNames`, with a `ClassTag`) | from the case class's `Mirror`, at compile time (the `FieldNames[T]` type class); `Reflection` is gone |
-| Implicits | `implicit val`, `implicitly` | `given`, `summon` (an `implicit val` still works, of course). Note that a wildcard import doesn't bring givens: use `import X.{given, *}` |
-| Configuring how rows are read | `implicit object C extends DefaultRowConfig { override val delimiter = """\t""".r; override val string = ... }` | `given RowConfig = RowConfig(delimiter = '\t')`: `RowConfig` is a case class, whose regexes are derived from its characters (`withDelimiter` etc. change one property). `DefaultRowConfig` is gone |
-| CSV format | spaces next to a comma were ignored; LF line endings | RFC 4180: spaces are part of a field (use `RowConfig.trimmingRowConfig` for 1.x behavior); CRLF when writing (`CsvAttributes(",", "\"", "\n")` for LF) |
-| Reading and writing in the same format | `RowConfig` and `CsvAttributes` were unrelated | `rowConfig.csvAttributes` and `csvAttributes.rowConfig` |
-| Column names when writing | the field names (with dots for nested case classes) | the names the parser looks up (via `ColumnHelper`), so a table that is written can be read back |
-| Row order | `Content` was a `ParIterable` (rows could come back in any order) | `Content` is a `Vector`, in the order the rows were read; `content.par` for parallelism |
-| Dates | Joda-Time (`org.joda.time.LocalDate`) | `java.time.LocalDate` |
-| JSON | spray-json, in core (`TableJsonFormat`) | circe, in the new _tableparser-json_ module (`TableCodecs`) |
-| Encryption | in _tableparser-cats_ | in the new _tableparser-crypto_ module (package `com.phasmidsoftware.tableparser.crypto`) |
-| `MaybeStatistics` | a sealed trait | an enum |
-| `Sequential`, `Sequence`, the examples, `table.Main`, `EvaluateZIO` | deprecated in 1.7.0 | removed (the examples are now in the tests) |
-| A blank `Option[URL]` cell | a failure | `None`, as for every other type |
-| `StringConverter`'s instances, `Header.multiply`/`prepend`/`alphabet` | public | removed (unused) |
-| Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
+This guide works through one small example, step by step.
+Every example in it is a test (see [ReadmeSpec](core/src/test/scala/com/phasmidsoftware/tableparser/core/ReadmeSpec.scala)),
+so you can be sure that it works as shown.
+
+The examples need these imports:
+
+```scala
+import com.phasmidsoftware.tableparser.core.parse.*
+import com.phasmidsoftware.tableparser.core.render.CsvProduct
+import com.phasmidsoftware.tableparser.core.table.*
+import java.nio.file.Paths
+import scala.util.Try
+```
+
+## Your first table
+
+Here is a file, _pioneers.csv_:
+
+```
+name,born,died,achievement
+Ada Lovelace,1815,1852,the first published program
+Alan Turing,1912,1954,"computability, the Turing machine"
+Grace Hopper,1906,1992,the first compiler
+Edsger Dijkstra,1930,2002,"structured programming, ""goto considered harmful"""
+Barbara Liskov,1939,,the substitution principle
+```
+
+The first line (the _header_) names the columns.
+A field which contains a comma is quoted, and a quote inside a quoted field is doubled
+(that's the CSV standard, RFC 4180).
+Barbara Liskov's _died_ is empty.
+
+To read it, describe a row with a case class, and give the case class a companion object which extends _TableParserHelper_:
+
+```scala
+case class Pioneer(name: String, born: Int, died: Option[Int], achievement: String)
+
+object Pioneer extends TableParserHelper[Pioneer]():
+  def cellParser: CellParser[Pioneer] = CellParser.derived[Pioneer]
+
+val pioneers: Try[Table[Pioneer]] = Table.parseFile[Table[Pioneer]](Paths.get("pioneers.csv"))
+```
+
+That's all. _pioneers_ is a _Success_ of a table of five rows, the first of which is
+`Pioneer("Ada Lovelace", 1815, Some(1852), "the first published program")`.
+Here is what happened:
+* `CellParser.derived[Pioneer]` asks the compiler to write a parser for a _Pioneer_, from the names and types of its fields.
+* _TableParserHelper_ uses it to provide the parser of a whole table (a given _TableParser\[Table\[Pioneer]]_).
+  Because it is in _Pioneer_'s companion object, the compiler finds it without an import.
+* Each field is read from the column of the same name (a column whose name differs only in case will do, too).
+  The order of the columns doesn't matter, and any column which no field needs is ignored.
+* Each cell is converted to the type of its field: _String_, _Int_, _Double_, _Boolean_, _LocalDate_, _URL_ etc.
+  An _Option_ field is _None_ if its cell is empty (Barbara Liskov's _died_).
+* The result is a _Try_: if the file can't be read, or a row can't be parsed (say, _born_ isn't a number), it is a _Failure_
+  which tells you why.
+
+A _Table_ is an _Iterable_ of its rows, so you can, for example, print them:
+
+```scala
+pioneers.foreach(_.foreach(println))
+```
+
+You can read a table from many sources besides a file: a resource (_Table.parseResource_), a URI (_Table.parse_),
+a sequence of lines (_Table.parse_), an _InputStream_, etc. (see [Table](#table)).
+If your file has no header line, write `TableParserHelper[Pioneer](sourceHasHeaderRow = false)`:
+the columns are then taken to be in the same order as the fields.
+
+## When the column names aren't the field names
+
+Column names are often not valid Scala names. Suppose the header of _pioneers.csv_ were:
+
+```
+Full Name,Year of Birth,Year of Death,Achievement
+```
+
+Then give the companion object a _ColumnHelper_, which says how to find the column of each field:
+
+```scala
+case class Pioneer(name: String, yearOfBirth: Int, yearOfDeath: Option[Int], achievement: String)
+
+object Pioneer extends TableParserHelper[Pioneer]():
+  given ColumnHelper[Pioneer] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, "name" -> "Full Name")
+
+  def cellParser: CellParser[Pioneer] = CellParser.derived[Pioneer]
+```
+
+A _ColumnHelper_ has a _mapper_, which turns a field name into a column name,
+and any number of _aliases_ (field name -> column name), which take precedence over the mapper.
+Here, _camelCaseColumnNameMapperSpace_ turns `yearOfBirth` into `year Of Birth`, which matches `Year of Birth`
+(remember that case doesn't matter), and the alias says that _name_ is in the column `Full Name`.
+The other mappers of _ColumnHelper_ are _camelToSnakeCaseColumnNameMapperLower_ (`yearOfBirth` is in `year_of_birth`),
+_camelCaseColumnNameMapper_ (`year_Of_Birth`) and _identityMapper_ (the default).
+A _ColumnHelper_ can also add a prefix to column names (see the [Movie example](#example-movie)).
+
+## Optional fields and nested case classes
+
+As you have seen, a field whose cell may be empty should be an _Option_.
+A row may also be grouped into case classes, nested as deeply as you like:
+
+```scala
+case class Life(born: Int, died: Option[Int])
+
+case class Pioneer(name: String, life: Life, achievement: String)
+
+object Pioneer extends TableParserHelper[Pioneer]():
+  def cellParser: CellParser[Pioneer] = CellParser.derived[Pioneer]
+```
+
+_Life_ needs no parser of its own: the parser of _Pioneer_ derives one.
+Its fields are read from the columns _born_ and _died_, as before.
+Grouping the columns like this is the way to deal with a table which has many columns
+(though there is no limit on the number of fields of a case class).
+
+## Rows that don't parse
+
+Real data is messy. Suppose _pioneers.csv_ had one more line:
+
+```
+Charles Babbage,1791,eighteen seventy-one,the Analytical Engine
+```
+
+Then reading the table would fail, because _died_ isn't a number.
+If you would rather have the rows that can be read, make the parser _forgiving_:
+
+```scala
+object Pioneer extends TableParserHelper[Pioneer](forgiving = true):
+  def cellParser: CellParser[Pioneer] = CellParser.derived[Pioneer]
+```
+
+Now the table has the five good rows, and the error in the bad one is logged (see [Installation](#installation) about logging).
+
+## Other delimiters, quotes and spaces
+
+_RowConfig_ describes how the lines of a table are split into cells:
+its _delimiter_ (`,` by default), its _quote_ character (`"`), and whether to _trim_ the spaces next to a delimiter (no).
+To read a file of tab-separated values, give the companion object a _RowConfig_,
+and the parsers of a row and of a table, which use it:
+
+```scala
+object Pioneer extends CellParsers:
+  given RowConfig = RowConfig(delimiter = '\t')
+  given CellParser[Pioneer] = CellParser.derived[Pioneer]
+  given StringParser[Pioneer] = StandardRowParser.create[Pioneer]
+
+  given PioneerTableParser: HeadedCSVTableParser[Pioneer] = new HeadedCSVTableParser[Pioneer] {}
+```
+
+(_TableParserHelper_ always uses the default _RowConfig_, which reads RFC 4180 CSV.)
+Similarly, `RowConfig.trimmingRowConfig` ignores spaces next to the delimiters, so that it reads `Ada Lovelace, 1815, 1852`.
+See [LineParser](#lineparser) for more.
+
+## Working with a table
+
+A _Table_ has the methods you would expect of a collection, and those which give rows give a _Table_:
+
+```scala
+val living: Table[Pioneer] = pioneers.filter(_.died.isEmpty)
+val ages: Table[(String, Int)] = pioneers.mapOptional(p => p.died.map(d => p.name -> (d - p.born)))
+val firstTwo: Table[Pioneer] = pioneers.take(2)
+val byBirth: Seq[Pioneer] = pioneers.toSeq.sortBy(_.born)
+```
+
+Here, _pioneers_ is a _Table\[Pioneer]_ (not a _Try_): for example, `pioneers <- Table.parseFile[Table[Pioneer]](path)`
+in a for-comprehension.
+_living_ has just Barbara Liskov; _ages_ starts with `("Ada Lovelace", 37)`.
+`pioneers.maybeColumnNames` gives the column names of the header.
+There are many more methods: see [Table](#table).
+
+## Writing a table as CSV
+
+To write a table, its row type needs a _CsvRenderer_ (to write a row) and a _CsvGenerator_ (to write the header).
+`derives CsvProduct` derives both:
+
+```scala
+case class Pioneer(name: String, born: Int, died: Option[Int], achievement: String) derives CsvProduct
+
+val csv: Try[String] = pioneers.take(2).toCSV
+pioneers.writeCSVFile(Paths.get("pioneers-copy.csv"))
+```
+
+_csv_ is a _Success_ of
+
+```
+name,born,died,achievement
+Ada Lovelace,1815,1852,the first published program
+Alan Turing,1912,1954,"computability, the Turing machine"
+```
+
+(with CRLF line endings, as RFC 4180 requires).
+The names in the header are those which the parser looks for (with the same _ColumnHelper_),
+so a table that is written can be read back.
+A field is quoted only when it has to be.
+See [CSV Rendering](#csv-rendering) for more, and [JSON](#other-string-rendering) for JSON.
+
+## Exploring a file you don't know
+
+When you first meet a dataset, you may not know what case class to write.
+Read it as a _raw_ table instead, each row of which is just a sequence of strings,
+and get some statistics about each column:
+
+```scala
+val raw: Try[RawTable] = Table.parsePathRaw(Paths.get("pioneers.csv"), TableParser.includeAll)
+val statistics: ColumnStatistics = Analysis.forCsv(Paths.get("pioneers.csv"))
+```
+
+The cells of a raw row are its _ws_; `row("achievement")` gives the cell of a column, by name (as a _Try_).
+Printing _statistics_ shows, for each column, its name, whether it has empty cells,
+and (for a numeric column) its range, mean and standard deviation.
+See [Parsing](#parsing) for more.
+
+## Large files: streaming
+
+Parsing a _Table_ reads all of its rows into memory.
+For a large file, the _cats_ module can instead give you a _stream_ of rows, each parsed as it is read
+(this example is tested in [ReadmeStreamSpec](cats/src/test/scala/com/phasmidsoftware/tableparser/cats/table/ReadmeStreamSpec.scala)):
+
+```scala
+import cats.effect.IO
+import com.phasmidsoftware.tableparser.cats.table.IOTable
+
+val parser = PlainTextHeadedStringTableParser[Pioneer]()
+val living: IO[List[String]] = IOTable.streamFile(parser)(Paths.get("pioneers.csv")).filter(_.died.isEmpty).map(_.name).compile.toList
+```
+
+_IOTable.streamFile_ gives an fs2 _Stream\[IO, Pioneer]_. Nothing is read until the _IO_ is run.
+The _zio_ module has the same methods, giving a ZIO _ZStream_. See [Streaming](#streaming).
+
+## Selecting rows (RFC 7111)
+
+The fragment of a URI (the part after `#`) can select rows, as RFC 7111 defines it.
+Row 1 is the header, so this reads the rows of Alan Turing and Grace Hopper:
+
+```scala
+val two: Try[Table[Pioneer]] = Table.parse[Table[Pioneer]](java.net.URI.create("file:///data/pioneers.csv#row=3-4"))
+```
+
+See [Selecting rows, columns and cells](#selecting-rows-columns-and-cells-rfc-7111).
+
+## Where next?
+
+* The worked examples later in this file: [Movie](#example-movie) (a big table, in nested case classes, with prefixed column names)
+  and [Submissions](#example-submissions) (a variable number of repeated columns).
+* The worksheets: _movie.sc_ (in core's tests, beside the _Movie_ example) and _airbnb.sc_ (in the tests of the _cats_ and _zio_ modules)
+  describe each stage of the process.
+* [Rendering](#rendering), as CSV, JSON or HTML.
+* [Parquet](#column-oriented-tables-parquet) files, and encryption (_TableCrypt_ and _EncryptedHeadedStringTableParser_, in the _crypto_ module).
+* For another simple use case of _TableParser_, see my blog at: https://scalaprof.blogspot.com/2019/04/new-projects.html
+
+# User Guide
+
+The rest of this file describes each part of _TableParser_ in more detail.
 
 ## Parsing
 
-Parsing Row-oriented Tables
-===========================
+### Row-oriented tables
 
 The _Table_ trait expresses the result of parsing from a serialized representation of a table.
 Each row is represented by a parametric type _Row_.
@@ -252,13 +454,10 @@ Use `derives CellParser`, or define the given alongside the case class.
 
 See the section on _CellParsers_ below.
 
-Parsing Column-oriented Tables
-==============================
-
-### Parquet parsing
+### Column-oriented tables (Parquet)
 
 The mechanisms described above are primarily designed for parsing row-oriented tables such as CSV.
-However, as of version 1.3.0, it is possible to parse Parquet files.
+From version 1.3.0, it is also possible to parse Parquet files.
 Please see the **[TableParser Parquet Design](docs/design/TableParserParquetDesign.md)**
 design document for more information.       
 
@@ -274,7 +473,7 @@ This is from the NYC Taxi dataset.
 ## Table
 
 The _Table_ class, which extends _Iterable\[Row]_, also has several methods for manipulation:
-### query methods
+### Query methods
 
 * def content: Content\[Row]
 * def maybeHeader: Option\[Header]
@@ -285,7 +484,7 @@ The _Table_ class, which extends _Iterable\[Row]_, also has several methods for 
 
 To write a table encrypted, see _TableCrypt.writeCSVFileEncrypted_ in the _crypto_ module.
 
-### transformation methods
+### Transformation methods
 * def filter(p: Row => Boolean): Table\[Row]
 * def filterNot(p: Row => Boolean): Table\[Row]
 * def filterValid(using rv: Validity\[Row]): Table\[Row]
@@ -543,7 +742,7 @@ which specifies which parser is to be used for each possible value of the key co
 If the value in that column is not one of the keys of the map, an exception will be thrown.
 For an example of this, please see the example in _CellParsersSpec_ ("conditionally parse").
 
-### Implicits
+### Givens (implicits)
 
 Keep in mind when using given (implicit) values that the best practice
 is to define a given involving a type T,
@@ -783,8 +982,7 @@ In this case, we use the default value: 1 and so don't have to explicitly specif
 Also, note that the instance of _ColumnHelper_ defined here has the formatter defined as "$c $x",
 which is in the opposite order from the _Movie_ example.
 
-Rendering
-=========
+## Rendering
 
 _TableParser_ provides a general mechanism for rendering (serializing to text) tables.
 Indeed, the tables built by the parsers extend _TableRenderable\[Row]_,
@@ -793,7 +991,7 @@ There are two distinct mechanisms for rendering a table:
 * one to a straight serialized output, for example, when rendering a table as a CSV file.
 * the other to a hierarchical (i.e., tree-structured) output, such as an HTML file.
 
-## Non-hierarchical output
+### Non-hierarchical output
 
 For this type of output,
 the application programmer must provide an instance of _Writer\[O]_ which is, 
@@ -824,7 +1022,7 @@ Columns will appear in the same order as the parameters of _Row_ type
 If you need to change the order of the rows,
 you will need to override the _writeRow_ method of _Writable_.
  
-## Hierarchical rendering
+### Hierarchical rendering
 
 A type class called _TreeWriter_ is the main type for hierarchical rendering.
 One of the instance methods of _Table\[Row]_ is a method as follows:
@@ -882,7 +1080,7 @@ Strings is hierarchical (recursive).
 If you need to set HTML attributes for a specific type, for example, a row in the above example,
 then an attribute map can be passed to _HierarchicalRenderer.derived_ (its second parameter).
 
-## CSV Rendering
+### CSV Rendering
 
 If you simply need to write a table to CSV (comma-separated value) format as a _String_,
 then use the _toCSV_ method of _Table\[T]_.
@@ -929,7 +1127,7 @@ These utilize the type _CsvTableFileRenderer\[T]_ mentioned above.
 If you wish to output only a subset of rows,
 then you should use one of the methods defined in _Table_ such as _take_.
 
-## Other String Rendering
+### Other String Rendering
 
 Apart from CSV, there is currently only one implementation of _String_ rendering,
 and that is _Json_ rendering.
@@ -991,8 +1189,36 @@ A missing (_None_) value is written as _null_ (and a missing or _null_ value is 
 Reading JSON which is malformed, or which doesn't match the row type, gives a _Left_.
 For more examples (numbers, dates, nested case classes, and bad input), see _TableCodecsSpec.scala_ and _JsonTableRendererSpec.scala_.
 
-Release Notes
-=============
+# Migrating from 1.x
+
+2.0.0 is for Scala 3, and makes the most of it: almost everything that was written out by hand for each case class in 1.x is now derived by the compiler.
+In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces it.
+
+| Topic | 1.x | 2.0 |
+|---|---|---|
+| Scala and Java | Scala 2.13 or 3; Java 17 | Scala 3 only (3.3 LTS or later); Java 21 |
+| Parsing a case class | `cellParser2(apply)` ... `cellParser13(apply)` (at most 13 fields) | `CellParser.derived[T]` (or `derives CellParser`), with no limit on the number of fields |
+| Rendering a case class as CSV | `renderer2(apply)`, `generator2(apply)` ... (at most 19 fields) | `CsvRenderer.derived[T]`, `CsvGenerator.derived[T]`, or both at once with `derives CsvProduct` |
+| Hierarchical rendering of a case class | `renderer2("tr")(apply)` etc. | `HierarchicalRenderer.derived[T]("tr")` |
+| Parquet: grouped case classes | `converter2(apply)` ... `converter8(apply)`, and `converterMap`/`groupedHelpers` | derived automatically (`ParquetCellConverter.derived`): each case class needs only its `ColumnHelper` |
+| Field names | found by reflection (`Reflection.extractFieldNames`, with a `ClassTag`) | from the case class's `Mirror`, at compile time (the `FieldNames[T]` type class); `Reflection` is gone |
+| Implicits | `implicit val`, `implicitly` | `given`, `summon` (an `implicit val` still works, of course). Note that a wildcard import doesn't bring givens: use `import X.{given, *}` |
+| Configuring how rows are read | `implicit object C extends DefaultRowConfig { override val delimiter = """\t""".r; override val string = ... }` | `given RowConfig = RowConfig(delimiter = '\t')`: `RowConfig` is a case class, whose regexes are derived from its characters (`withDelimiter` etc. change one property). `DefaultRowConfig` is gone |
+| CSV format | spaces next to a comma were ignored; LF line endings | RFC 4180: spaces are part of a field (use `RowConfig.trimmingRowConfig` for 1.x behavior); CRLF when writing (`CsvAttributes(",", "\"", "\n")` for LF) |
+| Reading and writing in the same format | `RowConfig` and `CsvAttributes` were unrelated | `rowConfig.csvAttributes` and `csvAttributes.rowConfig` |
+| Column names when writing | the field names (with dots for nested case classes) | the names the parser looks up (via `ColumnHelper`), so a table that is written can be read back |
+| Row order | `Content` was a `ParIterable` (rows could come back in any order) | `Content` is a `Vector`, in the order the rows were read; `content.par` for parallelism |
+| Dates | Joda-Time (`org.joda.time.LocalDate`) | `java.time.LocalDate` |
+| JSON | spray-json, in core (`TableJsonFormat`) | circe, in the new _tableparser-json_ module (`TableCodecs`) |
+| Encryption | in _tableparser-cats_ | in the new _tableparser-crypto_ module (package `com.phasmidsoftware.tableparser.crypto`) |
+| `MaybeStatistics` | a sealed trait | an enum |
+| `Sequential`, `Sequence`, the examples, `table.Main`, `EvaluateZIO` | deprecated in 1.7.0 | removed (the examples are now in the tests) |
+| A blank `Option[URL]` cell | a failure | `None`, as for every other type |
+| `StringConverter`'s instances, `Header.multiply`/`prepend`/`alphabet` | public | removed (unused) |
+| Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
+
+# Release Notes
+
 V2.0.3 -> V2.1.0
 * Streaming (see [Streaming](#streaming)): the rows of a table can be read as they are parsed, rather than all at once:
   * cats: _IOTable.stream_ (and _streamFile_, _streamResource_, _streamLines_, _streamURI_) give an fs2 _Stream\[IO, Row]_;
