@@ -4,8 +4,8 @@
 
 package com.phasmidsoftware.tableparser.core.write
 
-import com.phasmidsoftware.tableparser.core.write.WritableSpec.complexFile
 import java.io.{File, FileWriter}
+import java.nio.file.Files
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 
@@ -45,11 +45,13 @@ class WritableSpec extends flatspec.AnyFlatSpec with should.Matchers:
         				|""".stripMargin
 
   it should "writeRowToFile" in:
-    val file = new File(complexFile)
+    val file = File.createTempFile("Writable-writeRowToFile", ".csv")
+    file.deleteOnExit()
     val fw: Writable[FileWriter] = Writable.fileWritable(file)
     val o = fw.unit
     fw.writeRow(o)(Complex(1, -1))
     fw.close(o)
+    Files.readString(file.toPath) shouldBe "1.0, -1.0\n"
 
   it should "writeRawLine" in:
     val sw = Writable.stringBuilderWritable()
@@ -57,8 +59,3 @@ class WritableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     sw.writeRawLine(o)("Hello World!")
     sw.close(o)
     o.toString shouldBe "Hello World!\n"
-
-
-object WritableSpec {
-  val complexFile = "tmp/Writable-writeRowToFile.csv"
-}
