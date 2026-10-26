@@ -11,6 +11,21 @@
 
 # Introduction to TableParser
 
+A functional parser of tables, implemented in Scala.
+Typically, the input is in the form of a "CSV" (comma-separated-values) file.
+However, it is perfectly possible to parse other formats.
+Indeed, as of 1.3.0, it is possible to parse JSON and Parquet files.
+Please see the **[TableParser Parquet Design](docs/design/TableParserParquetDesign.md)**
+design document for more information.
+
+_TableParser_ aims to make it as simple as possible to ingest a fully typed tabular dataset.
+The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
+All conversions from strings to standard types are performed automatically,
+and the parsers (and renderers) of case classes are derived by the compiler, with no limit on the number of fields.
+For non-standard types, it suffices simply to provide a converter of the form _String=>T_.
+
+## RFC Compliance
+
 > **RFC 4180 compliant.** From version 2.0.0, _TableParser_ reads and writes CSV exactly as defined by
 > [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180), the standard for CSV files.
 > Every rule of the RFC is tested in [Rfc4180Spec](core/src/test/scala/com/phasmidsoftware/tableparser/core/Rfc4180Spec.scala),
@@ -30,21 +45,10 @@
 > Rows can be selected from any table; columns and cells only from a raw table (a case class can't lose its fields).
 > See [Selecting rows, columns and cells](#selecting-rows-columns-and-cells-rfc-7111).
 
+## Details
+
 Full Scaladoc is available via javadoc.io, for [Scala 3](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_3)
 (and, for the 1.x line, [Scala 2.13](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13)).
-
-A functional parser of tables, implemented in Scala.
-Typically, the input is in the form of a "CSV" (comma-separated-values) file.
-However, it is perfectly possible to parse other formats.
-Indeed, as of 1.3.0, it is possible to parse Parquet files.
-Please see the **[TableParser Parquet Design](docs/design/TableParserParquetDesign.md)**
-design document for more information.
-
-_TableParser_ aims to make it as simple as possible to ingest a fully typed tabular dataset.
-The principal mechanism for this is the use of case classes to specify the types of fields in the dataset.
-All conversions from strings to standard types are performed automatically,
-and the parsers (and renderers) of case classes are derived by the compiler, with no limit on the number of fields.
-For non-standard types, it suffices simply to provide a converter of the form _String=>T_.
 
 It is possible to parse sequences of _String_ (one per row)--
 the typical situation for a CSV file--or sequences of
@@ -65,7 +69,7 @@ An output structure which is itself tabular or sequence-oriented can be generate
 quite easily using the rows of the table, together with something like, for instance, a JSON writer.
 
 Package Structure
-===========
+=================
 
 As of version 2.0.0, the code is made up of six modules (each published as _tableparser-<module>_):
 * _core_: parsing and rendering tables. Most of the remainder of this README file refers to the _core_ module.
