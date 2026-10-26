@@ -40,3 +40,5 @@ tmp/other-render to CSV.csv
 tmp/Table-write Table To File.csv
 
 src/student worksheets/
+
+core/output.csv
