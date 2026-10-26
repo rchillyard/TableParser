@@ -118,7 +118,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
   it should "parse from File" in:
     import IntPair._
 
-    matchTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))):
+    matchTry(Table.parseFile(Paths.get(classOf[Table[?]].getResource("intPairs.csv").toURI))):
       case xt@HeadedTable(_, _) => xt.size shouldBe 2
 
   it should "parse raw resource using table parser " in:
@@ -324,7 +324,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     matchTry(Table.parse(Seq("1 2", "42 99"))):
       case HeadedTable(_, _) => succeed
 
-    val file = new File("output.csv")
+    val file = File.createTempFile("output", ".csv")
+    file.deleteOnExit()
     implicit val fw: Writable[FileWriter] = Writable.fileWritable(file)
 
     implicit object FileRenderer extends Renderer[Table[IntPair], FileWriter]:
@@ -360,7 +361,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
       def toColumnNames(po: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
 
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
-    matchTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))):
+    matchTry(Table.parseFile(Paths.get(classOf[Table[?]].getResource("intPairs.csv").toURI))):
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
         matchTry(ws):
@@ -380,7 +381,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
       def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
 
-    matchTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))):
+    matchTry(Table.parseFile(Paths.get(classOf[Table[?]].getResource("intPairs.csv").toURI))):
       case iIt@HeadedTable(_, _) =>
         val ws = iIt.toCSV
         matchTry(ws):

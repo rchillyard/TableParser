@@ -31,7 +31,6 @@ val tsecVersion = "0.6.0"
 val catsVersion = "3.7.1"
 val zioVersion = "2.1.27"
 val logbackVersion = "1.5.38"
-val slf4jVersion = "2.0.20"
 val parquetVersion = "1.18.1"
 val hadoopVersion = "3.4.3"
 val circeVersion = "0.14.17"
@@ -44,7 +43,6 @@ lazy val core = project.settings(
     "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
-    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
 )
@@ -57,7 +55,6 @@ lazy val cats = project.dependsOn(core % "compile->compile;test->test").settings
     "co.fs2" %% "fs2-core" % fs2Version,
     "co.fs2" %% "fs2-io" % fs2Version,
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
-    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
 )
@@ -69,7 +66,6 @@ lazy val crypto = project.dependsOn(core % "compile->compile;test->test", cats %
     "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
     "org.typelevel" %% "cats-effect" % catsVersion,
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
-    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
 )
@@ -80,7 +76,6 @@ lazy val json = project.dependsOn(core % "compile->compile;test->test").settings
   libraryDependencies ++= Seq(
     "io.circe" %% "circe-core" % circeVersion,
     "io.circe" %% "circe-parser" % circeVersion,
-    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
 )
@@ -108,7 +103,6 @@ lazy val zio = project.dependsOn(core % "compile->compile;test->test").settings(
     "dev.zio" %% "zio-test" % zioVersion % Test,
     "dev.zio" %% "zio-test-sbt" % zioVersion % Test,
     "dev.zio" %% "zio-test-magnolia" % zioVersion % Test,
-    "org.slf4j" % "slf4j-simple" % slf4jVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
 )

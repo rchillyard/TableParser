@@ -213,7 +213,7 @@ class CsvRenderersSpec extends AnyFlatSpec with should.Matchers:
     implicit val intPairCsvRenderer: CsvRenderer[IntPair] = CsvRenderer.derived[IntPair]
     implicit val intPairCsvGenerator: CsvProductGenerator[IntPair] = CsvGenerator.derived[IntPair]
     import IntPair._
-    val ity = Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))
+    val ity = Table.parseFile(Paths.get(classOf[Table[?]].getResource("intPairs.csv").toURI))
     val sby = ity flatMap:
       case iIt@HeadedTable(_, _) => CsvTableStringRenderer[IntPair]().render(iIt)
     matchTry(sby map (_.toString())):
