@@ -20,7 +20,7 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers:
   behavior of "JsonTableRenderer"
 
   it should "render Partnership table" in:
-    val strings = List("First,Last", "Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("First,Last", "Abel,Sumac", "Alma,Alder", "Anya,Pine", "Beatrix,Gorse")
     val wy: Try[String] = for (pt <- Table.parse[Table[Player]](strings); q = Player.convertTable(pt); w = q.asInstanceOf[TableRenderable[Partnership]].render) yield w
     matchTry(wy):
       case p =>
@@ -28,16 +28,16 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers:
         decode[Table[Partnership]](p) should matchPattern { case Right(HeadedTable(_, _)) => }
 
   it should "read back what it renders" in:
-    val strings = List("First,Last", "Adam,Sullivan", "Amy,Avagadro")
+    val strings = List("First,Last", "Abel,Sumac", "Alma,Alder")
     val pty: Try[Table[Partnership]] = for (pt <- Table.parse[Table[Player]](strings)) yield Player.convertTable(pt)
     matchTry(pty):
       case pt =>
         val decoded = decode[Table[Partnership]](summon[Renderer[Table[Partnership], String]].render(pt))
-        decoded.map(_.toList) shouldBe Right(List(Partnership("Adam S", "Amy A")))
+        decoded.map(_.toList) shouldBe Right(List(Partnership("Abel S", "Alma A")))
         decoded.map(_.maybeHeader) shouldBe Right(Some(Header(Seq("playerA", "playerB"), Nil)))
 
   it should "read a table without a header" in:
-    decode[Table[Partnership]]("""{"rows": [{"playerA": "Adam S", "playerB": "Amy A"}]}""").map(_.maybeHeader) shouldBe Right(None)
+    decode[Table[Partnership]]("""{"rows": [{"playerA": "Abel S", "playerB": "Alma A"}]}""").map(_.maybeHeader) shouldBe Right(None)
 
   it should "render and read a table with no rows" in:
     val table: Table[Partnership] = Table(Nil, None)
@@ -49,7 +49,7 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers:
    * Same as "support fixed header and write to Json" in 1.x's TableParserHelperSpec: the input has no header row.
    */
   it should "render a table whose header is fixed" in:
-    val strings = List("Adam,Sullivan", "Amy,Avagadro", "Ann,Peterson", "Barbara,Goldman")
+    val strings = List("Abel,Sumac", "Alma,Alder", "Anya,Pine", "Beatrix,Gorse")
     val pty: Try[Table[HeadlessPlayer]] = Table.parse[Table[HeadlessPlayer]](strings.iterator)
     matchTry(pty):
       case pt@HeadedTable(_, _) =>
@@ -59,7 +59,7 @@ class JsonTableRendererSpec extends AnyFlatSpec with should.Matchers:
 object JsonTableRendererSpec:
 
   /**
-   * The expected JSON for the two partnerships of Adam, Amy, Ann and Barbara.
+   * The expected JSON for the two partnerships of Abel, Alma, Anya and Beatrix.
    *
    * @param a the name of the first column.
    * @param b the name of the second column.
@@ -69,12 +69,12 @@ object JsonTableRendererSpec:
     s"""{
        |  "rows" : [
        |    {
-       |      "playerA" : "Adam S",
-       |      "playerB" : "Amy A"
+       |      "playerA" : "Abel S",
+       |      "playerB" : "Alma A"
        |    },
        |    {
-       |      "playerA" : "Ann P",
-       |      "playerB" : "Barbara G"
+       |      "playerA" : "Anya P",
+       |      "playerB" : "Beatrix G"
        |    }
        |  ],
        |  "header" : [
