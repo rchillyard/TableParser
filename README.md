@@ -1,11 +1,13 @@
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/app/scalaprof/TableParser?utm_source=github.com&utm_medium=referral&utm_content=rchillyard/TableParser&utm_campaign=Badge_Grade_Settings)
-[![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_2.13.svg?color=blue&label=maven-central%20(2.13%2C%201.x))](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_2.13)
 [![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_3.svg?color=blue&label=maven-central%20(3))](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_3)
-![GitHub Top Languages](https://img.shields.io/github/languages/top/rchillyard/TableParser)
-![GitHub](https://img.shields.io/github/license/rchillyard/TableParser)
-![GitHub last commit](https://img.shields.io/github/last-commit/rchillyard/TableParser)
-![GitHub issues](https://img.shields.io/github/issues-raw/rchillyard/TableParser)
-![GitHub issues by-label](https://img.shields.io/github/issues/rchillyard/TableParser/bug)
+[![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_2.13.svg?color=blue&label=maven-central%20(2.13%2C%201.x))](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_2.13)
+[![API Docs](https://img.shields.io/badge/api-docs-blue)](https://rchillyard.github.io/TableParser/latest/api/)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/gh/rchillyard/TableParser/dashboard)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/rchillyard/TableParser/tree/master.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/rchillyard/TableParser/tree/master)
+[![GitHub Top Languages](https://img.shields.io/github/languages/top/rchillyard/TableParser)](https://github.com/rchillyard/TableParser)
+[![GitHub](https://img.shields.io/github/license/rchillyard/TableParser)](https://github.com/rchillyard/TableParser/blob/master/LICENSE)
+[![GitHub last commit](https://img.shields.io/github/last-commit/rchillyard/TableParser)](https://github.com/rchillyard/TableParser/commits/master)
+[![GitHub issues](https://img.shields.io/github/issues-raw/rchillyard/TableParser)](https://github.com/rchillyard/TableParser/issues)
+[![GitHub issues by-label](https://img.shields.io/github/issues/rchillyard/TableParser/bug)](https://github.com/rchillyard/TableParser/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
 [![RFC 4180](https://img.shields.io/badge/CSV-RFC%204180-brightgreen)](core/src/test/scala/com/phasmidsoftware/tableparser/core/Rfc4180Spec.scala)
 [![RFC 7111](https://img.shields.io/badge/CSV%20fragments-RFC%207111-brightgreen)](core/src/test/scala/com/phasmidsoftware/tableparser/core/Rfc7111Spec.scala)
 
@@ -71,8 +73,8 @@ The quickest way to learn it is the [Getting Started](#getting-started) guide be
 
 ## Details
 
-Full Scaladoc is available via javadoc.io, for [Scala 3](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_3)
-(and, for the 1.x line, [Scala 2.13](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13)).
+Full Scaladoc is at <https://rchillyard.github.io/TableParser/latest/api/>
+(and, for the 1.x line, via javadoc.io for [Scala 2.13](https://javadoc.io/doc/com.phasmidsoftware/tableparser-core_2.13)).
 
 It is possible to parse sequences of _String_ (one per row)--
 the typical situation for a CSV file--or sequences of
@@ -108,8 +110,9 @@ The _spark_ module (for use with Apache Spark) is on the 1.x line only, because 
 
 This version of the README.md file refers to version: 2.1.0.
 
-From version 2.0.0, _TableParser_ is for Scala 3 only (it is built with Scala 3.3 LTS, so it can be used from any later Scala 3 version),
-and it needs Java 21 or later.
+From version 2.0.0, _TableParser_ is for Scala 3 only, and it needs Java 21 or later.
+Versions 2.0 and 2.1 are built with Scala 3.3 LTS, so they can be used from any later Scala 3 version;
+later versions are built with Scala 3.9, the current LTS, and need Scala 3.9 or later.
 For Scala 2.13 (or Java 17), and for the spark module, use the 1.x line (the latest is 1.7.2), which is on the _1.x_ branch.
 
 Add the modules you need to your _build.sbt_ (most programs need only _core_):
