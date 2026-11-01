@@ -2,9 +2,8 @@ ThisBuild / organization := "com.phasmidsoftware"
 ThisBuild / version := "2.1.0"
 
 // 2.x is Scala 3 only (for Scala 2.13, use the 1.x line, on the 1.x branch).
-// Build with the oldest supported LTS so that the artifacts are usable from any later Scala 3 version.
-// CircleCI also runs the tests on the current LTS (3.9).
-ThisBuild / scalaVersion := "3.3.8"
+// The current Scala 3 LTS. Code built with 3.9 can only be used from Scala 3.9 or later.
+ThisBuild / scalaVersion := "3.9.0"
 ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature", "-Wunused:all")
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "21")
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
@@ -20,7 +19,11 @@ ThisBuild / initialize := {
   )
 }
 
+// sbt's lint wrongly reports these ThisBuild publish settings as unused
 Global / excludeLintKeys ++= Set(pomIncludeRepository, publishMavenStyle)
+
+// JUnit-style reports, collected by CircleCI
+ThisBuild / Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports")
 
 ThisBuild / resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
 
@@ -124,10 +127,16 @@ lazy val integration = (project in file("integration"))
         )
 
 lazy val root = (project in file("."))
+        .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin)
         .aggregate(core, cats, crypto, json, parquet, zio)
         .settings(
           name := "TableParser",
-          publish / skip := true
+          publish / skip := true,
+          // The unified Scaladoc is published to https://rchillyard.github.io/TableParser/latest/api/ by `sbt ghpagesPushSite`
+          ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, cats, crypto, json, parquet, zio),
+          ScalaUnidoc / siteSubdirName := "latest/api",
+          addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
+          git.remoteRepo := "git@github.com:rchillyard/TableParser.git"
         )
 
 Test / parallelExecution := false
