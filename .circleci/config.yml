@@ -1,56 +1,80 @@
-# Scala CircleCI 2.1 configuration file
+# CircleCI configuration for TableParser (the standard Phasmid template, for a multi-module build)
+#
+# Check https://circleci.com/docs/configuration-reference/ for more details
+#
 version: 2.1
 
 jobs:
   build:
     docker:
+      # cimg/openjdk ships Maven and Gradle but not sbt, so sbt is installed below
       - image: cimg/openjdk:21.0
 
     working_directory: ~/repo
 
     environment:
+      # Customize the JVM maximum heap limit
       JVM_OPTS: -Xmx3200m
       TERM: dumb
 
     steps:
       - checkout
 
+      - run:
+          name: Install sbt (version pinned in project/build.properties)
+          command: |
+            SBT_VERSION=$(sed -n 's/^sbt.version=//p' project/build.properties)
+            curl -fsSL --retry 3 "https://github.com/sbt/sbt/releases/download/v${SBT_VERSION}/sbt-${SBT_VERSION}.tgz" | tar -xz -C ~
+            echo 'export PATH="$HOME/sbt/bin:$PATH"' >> "$BASH_ENV"
+
+      # Download and cache dependencies
       - restore_cache:
           keys:
-            - v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}
+            - v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
+            # fallback to using the latest cache if no exact match is found
             - v2-dependencies-
 
       - run:
-          name: Compile (Scala 3.3)
-          command: sbt Test/compile
+          name: Compile
+          command: cat /dev/null | sbt Test/compile
 
       - save_cache:
           paths:
-            - ~/.sbt
             - ~/.ivy2/cache
+            - ~/.sbt
             - ~/.cache/coursier
-          key: v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}
+          key: v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "project/build.properties" }}-{{ checksum "project/plugins.sbt" }}
 
       - run:
-          name: Test (Scala 3.3)
-          command: sbt test
+          name: Test
+          command: cat /dev/null | sbt test
 
-      # The library is built with 3.3 (LTS) but should also work on the current LTS.
+      # Generate the unified Scaladoc (catches doc warnings, and it is what GitHub Pages publishes)
       - run:
-          name: Test (Scala 3.9)
-          command: sbt "++3.9.0!" test
+          name: Doc
+          command: cat /dev/null | sbt unidoc
+
+      # Collect test results from all modules
+      - run:
+          name: Aggregate test results
+          command: |
+            mkdir -p target/test-reports
+            find . -path '*/target/test-reports/*' -name '*.xml' -exec cp {} target/test-reports/ \;
+          when: always
+
+      - store_test_results:
+          path: target/test-reports
 
       # Coverage, reported but not enforced. It starts with clean, because the earlier steps' classes aren't instrumented.
       - run:
           name: Coverage
-          command: sbt clean coverage test coverageAggregate
+          command: cat /dev/null | sbt clean coverage test coverageAggregate
 
       - store_artifacts:
-          path: target/scala-3.3.8/scoverage-report
+          path: target/scala-3.9.0/scoverage-report
           destination: coverage
 
 workflows:
-  version: 2
-  build-and-test:
+  build:
     jobs:
       - build
