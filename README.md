@@ -108,7 +108,7 @@ The _spark_ module (for use with Apache Spark) is on the 1.x line only, because 
 
 ## Installation
 
-This version of the README.md file refers to version: 2.1.0.
+This version of the README.md file refers to version: 2.2.0.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only, and it needs Java 21 or later.
 Versions 2.0 and 2.1 are built with Scala 3.3 LTS, so they can be used from any later Scala 3 version;
@@ -119,12 +119,12 @@ Add the modules you need to your _build.sbt_ (most programs need only _core_):
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "2.1.0"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "2.1.0"    // cats-effect IO support, and streaming with fs2
-  , "com.phasmidsoftware" %% "tableparser-zio" % "2.1.0"     // ZIO support, and streaming with ZStream
-  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.1.0"  // encryption
-  , "com.phasmidsoftware" %% "tableparser-json" % "2.1.0"    // JSON (circe)
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.1.0" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "2.2.0"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "2.2.0"    // cats-effect IO support, and streaming with fs2
+  , "com.phasmidsoftware" %% "tableparser-zio" % "2.2.0"     // ZIO support, and streaming with ZStream
+  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.2.0"  // encryption
+  , "com.phasmidsoftware" %% "tableparser-json" % "2.2.0"    // JSON (circe)
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.2.0" // Parquet files
 )
 ```
 
@@ -1221,6 +1221,10 @@ In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces 
 | Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
 
 # Release Notes
+
+V2.1.0 -> V2.2.0
+* Built with Scala 3.9.0 (the current LTS), so it needs Scala 3.9 or later (for Scala 3.3, use 2.1.0).
+* sbt 1.12.13; Scaladoc on GitHub Pages; CircleCI runs one test pass on 3.9.
 
 V2.0.3 -> V2.1.0
 * Streaming (see [Streaming](#streaming)): the rows of a table can be read as they are parsed, rather than all at once:
