@@ -22,8 +22,6 @@ ThisBuild / initialize := {
 // sbt's lint wrongly reports these ThisBuild publish settings as unused
 Global / excludeLintKeys ++= Set(pomIncludeRepository, publishMavenStyle)
 
-// JUnit-style reports, collected by CircleCI
-ThisBuild / Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports")
 
 ThisBuild / resolvers += "Typesafe Repository" at "https://repo.typesafe.com/typesafe/releases/"
 
