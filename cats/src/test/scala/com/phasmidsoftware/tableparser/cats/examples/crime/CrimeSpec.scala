@@ -34,7 +34,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers:
         val analysis = Analysis(t)
         println(s"Crime: $analysis")
         analysis.rows shouldBe 400 +- 80
-        r take 10 foreach println
+        r.take(10).foreach(println)
         succeed
 
 //  it should "be ingested and written out in brief to CSV" in {

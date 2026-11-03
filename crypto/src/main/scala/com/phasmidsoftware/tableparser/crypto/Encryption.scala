@@ -208,7 +208,7 @@ object HexEncryption:
    */
   def bytesToHexString(bytes: Array[Byte]): IO[String] =
     val sb = new StringBuilder
-    for (b <- bytes) yield sb.append(String.format("%02X", b))
+    bytes.foreach(b => sb.append(String.format("%02X", b)))
     IO(sb.toString())
 
   /**

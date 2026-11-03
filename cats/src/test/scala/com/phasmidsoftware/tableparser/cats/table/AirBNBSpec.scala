@@ -76,5 +76,5 @@ class AirBNBSpec extends AnyFlatSpec with Matchers:
         val analysis = Analysis(t)
         println(s"AirBNB: $analysis")
         analysis.rows shouldBe 127 +- 32
-        r take 100 foreach println
+        r.take(100).foreach(println)
         succeed

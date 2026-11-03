@@ -386,7 +386,7 @@ object Principal extends CellParsers with CsvGenerators with CsvRenderers:
 case class Name(first: String, middle: Option[String], last: String, suffix: Option[String]):
   override def toString: String =
     case class Result(r: StringBuffer):
-      def append(s: String): Unit = r.append(" " + s)
+      def append(s: String): Unit = r.append(" " + s): Unit
 
       override def toString: String = r.toString
     val r: Result = Result(new StringBuffer(first))

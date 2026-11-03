@@ -223,7 +223,7 @@ abstract class CsvTableRenderer[T, O]()(using z1: CsvRenderer[T], z2: CsvGenerat
         o =>
           // CONSIDER can remove o2 here and just use o.
           val o2 = writeLine(sw, o, hdr)
-          for (r <- x.content.toSeq) yield generateText(sw, tc, o2, r)
+          x.content.toSeq.foreach(r => generateText(sw, tc, o2, r))
           o2
 
   /**

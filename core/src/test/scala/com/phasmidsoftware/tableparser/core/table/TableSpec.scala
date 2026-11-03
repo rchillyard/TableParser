@@ -536,7 +536,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
         println(s"parseResourceRaw: successfully read ${r.size} rows")
         println(s"parseResourceRaw: successfully read ${h.size} columns")
         r.size shouldBe 4
-        r take 4 foreach println
+        r.take(4).foreach(println)
         succeed
       case _ => fail("should succeed")
 

@@ -45,7 +45,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers:
         val analysis = Analysis(t)
         println(s"Crime: $analysis")
         analysis.rows shouldBe 87211 / fraction +- 2000
-        r take 10 foreach println
+        r.take(10).foreach(println)
         succeed
 
   it should "be ingested as a Table[Crime]" in:
@@ -58,7 +58,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers:
     matchIO(wsty, Timeout(Span(60, Seconds))):
       case t@HeadedTable(r, _) =>
         t.size shouldBe 87205 // XXX was 87211
-        r take 100 foreach println
+        r.take(100).foreach(println)
         succeed
 
   private val crimeResource: URL = classOf[Crime].getResource(crimeFile)
