@@ -134,6 +134,8 @@ lazy val root = (project in file("."))
           ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, cats, crypto, json, parquet, zio),
           ScalaUnidoc / siteSubdirName := "latest/api",
           addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
+          // Keep the Scaladoc of older releases, such as 1.7.2/api/, which ghpagesPushSite would otherwise delete.
+          ghpagesCleanSite / excludeFilter := new SimpleFileFilter(f => f.isDirectory && f.getName.matches("""\d+\.\d+\.\d+""")),
           git.remoteRepo := "git@github.com:rchillyard/TableParser.git"
         )
 
