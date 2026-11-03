@@ -67,7 +67,7 @@ object CsvGenerator extends CsvGenerators:
    *
    * The column name of each field is exactly the name that CellParser.derived looks for when it reads that field:
    * ColumnHelper[T].lookup of the field's name, given the column name of the enclosing field (if any).
-   * So a table which is written can be read back. For example, if ColumnHelper[Principal] has the prefix "$x_$c",
+   * So a table which is written can be read back. For example, if ColumnHelper[Principal] has the prefix "\$x_\$c",
    * the name field of a Principal field called director is in the column director_name.
    * Without a ColumnHelper of its own, a field's column name is its name.
    * A field whose type is itself a case class, and which has no CsvGenerator of its own, is derived in turn.

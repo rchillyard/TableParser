@@ -62,7 +62,7 @@ object Main:
       case Success(t@HeadedTable(r, _)) =>
         val analysis = Analysis(t)
         println(s"Crime: $analysis")
-        r take 10 foreach println
+        r.take(10).foreach(println)
       case Success(t) =>
         System.err.println(s"Unexpected result: $t")
       case Failure(x) =>

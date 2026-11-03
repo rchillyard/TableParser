@@ -30,7 +30,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers:
         mt should matchPattern { case HeadedTable(_, _) => }
         println(s"Movie: successfully read ${mt.size} rows")
         mt.size shouldBe 1567
-        mt take 10 foreach println
+        mt.take(10).foreach(println)
         succeed
   
   it should "not be ingested properly" in:

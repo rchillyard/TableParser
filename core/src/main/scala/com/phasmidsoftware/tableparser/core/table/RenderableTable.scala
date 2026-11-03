@@ -57,7 +57,7 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
     val knownSize1 = rows.knownSize
     // TODO this makes no sense now: the decision is taken inside Content.
     (if (knownSize1 > -1)
-      rows.toSeq else rows.toSeq) map:
+      rows.toSeq else rows.toSeq) foreach:
         // NOTE a Seq must be matched before a Product, which a List also is (::), else it's written as its head and tail.
         case xs: Seq[?] =>
           ww.writeRowElements(o2)(xs)

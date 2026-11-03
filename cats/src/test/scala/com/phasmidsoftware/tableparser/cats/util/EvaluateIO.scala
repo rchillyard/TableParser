@@ -54,12 +54,12 @@ object EvaluateIO extends Futures with ScalaFutures with should.Matchers:
    *
    * @param xio     an IO[X].
    * @param timeout a Timeout value (defaults to 1 second).
-   * @param check   a partial function of type X => Unit to invoke on the result.
+   * @param check   a partial function to invoke on the result (its value, typically an Assertion, is ignored).
    * @tparam X the underlying type of the result.
    */
-  def check[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(check: PartialFunction[X, Unit]): Unit =
+  def check[X](xio: => IO[X], timeout: Timeout = Timeout(Span(1, Second)))(check: PartialFunction[X, Any]): Unit =
     // TODO eliminate use of unsafe methods
-    whenReady(xio.unsafeToFuture(), timeout)(check(_))
+    whenReady(xio.unsafeToFuture(), timeout)(x => check(x): Unit)
 
   /**
    * Method to check that the result is a fail (throws an exception).

@@ -252,7 +252,7 @@ object CsvRenderers:
    * representation. Custom attributes influencing the rendering may be passed via a map,
    * though they are unused in the default implementation.
    *
-   * @see [[com.phasmidsoftware.tableparser.core.render.StandardCsvRenderer]]
+   * @see [[com.phasmidsoftware.tableparser.core.render.CsvRenderers.StandardCsvRenderer]]
    * @see [[com.phasmidsoftware.tableparser.core.render.Renderer]]
    */
   given CsvRendererDouble: StandardCsvRenderer[Double] with {}

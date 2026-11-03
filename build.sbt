@@ -4,7 +4,18 @@ ThisBuild / version := "2.2.0"
 // 2.x is Scala 3 only (for Scala 2.13, use the 1.x line, on the 1.x branch).
 // The current Scala 3 LTS. Code built with 3.9 can only be used from Scala 3.9 or later.
 ThisBuild / scalaVersion := "3.9.0"
-ThisBuild / scalacOptions ++= Seq("-encoding", "UTF-8", "-unchecked", "-deprecation", "-feature", "-Wunused:all")
+// The compiler options that all the Phasmid libraries share.
+ThisBuild / scalacOptions ++= Seq(
+  "-encoding", "UTF-8",
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-Wunused:all",
+  "-Wvalue-discard",
+  "-Wnonunit-statement"
+)
+// Tests may use a value as a statement (for example, in a matcher), so each project's tests skip -Wnonunit-statement.
+lazy val testScalacOptions = Test / scalacOptions ~= (_.filterNot(_ == "-Wnonunit-statement"))
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "21")
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
 
@@ -38,6 +49,7 @@ val circeVersion = "0.14.17"
 val fs2Version = "3.14.0"
 
 lazy val core = project.settings(
+  testScalacOptions,
   name := "tableparser-core",
   libraryDependencies ++= Seq(
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
@@ -50,6 +62,7 @@ lazy val core = project.settings(
 
 // The cats and zio tests use the examples (Movie, Crime), which are in core's tests.
 lazy val cats = project.dependsOn(core % "compile->compile;test->test").settings(
+  testScalacOptions,
   name := "tableparser-cats",
   libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-effect" % catsVersion,
@@ -62,6 +75,7 @@ lazy val cats = project.dependsOn(core % "compile->compile;test->test").settings
 
 // Encryption of tables (e.g. of the rows of a CSV file), using tsec, with cats-effect IO.
 lazy val crypto = project.dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test").settings(
+  testScalacOptions,
   name := "tableparser-crypto",
   libraryDependencies ++= Seq(
     "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
@@ -73,6 +87,7 @@ lazy val crypto = project.dependsOn(core % "compile->compile;test->test", cats %
 
 // Reading and writing tables as JSON, using circe.
 lazy val json = project.dependsOn(core % "compile->compile;test->test").settings(
+  testScalacOptions,
   name := "tableparser-json",
   libraryDependencies ++= Seq(
     "io.circe" %% "circe-core" % circeVersion,
@@ -82,6 +97,7 @@ lazy val json = project.dependsOn(core % "compile->compile;test->test").settings
 )
 
 lazy val parquet = project.dependsOn(core).settings(
+  testScalacOptions,
   name := "tableparser-parquet",
   // The test resources include two ~50MB Parquet files: don't publish them in tests jars.
   Test / publishArtifact := false,
@@ -95,6 +111,7 @@ lazy val parquet = project.dependsOn(core).settings(
 )
 
 lazy val zio = project.dependsOn(core % "compile->compile;test->test").settings(
+  testScalacOptions,
   name := "tableparser-zio",
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio" % zioVersion,
@@ -113,6 +130,7 @@ lazy val zio = project.dependsOn(core % "compile->compile;test->test").settings(
 lazy val integration = (project in file("integration"))
         .dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test", crypto % "compile->compile;test->test")
         .settings(
+          testScalacOptions,
           name := "tableparser-integration",
           publish / skip := true,
           Test / parallelExecution := false,

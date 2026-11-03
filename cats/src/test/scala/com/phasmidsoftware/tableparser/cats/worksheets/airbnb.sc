@@ -40,7 +40,7 @@ val zi: IO[Unit] = rti map {
   case table@HeadedTable(r, _) =>
     val analysis = Analysis(table)
     println(s"AirBNB: $analysis")
-    r take 10 foreach println
+    r.take(10).foreach(println)
   case _ =>
 }
 

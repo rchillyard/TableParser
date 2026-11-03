@@ -38,4 +38,4 @@ class AnalysisFuncSpec extends AnyFlatSpec with Matchers:
         val analysis = Analysis(valid)
         analysis.columns shouldBe 12
         println(s"Crime analysis: $analysis")
-        r take 10 foreach println
+        r.take(10).foreach(println)

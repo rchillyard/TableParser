@@ -73,6 +73,6 @@ class AirBNBSpec extends AnyFlatSpec with Matchers:
       case t@HeadedTable(r, _) =>
         val analysis = Analysis(t)
         println(s"AirBNB: $analysis")
-        r take 100 foreach println
+        r.take(100).foreach(println)
         val n = analysis.rows
         n >= 95 && n <= 159
