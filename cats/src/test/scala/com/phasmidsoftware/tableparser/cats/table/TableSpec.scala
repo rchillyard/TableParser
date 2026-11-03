@@ -83,14 +83,17 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     val hdr = Header(Seq(Seq("a", "b")))
     val row1 = Row(Seq("1", "2"), hdr, 1)
     val table = Table(Seq(row1), Some(hdr))
-    val resultIO = for {_ <- IOTable.writeCSVFileRow(table, new File("output.csv"))
-                        _ = println(s"written to file output.csv")
-                        y <- IO.fromTry(Table.parseFileRaw("output.csv", TableParser.includeAll))
+    // A temporary file, so that the test leaves nothing in the directory it runs from.
+    val file = File.createTempFile("output", ".csv")
+    file.deleteOnExit()
+    val resultIO = for {_ <- IOTable.writeCSVFileRow(table, file)
+                        _ = println(s"written to file $file")
+                        y <- IO.fromTry(Table.parseFileRaw(file.getPath, TableParser.includeAll))
                         } yield y
     matchIO(resultIO):
       case xt@HeadedTable(_, _) => xt.content.head.toString() shouldBe """A="1", B="2""""
     val tableWithoutHead = Table(Seq(row1), None)
-    the[TableException] thrownBy Table.writeCSVFileRow(tableWithoutHead, new File("output.csv"))
+    the[TableException] thrownBy Table.writeCSVFileRow(tableWithoutHead, file)
 
   it should "parse from Iterator[String]" in:
     import IntPair._
@@ -230,7 +233,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     matchIO(IOTable.parse(Seq("1 2", "42 99"))):
       case HeadedTable(_, _) => succeed
 
-    val file = new File("output.csv")
+    // A temporary file, so that the test leaves nothing in the directory it runs from.
+    val file = File.createTempFile("output", ".csv")
+    file.deleteOnExit()
     implicit val fw: Writable[FileWriter] = Writable.fileWritable(file)
 
     implicit object FileRenderer extends Renderer[Table[IntPair], FileWriter]:

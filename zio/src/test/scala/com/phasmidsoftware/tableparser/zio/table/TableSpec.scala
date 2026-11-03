@@ -228,7 +228,9 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))):
       case HeadedTable(_, _) => true
 
-    val file = new File("output.csv")
+    // A temporary file, so that the test leaves nothing in the directory it runs from.
+    val file = File.createTempFile("output", ".csv")
+    file.deleteOnExit()
     implicit val fw: Writable[FileWriter] = Writable.fileWritable(file)
 
     implicit object FileRenderer extends Renderer[Table[IntPair], FileWriter]:
