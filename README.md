@@ -2,6 +2,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.phasmidsoftware/tableparser-core_2.13.svg?color=blue&label=maven-central%20(2.13%2C%201.x))](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_2.13)
 [![API Docs](https://img.shields.io/badge/api-docs-blue)](https://rchillyard.github.io/TableParser/latest/api/)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/gh/rchillyard/TableParser/dashboard)
+[![Codacy Coverage](https://app.codacy.com/project/badge/Coverage/1dc65c7cf84e46bfbb0d3d9b16c0f382)](https://app.codacy.com/gh/rchillyard/TableParser/dashboard)
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/rchillyard/TableParser/tree/master.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/rchillyard/TableParser/tree/master)
 [![GitHub Top Languages](https://img.shields.io/github/languages/top/rchillyard/TableParser)](https://github.com/rchillyard/TableParser)
 [![GitHub](https://img.shields.io/github/license/rchillyard/TableParser)](https://github.com/rchillyard/TableParser/blob/master/LICENSE)
