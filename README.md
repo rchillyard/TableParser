@@ -114,7 +114,9 @@ This version of the README.md file refers to version: 2.2.0.
 From version 2.0.0, _TableParser_ is for Scala 3 only, and it needs Java 21 or later.
 Versions 2.0 and 2.1 are built with Scala 3.3 LTS, so they can be used from any later Scala 3 version;
 later versions are built with Scala 3.9, the current LTS, and need Scala 3.9 or later.
-For Scala 2.13 (or Java 17), and for the spark module, use the 1.x line (the latest is 1.7.2), which is on the _1.x_ branch.
+For Scala 2.13 (or Java 17), and for the spark module, use the 1.x line (the latest is 1.7.2), which is on the _1.x_ branch:
+its README is at the [V1.7.2 tag](https://github.com/rchillyard/TableParser/blob/V1.7.2/README.md),
+and its Scaladoc is at <https://rchillyard.github.io/TableParser/1.7.2/api/>.
 
 Add the modules you need to your _build.sbt_ (most programs need only _core_):
 
