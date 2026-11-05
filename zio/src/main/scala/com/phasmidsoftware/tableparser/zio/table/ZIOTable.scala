@@ -412,10 +412,7 @@ object ZIOTable:
    * @return a ZPipeline[Any, Nothing, X, String].
    */
   def csvLines[X](using renderer: CsvRenderer[X], generator: CsvGenerator[X]): ZPipeline[Any, Nothing, X, String] =
-    val header: String = generator match
-      case g: CsvProductGenerator[?] => g.toColumnNames(None, None)
-      case g => g.toColumnName(None, "")
-    ZPipeline.map[X, String](x => renderer.render(x, Map())) >>> ZPipeline.prepend(Chunk.single(header))
+    ZPipeline.map[X, String](x => renderer.render(x, Map())) >>> ZPipeline.prepend(Chunk.single(CsvGenerator.header[X]))
 
   /**
    * A ZSink which writes rows to a CSV file, as they come: the header first, then one line for each row,

@@ -411,10 +411,7 @@ object IOTable:
    * @return a Pipe[IO, X, String].
    */
   def csvLines[X](using renderer: CsvRenderer[X], generator: CsvGenerator[X]): Pipe[IO, X, String] =
-    val header: String = generator match
-      case g: CsvProductGenerator[?] => g.toColumnNames(None, None)
-      case g => g.toColumnName(None, "")
-    xs => Stream.emit(header) ++ xs.map(x => renderer.render(x, Map()))
+    xs => Stream.emit(CsvGenerator.header[X]) ++ xs.map(x => renderer.render(x, Map()))
 
   /**
    * A Pipe which writes rows to a CSV file, as they come: the header first, then one line for each row,
