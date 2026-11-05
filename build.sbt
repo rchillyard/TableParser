@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "2.2.0"
+ThisBuild / version := "2.3.0"
 
 // 2.x is Scala 3 only (for Scala 2.13, use the 1.x line, on the 1.x branch).
 // The current Scala 3 LTS. Code built with 3.9 can only be used from Scala 3.9 or later.
@@ -12,7 +12,8 @@ ThisBuild / scalacOptions ++= Seq(
   "-unchecked",
   "-Wunused:all",
   "-Wvalue-discard",
-  "-Wnonunit-statement"
+  "-Wnonunit-statement",
+  "-Werror"
 )
 // Tests may use a value as a statement (for example, in a matcher), so each project's tests skip -Wnonunit-statement.
 lazy val testScalacOptions = Test / scalacOptions ~= (_.filterNot(_ == "-Wnonunit-statement"))
@@ -47,6 +48,9 @@ val parquetVersion = "1.18.1"
 val hadoopVersion = "3.4.3"
 val circeVersion = "0.14.17"
 val fs2Version = "3.14.0"
+val fs2KafkaVersion = "4.1.3"
+val zioKafkaVersion = "3.8.1"
+val embeddedKafkaVersion = "4.4.0"
 
 lazy val core = project.settings(
   testScalacOptions,
@@ -125,10 +129,35 @@ lazy val zio = project.dependsOn(core % "compile->compile;test->test").settings(
   )
 )
 
-// The integration tests in core/src/it and cats/src/it run against full-size data files (69 MB).
+// Sending tables to Kafka, with fs2-kafka (cats-effect IO and fs2 streams).
+// The tests use the Kafka client's MockProducer, so they need no broker.
+lazy val kafkaCats = (project in file("kafka-cats")).dependsOn(core % "compile->compile;test->test", cats).settings(
+  testScalacOptions,
+  name := "tableparser-kafka-cats",
+  libraryDependencies ++= Seq(
+    "org.typelevel" %% "fs2-kafka" % fs2KafkaVersion,
+    "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
+    "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+  )
+)
+
+// Sending tables to Kafka, with zio-kafka (ZIO and ZStream).
+// The tests use the Kafka client's MockProducer, so they need no broker.
+lazy val kafkaZio = (project in file("kafka-zio")).dependsOn(core % "compile->compile;test->test", zio % "compile->compile;test->test").settings(
+  testScalacOptions,
+  name := "tableparser-kafka-zio",
+  libraryDependencies ++= Seq(
+    "dev.zio" %% "zio-kafka" % zioKafkaVersion,
+    "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
+    "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+  )
+)
+
+// The integration tests in core/src/it and cats/src/it run against full-size data files (69 MB);
+// those in kafka-cats/src/it and kafka-zio/src/it, against a Kafka broker which they start.
 // They're not aggregated by root, so neither `sbt test` nor CI runs them: use `sbt integration/test`.
 lazy val integration = (project in file("integration"))
-        .dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test", crypto % "compile->compile;test->test")
+        .dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test", crypto % "compile->compile;test->test", kafkaCats % "compile->compile;test->test", kafkaZio % "compile->compile;test->test")
         .settings(
           testScalacOptions,
           name := "tableparser-integration",
@@ -137,19 +166,26 @@ lazy val integration = (project in file("integration"))
                   Test / unmanagedSourceDirectories ++= Seq(
               (LocalRootProject / baseDirectory).value / "core/src/it/scala"
             , (LocalRootProject / baseDirectory).value / "cats/src/it/scala"
+            , (LocalRootProject / baseDirectory).value / "kafka-cats/src/it/scala"
+            , (LocalRootProject / baseDirectory).value / "kafka-zio/src/it/scala"
           ),
           Test / unmanagedResourceDirectories += (LocalRootProject / baseDirectory).value / "core/src/it/resources",
-          libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+          libraryDependencies ++= Seq(
+              "org.scalatest" %% "scalatest" % scalaTestVersion % Test
+            // A Kafka broker, in this JVM, for the kafka-cats and kafka-zio integration tests.
+            // The broker is built with Scala 2.13: it runs with core's Scala 3 build of scala-logging instead of its own.
+            , "io.github.embeddedkafka" %% "embedded-kafka" % embeddedKafkaVersion % Test exclude("com.typesafe.scala-logging", "scala-logging_2.13")
+          )
         )
 
 lazy val root = (project in file("."))
         .enablePlugins(ScalaUnidocPlugin, GhpagesPlugin)
-        .aggregate(core, cats, crypto, json, parquet, zio)
+        .aggregate(core, cats, crypto, json, kafkaCats, kafkaZio, parquet, zio)
         .settings(
           name := "TableParser",
           publish / skip := true,
           // The unified Scaladoc is published to https://rchillyard.github.io/TableParser/latest/api/ by `sbt ghpagesPushSite`
-          ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, cats, crypto, json, parquet, zio),
+          ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, cats, crypto, json, kafkaCats, kafkaZio, parquet, zio),
           ScalaUnidoc / siteSubdirName := "latest/api",
           addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
           // Keep the Scaladoc of older releases, such as 1.7.2/api/, which ghpagesPushSite would otherwise delete.

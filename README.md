@@ -97,19 +97,21 @@ quite easily using the rows of the table, together with something like, for inst
 
 ## Modules
 
-As of version 2.0.0, the code is made up of six modules (each published as _tableparser-<module>_):
+As of version 2.3.0, the code is made up of eight modules (each published as _tableparser-<module>_):
 * _core_: parsing and rendering tables. Most of the remainder of this README file refers to the _core_ module.
 * _cats_: for use with Cats Effect, particularly _IO_ (see _IOTable_), including streaming with fs2 (from 2.1.0).
 * _zio_: for use with ZIO (see _ZIOTable_), including streaming with ZStream (from 2.1.0).
 * _crypto_: encryption of tables (e.g., of the rows of a CSV file), using tsec and Cats Effect (new in 2.0.0: in 1.x, this was part of _cats_).
 * _json_: reading and writing tables as JSON, using circe (new in 2.0.0: in 1.x, JSON support, using spray-json, was part of _core_).
 * _parquet_: for use with Apache Parquet (beginning with 1.3.0).
+* _kafka-cats_: sending rows to Apache Kafka, using fs2-kafka (see _IOKafka_; new in 2.3.0).
+* _kafka-zio_: sending rows to Apache Kafka, using zio-kafka (see _ZIOKafka_; new in 2.3.0).
 
 The _spark_ module (for use with Apache Spark) is on the 1.x line only, because Spark is not published for Scala 3.
 
 ## Installation
 
-This version of the README.md file refers to version: 2.2.0.
+This version of the README.md file refers to version: 2.3.0.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only, and it needs Java 21 or later.
 Versions 2.0 and 2.1 are built with Scala 3.3 LTS, so they can be used from any later Scala 3 version;
@@ -118,16 +120,19 @@ For Scala 2.13 (or Java 17), and for the spark module, use the 1.x line (the lat
 its README is at the [V1.7.2 tag](https://github.com/rchillyard/TableParser/blob/V1.7.2/README.md),
 and its Scaladoc is at <https://rchillyard.github.io/TableParser/1.7.2/api/>.
 
-Add the modules you need to your _build.sbt_ (most programs need only _core_):
+Add the modules you need to your _build.sbt_ (most programs need only _core_),
+where `x.y.z` is the latest version on Maven Central: it's shown on the [Sonatype Central](https://central.sonatype.com/artifact/com.phasmidsoftware/tableparser-core_3) badge at the top of this page.
 
 ```scala
 libraryDependencies ++= Seq(
-    "com.phasmidsoftware" %% "tableparser-core" % "2.2.0"
-  , "com.phasmidsoftware" %% "tableparser-cats" % "2.2.0"    // cats-effect IO support, and streaming with fs2
-  , "com.phasmidsoftware" %% "tableparser-zio" % "2.2.0"     // ZIO support, and streaming with ZStream
-  , "com.phasmidsoftware" %% "tableparser-crypto" % "2.2.0"  // encryption
-  , "com.phasmidsoftware" %% "tableparser-json" % "2.2.0"    // JSON (circe)
-  , "com.phasmidsoftware" %% "tableparser-parquet" % "2.2.0" // Parquet files
+    "com.phasmidsoftware" %% "tableparser-core" % "x.y.z"
+  , "com.phasmidsoftware" %% "tableparser-cats" % "x.y.z"       // cats-effect IO support, and streaming with fs2
+  , "com.phasmidsoftware" %% "tableparser-zio" % "x.y.z"        // ZIO support, and streaming with ZStream
+  , "com.phasmidsoftware" %% "tableparser-crypto" % "x.y.z"     // encryption
+  , "com.phasmidsoftware" %% "tableparser-json" % "x.y.z"       // JSON (circe)
+  , "com.phasmidsoftware" %% "tableparser-parquet" % "x.y.z"    // Parquet files
+  , "com.phasmidsoftware" %% "tableparser-kafka-cats" % "x.y.z" // sending rows to Kafka, with fs2-kafka
+  , "com.phasmidsoftware" %% "tableparser-kafka-zio" % "x.y.z"  // sending rows to Kafka, with zio-kafka
 )
 ```
 
@@ -585,6 +590,42 @@ _ZIOTable.csvLines_ is a _ZPipeline_ and _ZIOTable.writeCSVFile_ a _ZSink_:
     movies.run(ZIOTable.writeCSVFile[Movie](Paths.get("movies.csv")))
 
 These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
+
+## Sending rows to Kafka
+
+The _kafka-cats_ and _kafka-zio_ modules send a stream of rows to an [Apache Kafka](https://kafka.apache.org) topic,
+one message for each row, using [fs2-kafka](https://fd4s.github.io/fs2-kafka/) and [zio-kafka](https://zio.dev/zio-kafka/) respectively.
+By default, the value of each message is the row as one line of CSV (with no line ending),
+and the column names (also as a line of CSV) are in the message's record header _tableparser.columns_.
+So each message describes itself, as with Spark's Kafka sink and Kafka Connect:
+a consumer may start at any offset, and needs nothing else to read a message.
+With fs2:
+
+    import com.phasmidsoftware.tableparser.kafka.cats.IOKafka
+    import fs2.kafka.ProducerSettings
+
+    val settings = ProducerSettings[IO, String, String].withBootstrapServers("localhost:9092")
+    val sent: IO[Unit] = movies.through(IOKafka.toKafka("movies", settings)(_.title)).compile.drain
+
+The function after the settings gives the key of each row's message. For messages without a key (Kafka then chooses the partition),
+use _Unit_ as the key type, with _\_ => ()_. The producer is made when the stream starts and closed when it ends;
+the pipe emits each batch's _ProducerResult_ once Kafka has acknowledged it.
+To send each row in some other form, such as JSON, use _toKafkaWith_, which takes a function to render a row,
+and adds no header: for example, with circe, _IOKafka.toKafkaWith("movies", settings)(\_.title, \_.asJson.noSpaces)_.
+To send the rows of a _Table_, start with _Stream.emits(table.content.toSeq)_.
+
+With ZIO, _ZIOKafka.toKafka_ and _ZIOKafka.toKafkaWith_ are _ZPipeline_s, which need a zio-kafka _Producer_ in the environment,
+and take the key's _Serializer_ (for example, _Serde.string_, or _ZIOKafka.unitSerializer_ for no key):
+
+    import com.phasmidsoftware.tableparser.kafka.zio.ZIOKafka
+    import zio.kafka.producer.{Producer, ProducerSettings}
+    import zio.kafka.serde.Serde
+
+    val producer = ZLayer.scoped(Producer.make(ProducerSettings(List("localhost:9092"))))
+    val sent: Task[Unit] = movies.via(ZIOKafka.toKafka("movies", Serde.string)(_.title)).runDrain.provideLayer(producer)
+
+In both modules, _csvRecords_ and _records_ make the Kafka records without sending them, and _produce_ sends records.
+The producer's settings (batching, compression, acknowledgements and so on) are those of fs2-kafka or zio-kafka.
 
 ## Selecting rows, columns and cells (RFC 7111)
 
@@ -1224,6 +1265,12 @@ In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces 
 | Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
 
 # Release Notes
+
+V2.2.0 -> V2.3.0
+* New modules _tableparser-kafka-cats_ (fs2-kafka 4.1) and _tableparser-kafka-zio_ (zio-kafka 3.8),
+  which send rows to Kafka, one message for each row: see [Sending rows to Kafka](#sending-rows-to-kafka) (issue #105).
+* New method _CsvGenerator.header_, for the header line of a CSV file (used by _csvLines_ and by the Kafka modules).
+* The build fails on any compiler warning (_-Werror_).
 
 V2.1.0 -> V2.2.0
 * Built with Scala 3.9.0 (the current LTS), so it needs Scala 3.9 or later (for Scala 3.3, use 2.1.0).

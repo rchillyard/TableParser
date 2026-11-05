@@ -62,6 +62,17 @@ object CsvGenerator extends CsvGenerators:
   given generatorStringList: CsvGenerator[StringList] = sequenceGenerator[String]
 
   /**
+   * Method to get the header line of a CSV file whose rows are of type T: all the column names, delimited.
+   *
+   * @param generator implicit CsvGenerator[T].
+   * @tparam T the row type.
+   * @return the column names as one String (without a line ending).
+   */
+  def header[T](using generator: CsvGenerator[T]): String = generator match
+    case g: CsvProductGenerator[?] => g.toColumnNames(None, None)
+    case g => g.toColumnName(None, "")
+
+  /**
    * Method to derive a CsvGenerator (the column names) for a case class T, so that `case class T(...) derives CsvGenerator` works.
    * This replaces the generator1 ... generator19 methods of 1.x, and has no limit on the number of fields.
    *
