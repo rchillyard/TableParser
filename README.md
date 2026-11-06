@@ -1382,6 +1382,10 @@ V2.3.0 -> V2.4.0
   (whose default can't apply a raw predicate); _doParseRows_ now takes a function giving _Try\[Option\[Row]]_.
 * Bug fix (#111): each setter of _PlainTextHeadedStringTableParser_ dropped settings made by the others
   (for example, _setMultiline(true).setPredicate(p)_ was no longer multiline, and _setRowParser_ lost the header).
+* Bug fix (#112): the setters of _EncryptedHeadedStringTableParser_ (_setPredicate_, _setForgiving_, _setMultiline_,
+  _setPlaintextPredicate_, _setRowParser_ and the new _setRawPredicate_) gave its plaintext parser, which doesn't decrypt.
+  Each now gives an _EncryptedHeadedStringTableParser_, whose plaintext parser has the new setting
+  (it has a new, optional, last parameter for that parser: _maybePhase2Parser_).
 * Top-N: _topN_ and _bottomN_, the n greatest (or least) rows by an _Ordering_, holding only n rows at a time,
   as pipes for streams (_IOTable_, _ZIOTable_) and as methods of _Table_; see [Streaming](#streaming).
   They use the new _TopN_ (in _core_'s _util_), an immutable bounded binary heap.
