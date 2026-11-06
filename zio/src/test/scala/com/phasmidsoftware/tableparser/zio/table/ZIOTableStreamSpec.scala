@@ -79,6 +79,17 @@ class ZIOTableStreamSpec extends AnyFlatSpec with should.Matchers:
     Files.readString(file.toPath) shouldBe "x,y\r\n1,2\r\n3,4\r\n5,6\r\n"
     run(ZIOTable.streamFile(PointTableParser)(file.toPath)) shouldBe points
 
+  it should "emit the greatest and least rows of a stream" in:
+    given Ordering[Point] = Ordering.by(_.y)
+    run(ZStream.fromIterable(points).via(ZIOTable.topN[Point](2))) shouldBe List(Point(5, 6), Point(3, 4))
+    run(ZStream.fromIterable(points).via(ZIOTable.bottomN[Point](2))) shouldBe List(Point(1, 2), Point(3, 4))
+    run(ZStream.empty.via(ZIOTable.topN[Point](2))) shouldBe Nil
+
+  it should "emit the greatest rows of a stream which is parsed as it goes" in:
+    given Ordering[Point] = Ordering.by(_.y)
+    val lines = "x,y" #:: LazyList.range(1, 100001).map(i => s"$i,${i % 1000}")
+    run(ZIOTable.streamLines(PointTableParser)(lines).via(ZIOTable.topN[Point](3))).map(_.y) shouldBe List(999, 999, 999)
+
 object ZIOTableStreamSpec:
   case class Point(x: Int, y: Int) derives CsvProduct
 

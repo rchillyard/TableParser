@@ -7,7 +7,7 @@ package com.phasmidsoftware.tableparser.core.table
 import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
-import com.phasmidsoftware.tableparser.core.util.TryUsing
+import com.phasmidsoftware.tableparser.core.util.{TopN, TryUsing}
 import java.io.{File, InputStream}
 import java.net.{URI, URL}
 import java.nio.file.{Path, Paths}
@@ -217,6 +217,30 @@ trait Table[Row] extends Iterable[Row]:
    */
   def sort[S >: Row : Ordering]: Table[S] =
     unit[S](content.sorted[S], maybeHeader)
+
+  /**
+   * Method to get the n greatest rows of this Table (by an Ordering), greatest first.
+   * Unlike sort, it needs only O(n) more memory, and takes O(size * log n) time.
+   * Rows which are equal (by the Ordering) are not kept in any particular order.
+   *
+   * @param n the number of rows (not negative).
+   * @tparam S the underlying type of the resulting Table (a super-type of Row and for which there is evidence of Ordering[S]).
+   * @return a Table[S] of at most n rows.
+   */
+  def topN[S >: Row : Ordering](n: Int): Table[S] =
+    unit[S](content.foldLeft(TopN.greatest[S](n))(_ :+ _).toSeq, maybeHeader)
+
+  /**
+   * Method to get the n least rows of this Table (by an Ordering), least first.
+   * Unlike sort, it needs only O(n) more memory, and takes O(size * log n) time.
+   * Rows which are equal (by the Ordering) are not kept in any particular order.
+   *
+   * @param n the number of rows (not negative).
+   * @tparam S the underlying type of the resulting Table (a super-type of Row and for which there is evidence of Ordering[S]).
+   * @return a Table[S] of at most n rows.
+   */
+  def bottomN[S >: Row : Ordering](n: Int): Table[S] =
+    unit[S](content.foldLeft(TopN.least[S](n))(_ :+ _).toSeq, maybeHeader)
 
   /**
    * Method to shuffle this Table[Row].

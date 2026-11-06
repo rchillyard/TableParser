@@ -12,6 +12,7 @@ import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
+import com.phasmidsoftware.tableparser.core.util.TopN
 import java.io.{File, FileWriter, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -426,6 +427,32 @@ object IOTable:
    */
   def writeCSVFile[X](path: java.nio.file.Path)(using renderer: CsvRenderer[X], generator: CsvGenerator[X], csvAttributes: CsvAttributes): Pipe[IO, X, Nothing] =
     _.through(csvLines[X]).map(_ + csvAttributes.newline).through(text.utf8.encode).through(Files[IO].writeAll(fs2.io.file.Path.fromNioPath(path)))
+
+  /**
+   * A Pipe which emits the n greatest rows (by an Ordering) of a stream, greatest first, once the stream has ended.
+   * It holds at most n rows at a time (in a binary heap: see TopN), so the stream may be far too big for memory.
+   * Rows which are equal (by the Ordering) are not emitted in any particular order.
+   *
+   * @param n        the number of rows (not negative).
+   * @param ordering implicit Ordering[X] (for example, Ordering.by(_.score)).
+   * @tparam X the row type.
+   * @return a Pipe[IO, X, X].
+   */
+  def topN[X](n: Int)(using ordering: Ordering[X]): Pipe[IO, X, X] =
+    _.fold(TopN.greatest[X](n))(_ :+ _).flatMap(t => Stream.emits(t.toSeq))
+
+  /**
+   * A Pipe which emits the n least rows (by an Ordering) of a stream, least first, once the stream has ended.
+   * It holds at most n rows at a time (in a binary heap: see TopN), so the stream may be far too big for memory.
+   * Rows which are equal (by the Ordering) are not emitted in any particular order.
+   *
+   * @param n        the number of rows (not negative).
+   * @param ordering implicit Ordering[X] (for example, Ordering.by(_.score)).
+   * @tparam X the row type.
+   * @return a Pipe[IO, X, X].
+   */
+  def bottomN[X](n: Int)(using ordering: Ordering[X]): Pipe[IO, X, X] =
+    _.fold(TopN.least[X](n))(_ :+ _).flatMap(t => Stream.emits(t.toSeq))
 
   // The number of rows parsed at a time, on the blocking pool, by a stream.
   private val chunkSize = 256

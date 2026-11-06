@@ -8,6 +8,7 @@ import com.phasmidsoftware.tableparser.core.parse.TableParser.includeAll
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.render._
 import com.phasmidsoftware.tableparser.core.table._
+import com.phasmidsoftware.tableparser.core.util.TopN
 import java.io.{File, FileWriter, InputStream}
 import java.net.{URI, URL}
 import scala.io.{Codec, Source}
@@ -413,6 +414,32 @@ object ZIOTable:
    */
   def csvLines[X](using renderer: CsvRenderer[X], generator: CsvGenerator[X]): ZPipeline[Any, Nothing, X, String] =
     ZPipeline.map[X, String](x => renderer.render(x, Map())) >>> ZPipeline.prepend(Chunk.single(CsvGenerator.header[X]))
+
+  /**
+   * A ZPipeline which emits the n greatest rows (by an Ordering) of a stream, greatest first, once the stream has ended.
+   * It holds at most n rows at a time (in a binary heap: see TopN), so the stream may be far too big for memory.
+   * Rows which are equal (by the Ordering) are not emitted in any particular order.
+   *
+   * @param n        the number of rows (not negative).
+   * @param ordering implicit Ordering[X] (for example, Ordering.by(_.score)).
+   * @tparam X the row type.
+   * @return a ZPipeline[Any, Nothing, X, X].
+   */
+  def topN[X](n: Int)(using ordering: Ordering[X]): ZPipeline[Any, Nothing, X, X] =
+    ZPipeline.fromFunction[Any, Nothing, X, X](xs => ZStream.fromIterableZIO(xs.runFold(TopN.greatest[X](n))(_ :+ _).map(_.toSeq)))
+
+  /**
+   * A ZPipeline which emits the n least rows (by an Ordering) of a stream, least first, once the stream has ended.
+   * It holds at most n rows at a time (in a binary heap: see TopN), so the stream may be far too big for memory.
+   * Rows which are equal (by the Ordering) are not emitted in any particular order.
+   *
+   * @param n        the number of rows (not negative).
+   * @param ordering implicit Ordering[X] (for example, Ordering.by(_.score)).
+   * @tparam X the row type.
+   * @return a ZPipeline[Any, Nothing, X, X].
+   */
+  def bottomN[X](n: Int)(using ordering: Ordering[X]): ZPipeline[Any, Nothing, X, X] =
+    ZPipeline.fromFunction[Any, Nothing, X, X](xs => ZStream.fromIterableZIO(xs.runFold(TopN.least[X](n))(_ :+ _).map(_.toSeq)))
 
   /**
    * A ZSink which writes rows to a CSV file, as they come: the header first, then one line for each row,

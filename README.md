@@ -111,7 +111,7 @@ The _spark_ module (for use with Apache Spark) is on the 1.x line only, because 
 
 ## Installation
 
-This version of the README.md file refers to version: 2.3.0.
+This version of the README.md file refers to version: 2.4.0.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only, and it needs Java 21 or later.
 Versions 2.0 and 2.1 are built with Scala 3.3 LTS, so they can be used from any later Scala 3 version;
@@ -509,6 +509,8 @@ To write a table encrypted, see _TableCrypt.writeCSVFileEncrypted_ in the _crypt
 * def processRows\[S](f: Iterable\[Row] => Iterable\[S]): Table\[S]
 * def processRows\[R, S](f: (Iterable\[Row], Iterable\[R]) => Iterable\[S])(other: Table\[R]): Table\[S]
 * def sort\[S >: Row : Ordering]: Table\[S]
+* def topN\[S >: Row : Ordering](n: Int): Table\[S] (the n greatest rows, greatest first)
+* def bottomN\[S >: Row : Ordering](n: Int): Table\[S] (the n least rows, least first)
 * def select(range: Range): Table\[Row]
 * def select(n: Int): Table\[Row]
 * def drop(n: Int): Table\[Row]
@@ -590,6 +592,18 @@ _ZIOTable.csvLines_ is a _ZPipeline_ and _ZIOTable.writeCSVFile_ a _ZSink_:
     movies.run(ZIOTable.writeCSVFile[Movie](Paths.get("movies.csv")))
 
 These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
+
+The rows can be filtered, mapped, folded and so on as they come, with the usual fs2 or ZIO methods.
+Sorting a stream needs every row at once, but finding the best few doesn't: the pipes _topN_ and _bottomN_
+(in both _IOTable_ and _ZIOTable_) emit the n greatest (or least) rows, by an _Ordering_, once the stream has ended,
+and hold only n rows at a time, in a binary heap. For example, the ten best-rated movies of a file of any size:
+
+    given Ordering[Movie] = Ordering.by(_.reviews.imdbScore)
+    val best: IO[List[Movie]] = movies.through(IOTable.topN[Movie](10)).compile.toList
+
+The heap is _TopN_ (in _core_'s _util_ package), an immutable accumulator built on the _PrioQueue_ of
+[Visitor](https://github.com/rchillyard/Visitor); _Table_ has _topN_ and _bottomN_ methods too.
+Rows which are equal by the _Ordering_ come in no particular order.
 
 ## Sending rows to Kafka
 
@@ -1265,6 +1279,13 @@ In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces 
 | Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
 
 # Release Notes
+
+V2.3.0 -> V2.4.0
+* Top-N: _topN_ and _bottomN_, the n greatest (or least) rows by an _Ordering_, holding only n rows at a time,
+  as pipes for streams (_IOTable_, _ZIOTable_) and as methods of _Table_; see [Streaming](#streaming).
+  They use the new _TopN_ (in _core_'s _util_), an immutable bounded binary heap.
+* _core_ now depends on [Visitor](https://github.com/rchillyard/Visitor) 1.7.0, for its _PrioQueue_
+  (without Visitor's _logback-classic_: as before, you choose the SLF4J backend).
 
 V2.2.0 -> V2.3.0
 * New modules _tableparser-kafka-cats_ (fs2-kafka 4.1) and _tableparser-kafka-zio_ (zio-kafka 3.8),

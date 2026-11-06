@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "2.3.0"
+ThisBuild / version := "2.4.0"
 
 // 2.x is Scala 3 only (for Scala 2.13, use the 1.x line, on the 1.x branch).
 // The current Scala 3 LTS. Code built with 3.9 can only be used from Scala 3.9 or later.
@@ -48,6 +48,7 @@ val parquetVersion = "1.18.1"
 val hadoopVersion = "3.4.3"
 val circeVersion = "0.14.17"
 val fs2Version = "3.14.0"
+val visitorVersion = "1.7.0"
 val fs2KafkaVersion = "4.1.3"
 val zioKafkaVersion = "3.8.1"
 val embeddedKafkaVersion = "4.4.0"
@@ -59,6 +60,8 @@ lazy val core = project.settings(
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
     "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
+    // Visitor's PrioQueue (a binary heap) is used by TopN. Visitor's runtime logback is excluded: users choose their own SLF4J backend.
+    "com.phasmidsoftware" %% "visitor" % visitorVersion exclude("ch.qos.logback", "logback-classic"),
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
