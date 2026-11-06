@@ -4,10 +4,10 @@
 
 package com.phasmidsoftware.tableparser.core.parse
 
-import com.phasmidsoftware.tableparser.core.table.{Header, Row}
+import com.phasmidsoftware.tableparser.core.table.{Header, RawRow, Row}
 import com.phasmidsoftware.tableparser.core.util.FP
 import scala.annotation.implicitNotFound
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * Trait to describe a parser which will yield a Try[Row] from a String representing a row of a table.
@@ -39,6 +39,24 @@ trait RowParser[Row, Input]:
   def parseIndexed(header: Header)(indexedRow: (Input, Int)): Try[Row]
 
   /**
+   * Method to parse an indexed row, using the given header, unless it fails a raw predicate:
+   * the predicate is applied to the row's cells (as Strings) before they are converted, so a row which fails it
+   * costs only the splitting of its cells.
+   *
+   * This default can't apply a raw predicate (it doesn't know how to split the input into cells),
+   * so, given one, it fails rather than ignore it. StandardRowParser and StandardStringsParser can apply one.
+   *
+   * @param header            the header which defines the schema or metadata for parsing the row.
+   * @param maybeRawPredicate an optional predicate on the row's raw cells (None: parse every row).
+   * @param indexedRow        a tuple containing the input row (of type Input) and its index (of type Int).
+   * @return a Try of Some(row) if the row was parsed, or None if it failed the raw predicate.
+   */
+  def parseIndexedIf(header: Header, maybeRawPredicate: Option[RawRow => Boolean])(indexedRow: (Input, Int)): Try[Option[Row]] =
+    maybeRawPredicate match
+      case None => parseIndexed(header)(indexedRow) map (Some(_))
+      case Some(_) => Failure(ParserException(s"this RowParser (${getClass.getName}) can't apply a raw predicate"))
+
+  /**
    * Parse the Input, resulting in a Try[Header]
    *
    * CONSIDER making this share the same signature as parse but for different Row type.
@@ -47,6 +65,20 @@ trait RowParser[Row, Input]:
    * @return a Try[Header]
    */
   def parseHeader(xs: Seq[Input]): Try[Header]
+
+object RowParser:
+  /**
+   * Method to convert a row's cells (by evaluating conversion) only if they satisfy the raw predicate (if there is one).
+   *
+   * @param maybeRawPredicate an optional predicate on the row's raw cells.
+   * @param header            the header.
+   * @param ws                the row's cells.
+   * @param conversion        the conversion of the cells to a row (evaluated only if wanted).
+   * @tparam Row the row type.
+   * @return a Try of Some(row), or Success(None) if the cells failed the raw predicate.
+   */
+  private[parse] def convertIf[Row](maybeRawPredicate: Option[RawRow => Boolean], header: Header, ws: Strings)(conversion: => Try[Row]): Try[Option[Row]] =
+    if (maybeRawPredicate.forall(p => p(RawRow(ws, header)))) conversion map (Some(_)) else Success(None)
 
 /**
  * A RowParser whose input type is String.
@@ -80,6 +112,21 @@ case class StandardRowParser[Row: CellParser](parser: LineParser) extends String
       ws <- parser.parseRow(indexedString)
       r <- doConversion(indexedString, header, ws)
     } yield r
+
+  /**
+   * Parses a given indexed string (as parseIndexed does) unless its cells fail the raw predicate,
+   * which is applied after the line has been split into cells, but before they are converted.
+   *
+   * @param header            the header object providing column information for the row.
+   * @param maybeRawPredicate an optional predicate on the row's raw cells (None: parse every row).
+   * @param indexedString     a tuple containing the string representation of the line and its index in the file.
+   * @return a Try of Some(row) if the row was parsed, or None if it failed the raw predicate.
+   */
+  override def parseIndexedIf(header: Header, maybeRawPredicate: Option[RawRow => Boolean])(indexedString: (String, Int)): Try[Option[Row]] =
+    for {
+      ws <- parser.parseRow(indexedString)
+      ro <- RowParser.convertIf(maybeRawPredicate, header, ws)(doConversion(indexedString, header, ws))
+    } yield ro
 
   /**
    * Parses the given input using the provided header and produces a result wrapped in a Try.
@@ -133,6 +180,18 @@ case class StandardStringsParser[Row: CellParser]() extends StringsParser[Row]:
    */
   def parseIndexed(header: Header)(indexedString: (Strings, Int)): Try[Row] =
     RowValues(Row(indexedString._1, header, indexedString._2)).convertTo[Row]
+
+  /**
+   * Parses a given indexed sequence of Strings (as parseIndexed does) unless they fail the raw predicate,
+   * which is applied before they are converted.
+   *
+   * @param header            the table Header object providing metadata about the row's structure (e.g., column names).
+   * @param maybeRawPredicate an optional predicate on the row's raw cells (None: parse every row).
+   * @param indexedString     a tuple of the row's Strings and its index in the table.
+   * @return a Try of Some(row) if the row was parsed, or None if it failed the raw predicate.
+   */
+  override def parseIndexedIf(header: Header, maybeRawPredicate: Option[RawRow => Boolean])(indexedString: (Strings, Int)): Try[Option[Row]] =
+    RowParser.convertIf(maybeRawPredicate, header, indexedString._1)(parseIndexed(header)(indexedString))
 
   /**
    * Parses the given input using the provided header and produces a result wrapped in a Try.

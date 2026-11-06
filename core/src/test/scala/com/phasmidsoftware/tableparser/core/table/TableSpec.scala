@@ -506,6 +506,19 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
         row1.size shouldBe 1
         row1.head shouldBe IntPair(1, 3)
 
+  behavior of "topN and bottomN"
+
+  it should "get the greatest and least rows of a Table, keeping its header" in:
+    import IntPair._
+    matchTry(Table.parse(Seq("1 2", "42 99", "1 3", "7 0"))):
+      case mt: Table[IntPair] =>
+        given Ordering[IntPair] = Ordering.by(p => (p.a, p.b))
+        mt.topN(2).toSeq shouldBe Seq(IntPair(42, 99), IntPair(7, 0))
+        mt.bottomN(2).toSeq shouldBe Seq(IntPair(1, 2), IntPair(1, 3))
+        mt.topN(10).toSeq shouldBe mt.sort.toSeq.reverse
+        mt.topN(0).size shouldBe 0
+        mt.topN(2).maybeHeader shouldBe mt.maybeHeader
+
   behavior of "select"
 
   it should "select from a Table" in:

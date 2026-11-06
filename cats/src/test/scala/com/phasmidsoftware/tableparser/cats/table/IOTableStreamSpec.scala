@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.tableparser.core.parse.{CellParser, CellParsers, HeadedCSVTableParser, RawTableParser, StandardRowParser, StringParser, TableParser}
 import com.phasmidsoftware.tableparser.core.render.CsvProduct
-import com.phasmidsoftware.tableparser.core.table.Header
+import com.phasmidsoftware.tableparser.core.table.{Header, RawRow}
 import fs2.Stream
 import java.io.{ByteArrayInputStream, File}
 import java.nio.charset.StandardCharsets
@@ -43,6 +43,10 @@ class IOTableStreamSpec extends AnyFlatSpec with should.Matchers:
     run(IOTable.streamLines(PointTableParser)(lines).take(1)) shouldBe List(Point(1, 2))
     run(IOTable.streamLines(ForgivingPointTableParser)(lines)) shouldBe List(Point(1, 2), Point(4, 5))
 
+  it should "leave out rows with the parser's raw predicate, before they are parsed" in:
+    val lines = Seq("x,y", "1,2", "oops,3", "4,5")
+    run(IOTable.streamLines(RawFilteredPointTableParser)(lines)) shouldBe List(Point(1, 2), Point(4, 5))
+
   it should "select rows with the parser's predicate" in:
     val parser = RawTableParser.create(_.map(_.ws.head != "3").getOrElse(true), None)
     run(IOTable.streamLines(parser)(Seq("x,y", "1,2", "3,4", "5,6"))).map(_.ws) shouldBe List(Seq("1", "2"), Seq("5", "6"))
@@ -80,6 +84,17 @@ class IOTableStreamSpec extends AnyFlatSpec with should.Matchers:
     Files.readString(file.toPath) shouldBe "x,y\r\n1,2\r\n3,4\r\n5,6\r\n"
     run(IOTable.streamFile(PointTableParser)(file.toPath)) shouldBe points
 
+  it should "emit the greatest and least rows of a stream" in:
+    given Ordering[Point] = Ordering.by(_.y)
+    run(Stream.emits(points).through(IOTable.topN[Point](2))) shouldBe List(Point(5, 6), Point(3, 4))
+    run(Stream.emits(points).through(IOTable.bottomN[Point](2))) shouldBe List(Point(1, 2), Point(3, 4))
+    run(Stream.empty.covaryAll[IO, Point].through(IOTable.topN[Point](2))) shouldBe Nil
+
+  it should "emit the greatest rows of a stream which is parsed as it goes" in:
+    given Ordering[Point] = Ordering.by(_.y)
+    val lines = "x,y" #:: LazyList.range(1, 100001).map(i => s"$i,${i % 1000}")
+    run(IOTable.streamLines(PointTableParser)(lines).through(IOTable.topN[Point](3))).map(_.y) shouldBe List(999, 999, 999)
+
 object IOTableStreamSpec:
   case class Point(x: Int, y: Int) derives CsvProduct
 
@@ -89,6 +104,10 @@ object IOTableStreamSpec:
     given StringParser[Point] = StandardRowParser.create[Point]
 
   object PointTableParser extends HeadedCSVTableParser[Point]
+
+  // NOTE a parser which extends HeadedCSVTableParser sets a raw predicate by overriding maybeRawPredicate.
+  object RawFilteredPointTableParser extends HeadedCSVTableParser[Point]:
+    override protected val maybeRawPredicate: Option[RawRow => Boolean] = Some(r => r("x") != scala.util.Success("oops"))
 
   object ForgivingPointTableParser extends HeadedCSVTableParser[Point]:
     override val forgiving: Boolean = true

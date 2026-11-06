@@ -111,7 +111,7 @@ The _spark_ module (for use with Apache Spark) is on the 1.x line only, because 
 
 ## Installation
 
-This version of the README.md file refers to version: 2.3.0.
+This version of the README.md file refers to version: 2.4.0.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only, and it needs Java 21 or later.
 Versions 2.0 and 2.1 are built with Scala 3.3 LTS, so they can be used from any later Scala 3 version;
@@ -412,8 +412,8 @@ you will start with (1) and run an analysis on the columns to help you design th
 
 For the first option, you will do something like the following (see the _AnalysisSpec_ unit tests):
 
-    // Parse a quarter of the rows (chosen at random) as raw rows, and analyze them.
-    val parser = RawTableParser().setPredicate(TableParser.sampler(4))
+    // Parse a quarter of the rows (chosen at random, before they are parsed) as raw rows, and analyze them.
+    val parser = RawTableParser().setRawPredicate(TableParser.rawSampler(4))
     val analysis: Try[ColumnStatistics] =
       for (rawTable <- parser parse Try(Source.fromFile("2023-01-metropolitan-street-sample.csv"))) yield Analysis(rawTable)
 
@@ -509,6 +509,8 @@ To write a table encrypted, see _TableCrypt.writeCSVFileEncrypted_ in the _crypt
 * def processRows\[S](f: Iterable\[Row] => Iterable\[S]): Table\[S]
 * def processRows\[R, S](f: (Iterable\[Row], Iterable\[R]) => Iterable\[S])(other: Table\[R]): Table\[S]
 * def sort\[S >: Row : Ordering]: Table\[S]
+* def topN\[S >: Row : Ordering](n: Int): Table\[S] (the n greatest rows, greatest first)
+* def bottomN\[S >: Row : Ordering](n: Int): Table\[S] (the n least rows, least first)
 * def select(range: Range): Table\[Row]
 * def select(n: Int): Table\[Row]
 * def drop(n: Int): Table\[Row]
@@ -558,7 +560,9 @@ which allows for expressions such as:
 This is the recommended way to parse because it is the simplest.
 It also allows chaining of copy (or "lens") methods to configure the parser, for example:
 
-    val parser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
+    val parser = RawTableParser().setRawPredicate(TableParser.rawSampler(2)).setMultiline(true)
+
+Each of these methods keeps the settings made by the others (up to 2.3.0, some of them didn't: see the release notes).
 
 ## Streaming
 
@@ -591,6 +595,43 @@ _ZIOTable.csvLines_ is a _ZPipeline_ and _ZIOTable.writeCSVFile_ a _ZSink_:
 
 These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
 
+### Processing rows as they come
+
+A stream is an ordinary fs2 _Stream_ (or ZIO _ZStream_), so all of its methods work on the rows as they are parsed,
+and nothing is kept unless you keep it:
+
+    movies
+      .filter(_.production.country == "USA")
+      .map(m => m.copy(title = m.title.trim))
+      .evalMap(m => IO.println(m.title).as(m))   // an effect for each row
+      .through(IOTable.writeCSVFile[Movie](Paths.get("usa.csv")))
+      .compile.drain
+
+* One row at a time: _filter_, _map_, _collect_, _take_, _drop_, _zip_ and so on.
+* An effect for each row: _evalMap_ (or _parEvalMap_ to run several at once; with ZIO, _mapZIO_ and _mapZIOPar_).
+* Aggregation in constant memory: _fold_, _scan_ and _compile.count_ (with ZIO, _runFold_ and _runCount_),
+  for example, a total, or a count for each key, over a file of any size.
+* Batches: _chunkN_ or _groupWithin_ (with ZIO, _grouped_ or _groupedWithin_), for example, to write to a database.
+* Several outputs: for example, fs2's _broadcastThrough_ sends each row to several pipes (a file and Kafka, say).
+
+Rows can also be left out by the parser itself, before they reach the stream (or the _Table_).
+Its raw predicate (see [Predicates](#predicates)) is applied to each row's cells, as _Strings_, before they are converted,
+so a row which is rejected costs very little: for example, _TableParser.rawSampler(n)_ samples about one row in n
+without parsing the others. Its predicate is applied to each row after it has been parsed (so it can test typed fields).
+
+Only an operation which needs every row at once, such as sorting, needs the whole table in memory:
+for that, parse into a _Table_ (or collect a stream which has been filtered down to a manageable size).
+But finding the best few rows doesn't need every row at once: the pipes _topN_ and _bottomN_
+(in both _IOTable_ and _ZIOTable_) emit the n greatest (or least) rows, by an _Ordering_, once the stream has ended,
+and hold only n rows at a time, in a binary heap. For example, the ten best-rated movies of a file of any size:
+
+    given Ordering[Movie] = Ordering.by(_.reviews.imdbScore)
+    val best: IO[List[Movie]] = movies.through(IOTable.topN[Movie](10)).compile.toList
+
+The heap is _TopN_ (in _core_'s _util_ package), an immutable accumulator built on the _PrioQueue_ of
+[Visitor](https://github.com/rchillyard/Visitor); _Table_ has _topN_ and _bottomN_ methods too.
+Rows which are equal by the _Ordering_ come in no particular order.
+
 ## Sending rows to Kafka
 
 The _kafka-cats_ and _kafka-zio_ modules send a stream of rows to an [Apache Kafka](https://kafka.apache.org) topic,
@@ -599,6 +640,8 @@ By default, the value of each message is the row as one line of CSV (with no lin
 and the column names (also as a line of CSV) are in the message's record header _tableparser.columns_.
 So each message describes itself, as with Spark's Kafka sink and Kafka Connect:
 a consumer may start at any offset, and needs nothing else to read a message.
+(The column names couldn't usefully be sent just once, at the start: a consumer which joins later, or which reads
+only some of the topic's partitions, would never see them.)
 With fs2:
 
     import com.phasmidsoftware.tableparser.kafka.cats.IOKafka
@@ -610,9 +653,10 @@ With fs2:
 The function after the settings gives the key of each row's message. For messages without a key (Kafka then chooses the partition),
 use _Unit_ as the key type, with _\_ => ()_. The producer is made when the stream starts and closed when it ends;
 the pipe emits each batch's _ProducerResult_ once Kafka has acknowledged it.
-To send each row in some other form, such as JSON, use _toKafkaWith_, which takes a function to render a row,
-and adds no header: for example, with circe, _IOKafka.toKafkaWith("movies", settings)(\_.title, \_.asJson.noSpaces)_.
 To send the rows of a _Table_, start with _Stream.emits(table.content.toSeq)_.
+If Kafka refuses a message, the stream fails (with Kafka's exception), as it would if a row couldn't be parsed.
+
+### With ZIO
 
 With ZIO, _ZIOKafka.toKafka_ and _ZIOKafka.toKafkaWith_ are _ZPipeline_s, which need a zio-kafka _Producer_ in the environment,
 and take the key's _Serializer_ (for example, _Serde.string_, or _ZIOKafka.unitSerializer_ for no key):
@@ -625,7 +669,44 @@ and take the key's _Serializer_ (for example, _Serde.string_, or _ZIOKafka.unitS
     val sent: Task[Unit] = movies.via(ZIOKafka.toKafka("movies", Serde.string)(_.title)).runDrain.provideLayer(producer)
 
 In both modules, _csvRecords_ and _records_ make the Kafka records without sending them, and _produce_ sends records.
+The record header's name is _IOKafka.columnsHeader_ (or _ZIOKafka.columnsHeader_): "tableparser.columns".
 The producer's settings (batching, compression, acknowledgements and so on) are those of fs2-kafka or zio-kafka.
+
+### JSON messages
+
+To send each row in some other form, such as JSON, use _toKafkaWith_, which takes a function to render a row
+as well as the key function, and adds no header (with JSON, the field names are in each message already).
+The Kafka modules don't depend on a JSON library, so you choose one. With [circe](https://circe.github.io/circe/)
+(add _circe-core_ to your build, or _tableparser-json_, which brings it), derive an _Encoder_ for the row type:
+
+    import io.circe.Encoder
+    import io.circe.syntax.*
+
+    case class Point(x: Int, y: Int) derives Encoder.AsObject
+
+    points.through(IOKafka.toKafkaWith("points", settings)(p => s"${p.x}", _.asJson.noSpaces))
+
+Each message is then a JSON object, such as {"x":1,"y":2}. (For a whole _Table_ as JSON, see _tableparser-json_,
+under [Other String Rendering](#other-string-rendering).)
+
+### Reading the messages back
+
+There is no consumer in the Kafka modules (yet), but a CSV message is easy to parse with the same parser which read
+the original file: its header and its value make a two-line CSV file. For example, with any Kafka consumer:
+
+    val header = new String(record.headers().lastHeader(IOKafka.columnsHeader).value(), StandardCharsets.UTF_8)
+    val rows: Stream[IO, Movie] = IOTable.streamLines(MovieTableParser)(Seq(header, record.value()))
+
+(or, for many messages with the same columns, _Seq(header) ++ values_). A JSON message is decoded with circe as usual.
+
+### Testing without a broker
+
+Code which uses these modules can be tested without Kafka, as the modules' own tests are, with the Kafka client's
+_MockProducer_, which records what it is sent. With fs2, give a _MkProducer\[IO]_ which returns it;
+with ZIO, make the _Producer_ with _Producer.fromJavaProducer(mock, ProducerSettings())_.
+See _IOKafkaSpec_ and _ZIOKafkaSpec_ for examples.
+(The integration tests, _IOKafkaBrokerSpec_ and _ZIOKafkaBrokerSpec_, which start a broker,
+run with _sbt integration/test_.)
 
 ## Selecting rows, columns and cells (RFC 7111)
 
@@ -637,7 +718,9 @@ row of data), and "*" means the last row or column.
 A fragment identifier with a syntax error is ignored; so is a specification which selects backwards (`5-4`) or beyond the table.
 
 _Table.parse_ of a URI with a fragment which selects rows parses only those rows
-(as do _IOTable.streamURI_ and _ZIOTable.streamURI_, which read no further than they need to):
+(as do _IOTable.streamURI_ and _ZIOTable.streamURI_, which read no further than they need to).
+The other rows are never parsed (from 2.4.0), unless the parser is multiline, where whether a line ends a row
+can depend on parsing it. A selection numbers the rows as the input does, before any predicate leaves any out:
 
     val berkeley: Try[Table[Reading]] = Table.parse[Table[Reading]](URI.create("file:///data/weather.csv#row=5-7"))
 
@@ -659,6 +742,7 @@ _TableParser_ is defined thus:
       val headerRowsToRead: Int = 1
       protected val maybeHeader: Option[Header] = None
       protected val multiline: Boolean = false
+      protected val maybeRawPredicate: Option[RawRow => Boolean] = None
       def parse(xs: Iterator[Input], n: Int = headerRowsToRead): Try[Table]
 
     trait TableBuilder[Table]:
@@ -687,12 +771,33 @@ _builder_ is used by the _parse_ method.
 _parse_ is the main method of _TableParser_ and takes an _Iterator\[Input]_ and yields a _Try\[Table]_.
 You can also specify the number of header rows to be read, but this defaults to _headerRowsToRead_.
 
-The _predicate_ is used to filter rows (which are the results of parsing).
-By default, all rows are included.
-_TableParser_ also provides a method (_sampler_) to create a random sampling function.
-Note, however,
-that a significant part of the time for building a table from a large file is just reading and parsing the file.
-Sampling will not reduce this portion of the time.
+### Predicates
+
+A parser can leave rows out at two stages (by default, all rows are included):
+
+* The _raw predicate_ (_setRawPredicate_, a _RawRow => Boolean_, new in 2.4.0) is applied to each row once it has been
+  split into cells (and any quoted line breaks joined), but before the cells are converted.
+  A _RawRow_ knows the header, so the predicate can test a cell by its column name: _r("country") == Success("USA")_.
+  A row which fails it is never parsed, so it costs very little (and a row which couldn't be converted doesn't fail the parse).
+* The _predicate_ (_setPredicate_, a _Try\[Row] => Boolean_) is applied to each row after it has been parsed,
+  so it can test the row's typed fields (or whether it could be parsed at all).
+
+So the order is: RFC 7111 row selection (if any, by position in the input), then the raw predicate, then parsing,
+then the predicate.
+_TableParser_ also provides two random sampling functions: _rawSampler(n)_, a raw predicate which chooses about
+one row in n before any is parsed, and _sampler(n)_, a predicate which chooses about one in n of the rows which were parsed.
+Prefer _rawSampler_: with _sampler_, every row is parsed, and most are then thrown away.
+Either way, the whole file is still read.
+
+    val parser = RawTableParser().setRawPredicate(r => r("country") == Success("USA"))
+
+A parser which extends _HeadedCSVTableParser_ (which has no setters) can override _maybeRawPredicate_ instead:
+
+    object USAMovieParser extends HeadedCSVTableParser[Movie]:
+      override protected val maybeRawPredicate: Option[RawRow => Boolean] = Some(r => r("country") == Success("USA"))
+
+The raw predicate needs a _RowParser_ which splits rows into cells, as _StandardRowParser_ and _StandardStringsParser_ do;
+a custom _RowParser_ which doesn't (and doesn't override _parseIndexedIf_) fails, rather than ignore a raw predicate.
 
 Associated with _TableParser_ is an abstract class called _TableParserHelper_,
 whose purpose is to make your coding job  easier.
@@ -1236,6 +1341,9 @@ A missing (_None_) value is written as _null_ (and a missing or _null_ value is 
 Reading JSON which is malformed, or which doesn't match the row type, gives a _Left_.
 For more examples (numbers, dates, nested case classes, and bad input), see _TableCodecsSpec.scala_ and _JsonTableRendererSpec.scala_.
 
+To write each row as JSON on its own, rather than the whole table, use the row's _Encoder_ directly
+(_row.asJson.noSpaces_): for example, to send rows to Kafka as JSON messages (see [JSON messages](#json-messages)).
+
 # Migrating from 1.x
 
 2.0.0 is for Scala 3, and makes the most of it: almost everything that was written out by hand for each case class in 1.x is now derived by the compiler.
@@ -1265,6 +1373,20 @@ In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces 
 | Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
 
 # Release Notes
+
+V2.3.0 -> V2.4.0
+* Raw predicate (#109): _setRawPredicate_ leaves rows out before they are parsed (see [Predicates](#predicates)),
+  and _TableParser.rawSampler(n)_ samples rows without parsing the others.
+  RFC 7111 row selections now parse only the selected rows (unless the parser is multiline).
+  _CopyableTableParser_ has a new abstract method, _setRawPredicate_; _RowParser_ a new method, _parseIndexedIf_
+  (whose default can't apply a raw predicate); _doParseRows_ now takes a function giving _Try\[Option\[Row]]_.
+* Bug fix (#111): each setter of _PlainTextHeadedStringTableParser_ dropped settings made by the others
+  (for example, _setMultiline(true).setPredicate(p)_ was no longer multiline, and _setRowParser_ lost the header).
+* Top-N: _topN_ and _bottomN_, the n greatest (or least) rows by an _Ordering_, holding only n rows at a time,
+  as pipes for streams (_IOTable_, _ZIOTable_) and as methods of _Table_; see [Streaming](#streaming).
+  They use the new _TopN_ (in _core_'s _util_), an immutable bounded binary heap.
+* _core_ now depends on [Visitor](https://github.com/rchillyard/Visitor) 1.7.0, for its _PrioQueue_
+  (without Visitor's _logback-classic_: as before, you choose the SLF4J backend).
 
 V2.2.0 -> V2.3.0
 * New modules _tableparser-kafka-cats_ (fs2-kafka 4.1) and _tableparser-kafka-zio_ (zio-kafka 3.8),

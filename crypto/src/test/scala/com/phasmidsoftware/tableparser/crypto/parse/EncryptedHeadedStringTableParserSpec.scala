@@ -27,7 +27,8 @@ class EncryptedHeadedStringTableParserSpec extends flatspec.AnyFlatSpec with sho
     def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
 
     val parser = EncryptedHeadedStringTableParser[Int, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
-    parser.setPredicate(TableParser.sampler(2)) shouldBe PlainTextHeadedStringTableParser[Int](None, forgiving = false, 1)
+    // NOTE up to 2.3.0, setPredicate reset headerRowsToRead to 1 (issue #111). Setters returning the plaintext parser is issue #112.
+    parser.setPredicate(TableParser.sampler(2)) shouldBe PlainTextHeadedStringTableParser[Int](None, forgiving = false, 2)
 
   it should "it should set forgiving of encrypted parser" in:
     val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")

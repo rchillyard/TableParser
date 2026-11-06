@@ -2,7 +2,7 @@ package com.phasmidsoftware.tableparser.zio.table
 
 import com.phasmidsoftware.tableparser.core.parse.{CellParser, CellParsers, HeadedCSVTableParser, RawTableParser, StandardRowParser, StringParser, TableParser}
 import com.phasmidsoftware.tableparser.core.render.CsvProduct
-import com.phasmidsoftware.tableparser.core.table.Header
+import com.phasmidsoftware.tableparser.core.table.{Header, RawRow}
 import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO
 import java.io.{ByteArrayInputStream, File}
 import java.nio.charset.StandardCharsets
@@ -42,6 +42,10 @@ class ZIOTableStreamSpec extends AnyFlatSpec with should.Matchers:
     run(ZIOTable.streamLines(PointTableParser)(lines).take(1)) shouldBe List(Point(1, 2))
     run(ZIOTable.streamLines(ForgivingPointTableParser)(lines)) shouldBe List(Point(1, 2), Point(4, 5))
 
+  it should "leave out rows with the parser's raw predicate, before they are parsed" in:
+    val lines = Seq("x,y", "1,2", "oops,3", "4,5")
+    run(ZIOTable.streamLines(RawFilteredPointTableParser)(lines)) shouldBe List(Point(1, 2), Point(4, 5))
+
   it should "select rows with the parser's predicate" in:
     val parser = RawTableParser.create(_.map(_.ws.head != "3").getOrElse(true), None)
     run(ZIOTable.streamLines(parser)(Seq("x,y", "1,2", "3,4", "5,6"))).map(_.ws) shouldBe List(Seq("1", "2"), Seq("5", "6"))
@@ -79,6 +83,17 @@ class ZIOTableStreamSpec extends AnyFlatSpec with should.Matchers:
     Files.readString(file.toPath) shouldBe "x,y\r\n1,2\r\n3,4\r\n5,6\r\n"
     run(ZIOTable.streamFile(PointTableParser)(file.toPath)) shouldBe points
 
+  it should "emit the greatest and least rows of a stream" in:
+    given Ordering[Point] = Ordering.by(_.y)
+    run(ZStream.fromIterable(points).via(ZIOTable.topN[Point](2))) shouldBe List(Point(5, 6), Point(3, 4))
+    run(ZStream.fromIterable(points).via(ZIOTable.bottomN[Point](2))) shouldBe List(Point(1, 2), Point(3, 4))
+    run(ZStream.empty.via(ZIOTable.topN[Point](2))) shouldBe Nil
+
+  it should "emit the greatest rows of a stream which is parsed as it goes" in:
+    given Ordering[Point] = Ordering.by(_.y)
+    val lines = "x,y" #:: LazyList.range(1, 100001).map(i => s"$i,${i % 1000}")
+    run(ZIOTable.streamLines(PointTableParser)(lines).via(ZIOTable.topN[Point](3))).map(_.y) shouldBe List(999, 999, 999)
+
 object ZIOTableStreamSpec:
   case class Point(x: Int, y: Int) derives CsvProduct
 
@@ -88,6 +103,10 @@ object ZIOTableStreamSpec:
     given StringParser[Point] = StandardRowParser.create[Point]
 
   object PointTableParser extends HeadedCSVTableParser[Point]
+
+  // NOTE a parser which extends HeadedCSVTableParser sets a raw predicate by overriding maybeRawPredicate.
+  object RawFilteredPointTableParser extends HeadedCSVTableParser[Point]:
+    override protected val maybeRawPredicate: Option[RawRow => Boolean] = Some(r => r("x") != scala.util.Success("oops"))
 
   object ForgivingPointTableParser extends HeadedCSVTableParser[Point]:
     override val forgiving: Boolean = true
