@@ -31,13 +31,16 @@ import scala.util.Try
  *                              Defaults to false.
  * @param headerRowsToRead      the number of header rows expected in the input file
  *                              defaults to 1.
+ * @param maybePhase2Parser     the parser of the decrypted (plaintext) rows, if it has been set up by the setters
+ *                              (setPredicate, setRawPredicate, setMultiline and so on); otherwise (by default) None,
+ *                              in which case it is a PlainTextHeadedStringTableParser with forgiving and headerRowsToRead.
  * @tparam A the cipher algorithm (for which there must be evidence of HexEncryption[A]).
  * @tparam X the underlying row type for which there must be evidence of a CellParser.
  */
-case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](encryptedRowPredicate: String => Boolean, keyFunction: String => String, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1)
+case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](encryptedRowPredicate: String => Boolean, keyFunction: String => String, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val headerRowsToRead: Int = 1, maybePhase2Parser: Option[PlainTextHeadedStringTableParser[X]] = None)
         extends HeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead):
 
-  private val phase2Parser: PlainTextHeadedStringTableParser[X] = PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead)
+  private val phase2Parser: PlainTextHeadedStringTableParser[X] = maybePhase2Parser.getOrElse(PlainTextHeadedStringTableParser(None, forgiving, headerRowsToRead))
 
   /**
    * Method to parse an encrypted table.
@@ -87,51 +90,62 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
 
   /**
    * Set the predicate for the plaintext TableParser.
+   * NOTE each of the setters gives an EncryptedHeadedStringTableParser, whose plaintext parser has the new setting.
+   * (Up to 2.3.0, they gave the plaintext parser itself, which doesn't decrypt: issue #112.)
    *
    * @param predicate a predicate which will be applied to each X (i.e. AFTER decryption).
-   * @return a TableParser of Table[X]
+   * @return an EncryptedHeadedStringTableParser.
    */
-  def setPredicate(predicate: Try[X] => Boolean): TableParser[Table[X]] = phase2Parser.setPredicate(predicate)
+  def setPredicate(predicate: Try[X] => Boolean): EncryptedHeadedStringTableParser[X, A] =
+    withPhase2Parser(phase2Parser.setPredicate(predicate))
 
   /**
-   * Set the value of forgiving for the plaintext TableParser.
+   * Set the value of forgiving (for this parser and its plaintext TableParser).
    *
    * @param b true or false. See TableParser.
-   * @return a TableParser of Table[X]
+   * @return an EncryptedHeadedStringTableParser.
    */
-  def setForgiving(b: Boolean): TableParser[Table[X]] = phase2Parser.setForgiving(b)
+  def setForgiving(b: Boolean): EncryptedHeadedStringTableParser[X, A] =
+    copy(forgiving = b, maybePhase2Parser = Some(phase2Parser.setForgiving(b)))
 
   /**
    * Set the value of multiline for the plaintext TableParser.
    *
    * @param b value of multiline for the plaintext TableParser. See TableParser.
-   * @return a TableParser of Table[X]
+   * @return an EncryptedHeadedStringTableParser.
    */
-  def setMultiline(b: Boolean): TableParser[Table[X]] = phase2Parser.setMultiline(b)
+  def setMultiline(b: Boolean): EncryptedHeadedStringTableParser[X, A] =
+    withPhase2Parser(phase2Parser.setMultiline(b))
 
   /**
-   * Set the value of predicate for the plaintext TableParser.
+   * Set the value of predicate for the plaintext TableParser (the same as setPredicate).
    *
    * @param p predicate for the plaintext TableParser.
-   * @return a TableParser of Table[X]
+   * @return an EncryptedHeadedStringTableParser.
    */
-  def setPlaintextPredicate(p: Try[X] => Boolean): TableParser[Table[X]] = phase2Parser.setPredicate(p)
+  def setPlaintextPredicate(p: Try[X] => Boolean): EncryptedHeadedStringTableParser[X, A] =
+    setPredicate(p)
 
   /**
    * Set the value of the raw predicate for the plaintext TableParser (applied to each decrypted row before it is parsed).
    *
    * @param p the raw predicate.
-   * @return a TableParser[Table[X]].
+   * @return an EncryptedHeadedStringTableParser.
    */
-  def setRawPredicate(p: RawRow => Boolean): TableParser[Table[X]] = phase2Parser.setRawPredicate(p)
+  def setRawPredicate(p: RawRow => Boolean): EncryptedHeadedStringTableParser[X, A] =
+    withPhase2Parser(phase2Parser.setRawPredicate(p))
 
   /**
    * Set the value of the row parser for the plaintext TableParser.
    *
    * @param rp the row parser for the plaintext TableParser.
-   * @return a TableParser of Table[X]
+   * @return an EncryptedHeadedStringTableParser.
    */
-  def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] = phase2Parser.setRowParser(rp)
+  def setRowParser(rp: RowParser[X, Input]): EncryptedHeadedStringTableParser[X, A] =
+    withPhase2Parser(phase2Parser.setRowParser(rp))
+
+  private def withPhase2Parser(p: PlainTextHeadedStringTableParser[X]): EncryptedHeadedStringTableParser[X, A] =
+    copy(maybePhase2Parser = Some(p))
 
   private def createPhase1Parser =
     def rawPredicate(ry: Try[RawRow]): Boolean = ry.map(r => encryptedRowPredicate(r.ws.head)).toOption.getOrElse(false)
