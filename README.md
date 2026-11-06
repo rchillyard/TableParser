@@ -593,8 +593,32 @@ _ZIOTable.csvLines_ is a _ZPipeline_ and _ZIOTable.writeCSVFile_ a _ZSink_:
 
 These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
 
-The rows can be filtered, mapped, folded and so on as they come, with the usual fs2 or ZIO methods.
-Sorting a stream needs every row at once, but finding the best few doesn't: the pipes _topN_ and _bottomN_
+### Processing rows as they come
+
+A stream is an ordinary fs2 _Stream_ (or ZIO _ZStream_), so all of its methods work on the rows as they are parsed,
+and nothing is kept unless you keep it:
+
+    movies
+      .filter(_.production.country == "USA")
+      .map(m => m.copy(title = m.title.trim))
+      .evalMap(m => IO.println(m.title).as(m))   // an effect for each row
+      .through(IOTable.writeCSVFile[Movie](Paths.get("usa.csv")))
+      .compile.drain
+
+* One row at a time: _filter_, _map_, _collect_, _take_, _drop_, _zip_ and so on.
+* An effect for each row: _evalMap_ (or _parEvalMap_ to run several at once; with ZIO, _mapZIO_ and _mapZIOPar_).
+* Aggregation in constant memory: _fold_, _scan_ and _compile.count_ (with ZIO, _runFold_ and _runCount_),
+  for example, a total, or a count for each key, over a file of any size.
+* Batches: _chunkN_ or _groupWithin_ (with ZIO, _grouped_ or _groupedWithin_), for example, to write to a database.
+* Several outputs: for example, fs2's _broadcastThrough_ sends each row to several pipes (a file and Kafka, say).
+
+Rows can also be left out by the parser itself: its predicate (a _Try\[Row] => Boolean_) is applied to each row
+as soon as it is parsed, so a row which is rejected never reaches the stream (or the _Table_).
+For example, _TableParser.sampler(n)_ keeps about one row in n, to sample a large file.
+
+Only an operation which needs every row at once, such as sorting, needs the whole table in memory:
+for that, parse into a _Table_ (or collect a stream which has been filtered down to a manageable size).
+But finding the best few rows doesn't need every row at once: the pipes _topN_ and _bottomN_
 (in both _IOTable_ and _ZIOTable_) emit the n greatest (or least) rows, by an _Ordering_, once the stream has ended,
 and hold only n rows at a time, in a binary heap. For example, the ten best-rated movies of a file of any size:
 
@@ -613,6 +637,8 @@ By default, the value of each message is the row as one line of CSV (with no lin
 and the column names (also as a line of CSV) are in the message's record header _tableparser.columns_.
 So each message describes itself, as with Spark's Kafka sink and Kafka Connect:
 a consumer may start at any offset, and needs nothing else to read a message.
+(The column names couldn't usefully be sent just once, at the start: a consumer which joins later, or which reads
+only some of the topic's partitions, would never see them.)
 With fs2:
 
     import com.phasmidsoftware.tableparser.kafka.cats.IOKafka
@@ -624,9 +650,10 @@ With fs2:
 The function after the settings gives the key of each row's message. For messages without a key (Kafka then chooses the partition),
 use _Unit_ as the key type, with _\_ => ()_. The producer is made when the stream starts and closed when it ends;
 the pipe emits each batch's _ProducerResult_ once Kafka has acknowledged it.
-To send each row in some other form, such as JSON, use _toKafkaWith_, which takes a function to render a row,
-and adds no header: for example, with circe, _IOKafka.toKafkaWith("movies", settings)(\_.title, \_.asJson.noSpaces)_.
 To send the rows of a _Table_, start with _Stream.emits(table.content.toSeq)_.
+If Kafka refuses a message, the stream fails (with Kafka's exception), as it would if a row couldn't be parsed.
+
+### With ZIO
 
 With ZIO, _ZIOKafka.toKafka_ and _ZIOKafka.toKafkaWith_ are _ZPipeline_s, which need a zio-kafka _Producer_ in the environment,
 and take the key's _Serializer_ (for example, _Serde.string_, or _ZIOKafka.unitSerializer_ for no key):
@@ -639,7 +666,44 @@ and take the key's _Serializer_ (for example, _Serde.string_, or _ZIOKafka.unitS
     val sent: Task[Unit] = movies.via(ZIOKafka.toKafka("movies", Serde.string)(_.title)).runDrain.provideLayer(producer)
 
 In both modules, _csvRecords_ and _records_ make the Kafka records without sending them, and _produce_ sends records.
+The record header's name is _IOKafka.columnsHeader_ (or _ZIOKafka.columnsHeader_): "tableparser.columns".
 The producer's settings (batching, compression, acknowledgements and so on) are those of fs2-kafka or zio-kafka.
+
+### JSON messages
+
+To send each row in some other form, such as JSON, use _toKafkaWith_, which takes a function to render a row
+as well as the key function, and adds no header (with JSON, the field names are in each message already).
+The Kafka modules don't depend on a JSON library, so you choose one. With [circe](https://circe.github.io/circe/)
+(add _circe-core_ to your build, or _tableparser-json_, which brings it), derive an _Encoder_ for the row type:
+
+    import io.circe.Encoder
+    import io.circe.syntax.*
+
+    case class Point(x: Int, y: Int) derives Encoder.AsObject
+
+    points.through(IOKafka.toKafkaWith("points", settings)(p => s"${p.x}", _.asJson.noSpaces))
+
+Each message is then a JSON object, such as {"x":1,"y":2}. (For a whole _Table_ as JSON, see _tableparser-json_,
+under [Other String Rendering](#other-string-rendering).)
+
+### Reading the messages back
+
+There is no consumer in the Kafka modules (yet), but a CSV message is easy to parse with the same parser which read
+the original file: its header and its value make a two-line CSV file. For example, with any Kafka consumer:
+
+    val header = new String(record.headers().lastHeader(IOKafka.columnsHeader).value(), StandardCharsets.UTF_8)
+    val rows: Stream[IO, Movie] = IOTable.streamLines(MovieTableParser)(Seq(header, record.value()))
+
+(or, for many messages with the same columns, _Seq(header) ++ values_). A JSON message is decoded with circe as usual.
+
+### Testing without a broker
+
+Code which uses these modules can be tested without Kafka, as the modules' own tests are, with the Kafka client's
+_MockProducer_, which records what it is sent. With fs2, give a _MkProducer\[IO]_ which returns it;
+with ZIO, make the _Producer_ with _Producer.fromJavaProducer(mock, ProducerSettings())_.
+See _IOKafkaSpec_ and _ZIOKafkaSpec_ for examples.
+(The integration tests, _IOKafkaBrokerSpec_ and _ZIOKafkaBrokerSpec_, which start a broker,
+run with _sbt integration/test_.)
 
 ## Selecting rows, columns and cells (RFC 7111)
 
@@ -1249,6 +1313,9 @@ The keys of each row are whatever its _Encoder_ writes: for a derived _Codec_, t
 A missing (_None_) value is written as _null_ (and a missing or _null_ value is read as _None_).
 Reading JSON which is malformed, or which doesn't match the row type, gives a _Left_.
 For more examples (numbers, dates, nested case classes, and bad input), see _TableCodecsSpec.scala_ and _JsonTableRendererSpec.scala_.
+
+To write each row as JSON on its own, rather than the whole table, use the row's _Encoder_ directly
+(_row.asJson.noSpaces_): for example, to send rows to Kafka as JSON messages (see [JSON messages](#json-messages)).
 
 # Migrating from 1.x
 

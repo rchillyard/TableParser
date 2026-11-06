@@ -66,6 +66,16 @@ class ZIOKafkaSpec extends AnyFlatSpec with should.Matchers:
     sent.map(r => string(r.value())) shouldBe List("""{"x":1,"y":2}""", """{"x":3,"y":4}""", """{"x":5,"y":6}""")
     sent.map(_.headers().toArray.length) shouldBe List(0, 0, 0)
 
+  behavior of "reading messages back (as in the README)"
+
+  it should "parse a CSV message with its header, using the parser which read the rows" in:
+    val mock = mockProducer()
+    send(mock)(ZStream.fromIterable(points), ZIOKafka.toKafka("points", ZIOKafka.unitSerializer)(_ => ()))
+    val sent = mock.history().asScala.toList
+    val header = string(sent.head.headers().lastHeader(ZIOKafka.columnsHeader).value())
+    val parsed = EvaluateZIO.run(ZIOTable.streamLines(PointTableParser)(Seq(header) ++ sent.map(r => string(r.value()))).runCollect)
+    parsed.map(_.toList) shouldBe Right(points)
+
   behavior of "ZIOKafka.csvRecords"
 
   it should "make a record for each row, without sending it" in:

@@ -72,6 +72,28 @@ class IOKafkaSpec extends AnyFlatSpec with should.Matchers:
     sent.map(r => string(r.value())) shouldBe List("""{"x":1,"y":2}""", """{"x":3,"y":4}""", """{"x":5,"y":6}""")
     sent.map(_.headers().toArray.length) shouldBe List(0, 0, 0)
 
+  it should "send each row as JSON, with a circe Encoder (as in the README)" in:
+    import io.circe.syntax.*
+    val mock = mockProducer()
+    given MkProducer[IO] = mkProducer(mock)
+    Stream.emits(jsonPoints).through(IOKafka.toKafkaWith("points", stringSettings)(p => s"${p.x}", _.asJson.noSpaces)).compile.drain.unsafeRunSync()
+    mock.history().asScala.toList.map(r => string(r.value())) shouldBe List("""{"x":1,"y":2}""", """{"x":3,"y":4}""")
+
+  behavior of "reading messages back (as in the README)"
+
+  it should "parse a CSV message with its header, using the parser which read the rows" in:
+    val mock = mockProducer()
+    given MkProducer[IO] = mkProducer(mock)
+    Stream.emits(points).through(IOKafka.toKafka("points", unitSettings)(_ => ())).compile.drain.unsafeRunSync()
+    val sent = mock.history().asScala.toList
+    val parsed = sent.flatMap { record =>
+      val header = string(record.headers().lastHeader(IOKafka.columnsHeader).value())
+      IOTable.streamLines(PointTableParser)(Seq(header, string(record.value()))).compile.toList.unsafeRunSync()
+    }
+    parsed shouldBe points
+    val header = string(sent.head.headers().lastHeader(IOKafka.columnsHeader).value())
+    IOTable.streamLines(PointTableParser)(Seq(header) ++ sent.map(r => string(r.value()))).compile.toList.unsafeRunSync() shouldBe points
+
   behavior of "IOKafka.csvRecords"
 
   it should "make a record for each row, without sending it" in:
@@ -90,6 +112,10 @@ object IOKafkaSpec:
   object PointTableParser extends HeadedCSVTableParser[Point]
 
   val points: List[Point] = List(Point(1, 2), Point(3, 4), Point(5, 6))
+
+  case class JsonPoint(x: Int, y: Int) derives io.circe.Encoder.AsObject
+
+  val jsonPoints: List[JsonPoint] = List(JsonPoint(1, 2), JsonPoint(3, 4))
 
   // The bootstrap servers are never contacted, as MkProducer makes a MockProducer instead.
   val stringSettings: ProducerSettings[IO, String, String] = ProducerSettings[IO, String, String].withBootstrapServers("localhost:9092")

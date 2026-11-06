@@ -139,6 +139,8 @@ lazy val kafkaCats = (project in file("kafka-cats")).dependsOn(core % "compile->
   name := "tableparser-kafka-cats",
   libraryDependencies ++= Seq(
     "org.typelevel" %% "fs2-kafka" % fs2KafkaVersion,
+    // circe is only for the test of JSON messages (the README's example): the module itself has no JSON dependency.
+    "io.circe" %% "circe-core" % circeVersion % Test,
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
