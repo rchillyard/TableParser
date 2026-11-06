@@ -412,8 +412,8 @@ you will start with (1) and run an analysis on the columns to help you design th
 
 For the first option, you will do something like the following (see the _AnalysisSpec_ unit tests):
 
-    // Parse a quarter of the rows (chosen at random) as raw rows, and analyze them.
-    val parser = RawTableParser().setPredicate(TableParser.sampler(4))
+    // Parse a quarter of the rows (chosen at random, before they are parsed) as raw rows, and analyze them.
+    val parser = RawTableParser().setRawPredicate(TableParser.rawSampler(4))
     val analysis: Try[ColumnStatistics] =
       for (rawTable <- parser parse Try(Source.fromFile("2023-01-metropolitan-street-sample.csv"))) yield Analysis(rawTable)
 
@@ -560,7 +560,9 @@ which allows for expressions such as:
 This is the recommended way to parse because it is the simplest.
 It also allows chaining of copy (or "lens") methods to configure the parser, for example:
 
-    val parser = RawTableParser().setPredicate(TableParser.sampler(2)).setMultiline(true)
+    val parser = RawTableParser().setRawPredicate(TableParser.rawSampler(2)).setMultiline(true)
+
+Each of these methods keeps the settings made by the others (up to 2.3.0, some of them didn't: see the release notes).
 
 ## Streaming
 
@@ -612,9 +614,10 @@ and nothing is kept unless you keep it:
 * Batches: _chunkN_ or _groupWithin_ (with ZIO, _grouped_ or _groupedWithin_), for example, to write to a database.
 * Several outputs: for example, fs2's _broadcastThrough_ sends each row to several pipes (a file and Kafka, say).
 
-Rows can also be left out by the parser itself: its predicate (a _Try\[Row] => Boolean_) is applied to each row
-as soon as it is parsed, so a row which is rejected never reaches the stream (or the _Table_).
-For example, _TableParser.sampler(n)_ keeps about one row in n, to sample a large file.
+Rows can also be left out by the parser itself, before they reach the stream (or the _Table_).
+Its raw predicate (see [Predicates](#predicates)) is applied to each row's cells, as _Strings_, before they are converted,
+so a row which is rejected costs very little: for example, _TableParser.rawSampler(n)_ samples about one row in n
+without parsing the others. Its predicate is applied to each row after it has been parsed (so it can test typed fields).
 
 Only an operation which needs every row at once, such as sorting, needs the whole table in memory:
 for that, parse into a _Table_ (or collect a stream which has been filtered down to a manageable size).
@@ -715,7 +718,9 @@ row of data), and "*" means the last row or column.
 A fragment identifier with a syntax error is ignored; so is a specification which selects backwards (`5-4`) or beyond the table.
 
 _Table.parse_ of a URI with a fragment which selects rows parses only those rows
-(as do _IOTable.streamURI_ and _ZIOTable.streamURI_, which read no further than they need to):
+(as do _IOTable.streamURI_ and _ZIOTable.streamURI_, which read no further than they need to).
+The other rows are never parsed (from 2.4.0), unless the parser is multiline, where whether a line ends a row
+can depend on parsing it. A selection numbers the rows as the input does, before any predicate leaves any out:
 
     val berkeley: Try[Table[Reading]] = Table.parse[Table[Reading]](URI.create("file:///data/weather.csv#row=5-7"))
 
@@ -737,6 +742,7 @@ _TableParser_ is defined thus:
       val headerRowsToRead: Int = 1
       protected val maybeHeader: Option[Header] = None
       protected val multiline: Boolean = false
+      protected val maybeRawPredicate: Option[RawRow => Boolean] = None
       def parse(xs: Iterator[Input], n: Int = headerRowsToRead): Try[Table]
 
     trait TableBuilder[Table]:
@@ -765,12 +771,33 @@ _builder_ is used by the _parse_ method.
 _parse_ is the main method of _TableParser_ and takes an _Iterator\[Input]_ and yields a _Try\[Table]_.
 You can also specify the number of header rows to be read, but this defaults to _headerRowsToRead_.
 
-The _predicate_ is used to filter rows (which are the results of parsing).
-By default, all rows are included.
-_TableParser_ also provides a method (_sampler_) to create a random sampling function.
-Note, however,
-that a significant part of the time for building a table from a large file is just reading and parsing the file.
-Sampling will not reduce this portion of the time.
+### Predicates
+
+A parser can leave rows out at two stages (by default, all rows are included):
+
+* The _raw predicate_ (_setRawPredicate_, a _RawRow => Boolean_, new in 2.4.0) is applied to each row once it has been
+  split into cells (and any quoted line breaks joined), but before the cells are converted.
+  A _RawRow_ knows the header, so the predicate can test a cell by its column name: _r("country") == Success("USA")_.
+  A row which fails it is never parsed, so it costs very little (and a row which couldn't be converted doesn't fail the parse).
+* The _predicate_ (_setPredicate_, a _Try\[Row] => Boolean_) is applied to each row after it has been parsed,
+  so it can test the row's typed fields (or whether it could be parsed at all).
+
+So the order is: RFC 7111 row selection (if any, by position in the input), then the raw predicate, then parsing,
+then the predicate.
+_TableParser_ also provides two random sampling functions: _rawSampler(n)_, a raw predicate which chooses about
+one row in n before any is parsed, and _sampler(n)_, a predicate which chooses about one in n of the rows which were parsed.
+Prefer _rawSampler_: with _sampler_, every row is parsed, and most are then thrown away.
+Either way, the whole file is still read.
+
+    val parser = RawTableParser().setRawPredicate(r => r("country") == Success("USA"))
+
+A parser which extends _HeadedCSVTableParser_ (which has no setters) can override _maybeRawPredicate_ instead:
+
+    object USAMovieParser extends HeadedCSVTableParser[Movie]:
+      override protected val maybeRawPredicate: Option[RawRow => Boolean] = Some(r => r("country") == Success("USA"))
+
+The raw predicate needs a _RowParser_ which splits rows into cells, as _StandardRowParser_ and _StandardStringsParser_ do;
+a custom _RowParser_ which doesn't (and doesn't override _parseIndexedIf_) fails, rather than ignore a raw predicate.
 
 Associated with _TableParser_ is an abstract class called _TableParserHelper_,
 whose purpose is to make your coding job  easier.
@@ -1348,6 +1375,13 @@ In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces 
 # Release Notes
 
 V2.3.0 -> V2.4.0
+* Raw predicate (#109): _setRawPredicate_ leaves rows out before they are parsed (see [Predicates](#predicates)),
+  and _TableParser.rawSampler(n)_ samples rows without parsing the others.
+  RFC 7111 row selections now parse only the selected rows (unless the parser is multiline).
+  _CopyableTableParser_ has a new abstract method, _setRawPredicate_; _RowParser_ a new method, _parseIndexedIf_
+  (whose default can't apply a raw predicate); _doParseRows_ now takes a function giving _Try\[Option\[Row]]_.
+* Bug fix (#111): each setter of _PlainTextHeadedStringTableParser_ dropped settings made by the others
+  (for example, _setMultiline(true).setPredicate(p)_ was no longer multiline, and _setRowParser_ lost the header).
 * Top-N: _topN_ and _bottomN_, the n greatest (or least) rows by an _Ordering_, holding only n rows at a time,
   as pipes for streams (_IOTable_, _ZIOTable_) and as methods of _Table_; see [Streaming](#streaming).
   They use the new _TopN_ (in _core_'s _util_), an immutable bounded binary heap.

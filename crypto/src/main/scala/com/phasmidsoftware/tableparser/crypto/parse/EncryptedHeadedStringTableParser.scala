@@ -118,6 +118,14 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
   def setPlaintextPredicate(p: Try[X] => Boolean): TableParser[Table[X]] = phase2Parser.setPredicate(p)
 
   /**
+   * Set the value of the raw predicate for the plaintext TableParser (applied to each decrypted row before it is parsed).
+   *
+   * @param p the raw predicate.
+   * @return a TableParser[Table[X]].
+   */
+  def setRawPredicate(p: RawRow => Boolean): TableParser[Table[X]] = phase2Parser.setRawPredicate(p)
+
+  /**
    * Set the value of the row parser for the plaintext TableParser.
    *
    * @param rp the row parser for the plaintext TableParser.

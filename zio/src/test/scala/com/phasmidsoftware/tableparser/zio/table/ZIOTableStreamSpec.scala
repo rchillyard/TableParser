@@ -2,7 +2,7 @@ package com.phasmidsoftware.tableparser.zio.table
 
 import com.phasmidsoftware.tableparser.core.parse.{CellParser, CellParsers, HeadedCSVTableParser, RawTableParser, StandardRowParser, StringParser, TableParser}
 import com.phasmidsoftware.tableparser.core.render.CsvProduct
-import com.phasmidsoftware.tableparser.core.table.Header
+import com.phasmidsoftware.tableparser.core.table.{Header, RawRow}
 import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO
 import java.io.{ByteArrayInputStream, File}
 import java.nio.charset.StandardCharsets
@@ -41,6 +41,10 @@ class ZIOTableStreamSpec extends AnyFlatSpec with should.Matchers:
     EvaluateZIO.run(ZIOTable.streamLines(PointTableParser)(lines).runCollect) should matchPattern { case Left(_) => }
     run(ZIOTable.streamLines(PointTableParser)(lines).take(1)) shouldBe List(Point(1, 2))
     run(ZIOTable.streamLines(ForgivingPointTableParser)(lines)) shouldBe List(Point(1, 2), Point(4, 5))
+
+  it should "leave out rows with the parser's raw predicate, before they are parsed" in:
+    val lines = Seq("x,y", "1,2", "oops,3", "4,5")
+    run(ZIOTable.streamLines(RawFilteredPointTableParser)(lines)) shouldBe List(Point(1, 2), Point(4, 5))
 
   it should "select rows with the parser's predicate" in:
     val parser = RawTableParser.create(_.map(_.ws.head != "3").getOrElse(true), None)
@@ -99,6 +103,10 @@ object ZIOTableStreamSpec:
     given StringParser[Point] = StandardRowParser.create[Point]
 
   object PointTableParser extends HeadedCSVTableParser[Point]
+
+  // NOTE a parser which extends HeadedCSVTableParser sets a raw predicate by overriding maybeRawPredicate.
+  object RawFilteredPointTableParser extends HeadedCSVTableParser[Point]:
+    override protected val maybeRawPredicate: Option[RawRow => Boolean] = Some(r => r("x") != scala.util.Success("oops"))
 
   object ForgivingPointTableParser extends HeadedCSVTableParser[Point]:
     override val forgiving: Boolean = true

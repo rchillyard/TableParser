@@ -54,6 +54,15 @@ trait TableParser[Table] extends TableBuilder[Table]:
   protected val multiline: Boolean = false
 
   /**
+   * An optional raw predicate: if defined, each row is parsed only if its raw cells (as Strings, with the header)
+   * satisfy it. It is applied after a row has been split into cells, but before they are converted
+   * (unlike predicate, which is applied to each parsed row), so a row which fails it costs little.
+   * For example, TableParser.rawSampler(n) samples about one row in n without parsing the others.
+   * A parser which extends HeadedCSVTableParser can override this.
+   */
+  protected val maybeRawPredicate: Option[RawRow => Boolean] = None
+
+  /**
    * Method to parse a table based on an iterator of Inputs.
    *
    * @param xs the sequence of Inputs, one for each row
@@ -116,6 +125,16 @@ object TableParser:
       r.nextInt(n) == 0
     case _ =>
       false
+
+  /**
+   * Method to return a random sampling function for use as a raw predicate (see CopyableTableParser.setRawPredicate):
+   * unlike sampler, it chooses rows before they are parsed, so the rows which aren't chosen are never parsed.
+   *
+   * @param n the sample factor: approximately one in every n rows will form part of the result.
+   * @return a RawRow => Boolean function which chooses every nth row (approximately).
+   */
+  def rawSampler(n: Int): RawRow => Boolean =
+    _ => r.nextInt(n) == 0
 
   /**
    * a function which always evaluates as true, regardless of the successfulness of the input.
@@ -183,6 +202,17 @@ trait CopyableTableParser[Row, Input, Table]:
   def setPredicate(predicate: Try[Row] => Boolean): TableParser[Table]
 
   /**
+   * Sets a raw predicate, which determines whether a row is to be parsed at all.
+   * It is applied to each row's raw cells (as Strings, with the header, so by column name: r("country")),
+   * after the row has been split into cells but before they are converted to a Row; a row which fails it is left out.
+   * The predicate (see setPredicate), if any, is then applied to each row which is parsed.
+   *
+   * @param rawPredicate a function of type `RawRow => Boolean` which returns `true` if the row should be parsed.
+   * @return a new instance of `TableParser[Table]` with the specified raw predicate applied.
+   */
+  def setRawPredicate(rawPredicate: RawRow => Boolean): TableParser[Table]
+
+  /**
    * Sets the row parser to be used for parsing rows in the table.
    *
    * The row parser provides the logic for converting raw input data of type `Input`
@@ -205,7 +235,7 @@ trait CopyableTableParser[Row, Input, Table]:
  * @param maybeHeader      an optional fixed header. If None, we expect to find the header defined in the first line of the file.
  * @param forgiving        forcing (defaults to true). If true then an individual malformed row will not prevent subsequent rows being parsed.
  */
-case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1)
+case class RawTableParser(override protected val predicate: Try[RawRow] => Boolean = TableParser.includeAll, override val maybeHeader: Option[Header] = None, override val forgiving: Boolean = false, override val multiline: Boolean = false, override val headerRowsToRead: Int = 1, override protected val maybeRawPredicate: Option[RawRow => Boolean] = None)
         extends StringTableParser[RawTable] with CopyableTableParser[RawRow, String, RawTable]:
 
   type Row = RawRow
@@ -231,8 +261,11 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
   def setPredicate(p: Try[Row] => Boolean): RawTableParser =
     copy(predicate = p)
 
+  def setRawPredicate(p: RawRow => Boolean): RawTableParser =
+    copy(maybeRawPredicate = Some(p))
+
   def setRowParser(rp: RowParser[Row, String]): RawTableParser =
-    new RawTableParser(predicate, maybeHeader, forgiving, multiline, headerRowsToRead):
+    new RawTableParser(predicate, maybeHeader, forgiving, multiline, headerRowsToRead, maybeRawPredicate):
       override val rowParser: RowParser[Row, String] = rp
 
 object RawTableParser:
@@ -273,22 +306,35 @@ case class PlainTextHeadedStringTableParser[X: CellParser](override val maybeHea
         extends HeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead):
 
   def setHeader(header: Header): PlainTextHeadedStringTableParser[X] =
-    copy(maybeHeader = Some(header))
+    withSettings(maybeHeader = Some(header))
 
   def setForgiving(b: Boolean): PlainTextHeadedStringTableParser[X] =
-    copy(forgiving = b)
+    withSettings(forgiving = b)
 
   def setMultiline(b: Boolean): PlainTextHeadedStringTableParser[X] =
-    new PlainTextHeadedStringTableParser[X](maybeHeader, forgiving):
-      override val multiline: Boolean = b
+    withSettings(multiline = b)
 
   def setPredicate(p: Try[X] => Boolean): PlainTextHeadedStringTableParser[X] =
-    new PlainTextHeadedStringTableParser[X](maybeHeader, forgiving):
-      override val predicate: Try[X] => Boolean = p
+    withSettings(predicate = p)
+
+  def setRawPredicate(p: RawRow => Boolean): PlainTextHeadedStringTableParser[X] =
+    withSettings(maybeRawPredicate = Some(p))
 
   def setRowParser(rp: RowParser[X, Input]): TableParser[Table[X]] =
-    new PlainTextHeadedStringTableParser[X]:
+    withSettings(rowParser = rp)
+
+  /**
+   * Method to make a parser like this one, but with the given settings changed:
+   * each setter keeps all the other settings (up to 2.3.0, setPredicate lost multiline, and so on).
+   * NOTE the defaults are read here (from this), since they are protected.
+   */
+  private def withSettings(maybeHeader: Option[Header] = maybeHeader, forgiving: Boolean = forgiving, multiline: Boolean = multiline, predicate: Try[X] => Boolean = predicate, maybeRawPredicate: Option[RawRow => Boolean] = maybeRawPredicate, rowParser: RowParser[X, String] = rowParser): PlainTextHeadedStringTableParser[X] =
+    val (m, p, rp, rpo) = (multiline, predicate, rowParser, maybeRawPredicate)
+    new PlainTextHeadedStringTableParser[X](maybeHeader, forgiving, headerRowsToRead):
+      override val multiline: Boolean = m
+      override val predicate: Try[X] => Boolean = p
       override val rowParser: RowParser[X, String] = rp
+      override protected val maybeRawPredicate: Option[RawRow => Boolean] = rpo
 
 /**
  * Abstract class to define a StringTableParser that assumes a header to be found in the input file.
@@ -391,13 +437,13 @@ abstract class AbstractTableParser[Table] extends TableParser[Table]:
    *               which defines how input elements can be combined or validated during processing.
    * @return a `Try` containing a `Table` if the parsing is successful, or an error in case of failure.
    */
-  def doParseRows(ts: Iterator[Input], header: Header, f: ((Input, Int)) => Try[Row])(using ev: Joinable[Input]): Try[Table] =
+  def doParseRows(ts: Iterator[Input], header: Header, f: ((Input, Int)) => Try[Option[Row]])(using ev: Joinable[Input]): Try[Table] =
 
-    val inputTransformer = new IndexedInputToRowsAggregator(f, multiline, forgiving, predicate)
+    val inputTransformer = new IndexedInputToRowsAggregator[Input, Option[Row]](f, multiline, forgiving, AbstractTableParser.liftPredicate(predicate))
 
     // NOTE that here, although builder takes an Iterator, all builder implementations that currently exist
     // wrap the rows into Content which forces a materialization of the rows into a list of rows.
-    for (rs <- inputTransformer.processInput(ts)) yield builder(rs, header)
+    for (rs <- inputTransformer.processInput(ts)) yield builder(rs.flatten, header)
 
 /**
  * The `AbstractTableParser` companion object provides utility methods for logging exceptions during the table parsing process.
@@ -405,6 +451,29 @@ abstract class AbstractTableParser[Table] extends TableParser[Table]:
  * This object includes methods to log exceptions, whether they are directly provided as a `Throwable` or wrapped inside a `Try` result.
  */
 object AbstractTableParser:
+  /**
+   * Method to apply a predicate to a row which may have been left out by a raw predicate (Success(None)), which it rejects.
+   *
+   * @param predicate the predicate on parsed rows.
+   * @tparam Row the row type.
+   * @return a predicate on rows which may have been left out.
+   */
+  def liftPredicate[Row](predicate: Try[Row] => Boolean): Try[Option[Row]] => Boolean =
+    case Success(Some(r)) => predicate(Success(r))
+    case Success(None) => false
+    case Failure(x) => predicate(Failure(x))
+
+  /**
+   * Method to leave out the rows which a raw predicate rejected (Success(None)).
+   *
+   * @param roys the rows, each a Try of an Option.
+   * @tparam Row the row type.
+   * @return the rows which were parsed (or failed).
+   */
+  def parsedRows[Row](roys: Iterator[Try[Option[Row]]]): Iterator[Try[Row]] = roys collect:
+    case Success(Some(r)) => Success(r)
+    case Failure(x) => Failure(x)
+
   /**
    * Logs an exception by generating a warning message that includes the localized message of the exception
    * and, if present, the message from the exception's cause.
@@ -453,16 +522,18 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table]:
    *         it contains the parsing error.
    */
   def parseRows(ws: Iterator[String], header: Header): Try[Table] =
-    doParseRows(ws, header, rowParser.parseIndexed(header))
+    doParseRows(ws, header, rowParser.parseIndexedIf(header, maybeRawPredicate))
 
   /**
    * Method to parse the input lazily, as a stream of rows rather than a Table (see, e.g., IOTable.stream).
    * The header is read now (from the first n lines, unless this parser has a fixed header);
    * each row is parsed only when it is pulled from the iterator.
-   * As in parse, the predicate selects the rows; and, if this parser is forgiving, a row which can't be parsed
-   * is logged and left out. Otherwise, it is a Failure in the iterator.
+   * As in parse, the raw predicate (if any) and the predicate select the rows; and, if this parser is forgiving,
+   * a row which can't be parsed is logged and left out. Otherwise, it is a Failure in the iterator.
    *
-   * The selection (of RFC 7111 rows: see CsvFragment) applies before the predicate, since its row numbers are those of the input.
+   * The selection (of RFC 7111 rows: see CsvFragment) applies first, since its row numbers are those of the input;
+   * then the raw predicate; then each row is parsed; then the predicate applies.
+   * Unless this parser is multiline, a row which isn't selected is never parsed.
    *
    * @param xs        the lines of the input.
    * @param n         the number of header lines (defaults to headerRowsToRead).
@@ -471,7 +542,7 @@ abstract class StringTableParser[Table] extends AbstractTableParser[Table]:
    */
   def rows(xs: Iterator[String], n: Int = headerRowsToRead, selection: RowSelection = RowSelection.all): Try[(Header, Iterator[Try[Row]])] =
     def lazyRows(h: Header, ys: Iterator[String]): (Header, Iterator[Try[Row]]) =
-      val rys = selection.select(new IndexedInputToRowsTransformer[String, Row](rowParser.parseIndexed(h), multiline).triedRows(ys), n)
+      val rys = AbstractTableParser.parsedRows(new IndexedInputToRowsTransformer[String, Option[Row]](rowParser.parseIndexedIf(h, maybeRawPredicate), multiline).triedRows(ys, selection, n))
       val checked = if (forgiving) rys filter:
         case Failure(x) =>
           AbstractTableParser.logException(x)
@@ -563,7 +634,7 @@ abstract class StringsTableParser[Table] extends AbstractTableParser[Table]:
    * @return a `Try[Table]` containing the parsed table on success or an exception on failure.
    */
   def parseRows(wss: Iterator[Strings], header: Header): Try[Table] =
-    doParseRows(wss, header, rowParser.parseIndexed(header))
+    doParseRows(wss, header, rowParser.parseIndexedIf(header, maybeRawPredicate))
 
   /**
    * Method to parse a table based on a sequence of Inputs.

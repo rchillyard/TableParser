@@ -1,6 +1,7 @@
 package com.phasmidsoftware.tableparser.core.parse
 
 import com.phasmidsoftware.tableparser.core.parse.AbstractTableParser.logException
+import com.phasmidsoftware.tableparser.core.table.RowSelection
 import com.phasmidsoftware.tableparser.core.util.FP.{partition, sequence}
 import com.phasmidsoftware.tableparser.core.util.Joinable.JoinableTInt
 import com.phasmidsoftware.tableparser.core.util.{FunctionIterator, Joinable}
@@ -132,7 +133,7 @@ trait InputPreprocessor[Input, Row]:
    * @param ev the Joinable of (Input, Int).
    * @return the inputs, with each incomplete one joined to what follows it.
    */
-  private def joinIncomplete(xs: Iterator[(Input, Int)])(using ev: Joinable[(Input, Int)]): Iterator[(Input, Int)] = new Iterator[(Input, Int)]:
+  protected def joinIncomplete(xs: Iterator[(Input, Int)])(using ev: Joinable[(Input, Int)]): Iterator[(Input, Int)] = new Iterator[(Input, Int)]:
     def hasNext: Boolean = xs.hasNext
 
     def next(): (Input, Int) =
@@ -304,3 +305,18 @@ class IndexedInputToRowsTransformer[Input: Joinable, Row](f: ((Input, Int)) => T
    */
   def triedRows(xs: Iterator[Input]): Iterator[Try[Row]] =
     mapTsToRows(xs)(multiline)(f)
+
+  /**
+   * Method to parse the selected rows of the input lazily, into rows, each a Try (as triedRows does).
+   * Unless multiline, the rows are selected before they are parsed, so a row which isn't selected is never parsed.
+   * If multiline, a row may be joined to the next if it can't be parsed, so the rows are selected after they are parsed.
+   * Either way, the rows are numbered by their positions in the input (after joining any quoted line breaks).
+   *
+   * @param xs          the input (after any header lines).
+   * @param selection   the rows to select (RFC 7111: see CsvFragment).
+   * @param headerLines the number of header lines (the first of xs is row headerLines + 1).
+   * @return an Iterator of Try[Row].
+   */
+  def triedRows(xs: Iterator[Input], selection: RowSelection, headerLines: Int): Iterator[Try[Row]] =
+    if (multiline) selection.select(triedRows(xs), headerLines)
+    else selection.select(joinIncomplete(xs.zipWithIndex), headerLines) map f
