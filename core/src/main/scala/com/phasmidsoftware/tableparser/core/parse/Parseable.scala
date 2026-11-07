@@ -7,7 +7,7 @@ package com.phasmidsoftware.tableparser.core.parse
 import java.io.File
 import java.net.{URI, URL}
 import java.nio.file.Path
-import java.time.LocalDate
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZonedDateTime}
 import scala.annotation.implicitNotFound
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
@@ -259,6 +259,43 @@ object Parseable:
   given ParseableLocalDate: ParseableLocalDate with {}
 
   /**
+   * Parser of a java.time type, from its ISO-8601 form: the form its toString gives, which is how CsvRenderer writes it,
+   * so that a table which is written can be read back (#118).
+   *
+   * @param name the name of the type (for error messages).
+   * @param f    the type's parse method, such as Instant.parse.
+   * @tparam T the java.time type.
+   */
+  abstract class ParseableJavaTime[T](name: String, f: String => T) extends Parseable[T]:
+    def parse(s: String, optModifier: Option[String]): Try[T] =
+      parseAndRecover(s)(lift(f))(w => s"Parseable$name: cannot interpret '$w' as a $name")
+
+  /**
+   * Parser of Instant, such as 2024-01-01T00:34:44Z.
+   */
+  given ParseableInstant: ParseableJavaTime[Instant]("Instant", Instant.parse) with {}
+
+  /**
+   * Parser of LocalDateTime, such as 2024-01-01T00:34:44.
+   */
+  given ParseableLocalDateTime: ParseableJavaTime[LocalDateTime]("LocalDateTime", LocalDateTime.parse) with {}
+
+  /**
+   * Parser of LocalTime, such as 00:34:44.
+   */
+  given ParseableLocalTime: ParseableJavaTime[LocalTime]("LocalTime", LocalTime.parse) with {}
+
+  /**
+   * Parser of OffsetDateTime, such as 2024-01-01T00:34:44-05:00.
+   */
+  given ParseableOffsetDateTime: ParseableJavaTime[OffsetDateTime]("OffsetDateTime", OffsetDateTime.parse) with {}
+
+  /**
+   * Parser of ZonedDateTime, such as 2024-01-01T00:34:44-05:00[America/New_York].
+   */
+  given ParseableZonedDateTime: ParseableJavaTime[ZonedDateTime]("ZonedDateTime", ZonedDateTime.parse) with {}
+
+  /**
    * Parser of URL.
    */
   trait ParseableURL extends Parseable[URL]:
@@ -417,6 +454,8 @@ abstract class ParseableOption[T: Parseable] extends Parseable[Option[T]]:
  * - `ParseableOptionBigInt`: Parses optional `BigInt`
  * - `ParseableOptionBigDecimal`: Parses optional `BigDecimal`
  * - `ParseableOptionLocalDate`: Parses optional `LocalDate`
+ * - `ParseableOptionInstant`, `ParseableOptionLocalDateTime`, `ParseableOptionLocalTime`, `ParseableOptionOffsetDateTime`
+ *   and `ParseableOptionZonedDateTime`: parse the optional java.time types
  * - `ParseableOptionURL`: Parses optional `java.net.URL`
  * - `ParseableOptionFile`: Parses optional `java.io.File`
  */
@@ -443,6 +482,16 @@ object ParseableOption:
   given ParseableOptionBigDecimal: ParseableOption[BigDecimal] with {}
 
   given ParseableOptionLocalDate: ParseableOption[LocalDate] with {}
+
+  given ParseableOptionInstant: ParseableOption[Instant] with {}
+
+  given ParseableOptionLocalDateTime: ParseableOption[LocalDateTime] with {}
+
+  given ParseableOptionLocalTime: ParseableOption[LocalTime] with {}
+
+  given ParseableOptionOffsetDateTime: ParseableOption[OffsetDateTime] with {}
+
+  given ParseableOptionZonedDateTime: ParseableOption[ZonedDateTime] with {}
 
   given ParseableOptionURL: ParseableOption[URL] with {}
 

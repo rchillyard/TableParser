@@ -111,7 +111,7 @@ The _spark_ module (for use with Apache Spark) is on the 1.x line only, because 
 
 ## Installation
 
-This version of the README.md file refers to version: 2.4.0.
+This version of the README.md file refers to version: 2.5.0.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only, and it needs Java 21 or later.
 Versions 2.0 and 2.1 are built with Scala 3.3 LTS, so they can be used from any later Scala 3 version;
@@ -194,7 +194,9 @@ Here is what happened:
   Because it is in _Pioneer_'s companion object, the compiler finds it without an import.
 * Each field is read from the column of the same name (a column whose name differs only in case will do, too).
   The order of the columns doesn't matter, and any column which no field needs is ignored.
-* Each cell is converted to the type of its field: _String_, _Int_, _Double_, _Boolean_, _LocalDate_, _URL_ etc.
+* Each cell is converted to the type of its field: _String_, _Int_, _Double_, _Boolean_, _URL_ etc.,
+  and the _java.time_ types _LocalDate_, _LocalDateTime_, _LocalTime_, _Instant_, _OffsetDateTime_ and _ZonedDateTime_
+  (in ISO-8601 form, such as 2024-01-01T00:34:44Z, which is also how they are written).
   An _Option_ field is _None_ if its cell is empty (Barbara Liskov's _died_).
 * The result is a _Try_: if the file can't be read, or a row can't be parsed (say, _born_ isn't a number), it is a _Failure_
   which tells you why.
@@ -596,6 +598,18 @@ _ZIOTable.csvLines_ is a _ZPipeline_ and _ZIOTable.writeCSVFile_ a _ZSink_:
 
 These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
 
+Without an effect library, _Table.rows_ (and _rowsFile_, _rowsResource_, _rowsURI_ and _rowsLines_) give the same rows
+as a _RowIterator_: an _Iterator\[Try\[Row]]_ (a _Failure_ for a row which can't be parsed, unless the parser is forgiving),
+which also has the _header_, and is _AutoCloseable_.
+It closes its file when it has been read to the end; use it with _scala.util.Using_ to be sure the file is closed if you stop early:
+
+    for
+      rows <- Table.rowsFile(MovieTableParser)(Paths.get("movie_metadata.csv"))
+      n <- Using(rows)(_.count(_.toOption.exists(_.production.country == "USA")))
+    yield n
+
+Parsing a whole _Table_ is still the simplest way to read a file which fits in memory.
+
 ### Processing rows as they come
 
 A stream is an ordinary fs2 _Stream_ (or ZIO _ZStream_), so all of its methods work on the rows as they are parsed,
@@ -695,13 +709,40 @@ under [Other String Rendering](#other-string-rendering).)
 
 ### Reading the messages back
 
-There is no consumer in the Kafka modules (yet), but a CSV message is easy to parse with the same parser which read
-the original file: its header and its value make a two-line CSV file. For example, with any Kafka consumer:
+_fromKafka_ reads a topic back as a stream of rows: each message's value is parsed with the column names in its
+_tableparser.columns_ header (or the parser's fixed header), by the same parser which read the original file,
+so its predicates and forgiving mode apply. The parser is passed as a value, so the type of the rows is known:
 
-    val header = new String(record.headers().lastHeader(IOKafka.columnsHeader).value(), StandardCharsets.UTF_8)
-    val rows: Stream[IO, Movie] = IOTable.streamLines(MovieTableParser)(Seq(header, record.value()))
+    import fs2.kafka.{AutoOffsetReset, ConsumerSettings}
 
-(or, for many messages with the same columns, _Seq(header) ++ values_). A JSON message is decoded with circe as usual.
+    val consumer = ConsumerSettings[IO, String, String].withBootstrapServers("localhost:9092").withGroupId("movies")
+      .withAutoOffsetReset(AutoOffsetReset.Earliest)
+    val movies: Stream[IO, Movie] = IOKafka.fromKafka("movies", consumer)(MovieTableParser)
+
+With ZIO, _ZIOKafka.fromKafka("movies", Serde.string)(MovieTableParser)_ is a _ZStream\[Consumer, Throwable, Movie]_,
+which needs a zio-kafka _Consumer_ (from _Consumer.make(ConsumerSettings(servers).withGroupId(group))_).
+The consumer is made when the stream starts and closed when it ends; the keys of the messages are ignored.
+
+_fromKafka_ commits the offsets a chunk at a time, once the chunk's rows have been emitted, so a row may be read again
+if the stream fails or stops part-way through a chunk (at-least-once).
+To commit only after processing each row, use _fromKafkaCommittable_, which gives each row with its offset
+(an fs2-kafka _CommittableOffset_, or a zio-kafka _Offset_), for you to commit.
+_fromKafkaWith_ reads messages of any other form, with a function to decode each value: for example,
+circe's _decode\[Point]_ for JSON. To parse one message yourself, use _parseRecord_ (or _Table.parseRow_, in _core_).
+
+### Reading the messages with Spark
+
+Spark's _from_csv_ needs a schema which lists the columns in the order of the header (it matches them by position).
+_SparkSchema.ddl\[T]_ (in _core_) derives it from the same _ColumnHelper_ and fields as the _tableparser.columns_ header,
+so the two can't disagree:
+
+    case class Point(x: Int, y: Option[Double], at: Instant) derives CsvProduct, SparkSchema
+
+    SparkSchema.ddl[Point] // Success("`x` INT, `y` DOUBLE, `at` TIMESTAMP")
+
+Each field's Spark type comes from its _SparkType_ (for example, _Instant_ is _TIMESTAMP_, _LocalDateTime_ is _TIMESTAMP_NTZ_);
+an _Option_ has the type of its value, and a nested case class gives a column for each of its fields.
+Spark isn't a dependency: the schema is a string, for the Spark job to use (see [KAFKA.md](KAFKA.md)).
 
 ### Testing without a broker
 
@@ -709,8 +750,9 @@ Code which uses these modules can be tested without Kafka, as the modules' own t
 _MockProducer_, which records what it is sent. With fs2, give a _MkProducer\[IO]_ which returns it;
 with ZIO, make the _Producer_ with _Producer.fromJavaProducer(mock, ProducerSettings())_.
 See _IOKafkaSpec_ and _ZIOKafkaSpec_ for examples.
+The parsing of each message read by _fromKafka_ can be tested with _parseRecord_, on a consumer record you make yourself.
 (The integration tests, _IOKafkaBrokerSpec_ and _ZIOKafkaBrokerSpec_, which start a broker,
-run with _sbt integration/test_.)
+and send rows to it and read them back, run with _sbt integration/test_.)
 
 ## Selecting rows, columns and cells (RFC 7111)
 
@@ -1377,6 +1419,24 @@ In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces 
 | Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
 
 # Release Notes
+
+V2.4.0 -> V2.5.0
+* This release is binary compatible with 2.4.0 (checked by MiMa): it only adds.
+* Reading from Kafka (#113): _IOKafka.fromKafka_ and _ZIOKafka.fromKafka_ read a topic back as a stream of rows,
+  committing the offsets a chunk at a time (at-least-once); _fromKafkaCommittable_ gives each row with its offset,
+  for you to commit; _fromKafkaWith_ decodes each message with a function (e.g. JSON); _parseRecord_ parses one message.
+  See [Reading the messages back](#reading-the-messages-back), and step 5 of [KAFKA.md](KAFKA.md).
+* Spark schemas (#117): _SparkSchema.ddl\[T]_ (in _core_) derives the Spark DDL schema of a row type's CSV form,
+  matching the _tableparser.columns_ header, from the _SparkType_ of each field. See [Reading the messages with Spark](#reading-the-messages-with-spark).
+* java.time (#118): _Instant_, _LocalDateTime_, _LocalTime_, _OffsetDateTime_ and _ZonedDateTime_ can be parsed and written
+  (and their _Option_s), in ISO-8601 form, so a table with such fields round-trips; _Option\[LocalDate]_ can now be written too.
+  (Up to 2.4.0, an _Instant_ could be written but not read back.)
+* Rows without an effect library (#119): _Table.rows_ (and _rowsFile_, _rowsResource_, _rowsURI_, _rowsLines_) give a _RowIterator_,
+  an _AutoCloseable_ _Iterator\[Try\[Row]]_ which parses the rows as they are read; _Table.parseRow_ parses one row with its header line.
+  See [Streaming](#streaming).
+* Binary compatibility (#120): _sbt mimaReportBinaryIssues_ (also in CI) checks each published module against the last release.
+* KAFKA.md: the taxi times are _Instant_s, the Spark schema is derived, and there's a new step, reading the topic back (_readTrips_).
+* A test (_ParquetParserSpec_) no longer writes _yellowtaxitrip.csv_ into the working directory.
 
 V2.3.0 -> V2.4.0
 * Version scheme (#122): the POM now declares _pvp_ (it said _early-semver_), in which the first two numbers make the major version.

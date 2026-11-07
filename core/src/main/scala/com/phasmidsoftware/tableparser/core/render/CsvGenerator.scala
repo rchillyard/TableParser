@@ -3,8 +3,7 @@ package com.phasmidsoftware.tableparser.core.render
 import com.phasmidsoftware.tableparser.core.parse.{ColumnHelper, StringList}
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import com.phasmidsoftware.tableparser.core.util.Derivation
-import java.time.Instant
-import java.time.LocalDate
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZonedDateTime}
 import scala.compiletime.{erasedValue, summonFrom, summonInline}
 import scala.deriving.Mirror
 
@@ -58,6 +57,10 @@ object CsvGenerator extends CsvGenerators:
   given urlGenerator: CsvGenerator[java.net.URL] = CsvGenerators.CsvGeneratorURL
   given localDateGenerator: CsvGenerator[LocalDate] = CsvGenerators.CsvGeneratorLocalDate
   given instantGenerator: CsvGenerator[Instant] = CsvGenerators.CsvGeneratorInstant
+  given localDateTimeGenerator: CsvGenerator[LocalDateTime] = CsvGenerators.CsvGeneratorLocalDateTime
+  given localTimeGenerator: CsvGenerator[LocalTime] = CsvGenerators.CsvGeneratorLocalTime
+  given offsetDateTimeGenerator: CsvGenerator[OffsetDateTime] = CsvGenerators.CsvGeneratorOffsetDateTime
+  given zonedDateTimeGenerator: CsvGenerator[ZonedDateTime] = CsvGenerators.CsvGeneratorZonedDateTime
   //  implicit val temporalGenerator: CsvGenerator[Temporal] = CsvGenerators.CsvGeneratorTemporal
   given generatorStringList: CsvGenerator[StringList] = sequenceGenerator[String]
 

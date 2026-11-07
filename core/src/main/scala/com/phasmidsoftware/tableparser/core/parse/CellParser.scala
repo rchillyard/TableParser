@@ -7,7 +7,7 @@ import com.phasmidsoftware.tableparser.core.table.{Header, Row}
 import com.phasmidsoftware.tableparser.core.util.Derivation
 import java.io.File
 import java.net.URL
-import java.time.LocalDate
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZonedDateTime}
 import scala.annotation.{implicitNotFound, tailrec}
 import scala.compiletime.{constValue, erasedValue, summonFrom, summonInline}
 import scala.deriving.Mirror
@@ -162,6 +162,29 @@ object CellParser:
     // NOTE used only for debugging
     override def toString: String = "LocalDateParser"
 
+  /**
+   * A SingleCellParser which parses a cell with the Parseable of T (used for the java.time types: #118).
+   *
+   * @param name the name of the parser (for debugging).
+   * @tparam T the type of the cell, for which there must be evidence of Parseable[T].
+   */
+  abstract class ParseableCellParser[T: Parseable](name: String) extends SingleCellParser[T]:
+    def convertString(w: String): Try[T] =
+      summon[Parseable[T]].parse(w)
+
+    // NOTE used only for debugging
+    override def toString: String = name
+
+  given InstantParser: ParseableCellParser[Instant]("InstantParser") with {}
+
+  given LocalDateTimeParser: ParseableCellParser[LocalDateTime]("LocalDateTimeParser") with {}
+
+  given LocalTimeParser: ParseableCellParser[LocalTime]("LocalTimeParser") with {}
+
+  given OffsetDateTimeParser: ParseableCellParser[OffsetDateTime]("OffsetDateTimeParser") with {}
+
+  given ZonedDateTimeParser: ParseableCellParser[ZonedDateTime]("ZonedDateTimeParser") with {}
+
   given URLParser: SingleCellParser[URL] with
     def convertString(w: String): Try[URL] =
       summon[Parseable[URL]].parse(w)
@@ -192,6 +215,16 @@ object CellParser:
   given DoubleOptionParser: OptionParser[Double] with {}
 
   given LocalDateOptionParser: OptionParser[LocalDate] with {}
+
+  given InstantOptionParser: OptionParser[Instant] with {}
+
+  given LocalDateTimeOptionParser: OptionParser[LocalDateTime] with {}
+
+  given LocalTimeOptionParser: OptionParser[LocalTime] with {}
+
+  given OffsetDateTimeOptionParser: OptionParser[OffsetDateTime] with {}
+
+  given ZonedDateTimeOptionParser: OptionParser[ZonedDateTime] with {}
 
   given URLOptionParser: OptionParser[URL] with {}
 
