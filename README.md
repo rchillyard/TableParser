@@ -1390,6 +1390,11 @@ V2.3.0 -> V2.4.0
   _setPlaintextPredicate_, _setRowParser_ and the new _setRawPredicate_) gave its plaintext parser, which doesn't decrypt.
   Each now gives an _EncryptedHeadedStringTableParser_, whose plaintext parser has the new setting
   (it has a new, optional, last parameter for that parser: _maybePhase2Parser_).
+* Bug fix: streaming an encrypted table (_IOTable.stream*_, _ZIOTable.stream*_, and _parseSelected_) gave every row
+  still encrypted (_key|hex_), without decrypting it or applying _encryptedRowPredicate_.
+  _EncryptedHeadedStringTableParser_ now overrides _rows_: the chosen rows are decrypted lazily, as they are pulled
+  (64 at a time, in parallel), then parsed with the plaintext parser's settings.
+  The rows of an RFC 7111 selection are numbered by their lines in the encrypted input.
 * Top-N: _topN_ and _bottomN_, the n greatest (or least) rows by an _Ordering_, holding only n rows at a time,
   as pipes for streams (_IOTable_, _ZIOTable_) and as methods of _Table_; see [Streaming](#streaming).
   They use the new _TopN_ (in _core_'s _util_), an immutable bounded binary heap.

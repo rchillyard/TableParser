@@ -2,7 +2,7 @@ package com.phasmidsoftware.tableparser.crypto.parse
 
 import com.phasmidsoftware.tableparser.crypto.{EncryptionUTF8AES128CTR, HexEncryption}
 import com.phasmidsoftware.tableparser.core.parse._
-import com.phasmidsoftware.tableparser.core.table.{Header, RawRow, RawTable, Table}
+import com.phasmidsoftware.tableparser.core.table.{CsvFragment, Header, RawRow, RawTable, RowSelection, Table}
 import org.scalatest.flatspec
 import org.scalatest.matchers.should
 import tsec.cipher.symmetric.jca.AES128CTR
@@ -90,3 +90,33 @@ class EncryptedHeadedStringTableParserSpec extends flatspec.AnyFlatSpec with sho
     given CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
     given TableParser[RawTable] = EncryptedHeadedStringTableParser[RawRow, AES128CTR](keyMap.contains, keyMap, headerRowsToRead = 2)
     Table.parse[RawTable](lines).map(_.toSeq.map(_.ws.head)) shouldBe scala.util.Success(Seq("1", "2", "3", "4", "5"))
+
+  behavior of "EncryptedHeadedStringTableParser streaming (up to 2.3.0, it gave the encrypted rows)"
+
+  it should "decrypt the chosen rows with IOTable.streamFile" in:
+    import cats.effect.unsafe.implicits.global
+    import com.phasmidsoftware.tableparser.cats.table.IOTable
+    val path = java.nio.file.Paths.get(getClass.getResource(encryptedTable).toURI)
+    val wsy = scala.util.Try(IOTable.streamFile(rawParser("1"))(path).compile.toList.unsafeRunSync())
+    wsy.map(_.map(_.ws.head)) shouldBe scala.util.Success(Seq("1"))
+
+  it should "decrypt the chosen rows with parseSelected" in:
+    rawParser("2").parseSelected(lines, RowSelection.all, 2).map(_.toSeq.map(_.ws.head)) shouldBe scala.util.Success(Seq("2"))
+
+  it should "stream every chosen row, with the settings of the setters" in:
+    import cats.effect.unsafe.implicits.global
+    import com.phasmidsoftware.tableparser.cats.table.IOTable
+    val parser = allTeams.setRawPredicate(_.ws.head != "4").setPredicate(_.map(_.ws.head != "3").getOrElse(false))
+    IOTable.streamLines(parser)(lines.toSeq).map(_.ws.head).compile.toList.unsafeRunSync() shouldBe List("1", "2", "5")
+
+  it should "select rows by their lines in the encrypted input" in:
+    // the two header lines are rows 1 and 2, so team 2's row is row 4.
+    allTeams.parseSelected(lines, CsvFragment.parse("row=4-5").collect { case rs: RowSelection => rs }.get, 2).map(_.toSeq.map(_.ws.head)) shouldBe scala.util.Success(Seq("2", "3"))
+
+  it should "end with a Failure at a row which can't be decrypted" in:
+    given CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
+    val parser = EncryptedHeadedStringTableParser[RawRow, AES128CTR](_ => true, keyMap - "3", headerRowsToRead = 2)
+    val rys = parser.rows(lines, 2).get._2.toList
+    rys.take(2).map(_.map(_.ws.head)) shouldBe List(scala.util.Success("1"), scala.util.Success("2"))
+    rys.size shouldBe 3
+    rys.last.isFailure shouldBe true

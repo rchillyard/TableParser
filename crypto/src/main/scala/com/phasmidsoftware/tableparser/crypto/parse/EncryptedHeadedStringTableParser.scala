@@ -10,7 +10,7 @@ import com.phasmidsoftware.tableparser.core.parse.RawParsers.WithHeaderRow.parse
 import com.phasmidsoftware.tableparser.core.parse._
 import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.util.TeeIterator
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 /**
  * Case class to define a StringTableParser that assumes a header to be found in the input file.
@@ -76,6 +76,30 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
   override def parse(xs: Iterator[String], n: Int = headerRowsToRead): Try[Table[X]] =
     import cats.effect.unsafe.implicits.global
     parseIO(xs, n).attempt.unsafeRunSync().toTry
+
+  /**
+   * Method to parse an encrypted table lazily, as a stream of rows (see StringTableParser.rows),
+   * as IOTable.stream and ZIOTable.stream (and parseSelected) do.
+   * The (plaintext) header is read now; each encrypted row whose key satisfies encryptedRowPredicate is decrypted
+   * only when the rows are pulled from the iterator (in chunks, each of which is decrypted in parallel).
+   * The decrypted rows are then parsed as parse does (with the plaintext parser's settings).
+   * If an encrypted row can't be read or decrypted, the iterator ends with a Failure (after the rows before it).
+   * Up to 2.3.0, this was StringTableParser.rows, which doesn't decrypt: it gave the encrypted rows.
+   *
+   * @param xs        the lines of the input.
+   * @param n         the number of lines which make up the header.
+   * @param selection the rows to select (RFC 7111: see CsvFragment), numbered by their lines in the encrypted input.
+   * @return a Try of the header and an Iterator of the (decrypted) rows (each a Try).
+   */
+  override def rows(xs: Iterator[String], n: Int = headerRowsToRead, selection: RowSelection = RowSelection.all): Try[(Header, Iterator[Try[X]])] =
+    val sr: TeeIterator[String] = new TeeIterator(n)(xs)
+    for
+      h <- parseHeader(sr.tee)
+      // NOTE the header lines are given again, so that the selection numbers the rows by their lines in the input.
+      (_, rys) <- createPhase1Parser.rows(sr.tee.iterator ++ sr, n, selection)
+      decrypted = new DecryptedLines(rys)
+      (_, xys) <- phase2Parser.setHeader(h).rows(decrypted, 0)
+    yield h -> (xys ++ decrypted.maybeFailure.map(Failure(_)))
 
   /**
    * Set the Header for the plaintext TableParser.
@@ -158,6 +182,41 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
 
   import cats.effect.IO
 
+  /**
+   * The decrypted lines of the encrypted rows rys, decrypted lazily, decryptionChunk at a time (in parallel).
+   * It ends at the first row which can't be read or decrypted, whose exception is then maybeFailure.
+   *
+   * @param rys the encrypted rows (each a key and a hex string).
+   */
+  private class DecryptedLines(rys: Iterator[Try[RawRow]]) extends Iterator[String]:
+    import cats.effect.unsafe.implicits.global
+
+    private var failure: Option[Throwable] = None
+
+    private val ws: Iterator[String] =
+      rys.grouped(decryptionChunk).flatMap(decryptChunk).takeWhile:
+        case Left(x) =>
+          failure = Some(x)
+          false
+        case _ => true
+      .collect { case Right(w) => w }
+
+    /**
+     * The exception which ended these lines, if any (known only once they have all been read).
+     */
+    def maybeFailure: Option[Throwable] = failure
+
+    def hasNext: Boolean = ws.hasNext
+
+    def next(): String = ws.next()
+
+    private def decryptChunk(rs: Seq[Try[RawRow]]): Seq[Either[Throwable, String]] =
+      IO.parTraverseN(decryptionParallelism)(rs)(ry => IO.fromTry(ry).flatMap(r => HexEncryption.decryptRow(keyFunction)(r.ws)).attempt).unsafeRunSync()
+
+  private val decryptionChunk = 64
+
+  private val decryptionParallelism = 2
+
   private def decryptTable(xt: RawTable): IO[Table[String]] =
     val wit: Table[IO[String]] = xt.map(row => HexEncryption.decryptRow(keyFunction)(row.ws))
-    for (ws <- IO.parSequenceN(2)(wit.toSeq)) yield wit.unit(ws)
+    for (ws <- IO.parSequenceN(decryptionParallelism)(wit.toSeq)) yield wit.unit(ws)
