@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "2.4.0"
+ThisBuild / version := "2.5.0"
 
 // 2.x is Scala 3 only (for Scala 2.13, use the 1.x line, on the 1.x branch).
 // The current Scala 3 LTS. Code built with 3.9 can only be used from Scala 3.9 or later.
@@ -17,6 +17,12 @@ ThisBuild / scalacOptions ++= Seq(
 )
 // Tests may use a value as a statement (for example, in a matcher), so each project's tests skip -Wnonunit-statement.
 lazy val testScalacOptions = Test / scalacOptions ~= (_.filterNot(_ == "-Wnonunit-statement"))
+
+// MiMa checks each published module for binary compatibility with the last release (#120): `sbt mimaReportBinaryIssues`.
+// The version scheme is PVP (see publish.sbt): a patch release must pass; a minor release may break compatibility,
+// on purpose and with a release note, by listing the breaks in mimaBinaryIssueFilters (or, after the release, by moving previousRelease on).
+val previousRelease = "2.4.0"
+lazy val mimaSettings = mimaPreviousArtifacts := Set(organization.value %% name.value % previousRelease)
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "21")
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
 
@@ -55,6 +61,7 @@ val embeddedKafkaVersion = "4.4.0"
 
 lazy val core = project.settings(
   testScalacOptions,
+  mimaSettings,
   name := "tableparser-core",
   libraryDependencies ++= Seq(
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
@@ -70,6 +77,7 @@ lazy val core = project.settings(
 // The cats and zio tests use the examples (Movie, Crime), which are in core's tests.
 lazy val cats = project.dependsOn(core % "compile->compile;test->test").settings(
   testScalacOptions,
+  mimaSettings,
   name := "tableparser-cats",
   libraryDependencies ++= Seq(
     "org.typelevel" %% "cats-effect" % catsVersion,
@@ -83,6 +91,7 @@ lazy val cats = project.dependsOn(core % "compile->compile;test->test").settings
 // Encryption of tables (e.g. of the rows of a CSV file), using tsec, with cats-effect IO.
 lazy val crypto = project.dependsOn(core % "compile->compile;test->test", cats % "compile->compile;test->test").settings(
   testScalacOptions,
+  mimaSettings,
   name := "tableparser-crypto",
   libraryDependencies ++= Seq(
     "io.github.jmcardon" %% "tsec-cipher-jca" % tsecVersion,
@@ -95,6 +104,7 @@ lazy val crypto = project.dependsOn(core % "compile->compile;test->test", cats %
 // Reading and writing tables as JSON, using circe.
 lazy val json = project.dependsOn(core % "compile->compile;test->test").settings(
   testScalacOptions,
+  mimaSettings,
   name := "tableparser-json",
   libraryDependencies ++= Seq(
     "io.circe" %% "circe-core" % circeVersion,
@@ -105,6 +115,7 @@ lazy val json = project.dependsOn(core % "compile->compile;test->test").settings
 
 lazy val parquet = project.dependsOn(core).settings(
   testScalacOptions,
+  mimaSettings,
   name := "tableparser-parquet",
   // The test resources include two ~50MB Parquet files: don't publish them in tests jars.
   Test / publishArtifact := false,
@@ -119,6 +130,7 @@ lazy val parquet = project.dependsOn(core).settings(
 
 lazy val zio = project.dependsOn(core % "compile->compile;test->test").settings(
   testScalacOptions,
+  mimaSettings,
   name := "tableparser-zio",
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio" % zioVersion,
@@ -136,6 +148,7 @@ lazy val zio = project.dependsOn(core % "compile->compile;test->test").settings(
 // The tests use the Kafka client's MockProducer, so they need no broker.
 lazy val kafkaCats = (project in file("kafka-cats")).dependsOn(core % "compile->compile;test->test", cats).settings(
   testScalacOptions,
+  mimaSettings,
   name := "tableparser-kafka-cats",
   libraryDependencies ++= Seq(
     "org.typelevel" %% "fs2-kafka" % fs2KafkaVersion,
@@ -150,6 +163,7 @@ lazy val kafkaCats = (project in file("kafka-cats")).dependsOn(core % "compile->
 // The tests use the Kafka client's MockProducer, so they need no broker.
 lazy val kafkaZio = (project in file("kafka-zio")).dependsOn(core % "compile->compile;test->test", zio % "compile->compile;test->test").settings(
   testScalacOptions,
+  mimaSettings,
   name := "tableparser-kafka-zio",
   libraryDependencies ++= Seq(
     "dev.zio" %% "zio-kafka" % zioKafkaVersion,
@@ -167,6 +181,7 @@ lazy val integration = (project in file("integration"))
           testScalacOptions,
           name := "tableparser-integration",
           publish / skip := true,
+          mimaFailOnNoPrevious := false, // not published, so nothing to compare
           Test / parallelExecution := false,
                   Test / unmanagedSourceDirectories ++= Seq(
               (LocalRootProject / baseDirectory).value / "core/src/it/scala"
@@ -189,6 +204,7 @@ lazy val root = (project in file("."))
         .settings(
           name := "TableParser",
           publish / skip := true,
+          mimaFailOnNoPrevious := false, // not published, so nothing to compare
           // The unified Scaladoc is published to https://rchillyard.github.io/TableParser/latest/api/ by `sbt ghpagesPushSite`
           ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core, cats, crypto, json, kafkaCats, kafkaZio, parquet, zio),
           ScalaUnidoc / siteSubdirName := "latest/api",

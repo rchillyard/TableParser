@@ -31,11 +31,13 @@ flowchart LR
     end
 
     console["kafka-console-consumer.sh<br/>(to watch the topic)"]
+    reader["IOKafka.fromKafka / ZIOKafka.fromKafka<br/><i>kafka-cats / kafka-zio</i><br/>(back to rows)"]
     spark["Spark Structured Streaming<br/>from_csv(value, schema)"]
 
     file -- "Source" --> stream
     send -- "CSV messages" --> broker
     broker --> console
+    broker --> reader
     broker --> spark
 ```
 
@@ -111,16 +113,19 @@ services:
 
 ## 2. Define the rows
 
-A row is a case class, with a parser (to read the file) and a `CsvProduct` (to write each row, and its column names, as CSV).
+A row is a case class, with a parser (to read the file), a `CsvProduct` (to write each row, and its column names, as CSV)
+and a `SparkSchema` (the schema with which Spark reads the messages: see step 6).
 The file `yellowtaxitrip.csv` (in the root of this repository) has a thousand taxi trips, with nineteen columns,
-and a space after each comma. This takes eight of the columns, and ignores the others:
+and a space after each comma. This takes eight of the columns, and ignores the others.
+The times, such as `2024-01-01T00:34:44Z`, are `Instant`s (from 2.5.0, the `java.time` types parse and render as ISO-8601):
 
 ```scala
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapperLower
 import com.phasmidsoftware.tableparser.core.parse.*
-import com.phasmidsoftware.tableparser.core.render.CsvProduct
+import com.phasmidsoftware.tableparser.core.render.{CsvProduct, SparkSchema}
+import java.time.Instant
 
-case class Trip(vendorId: Int, pickup: String, dropoff: String, passengerCount: Int, tripDistance: Double, fareAmount: Double, tipAmount: Double, totalAmount: Double) derives CsvProduct
+case class Trip(vendorId: Int, pickup: Instant, dropoff: Instant, passengerCount: Int, tripDistance: Double, fareAmount: Double, tipAmount: Double, totalAmount: Double) derives CsvProduct, SparkSchema
 
 object Trip extends CellParsers:
   given RowConfig = RowConfig.trimmingRowConfig // the space after each comma
@@ -180,11 +185,13 @@ With the broker running, from the root of the repository:
 sbt "kafkaCats/Test/runMain com.phasmidsoftware.tableparser.kafka.cats.sendTrips"
 ```
 
-It sends the thousand trips of `yellowtaxitrip.csv`, and says how many messages Kafka acknowledged
-(after the Kafka client has logged its configuration, and perhaps warned that the topic didn't exist yet):
+It sends the thousand trips of `yellowtaxitrip.csv`, says how many messages Kafka acknowledged
+(after the Kafka client has logged its configuration, and perhaps warned that the topic didn't exist yet),
+and prints the Spark schema of the messages (step 6):
 
 ```text
 Sent 1000 messages from yellowtaxitrip.csv to topic trips at localhost:9092
+Spark schema: `VendorID` INT, `tpep_pickup_datetime` TIMESTAMP, `tpep_dropoff_datetime` TIMESTAMP, `passenger_count` INT, `trip_distance` DOUBLE, `fare_amount` DOUBLE, `tip_amount` DOUBLE, `total_amount` DOUBLE
 ```
 
 Give it another file of taxi trips (and, optionally, other bootstrap servers and another topic) as arguments:
@@ -210,10 +217,66 @@ tableparser.columns:VendorID,tpep_pickup_datetime,tpep_dropoff_datetime,passenge
 The column names are those of the original file, for the columns which `Trip` keeps: `CsvGenerator` uses the given `ColumnHelper`.
 Each row's message is written without the space after each comma, as plain RFC 4180 CSV.
 
-## 5. Read the topic with Spark
+## 5. Read the topic back, as rows
+
+`fromKafka` is the mirror of `toKafka`: it reads a topic as a stream of rows, parsing each message's value
+with the column names in its `tableparser.columns` header, and the same parser that read the file
+(so its predicates and forgiving mode apply). With fs2 (`tableparser-kafka-cats`):
+
+```scala
+import fs2.kafka.{AutoOffsetReset, ConsumerSettings}
+
+val consumer = ConsumerSettings[IO, String, String]
+  .withBootstrapServers("localhost:9092")
+  .withGroupId("readTrips")
+  .withAutoOffsetReset(AutoOffsetReset.Earliest)
+
+val first: IO[List[Trip]] = IOKafka.fromKafka("trips", consumer)(TripTableParser).take(5).compile.toList
+```
+
+Or with ZIO (`tableparser-kafka-zio`), with a zio-kafka `Consumer` in the environment:
+
+```scala
+import zio.kafka.consumer.{Consumer, ConsumerSettings}
+
+val consumer = ZLayer.scoped(Consumer.make(ConsumerSettings(List("localhost:9092")).withGroupId("readTrips")
+  .withOffsetRetrieval(Consumer.OffsetRetrieval.Auto(Consumer.AutoOffsetStrategy.Earliest))))
+
+val first = ZIOKafka.fromKafka("trips", Serde.string)(TripTableParser).take(5).runCollect.provideLayer(consumer)
+```
+
+`fromKafka` commits the offsets a chunk at a time, once the chunk's rows have been emitted (at-least-once):
+if the stream fails, or stops part-way through a chunk (as `take(5)` does), those rows are read again next time.
+To commit only once you've processed each row, use `fromKafkaCommittable`, which gives each row with its offset.
+(`fromKafkaWith` reads messages of any other form, such as JSON, with a function to decode each one.)
+
+The fs2 version is ready to run, too:
+
+```bash
+sbt "kafkaCats/Test/runMain com.phasmidsoftware.tableparser.kafka.cats.readTrips"
+```
+
+It prints the first five trips (and takes the number, the bootstrap servers, the topic and the group as optional arguments):
+
+```text
+Trip(2,2024-01-01T00:34:44Z,2024-01-01T00:40:55Z,1,1.76,10.0,4.5,19.5)
+```
+
+## 6. Read the topic with Spark
 
 Spark (Scala 2.13, or PySpark) parses each CSV message with `from_csv` and a schema which matches the header.
-`from_csv` takes the columns by position, not by name, so the schema must list them in the order of the header:
+`from_csv` takes the columns by position, not by name, so the schema must list them in the order of the header.
+`SparkSchema.ddl[Trip]` derives it from the same `ColumnHelper` and field order as the `tableparser.columns` header,
+so the two can't disagree (it's a `Try`: a `Failure` if the numbers of names and types differ):
+
+```scala
+SparkSchema.ddl[Trip]
+// Success(`VendorID` INT, `tpep_pickup_datetime` TIMESTAMP, `tpep_dropoff_datetime` TIMESTAMP, `passenger_count` INT, ...)
+```
+
+A field's Spark type comes from its `SparkType`: for example, `Instant` is `TIMESTAMP` and `LocalDateTime` is `TIMESTAMP_NTZ`.
+Give a `SparkType` of your own for another field type. Spark isn't a dependency of TableParser (it isn't published for Scala 3):
+the schema is a string, which the Spark job uses as it is (here, pasted in from what `sendTrips` printed):
 
 ```scala
 // In the Spark job (with the spark-sql-kafka-0-10 package).
@@ -221,7 +284,7 @@ import org.apache.spark.sql.functions.{col, from_csv}
 import org.apache.spark.sql.types.StructType
 
 // In Scala, from_csv takes a StructType (unlike from_json, which also takes the DDL string itself).
-val schema = StructType.fromDDL("VendorID INT, tpep_pickup_datetime TIMESTAMP, tpep_dropoff_datetime TIMESTAMP, passenger_count INT, trip_distance DOUBLE, fare_amount DOUBLE, tip_amount DOUBLE, total_amount DOUBLE")
+val schema = StructType.fromDDL("`VendorID` INT, `tpep_pickup_datetime` TIMESTAMP, `tpep_dropoff_datetime` TIMESTAMP, `passenger_count` INT, `trip_distance` DOUBLE, `fare_amount` DOUBLE, `tip_amount` DOUBLE, `total_amount` DOUBLE")
 val trips = spark.readStream.format("kafka")
   .option("kafka.bootstrap.servers", "localhost:9092")
   .option("subscribe", "trips")
@@ -234,14 +297,15 @@ val trips = spark.readStream.format("kafka")
 For a first try, `spark.read` (with the same options and the same _select_) reads what is in the topic and stops,
 so `trips.show()` prints the first trips, with the times as timestamps.
 
-To check the columns rather than trust their order, read the headers too (`.option("includeHeaders", "true")`)
-and compare the `tableparser.columns` header with the schema.
+The topic may still hold messages from an older version of the producer, with other columns.
+To check each message at run time, read the headers too (`.option("includeHeaders", "true")`)
+and compare its `tableparser.columns` header with the schema's names.
 
 Alternatively, send JSON: `toKafkaWith` with a circe `Encoder` (see [JSON messages](README.md#json-messages)),
 and `from_json` with the same schema in Spark. JSON repeats the field names in every message, but its fields are
 matched by name, not by position, and it has no header to print.
 
-## 6. Stop the broker
+## 7. Stop the broker
 
 ```bash
 docker compose down

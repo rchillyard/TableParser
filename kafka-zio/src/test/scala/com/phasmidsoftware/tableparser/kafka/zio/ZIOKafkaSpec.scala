@@ -5,6 +5,7 @@ import com.phasmidsoftware.tableparser.core.render.CsvProduct
 import com.phasmidsoftware.tableparser.zio.table.ZIOTable
 import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO
 import java.nio.charset.StandardCharsets
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.{MockProducer, RecordMetadata}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.scalatest.flatspec.AnyFlatSpec
@@ -82,6 +83,16 @@ class ZIOKafkaSpec extends AnyFlatSpec with should.Matchers:
     val records = EvaluateZIO.run(ZStream.fromIterable(points).via(ZIOKafka.csvRecords("points")(_.x)).runCollect).fold(e => throw e, _.toList)
     records.map(r => (r.topic(), r.key(), r.value())) shouldBe List(("points", 1, "1,2"), ("points", 3, "3,4"), ("points", 5, "5,6"))
     records.map(r => string(r.headers().lastHeader(ZIOKafka.columnsHeader).value())) shouldBe List("x,y", "x,y", "x,y")
+
+  behavior of "ZIOKafka.parseRecord (as fromKafka reads each message)"
+
+  it should "parse a message's value with the column names in its header" in:
+    val record = new ConsumerRecord[String, String]("points", 0, 0L, "3", "4,3")
+    record.headers().add(ZIOKafka.columnsHeader, "y,x".getBytes(StandardCharsets.UTF_8))
+    ZIOKafka.parseRecord(PointTableParser)(record) shouldBe scala.util.Success(Some(Point(3, 4)))
+
+  it should "fail for a message without the header (when the parser has no fixed header)" in:
+    ZIOKafka.parseRecord(PointTableParser)(new ConsumerRecord[String, String]("points", 0, 0L, "3", "3,4")).isFailure shouldBe true
 
 object ZIOKafkaSpec:
   case class Point(x: Int, y: Int) derives CsvProduct

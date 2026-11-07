@@ -6,7 +6,7 @@ package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.table._
 import java.net.URL
-import java.time.Instant
+import java.time.{Instant, LocalDateTime, LocalTime, OffsetDateTime, ZonedDateTime}
 
 /**
  * Trait to define various renderers for rendering instance of case classes (with their various parameters),
@@ -364,6 +364,15 @@ object CsvRenderers:
     val csvAttributes: CsvAttributes = summon[CsvAttributes]
 
     def render(t: Instant, attrs: Map[String, String]): String = t.toString
+
+  // The other java.time types, rendered in their ISO-8601 form (their toString), which their CellParsers read (#118).
+  given CsvRendererLocalDateTime: StandardCsvRenderer[LocalDateTime] with {}
+
+  given CsvRendererLocalTime: StandardCsvRenderer[LocalTime] with {}
+
+  given CsvRendererOffsetDateTime: StandardCsvRenderer[OffsetDateTime] with {}
+
+  given CsvRendererZonedDateTime: StandardCsvRenderer[ZonedDateTime] with {}
 
 //  implicit object CsvRendererTemporal extends CsvRenderer[Temporal] {
 //    val csvAttributes: CsvAttributes = summon[CsvAttributes]

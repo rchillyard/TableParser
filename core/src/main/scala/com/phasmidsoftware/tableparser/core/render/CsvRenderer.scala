@@ -5,8 +5,7 @@ import com.phasmidsoftware.tableparser.core.table._
 import com.phasmidsoftware.tableparser.core.write.Writable
 import java.io.{File, FileWriter}
 import java.nio.file.Path
-import java.time.Instant
-import java.time.LocalDate
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZonedDateTime}
 import com.phasmidsoftware.tableparser.core.util.Derivation
 import scala.compiletime.{erasedValue, summonFrom, summonInline}
 import scala.deriving.Mirror
@@ -66,6 +65,15 @@ object CsvRenderer extends CsvRenderers:
   given rendererOptionShort: CsvRenderer[Option[Short]] = optionRenderer[Short]()
   given rendererOptionByte: CsvRenderer[Option[Byte]] = optionRenderer[Byte]()
   given rendererOptionInstant: CsvRenderer[Option[Instant]] = optionRenderer[Instant]()
+  given localDateTimeRenderer: CsvRenderer[LocalDateTime] = CsvRenderers.CsvRendererLocalDateTime
+  given localTimeRenderer: CsvRenderer[LocalTime] = CsvRenderers.CsvRendererLocalTime
+  given offsetDateTimeRenderer: CsvRenderer[OffsetDateTime] = CsvRenderers.CsvRendererOffsetDateTime
+  given zonedDateTimeRenderer: CsvRenderer[ZonedDateTime] = CsvRenderers.CsvRendererZonedDateTime
+  given rendererOptionLocalDate: CsvRenderer[Option[LocalDate]] = optionRenderer[LocalDate]()
+  given rendererOptionLocalDateTime: CsvRenderer[Option[LocalDateTime]] = optionRenderer[LocalDateTime]()
+  given rendererOptionLocalTime: CsvRenderer[Option[LocalTime]] = optionRenderer[LocalTime]()
+  given rendererOptionOffsetDateTime: CsvRenderer[Option[OffsetDateTime]] = optionRenderer[OffsetDateTime]()
+  given rendererOptionZonedDateTime: CsvRenderer[Option[ZonedDateTime]] = optionRenderer[ZonedDateTime]()
   /**
    * Method to derive a CsvRenderer for a case class T, so that `case class T(...) derives CsvRenderer` works.
    * This replaces the renderer1 ... renderer19 methods of 1.x, and has no limit on the number of fields.

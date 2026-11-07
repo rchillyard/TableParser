@@ -15,7 +15,7 @@ import scala.annotation.unused
 import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.reflect.ClassTag
-import scala.util.{Failure, Random, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 /**
  * A Table of Content.
@@ -789,6 +789,95 @@ object Table:
     Try(Source.fromURL(clazz.getResource(w))).recoverWith:
       case _: java.lang.NullPointerException =>
         Failure(TableParserException(s"Table.sourceFromClassResource: cannot find resource '$w' relative to $clazz"))
+
+  // ── Rows as they are read, without an effect library (#119) ────────────────────
+
+  /**
+   * Method to read the rows of a table as they are parsed, without reading the whole table into memory:
+   * the effect-free counterpart of IOTable.stream and ZIOTable.stream (see RowIterator).
+   * The header is read straight away. The RowIterator closes the source when it is exhausted, or when it is closed:
+   * use it with scala.util.Using to be sure the source is closed if you stop early.
+   *
+   * The parser is passed as a value (not a given) so that the type of its rows is known: for example,
+   * `Table.rows(MovieTableParser)(source)` is a `Try[RowIterator[Movie]]`.
+   *
+   * @param parser a StringTableParser (e.g. a HeadedCSVTableParser, or a RawTableParser).
+   * @param source the Source (call-by-name: it is opened by this method).
+   * @return a Try of a RowIterator[parser.Row].
+   */
+  def rows(parser: StringTableParser[?])(source: => Source): Try[RowIterator[parser.Row]] =
+    Try(source).flatMap(s => RowIterator(parser)(s))
+
+  /**
+   * Method to read the rows of a file as they are parsed (see rows).
+   *
+   * @param parser a StringTableParser.
+   * @param path   the path of the file.
+   * @param codec  (implicit) the encoding.
+   * @return a Try of a RowIterator[parser.Row].
+   */
+  def rowsFile(parser: StringTableParser[?])(path: Path)(using codec: Codec): Try[RowIterator[parser.Row]] =
+    rows(parser)(Source.fromFile(path.toFile))
+
+  /**
+   * Method to read the rows of a resource as they are parsed (see rows).
+   *
+   * @param parser a StringTableParser.
+   * @param w      the name of the resource.
+   * @param clazz  the class relative to which the resource is found.
+   * @param codec  (implicit) the encoding.
+   * @return a Try of a RowIterator[parser.Row].
+   */
+  def rowsResource(parser: StringTableParser[?])(w: String, clazz: Class[?] = getClass)(using codec: Codec): Try[RowIterator[parser.Row]] =
+    sourceFromClassResource(w, clazz).flatMap(s => RowIterator(parser)(s))
+
+  /**
+   * Method to read the rows of a URI as they are parsed (see rows). If the URI has a fragment identifier which selects
+   * rows (RFC 7111, e.g. "data.csv#row=5-7": see CsvFragment), only those rows are read.
+   *
+   * @param parser a StringTableParser.
+   * @param uri    the URI.
+   * @param codec  (implicit) the encoding.
+   * @return a Try of a RowIterator[parser.Row].
+   */
+  def rowsURI(parser: StringTableParser[?])(uri: URI)(using codec: Codec): Try[RowIterator[parser.Row]] =
+    val selection = CsvFragment.fromURI(uri) collect { case rs: RowSelection => rs } getOrElse RowSelection.all
+    sourceFromURI(CsvFragment.withoutFragment(uri)).flatMap(s => RowIterator(parser, selection)(s))
+
+  /**
+   * Method to read the rows of some lines as they are parsed (see rows).
+   *
+   * @param parser a StringTableParser.
+   * @param ws     the lines.
+   * @return a Try of a RowIterator[parser.Row].
+   */
+  def rowsLines(parser: StringTableParser[?])(ws: Iterable[String]): Try[RowIterator[parser.Row]] =
+    rows(parser)(Source.fromIterable(ws.view.flatMap(w => s"$w\n")))
+
+  /**
+   * Method to parse one row on its own, given its header line: for example, a CSV message from Kafka,
+   * whose column names are in its record header (see IOKafka.fromKafka and ZIOKafka.fromKafka).
+   * The parser's raw predicate, predicate and forgiving mode apply as they do to the rows of a table.
+   * Without a header line, the parser's fixed header is used, if it has one.
+   *
+   * @param parser      a StringTableParser.
+   * @param maybeHeader the header line (the column names, as one line of CSV), if any.
+   * @param w           the row, as one line of CSV (or more than one, if the parser is multiline).
+   * @return a Try of the row: Success(None) if the row is left out (by a predicate, or because the parser is forgiving
+   *         and the row can't be parsed); a Failure if it can't be parsed (and the parser isn't forgiving),
+   *         or if there's no header line and the parser has no fixed header.
+   */
+  def parseRow(parser: StringTableParser[?])(maybeHeader: Option[String], w: String): Try[Option[parser.Row]] =
+    // NOTE with no header line (and so no header lines to read), rows fails unless the parser has a fixed header.
+    val hry = parser.rows((maybeHeader.toList :+ w).iterator, maybeHeader.size).recoverWith:
+      case x if maybeHeader.isEmpty =>
+        Failure(TableParserException(s"Table.parseRow: no header line, and the parser has no fixed header, for row: $w", Some(x)))
+    for
+      (_, rys) <- hry
+      ro <- rys.nextOption() match
+        case Some(ry) => ry.map(Some(_))
+        case None => Success(None)
+    yield ro
 
 /**
  * This typeclass pertains to a table row type T that has one particular column which is considered

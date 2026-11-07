@@ -180,7 +180,7 @@ These decide what can change without notice, and what needs a migration path.
      5. Consider a typed error channel for zio (e.g. `ZStream[Any, ParserException, Row]`) rather than `Throwable`.
      6. Whether the two modules could share one implementation over cats-effect's `Sync[F]` (zio-interop-cats gives `Sync[Task]`): that would make zio users depend on cats, so probably not.
      No known user (§5) uses either module yet, so their APIs can change freely.
-6. **Each release**: update the README's dependency example and release notes, and check the docs on javadoc.io.
+6. **Each release**: update the README's release notes; run `sbt mimaReportBinaryIssues` (a patch release must pass; a minor release may break compatibility only with filters and a release note); tag `Vx.y.z` on the release commit and make a GitHub release; then move `previousRelease` in build.sbt on to the new version, and check the docs on javadoc.io.
 
 ## Appendix: how the figures were measured
 

@@ -2,8 +2,7 @@ package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.table.CsvAttributes
 import java.net.URL
-import java.time.Instant
-import java.time.LocalDate
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZonedDateTime}
 
 /**
  * The `CsvGenerators` class provides factory methods for creating `CsvGenerator` instances for different types of data structures.
@@ -41,6 +40,10 @@ trait CsvGenerators:
   given optionShortGenerator: CsvGenerator[Option[Short]] = optionGenerator
   given optionByteGenerator: CsvGenerator[Option[Byte]] = optionGenerator
   given optionInstantGenerator: CsvGenerator[Option[Instant]] = optionGenerator
+  given optionLocalDateTimeGenerator: CsvGenerator[Option[LocalDateTime]] = optionGenerator
+  given optionLocalTimeGenerator: CsvGenerator[Option[LocalTime]] = optionGenerator
+  given optionOffsetDateTimeGenerator: CsvGenerator[Option[OffsetDateTime]] = optionGenerator
+  given optionZonedDateTimeGenerator: CsvGenerator[Option[ZonedDateTime]] = optionGenerator
 //  implicit val optionTemporalGenerator: CsvGenerator[Option[Temporal]] = optionGenerator
 
   /**
@@ -109,5 +112,13 @@ object CsvGenerators:
   object CsvGeneratorLocalDate extends StandardCsvGenerator[LocalDate]
 
   object CsvGeneratorInstant extends StandardCsvGenerator[Instant]
+
+  object CsvGeneratorLocalDateTime extends StandardCsvGenerator[LocalDateTime]
+
+  object CsvGeneratorLocalTime extends StandardCsvGenerator[LocalTime]
+
+  object CsvGeneratorOffsetDateTime extends StandardCsvGenerator[OffsetDateTime]
+
+  object CsvGeneratorZonedDateTime extends StandardCsvGenerator[ZonedDateTime]
 
 //  object CsvGeneratorTemporal extends StandardCsvGenerator[Temporal]

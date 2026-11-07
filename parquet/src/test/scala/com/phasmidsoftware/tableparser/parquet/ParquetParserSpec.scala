@@ -3,7 +3,7 @@ package com.phasmidsoftware.tableparser.parquet
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.{camelToSnakeCaseColumnNameMapper, camelToSnakeCaseColumnNameMapperLower}
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
 import com.phasmidsoftware.tableparser.core.table.Table
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.util.{Success, Try}
@@ -227,8 +227,12 @@ class ParquetParserSpec extends AnyFlatSpec with Matchers with CellParsers {
   it should "write taxi data to CSV" in:
     import YellowTaxiTrip.helper
     val datasetPath = Paths.get(getClass.getResource("/taxi_sample_dataset").toURI)
-    val outputPath = Path.of("yellowtaxitrip.csv")
-    for {
+    // A temporary file: up to 2.4.0, this wrote yellowtaxitrip.csv into the working directory (overwriting the root's copy).
+    val outputPath: Path = Files.createTempFile("yellowtaxitrip", ".csv")
+    outputPath.toFile.deleteOnExit()
+    val written = for {
       t <- ParquetParser.parseDataset[YellowTaxiTrip](datasetPath)
-    } t.writeCSVPath(outputPath)
+    } yield t.writeCSVPath(outputPath)
+    written.isSuccess shouldBe true
+    Files.size(outputPath) should be > 0L
 }

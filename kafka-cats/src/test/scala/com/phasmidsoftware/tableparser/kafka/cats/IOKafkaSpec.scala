@@ -7,7 +7,7 @@ import com.phasmidsoftware.tableparser.core.parse.{CellParser, CellParsers, Head
 import com.phasmidsoftware.tableparser.core.render.CsvProduct
 import fs2.Stream
 import fs2.kafka.producer.MkProducer
-import fs2.kafka.{KafkaByteProducer, ProducerSettings}
+import fs2.kafka.{ConsumerRecord, Header, Headers, KafkaByteProducer, ProducerSettings}
 import java.nio.charset.StandardCharsets
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.ByteArraySerializer
@@ -100,6 +100,15 @@ class IOKafkaSpec extends AnyFlatSpec with should.Matchers:
     val records = Stream.emits(points).through(IOKafka.csvRecords("points")(_.x)).compile.toList.unsafeRunSync()
     records.map(r => (r.topic, r.key, r.value)) shouldBe List(("points", 1, "1,2"), ("points", 3, "3,4"), ("points", 5, "5,6"))
     records.map(_.headers.withKey(IOKafka.columnsHeader).map(_.as[String])) shouldBe List(Some("x,y"), Some("x,y"), Some("x,y"))
+
+  behavior of "IOKafka.parseRecord (as fromKafka reads each message)"
+
+  it should "parse a message's value with the column names in its header" in:
+    val record = ConsumerRecord("points", 0, 0L, "3", "4,3").withHeaders(Headers(Header(IOKafka.columnsHeader, "y,x")))
+    IOKafka.parseRecord(PointTableParser)(record) shouldBe scala.util.Success(Some(Point(3, 4)))
+
+  it should "fail for a message without the header (when the parser has no fixed header)" in:
+    IOKafka.parseRecord(PointTableParser)(ConsumerRecord("points", 0, 0L, "3", "3,4")).isFailure shouldBe true
 
 object IOKafkaSpec:
   case class Point(x: Int, y: Int) derives CsvProduct

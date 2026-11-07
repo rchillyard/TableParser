@@ -5,9 +5,10 @@ import cats.effect.unsafe.implicits.global
 import com.phasmidsoftware.tableparser.cats.table.IOTable
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapperLower
 import com.phasmidsoftware.tableparser.core.parse.{CellParser, CellParsers, ColumnHelper, HeadedCSVTableParser, RowConfig, StandardRowParser, StringParser}
-import com.phasmidsoftware.tableparser.core.render.CsvProduct
-import fs2.kafka.ProducerSettings
+import com.phasmidsoftware.tableparser.core.render.{CsvProduct, SparkSchema}
+import fs2.kafka.{AutoOffsetReset, ConsumerSettings, ProducerSettings}
 import java.nio.file.{Path, Paths}
+import java.time.Instant
 
 /**
  * The runnable example of KAFKA.md: it streams the taxi trips of a CSV file to a Kafka topic, one CSV message for each row.
@@ -18,14 +19,15 @@ import java.nio.file.{Path, Paths}
  *   sbt "kafkaCats/Test/runMain com.phasmidsoftware.tableparser.kafka.cats.sendTrips"
  * }}}
  * The optional arguments are the CSV file (yellowtaxitrip.csv), the bootstrap servers (localhost:9092) and the topic (trips).
+ * Then `sbt "kafkaCats/Test/runMain com.phasmidsoftware.tableparser.kafka.cats.readTrips"` reads the first five trips back.
  */
 object TripsToKafka:
 
   /**
    * A few of the columns of a yellow taxi trip: the other columns of the file are ignored.
-   * The times are kept as Strings (as they are in the file): Spark reads them as timestamps.
+   * SparkSchema gives the schema with which Spark's from_csv reads the messages (see SparkSchema.ddl).
    */
-  case class Trip(vendorId: Int, pickup: String, dropoff: String, passengerCount: Int, tripDistance: Double, fareAmount: Double, tipAmount: Double, totalAmount: Double) derives CsvProduct
+  case class Trip(vendorId: Int, pickup: Instant, dropoff: Instant, passengerCount: Int, tripDistance: Double, fareAmount: Double, tipAmount: Double, totalAmount: Double) derives CsvProduct, SparkSchema
 
   object Trip extends CellParsers:
     // The file has a space after each comma.
@@ -56,6 +58,19 @@ object TripsToKafka:
       .map(_.size)
       .compile.foldMonoid
 
+  /**
+   * Read the first trips of a topic back, as rows (see IOKafka.fromKafka).
+   *
+   * @param n       the number of trips.
+   * @param servers the Kafka bootstrap servers.
+   * @param topic   the topic.
+   * @param group   the consumer group.
+   * @return an IO of the trips.
+   */
+  def read(n: Int, servers: String, topic: String, group: String): IO[List[Trip]] =
+    val settings = ConsumerSettings[IO, String, String].withBootstrapServers(servers).withGroupId(group).withAutoOffsetReset(AutoOffsetReset.Earliest)
+    IOKafka.fromKafka(topic, settings)(TripTableParser).take(n).compile.toList
+
 /**
  * Send the trips of a CSV file to Kafka: see TripsToKafka.
  *
@@ -67,3 +82,17 @@ object TripsToKafka:
   val topic = args.lift(2).getOrElse("trips")
   val n = TripsToKafka.send(Paths.get(path), servers, topic).unsafeRunSync()
   println(s"Sent $n messages from $path to topic $topic at $servers")
+  // The schema with which Spark's from_csv reads them (see KAFKA.md).
+  SparkSchema.ddl[TripsToKafka.Trip].foreach(schema => println(s"Spark schema: $schema"))
+
+/**
+ * Read the first trips of a topic back, and print them: see TripsToKafka.read.
+ *
+ * @param args the number of trips (5), the bootstrap servers (localhost:9092), the topic (trips) and the consumer group (readTrips).
+ */
+@main def readTrips(args: String*): Unit =
+  val n = args.headOption.map(_.toInt).getOrElse(5)
+  val servers = args.lift(1).getOrElse("localhost:9092")
+  val topic = args.lift(2).getOrElse("trips")
+  val group = args.lift(3).getOrElse("readTrips")
+  TripsToKafka.read(n, servers, topic, group).unsafeRunSync().foreach(println)
