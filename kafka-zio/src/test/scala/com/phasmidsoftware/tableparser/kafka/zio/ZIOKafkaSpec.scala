@@ -11,10 +11,11 @@ import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should
 import scala.jdk.CollectionConverters._
+import zio.kafka.consumer.{Consumer, ConsumerSettings}
 import zio.kafka.producer.{Producer, ProducerSettings}
 import zio.kafka.serde.Serde
 import zio.stream.{ZPipeline, ZStream}
-import zio.{Chunk, ZLayer}
+import zio.{Chunk, Semaphore, ZLayer}
 
 /**
  * Tests of ZIOKafka, with the Kafka client's MockProducer (so no broker is needed).
@@ -94,6 +95,27 @@ class ZIOKafkaSpec extends AnyFlatSpec with should.Matchers:
   it should "fail for a message without the header (when the parser has no fixed header)" in:
     ZIOKafka.parseRecord(PointTableParser)(new ConsumerRecord[String, String]("points", 0, 0L, "3", "3,4")).isFailure shouldBe true
 
+  behavior of "ZIOKafka.fromKafka (with a MockConsumer)"
+
+  it should "read rows back from a topic, and commit each chunk's offsets once its rows have been emitted" in:
+    val mock = MockKafka.consumer("points", Seq(Seq("x,y" -> "1,2", "x,y" -> "3,4", "y,x" -> "6,5"), Seq("x,y" -> "7,8")))
+    EvaluateZIO.run(ZIOKafka.fromKafka("points", Serde.string)(PointTableParser).take(4).runCollect.provideLayer(consumer(mock))).map(_.toList) shouldBe Right(List(Point(1, 2), Point(3, 4), Point(5, 6), Point(7, 8)))
+    // The first chunk (offsets 0 to 2) was committed before the fourth row was read: the next offset to read is 3.
+    mock.committedOffsets should contain(3L)
+
+  it should "give each row with its offset, for the caller to commit" in:
+    val mock = MockKafka.consumer("points", Seq(Seq("x,y" -> "1,2", "x,y" -> "3,4")))
+    EvaluateZIO.run(ZIOKafka.fromKafkaCommittable("points", Serde.string)(PointTableParser).take(1).mapZIO((p, o) => o.commit.as(p)).runCollect.provideLayer(consumer(mock))).map(_.toList) shouldBe Right(List(Point(1, 2)))
+    mock.committedOffsets shouldBe List(1L)
+
+  it should "decode each message with a function (fromKafkaWith)" in:
+    val mock = MockKafka.consumer("numbers", Seq(Seq("" -> "1", "" -> "2")))
+    EvaluateZIO.run(ZIOKafka.fromKafkaWith("numbers", Serde.string)(w => scala.util.Try(w.toInt)).take(2).runCollect.provideLayer(consumer(mock))).map(_.toList) shouldBe Right(List(1, 2))
+
+  it should "fail when a message can't be parsed (unless the parser is forgiving)" in:
+    val mock = MockKafka.consumer("points", Seq(Seq("x,y" -> "1,oops")))
+    EvaluateZIO.run(ZIOKafka.fromKafka("points", Serde.string)(PointTableParser).take(1).runCollect.provideLayer(consumer(mock))).isLeft shouldBe true
+
 object ZIOKafkaSpec:
   case class Point(x: Int, y: Int) derives CsvProduct
 
@@ -117,3 +139,8 @@ object ZIOKafkaSpec:
     EvaluateZIO.run(xs.via(pipeline).runCollect.provideLayer(producer(mock))).fold(e => throw e, identity)
 
   def string(bytes: Array[Byte]): String = new String(bytes, StandardCharsets.UTF_8)
+
+  // A Consumer which uses the given MockConsumer (the bootstrap servers are never contacted).
+  def consumer(mock: MockKafka.RecordingConsumer): ZLayer[Any, Throwable, Consumer] =
+    val settings = ConsumerSettings(List("localhost:9092")).withGroupId("ZIOKafkaSpec").withOffsetRetrieval(Consumer.OffsetRetrieval.Auto(Consumer.AutoOffsetStrategy.Earliest))
+    ZLayer.scoped(Semaphore.make(1).flatMap(access => Consumer.fromJavaConsumerWithPermit(mock, settings, access)))

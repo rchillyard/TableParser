@@ -2,7 +2,7 @@ package com.phasmidsoftware.tableparser.core.render
 
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.camelToSnakeCaseColumnNameMapperLower
 import com.phasmidsoftware.tableparser.core.parse.{CellParsers, ColumnHelper}
-import java.time.{Instant, LocalDate}
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetDateTime, ZonedDateTime}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import scala.util.Success
@@ -13,6 +13,29 @@ import scala.util.Success
 class SparkSchemaSpec extends AnyFlatSpec with Matchers:
 
   import SparkSchemaSpec._
+
+  behavior of "SparkType"
+
+  it should "give the Spark SQL type of each field type" in:
+    def sql[T](using t: SparkType[T]): String = t.sqlType
+    sql[String] shouldBe "STRING"
+    sql[Boolean] shouldBe "BOOLEAN"
+    sql[Byte] shouldBe "TINYINT"
+    sql[Short] shouldBe "SMALLINT"
+    sql[Int] shouldBe "INT"
+    sql[Long] shouldBe "BIGINT"
+    sql[Float] shouldBe "FLOAT"
+    sql[Double] shouldBe "DOUBLE"
+    sql[BigInt] shouldBe "DECIMAL(38,0)"
+    sql[BigDecimal] shouldBe "DECIMAL(38,18)"
+    sql[LocalDate] shouldBe "DATE"
+    sql[Instant] shouldBe "TIMESTAMP"
+    sql[LocalDateTime] shouldBe "TIMESTAMP_NTZ"
+    sql[OffsetDateTime] shouldBe "TIMESTAMP"
+    sql[ZonedDateTime] shouldBe "STRING"
+    sql[LocalTime] shouldBe "STRING"
+    sql[java.net.URL] shouldBe "STRING"
+    sql[Option[Long]] shouldBe "BIGINT"
 
   behavior of "SparkSchema.ddl"
 

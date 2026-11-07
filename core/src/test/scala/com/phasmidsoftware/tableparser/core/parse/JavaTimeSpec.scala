@@ -24,6 +24,10 @@ class JavaTimeSpec extends AnyFlatSpec with Matchers:
     summon[Parseable[OffsetDateTime]].parse("2024-01-01T00:34:44-05:00") shouldBe Success(OffsetDateTime.of(2024, 1, 1, 0, 34, 44, 0, ZoneOffset.ofHours(-5)))
     summon[Parseable[ZonedDateTime]].parse("2024-01-01T00:34:44-05:00[America/New_York]") shouldBe Success(ZonedDateTime.of(2024, 1, 1, 0, 34, 44, 0, ZoneId.of("America/New_York")))
 
+  it should "name its parsers (for debugging)" in:
+    summon[CellParser[Instant]].toString shouldBe "InstantParser"
+    summon[CellParser[ZonedDateTime]].toString shouldBe "ZonedDateTimeParser"
+
   it should "fail to parse a malformed value, with the type's name" in:
     summon[Parseable[Instant]].parse("yesterday") match
       case Failure(x) => x.getMessage should include("Instant")

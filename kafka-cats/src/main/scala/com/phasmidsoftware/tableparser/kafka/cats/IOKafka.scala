@@ -4,6 +4,7 @@ import cats.effect.IO
 import com.phasmidsoftware.tableparser.core.parse.StringTableParser
 import com.phasmidsoftware.tableparser.core.render.{CsvGenerator, CsvRenderer}
 import com.phasmidsoftware.tableparser.core.table.Table
+import fs2.kafka.consumer.MkConsumer
 import fs2.kafka.producer.MkProducer
 import fs2.kafka.{CommittableOffset, CommittableOffsetBatch, ConsumerRecord, ConsumerSettings, Header, Headers, KafkaConsumer, KafkaProducer, ProducerRecord, ProducerResult, ProducerSettings}
 import fs2.{Pipe, Stream}
@@ -122,10 +123,11 @@ object IOKafka:
    * @param topic    the topic.
    * @param settings the fs2-kafka ConsumerSettings (with the group id, auto.offset.reset and so on).
    * @param parser   a StringTableParser (e.g. a HeadedCSVTableParser).
+   * @param mk       implicit MkConsumer[IO] (fs2-kafka's default makes a Kafka consumer from the settings).
    * @tparam K the key type.
    * @return a Stream[IO, parser.Row].
    */
-  def fromKafka[K](topic: String, settings: ConsumerSettings[IO, K, String])(parser: StringTableParser[?]): Stream[IO, parser.Row] =
+  def fromKafka[K](topic: String, settings: ConsumerSettings[IO, K, String])(parser: StringTableParser[?])(using mk: MkConsumer[IO]): Stream[IO, parser.Row] =
     committing(fromKafkaCommittable(topic, settings)(parser))
 
   /**
@@ -137,10 +139,11 @@ object IOKafka:
    * @param topic    the topic.
    * @param settings the fs2-kafka ConsumerSettings.
    * @param parser   a StringTableParser.
+   * @param mk       implicit MkConsumer[IO].
    * @tparam K the key type.
    * @return a Stream[IO, (parser.Row, CommittableOffset[IO])].
    */
-  def fromKafkaCommittable[K](topic: String, settings: ConsumerSettings[IO, K, String])(parser: StringTableParser[?]): Stream[IO, (parser.Row, CommittableOffset[IO])] =
+  def fromKafkaCommittable[K](topic: String, settings: ConsumerSettings[IO, K, String])(parser: StringTableParser[?])(using mk: MkConsumer[IO]): Stream[IO, (parser.Row, CommittableOffset[IO])] =
     KafkaConsumer.stream(settings).subscribeTo(topic).records.evalMapFilter: r =>
       IO.fromTry(parseRecord(parser)(r.record)).map(_.map(_ -> r.offset))
 
@@ -151,11 +154,12 @@ object IOKafka:
    * @param topic    the topic.
    * @param settings the fs2-kafka ConsumerSettings.
    * @param decode   a function to decode a message's value (a Failure fails the stream).
+   * @param mk       implicit MkConsumer[IO].
    * @tparam K the key type.
    * @tparam X the type of the decoded values.
    * @return a Stream[IO, X].
    */
-  def fromKafkaWith[K, X](topic: String, settings: ConsumerSettings[IO, K, String])(decode: String => Try[X]): Stream[IO, X] =
+  def fromKafkaWith[K, X](topic: String, settings: ConsumerSettings[IO, K, String])(decode: String => Try[X])(using mk: MkConsumer[IO]): Stream[IO, X] =
     committing(KafkaConsumer.stream(settings).subscribeTo(topic).records.evalMap(r => IO.fromTry(decode(r.record.value)).map(_ -> r.offset)))
 
   /**

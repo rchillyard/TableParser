@@ -71,6 +71,14 @@ class RowIteratorSpec extends AnyFlatSpec with should.Matchers:
   it should "read a resource" in:
     Table.rowsResource(PointTableParser)("points.csv", classOf[RowIteratorSpec]).map(_.toList) shouldBe Success(List(Success(Point(1, 2)), Success(Point(3, 4))))
 
+  it should "read a resource relative to Table (by default)" in:
+    Table.rowsResource(PointTableParser)("points.csv").map(_.size) shouldBe Success(2)
+
+  it should "throw if next is called when there are no more rows" in:
+    val rows = Table.rowsLines(PointTableParser)(Seq("x,y", "1,2")).get
+    rows.next() shouldBe Success(Point(1, 2))
+    a[NoSuchElementException] should be thrownBy rows.next()
+
   it should "fail for a resource which doesn't exist" in:
     Table.rowsResource(PointTableParser)("nowhere.csv", classOf[RowIteratorSpec]).isFailure shouldBe true
 

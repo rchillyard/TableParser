@@ -6,8 +6,9 @@ import com.phasmidsoftware.tableparser.cats.table.IOTable
 import com.phasmidsoftware.tableparser.core.parse.{CellParser, CellParsers, HeadedCSVTableParser, StandardRowParser, StringParser}
 import com.phasmidsoftware.tableparser.core.render.CsvProduct
 import fs2.Stream
+import fs2.kafka.consumer.MkConsumer
 import fs2.kafka.producer.MkProducer
-import fs2.kafka.{ConsumerRecord, Header, Headers, KafkaByteProducer, ProducerSettings}
+import fs2.kafka.{AutoOffsetReset, ConsumerRecord, ConsumerSettings, Header, Headers, KafkaByteConsumer, KafkaByteProducer, ProducerSettings}
 import java.nio.charset.StandardCharsets
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.common.serialization.ByteArraySerializer
@@ -110,6 +111,31 @@ class IOKafkaSpec extends AnyFlatSpec with should.Matchers:
   it should "fail for a message without the header (when the parser has no fixed header)" in:
     IOKafka.parseRecord(PointTableParser)(ConsumerRecord("points", 0, 0L, "3", "3,4")).isFailure shouldBe true
 
+  behavior of "IOKafka.fromKafka (with a MockConsumer)"
+
+  it should "read rows back from a topic, and commit each chunk's offsets once its rows have been emitted" in:
+    val mock = MockKafka.consumer("points", Seq(Seq("x,y" -> "1,2", "x,y" -> "3,4", "y,x" -> "6,5"), Seq("x,y" -> "7,8")))
+    given MkConsumer[IO] = mkConsumer(mock)
+    IOKafka.fromKafka("points", consumerSettings)(PointTableParser).take(4).compile.toList.unsafeRunSync() shouldBe List(Point(1, 2), Point(3, 4), Point(5, 6), Point(7, 8))
+    // The first chunk (offsets 0 to 2) was committed before the fourth row was read: the next offset to read is 3.
+    mock.committedOffsets should contain(3L)
+
+  it should "give each row with its offset, for the caller to commit" in:
+    val mock = MockKafka.consumer("points", Seq(Seq("x,y" -> "1,2", "x,y" -> "3,4")))
+    given MkConsumer[IO] = mkConsumer(mock)
+    IOKafka.fromKafkaCommittable("points", consumerSettings)(PointTableParser).take(1).evalMap((p, o) => o.commit.as(p)).compile.toList.unsafeRunSync() shouldBe List(Point(1, 2))
+    mock.committedOffsets shouldBe List(1L)
+
+  it should "decode each message with a function (fromKafkaWith)" in:
+    val mock = MockKafka.consumer("numbers", Seq(Seq("" -> "1", "" -> "2")))
+    given MkConsumer[IO] = mkConsumer(mock)
+    IOKafka.fromKafkaWith("numbers", consumerSettings)(w => scala.util.Try(w.toInt)).take(2).compile.toList.unsafeRunSync() shouldBe List(1, 2)
+
+  it should "fail when a message can't be parsed (unless the parser is forgiving)" in:
+    val mock = MockKafka.consumer("points", Seq(Seq("x,y" -> "1,oops")))
+    given MkConsumer[IO] = mkConsumer(mock)
+    IOKafka.fromKafka("points", consumerSettings)(PointTableParser).take(1).compile.toList.attempt.unsafeRunSync().isLeft shouldBe true
+
 object IOKafkaSpec:
   case class Point(x: Int, y: Int) derives CsvProduct
 
@@ -138,3 +164,9 @@ object IOKafkaSpec:
     def apply[G[_]](settings: ProducerSettings[G, ?, ?]): IO[KafkaByteProducer] = IO.pure(mock)
 
   def string(bytes: Array[Byte]): String = new String(bytes, StandardCharsets.UTF_8)
+
+  // The bootstrap servers are never contacted, as MkConsumer gives a MockConsumer instead.
+  val consumerSettings: ConsumerSettings[IO, String, String] = ConsumerSettings[IO, String, String].withBootstrapServers("localhost:9092").withGroupId("IOKafkaSpec").withAutoOffsetReset(AutoOffsetReset.Earliest)
+
+  def mkConsumer(mock: MockKafka.RecordingConsumer): MkConsumer[IO] = new MkConsumer[IO]:
+    def apply[G[_]](settings: ConsumerSettings[G, ?, ?]): IO[KafkaByteConsumer] = IO.pure(mock)
