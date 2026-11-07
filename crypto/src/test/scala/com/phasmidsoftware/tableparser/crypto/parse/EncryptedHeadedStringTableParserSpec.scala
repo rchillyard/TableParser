@@ -21,49 +21,6 @@ class EncryptedHeadedStringTableParserSpec extends flatspec.AnyFlatSpec with sho
     val parser = EncryptedHeadedStringTableParser[Int, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
     the[TableParserException] thrownBy parser.setHeader(Header(Seq(Seq("a"))))
 
-  it should "it should set predicate of plaintext" in:
-    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
-
-    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
-
-    val parser = EncryptedHeadedStringTableParser[Int, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
-    // NOTE up to 2.3.0, setPredicate reset headerRowsToRead to 1 (issue #111). Setters returning the plaintext parser is issue #112.
-    parser.setPredicate(TableParser.sampler(2)) shouldBe PlainTextHeadedStringTableParser[Int](None, forgiving = false, 2)
-
-  it should "it should set forgiving of encrypted parser" in:
-    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
-
-    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
-
-    val parser = EncryptedHeadedStringTableParser[Int, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 2)
-    parser.setForgiving(true) shouldBe PlainTextHeadedStringTableParser[Int](None, forgiving = true, 2)
-
-  it should "it should set multiline of encrypted parser" in:
-    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
-
-    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
-
-    val parser = EncryptedHeadedStringTableParser[Int, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 1)
-    parser.setMultiline(true) shouldBe PlainTextHeadedStringTableParser[Int](None, forgiving = false, 1)
-
-  it should "it should set plaintext predicate of encrypted parser" in:
-    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
-
-    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
-
-    val parser = EncryptedHeadedStringTableParser[Int, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 1)
-    parser.setPlaintextPredicate(TableParser.sampler(2)) shouldBe PlainTextHeadedStringTableParser[Int](None, forgiving = false, 1)
-
-  it should "it should set row parser of EncryptedHeadedStringTableParser" in:
-    val keyMap = Map("1" -> "k0JCcO$SY5OI50uj", "2" -> "QwSeQVJNuAg6D6H9", "3" -> "dTLsxr132eucgu10", "4" -> "mexd0Ta81di$fCGp", "5" -> "cb0jlsf4DXtZz_kf")
-
-    def encryptionPredicate(w: String): Boolean = w == "1" // We only decrypt for team 1's row
-
-    val parser = EncryptedHeadedStringTableParser[Int, AES128CTR](encryptionPredicate, keyMap, headerRowsToRead = 1)
-    val rowConfig = RowConfig.defaultEncryptedRowConfig
-    val lineParser: LineParser = LineParser.apply(using rowConfig)
-    parser.setRowParser(StandardRowParser[Int](lineParser)) shouldBe PlainTextHeadedStringTableParser[Int](None, forgiving = false, 1)
-
   behavior of "EncryptedHeadedStringTableParser (decryption)"
 
   // An encrypted table of team projects: two (plaintext) header lines, then five encrypted rows, keyed by team number.
@@ -91,6 +48,43 @@ class EncryptedHeadedStringTableParserSpec extends flatspec.AnyFlatSpec with sho
     table.size shouldBe 1
     table.head.ws.head shouldBe "2"
     table.head.ws.mkString should not include "|"
+
+  behavior of "EncryptedHeadedStringTableParser setters (issue #112: up to 2.3.0, they gave a parser which didn't decrypt)"
+
+  private def teams(parser: TableParser[RawTable]): scala.util.Try[Seq[String]] =
+    given TableParser[RawTable] = parser
+    Table.parse[RawTable](lines).map(_.toSeq.map(_.ws.head))
+
+  private def allTeams: EncryptedHeadedStringTableParser[RawRow, AES128CTR] =
+    given CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
+    EncryptedHeadedStringTableParser[RawRow, AES128CTR](keyMap.contains, keyMap, headerRowsToRead = 2)
+
+  it should "keep decrypting after setPredicate (applied to the decrypted rows)" in:
+    val parser: EncryptedHeadedStringTableParser[RawRow, AES128CTR] = allTeams.setPredicate(_.map(_.ws.head != "3").getOrElse(false))
+    teams(parser) shouldBe scala.util.Success(Seq("1", "2", "4", "5"))
+
+  it should "keep decrypting after setPlaintextPredicate" in:
+    teams(allTeams.setPlaintextPredicate(_.map(_.ws.head != "3").getOrElse(false))) shouldBe scala.util.Success(Seq("1", "2", "4", "5"))
+
+  it should "keep decrypting after setRawPredicate (applied to the decrypted rows before they are parsed)" in:
+    teams(allTeams.setRawPredicate(_.ws.head != "4")) shouldBe scala.util.Success(Seq("1", "2", "3", "5"))
+
+  it should "keep decrypting after setForgiving, and be forgiving" in:
+    val parser = allTeams.setForgiving(true)
+    parser.forgiving shouldBe true
+    teams(parser) shouldBe scala.util.Success(Seq("1", "2", "3", "4", "5"))
+
+  it should "keep decrypting after setMultiline" in:
+    teams(allTeams.setMultiline(true)) shouldBe scala.util.Success(Seq("1", "2", "3", "4", "5"))
+
+  it should "keep decrypting after setRowParser" in:
+    given CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
+    teams(allTeams.setRowParser(StandardRowParser.create[RawRow])) shouldBe scala.util.Success(Seq("1", "2", "3", "4", "5"))
+
+  it should "keep each setting when another is made" in:
+    val parser = allTeams.setRawPredicate(_.ws.head != "4").setPredicate(_.map(_.ws.head != "3").getOrElse(false)).setMultiline(true)
+    teams(parser) shouldBe scala.util.Success(Seq("1", "2", "5"))
+    teams(rawParser("2").setPredicate(_ => true)) shouldBe scala.util.Success(Seq("2"))
 
   it should "decrypt every row whose key is chosen" in:
     given CellParser[RawRow] = RawParsers.WithHeaderRow.rawRowCellParser
