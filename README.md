@@ -86,8 +86,9 @@ Indeed, it is implemented very similarly to JSON readers.
 There is a row-parser configuration (_RowConfig_) that allows
 the programmer to vary the delimiter, the quote character, and how lists within a cell are written.
 
-From version 2.1.0, the rows of a large table can also be streamed (with fs2 or ZIO), rather than all read into memory:
-see [Streaming](#streaming).
+The rows of a large table can also be read as they are parsed, rather than all read into memory:
+as an _Iterator_ with no other library (from version 2.5.0), or as an fs2 or ZIO stream (from version 2.1.0).
+See [Streaming](#streaming).
 
 In addition to parsing,
 _TableParser_ provides a mechanism for rendering a table in _hierarchical_ form (for example for
@@ -358,14 +359,31 @@ See [Parsing](#parsing) for more.
 ## Large files: streaming
 
 Parsing a _Table_ reads all of its rows into memory.
-For a large file, the _cats_ module can instead give you a _stream_ of rows, parsed as they are read, in bounded memory
+For a large file, read the rows as they are parsed instead, in bounded memory.
+This needs no other module: _Table.rowsFile_ gives a _RowIterator_, an _Iterator_ of the rows (each a _Try_)
+which closes the file when it has been read to the end
+(this example is tested in [ReadmeRowsSpec](core/src/test/scala/com/phasmidsoftware/tableparser/core/ReadmeRowsSpec.scala)):
+
+```scala
+import scala.util.{Success, Using}
+
+val parser = PlainTextHeadedStringTableParser[Pioneer]()
+val living: Try[List[String]] = for
+  rows <- Table.rowsFile(parser)(Paths.get("pioneers.csv"))
+  names <- Using(rows)(_.collect { case Success(p) if p.died.isEmpty => p.name }.toList)
+yield names
+```
+
+_Using_ closes the file even if you stop early (or an exception is thrown).
+A row which can't be parsed is a _Failure_ (left out here, by _collect_), unless the parser is forgiving, which leaves it out itself.
+
+With an effect library, the _cats_ module gives the same rows as an fs2 _Stream_
 (this example is tested in [ReadmeStreamSpec](cats/src/test/scala/com/phasmidsoftware/tableparser/cats/table/ReadmeStreamSpec.scala)):
 
 ```scala
 import cats.effect.IO
 import com.phasmidsoftware.tableparser.cats.table.IOTable
 
-val parser = PlainTextHeadedStringTableParser[Pioneer]()
 val living: IO[List[String]] = IOTable.streamFile(parser)(Paths.get("pioneers.csv")).filter(_.died.isEmpty).map(_.name).compile.toList
 ```
 
@@ -569,46 +587,65 @@ Each of these methods keeps the settings made by the others (up to 2.3.0, some o
 ## Streaming
 
 Parsing into a _Table_ reads the whole table into memory.
-For a large file, the _cats_ module can instead stream the rows, as they are read, with [fs2](https://fs2.io):
+For a large file, read the rows as they are parsed instead: the header is read first, then each row is read and parsed
+only when it is wanted, so memory is bounded however large the file is (and even endless input can be read, with _take_).
+There are three ways to do it, which give the same rows:
+
+* _core_: _Table.rows_ and its variants give a _RowIterator_, with no other library (see below);
+* _cats_: _IOTable.stream_ and its variants give an fs2 _Stream\[IO, Row]_;
+* _zio_: _ZIOTable.stream_ and its variants give a _ZStream\[Any, Throwable, Row]_.
+
+In each, the parser's raw predicate and predicate select the rows (see [Predicates](#predicates)).
+If the parser is forgiving, a row which can't be parsed is logged and left out; otherwise it is a _Failure_ in a _RowIterator_,
+and an fs2 or ZIO stream fails at that row.
+The parser is passed as a value (not a given), so that the type of the rows is known.
+All three are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
+
+### Without an effect library (core)
+
+_Table.rowsFile(parser)(path)_ gives a _Try\[RowIterator\[Row]]_: a _Failure_ if the file can't be opened or its header can't be read.
+A _RowIterator_ is an _Iterator\[Try\[Row]]_ which also has the table's _header_, and is _AutoCloseable_.
+It closes its file when it has been read to the end, or when it is closed;
+use it with _scala.util.Using_ to be sure the file is closed if you stop early (or an exception is thrown):
+
+    import scala.util.{Success, Using}
+
+    val usa: Try[Int] = for
+      rows <- Table.rowsFile(MovieTableParser)(Paths.get("movie_metadata.csv"))
+      n <- Using(rows)(_.count { case Success(m) => m.production.country == "USA"; case _ => false })
+    yield n
+
+There are also _Table.rows_ (from any _Source_), _rowsResource_, _rowsURI_ (which applies an RFC 7111 row selection:
+see [Selecting rows, columns and cells](#selecting-rows-columns-and-cells-rfc-7111)) and _rowsLines_.
+Since a _RowIterator_ is an _Iterator_, _filter_, _map_, _collect_, _take_, _foldLeft_ and so on work on the rows as they are parsed.
+To parse a single row on its own, given its header line (a Kafka message, say), use _Table.parseRow_.
+Parsing a whole _Table_ is still the simplest way to read a file which fits in memory.
+
+### With fs2 (cats)
+
+The _cats_ module streams the rows with [fs2](https://fs2.io):
 
     import com.phasmidsoftware.tableparser.cats.table.IOTable
 
     val movies: fs2.Stream[IO, Movie] = IOTable.streamFile(MovieTableParser)(Paths.get("movie_metadata.csv"))
     val count: IO[Long] = movies.filter(_.production.country == "USA").compile.count
 
-The header is read first; then the rows are read and parsed as the stream pulls them, 256 rows at a time,
-so memory is bounded however large the file is: the whole table is never in memory
-(a stream can even read endless input, with _take_).
+The rows are read and parsed as the stream pulls them, 256 rows at a time.
 The file is opened when the stream is run, and closed when it ends, however it ends.
-The parser's predicate selects the rows; if the parser is forgiving, a row which can't be parsed is logged and left out,
-otherwise the stream fails at that row.
-The parser is passed as a value (not a given), so that the type of the rows is known: here, _Movie_.
-There are also _stream_ (from any _Source_), _streamResource_ and _streamLines_.
+There are also _stream_ (from any _Source_), _streamResource_, _streamURI_ and _streamLines_.
 
 To write a stream of rows as CSV, use the pipes _IOTable.csvLines_ (the header, then a line for each row)
 and _IOTable.writeCSVFile_:
 
     movies.through(IOTable.writeCSVFile[Movie](Paths.get("movies.csv"))).compile.drain
 
+### With ZIO (zio)
+
 The _zio_ module has the same methods, with [ZStream](https://zio.dev/reference/stream/) (from _zio-streams_):
 _ZIOTable.streamFile(MovieTableParser)(path)_ is a _ZStream\[Any, Throwable, Movie]_;
 _ZIOTable.csvLines_ is a _ZPipeline_ and _ZIOTable.writeCSVFile_ a _ZSink_:
 
     movies.run(ZIOTable.writeCSVFile[Movie](Paths.get("movies.csv")))
-
-These are built on _StringTableParser.rows_ (in _core_), which parses lazily: it gives the header and an _Iterator_ of the rows.
-
-Without an effect library, _Table.rows_ (and _rowsFile_, _rowsResource_, _rowsURI_ and _rowsLines_) give the same rows
-as a _RowIterator_: an _Iterator\[Try\[Row]]_ (a _Failure_ for a row which can't be parsed, unless the parser is forgiving),
-which also has the _header_, and is _AutoCloseable_.
-It closes its file when it has been read to the end; use it with _scala.util.Using_ to be sure the file is closed if you stop early:
-
-    for
-      rows <- Table.rowsFile(MovieTableParser)(Paths.get("movie_metadata.csv"))
-      n <- Using(rows)(_.count(_.toOption.exists(_.production.country == "USA")))
-    yield n
-
-Parsing a whole _Table_ is still the simplest way to read a file which fits in memory.
 
 ### Processing rows as they come
 

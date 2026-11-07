@@ -19,8 +19,9 @@ class ReadmeStreamSpec extends AnyFlatSpec with Matchers:
 
   it should "stream the rows of a file" in:
     val path = file()
-    // From here, as in the README.
+    // The parser is defined in the README's example before this one (tested in core's ReadmeRowsSpec).
     val parser = PlainTextHeadedStringTableParser[Pioneer]()
+    // From here, as in the README.
     val living: IO[List[String]] = IOTable.streamFile(parser)(path).filter(_.died.isEmpty).map(_.name).compile.toList
     living.unsafeRunSync() shouldBe List("Barbara Liskov")
 
