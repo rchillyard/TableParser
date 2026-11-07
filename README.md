@@ -356,7 +356,7 @@ See [Parsing](#parsing) for more.
 ## Large files: streaming
 
 Parsing a _Table_ reads all of its rows into memory.
-For a large file, the _cats_ module can instead give you a _stream_ of rows, each parsed as it is read
+For a large file, the _cats_ module can instead give you a _stream_ of rows, parsed as they are read, in bounded memory
 (this example is tested in [ReadmeStreamSpec](cats/src/test/scala/com/phasmidsoftware/tableparser/cats/table/ReadmeStreamSpec.scala)):
 
 ```scala
@@ -574,7 +574,8 @@ For a large file, the _cats_ module can instead stream the rows, as they are rea
     val movies: fs2.Stream[IO, Movie] = IOTable.streamFile(MovieTableParser)(Paths.get("movie_metadata.csv"))
     val count: IO[Long] = movies.filter(_.production.country == "USA").compile.count
 
-The header is read first; then each row is parsed only when the stream pulls it, so the whole table is never in memory
+The header is read first; then the rows are read and parsed as the stream pulls them, 256 rows at a time,
+so memory is bounded however large the file is: the whole table is never in memory
 (a stream can even read endless input, with _take_).
 The file is opened when the stream is run, and closed when it ends, however it ends.
 The parser's predicate selects the rows; if the parser is forgiving, a row which can't be parsed is logged and left out,
@@ -607,7 +608,7 @@ and nothing is kept unless you keep it:
       .through(IOTable.writeCSVFile[Movie](Paths.get("usa.csv")))
       .compile.drain
 
-* One row at a time: _filter_, _map_, _collect_, _take_, _drop_, _zip_ and so on.
+* Row by row: _filter_, _map_, _collect_, _take_, _drop_, _zip_ and so on.
 * An effect for each row: _evalMap_ (or _parEvalMap_ to run several at once; with ZIO, _mapZIO_ and _mapZIOPar_).
 * Aggregation in constant memory: _fold_, _scan_ and _compile.count_ (with ZIO, _runFold_ and _runCount_),
   for example, a total, or a count for each key, over a file of any size.
@@ -653,8 +654,11 @@ With fs2:
 The function after the settings gives the key of each row's message. For messages without a key (Kafka then chooses the partition),
 use _Unit_ as the key type, with _\_ => ()_. The producer is made when the stream starts and closed when it ends;
 the pipe emits each batch's _ProducerResult_ once Kafka has acknowledged it.
-To send the rows of a _Table_, start with _Stream.emits(table.content.toSeq)_.
+To send the rows of a _Table_, start with _Stream.emits(table.content.toSeq)_ (but the whole table is then in memory).
+The pipes send a chunk of rows at a time, and the producer buffers unsent messages up to its _buffer.memory_ (32 MB by default),
+so a stream from _IOTable.streamFile_ goes to Kafka in bounded memory, however large the file is.
 If Kafka refuses a message, the stream fails (with Kafka's exception), as it would if a row couldn't be parsed.
+For a walk-through of the whole pipeline, with a broker in Docker, the console consumer, and Spark, see [KAFKA.md](KAFKA.md).
 
 ### With ZIO
 
