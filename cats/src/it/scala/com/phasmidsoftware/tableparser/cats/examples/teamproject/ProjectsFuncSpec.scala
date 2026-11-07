@@ -16,7 +16,6 @@ import org.scalatest.concurrent.{Futures, ScalaFutures}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import tsec.cipher.symmetric.jca.AES128CTR
-import java.nio.file.Paths
 
 
 //noinspection SpellCheckingInspection
@@ -48,8 +47,11 @@ class ProjectsFuncSpec extends AnyFlatSpec with Matchers with Futures with Scala
           case Some(h) => Row.csvGenerator(h)
           case None => createCsvGeneratorFromTeamProject(CsvGenerator.derived[Grade])
         implicit val csvRenderer: CsvRenderer[TeamProject] = createCsvRendererForTeamProject(CsvRenderer.derived[Grade])
-        pt.writeCSVFile(Paths.get("TeamProjectOutput.csv"))
-        succeed
+        // A temporary file, not one in the working directory (#123).
+        val file = java.io.File.createTempFile("TeamProjectOutput", ".csv")
+        file.deleteOnExit()
+        pt.writeCSVFile(file.toPath)
+        file.length() should be > 0L
 
   // NOTE this sometimes causes a problem
   it should "be ingested and written out to encrypted file using the given header" in:

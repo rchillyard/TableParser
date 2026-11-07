@@ -1379,6 +1379,9 @@ In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces 
 # Release Notes
 
 V2.3.0 -> V2.4.0
+* Version scheme (#122): the POM now declares _pvp_ (it said _early-semver_), in which the first two numbers make the major version.
+  A patch release is binary compatible; a minor release, such as this one, may not be (see the notes below).
+  So sbt and Coursier warn when a build has both 2.3.x and 2.4.x, rather than silently choosing 2.4.x.
 * Raw predicate (#109): _setRawPredicate_ leaves rows out before they are parsed (see [Predicates](#predicates)),
   and _TableParser.rawSampler(n)_ samples rows without parsing the others.
   RFC 7111 row selections now parse only the selected rows (unless the parser is multiline).
