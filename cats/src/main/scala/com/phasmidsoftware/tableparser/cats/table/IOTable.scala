@@ -213,8 +213,6 @@ object IOTable:
   /**
    * Method to parse a table from a URL with an explicit encoding.
    *
-   * NOTE: the logic here is different from that of parseResource(u:=>URL)(using codec: Codec) above.
-   *
    * @param u   the URL.
    * @param enc the encoding.
    * @tparam T the type of the resulting table.
