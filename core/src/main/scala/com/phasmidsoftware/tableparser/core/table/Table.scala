@@ -752,13 +752,14 @@ object Table:
     Try(Source.fromInputStream(s))
 
   /**
-   * Method to open source defined by a URI.
+   * Method to open source defined by a URI: any URL which Java can open, such as file:, http:, https: or jar:.
+   * (Up to 2.5.0, this used Source.fromURI, which only accepts file: URIs: issue #128.)
    *
    * @param u a URI.
    * @return an Try[Source].
    */
   private def sourceFromURI(u: => URI)(using codec: Codec): Try[Source] =
-    Try(Source.fromURI(u))
+    Try(Source.fromURL(u.toURL))
 
   /**
    * Method to open source defined by a File.

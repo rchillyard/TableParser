@@ -112,7 +112,7 @@ The _spark_ module (for use with Apache Spark) is on the 1.x line only, because 
 
 ## Installation
 
-This version of the README.md file refers to version: 2.5.0.
+This version of the README.md file refers to version: 2.5.1.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only, and it needs Java 21 or later.
 Versions 2.0 and 2.1 are built with Scala 3.3 LTS, so they can be used from any later Scala 3 version;
@@ -1456,6 +1456,11 @@ In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces 
 | Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
 
 # Release Notes
+
+V2.5.0 -> V2.5.1
+* Bug fix (#128): _Table.parse(uri)_, _Table.parseResource(url)_, _Table.rowsURI_, and _IOTable_'s and _ZIOTable_'s
+  _parse(uri)_ and _streamURI_, only accepted _file:_ URIs (they opened the URI as a file), so an _http:_, _https:_ or _jar:_ URL failed.
+  They now open any URL which Java can (an RFC 7111 fragment still selects rows).
 
 V2.4.0 -> V2.5.0
 * This release is binary compatible with 2.4.0 (checked by MiMa): it only adds.

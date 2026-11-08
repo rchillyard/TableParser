@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "2.5.0"
+ThisBuild / version := "2.5.1"
 
 // 2.x is Scala 3 only (for Scala 2.13, use the 1.x line, on the 1.x branch).
 // The current Scala 3 LTS. Code built with 3.9 can only be used from Scala 3.9 or later.
