@@ -2,7 +2,8 @@ package com.phasmidsoftware.tableparser.zio.table
 
 import com.phasmidsoftware.tableparser.core.parse.{CellParser, CellParsers, HeadedCSVTableParser, RawTableParser, StandardRowParser, StringParser, TableParser}
 import com.phasmidsoftware.tableparser.core.render.CsvProduct
-import com.phasmidsoftware.tableparser.core.table.{Header, RawRow}
+import com.phasmidsoftware.tableparser.core.table.{Header, RawRow, Table}
+import com.phasmidsoftware.tableparser.core.util.LocalSources
 import com.phasmidsoftware.tableparser.zio.util.EvaluateZIO
 import java.io.{ByteArrayInputStream, File}
 import java.nio.charset.StandardCharsets
@@ -68,6 +69,16 @@ class ZIOTableStreamSpec extends AnyFlatSpec with should.Matchers:
     Files.writeString(file.toPath, "x,y\n1,2\n3,4\n5,6\n7,8\n")
     run(ZIOTable.streamURI(PointTableParser)(new java.net.URI(s"${file.toURI}#row=3-4"))) shouldBe List(Point(3, 4), Point(5, 6))
     run(ZIOTable.streamURI(PointTableParser)(file.toURI)).size shouldBe 4
+
+  it should "stream a table over HTTP, and from a jar (#128: up to 2.5.0, only file: URIs)" in:
+    val csv = "x,y\n1,2\n3,4\n5,6\n"
+    LocalSources.withHttpServer(Map("/points.csv" -> csv)): base =>
+      run(ZIOTable.streamURI(PointTableParser)(base.resolve("/points.csv"))) shouldBe points
+      run(ZIOTable.streamURI(PointTableParser)(java.net.URI.create(s"$base/points.csv#row=3-4"))) shouldBe List(Point(3, 4), Point(5, 6))
+      val uri = base.resolve("/points.csv")
+      given TableParser[Table[Point]] = PointTableParser
+      EvaluateZIO.run(ZIOTable.parse[Table[Point]](uri)).map(_.toSeq) shouldBe Right(points)
+    run(ZIOTable.streamURI(PointTableParser)(LocalSources.jarURI("points.csv", csv))) shouldBe points
 
   it should "stream a resource" in:
     run(ZIOTable.streamResource(PointTableParser)("points.csv", classOf[ZIOTableStreamSpec])) shouldBe List(Point(1, 2), Point(3, 4))

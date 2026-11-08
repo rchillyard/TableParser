@@ -359,7 +359,7 @@ object IOTable:
    */
   def streamURI(parser: StringTableParser[?])(uri: URI)(using codec: Codec): Stream[IO, parser.Row] =
     val selection = CsvFragment.fromURI(uri) collect { case rs: RowSelection => rs } getOrElse RowSelection.all
-    streamSelected(parser, selection)(Source.fromURI(CsvFragment.withoutFragment(uri)))
+    streamSelected(parser, selection)(Source.fromURL(CsvFragment.withoutFragment(uri).toURL))
 
   // Stream the selected rows of the source (see stream).
   private def streamSelected(parser: StringTableParser[?], selection: RowSelection)(source: => Source): Stream[IO, parser.Row] =
@@ -470,12 +470,13 @@ object IOTable:
   private def sourceFromInputStream(s: => InputStream)(using codec: Codec): IO[Source] = IO.blocking(Source.fromInputStream(s))
 
   /**
-   * Method to open source defined by a URI.
+   * Method to open source defined by a URI: any URL which Java can open, such as file:, http:, https: or jar:.
+   * (Up to 2.5.0, this used Source.fromURI, which only accepts file: URIs: issue #128.)
    *
    * @param u a URI.
    * @return an IO[Source].
    */
-  private def sourceFromURI(u: => URI)(using codec: Codec): IO[Source] = IO.blocking(Source.fromURI(u))
+  private def sourceFromURI(u: => URI)(using codec: Codec): IO[Source] = IO.blocking(Source.fromURL(u.toURL))
 
   /**
    * Method to open source defined by a File.
