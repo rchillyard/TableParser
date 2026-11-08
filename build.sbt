@@ -21,7 +21,7 @@ lazy val testScalacOptions = Test / scalacOptions ~= (_.filterNot(_ == "-Wnonuni
 // MiMa checks each published module for binary compatibility with the last release (#120): `sbt mimaReportBinaryIssues`.
 // The version scheme is PVP (see publish.sbt): a patch release must pass; a minor release may break compatibility,
 // on purpose and with a release note, by listing the breaks in mimaBinaryIssueFilters (or, after the release, by moving previousRelease on).
-val previousRelease = "2.5.0"
+val previousRelease = "2.5.1"
 lazy val mimaSettings = mimaPreviousArtifacts := Set(organization.value %% name.value % previousRelease)
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "21")
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
