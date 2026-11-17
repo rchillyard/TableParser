@@ -35,7 +35,7 @@ class CrimeSpec extends AnyFlatSpec with Matchers:
       case t@HeadedTable(r, _) =>
         val analysis = Analysis(t)
         println(s"Crime: $analysis")
-        analysis.rows shouldBe 400 +- 80
+        analysis.rows shouldBe 400 +- 80: Unit
         r.take(10).foreach(println)
         succeed
 
@@ -55,6 +55,6 @@ class CrimeSpec extends AnyFlatSpec with Matchers:
 
     matchIO(wi, Timeout(Span(20, Seconds))):
       case (n, w) =>
-        w should startWith("crimeID,longitude,latitude\r\n")
+        w should startWith("crimeID,longitude,latitude\r\n"): Unit
         // About one row in ten is written (after the header).
         w.split("\r\n").length - 1 shouldBe (n / 10) +- (n / 50)
