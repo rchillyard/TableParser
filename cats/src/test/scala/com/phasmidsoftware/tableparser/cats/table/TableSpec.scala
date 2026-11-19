@@ -17,9 +17,11 @@ import org.scalatest.matchers.should
 import scala.annotation.unused
 import scala.util.parsing.combinator.JavaTokenParsers
 import scala.util.{Failure, Success, Try}
-import java.nio.file.Paths
 
 class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
+
+  // intPairs.csv, found as a resource (core's), so that the tests pass whatever the working directory.
+  private lazy val intPairs: File = new File(classOf[Table[?]].getResource("intPairs.csv").toURI)
 
   case class IntPair(a: Int, b: Int):
     infix def map(f: Int => Int): IntPair = IntPair(f(a), f(b))
@@ -61,8 +63,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
   it should "parse table from file" in:
     import IntPair._
-    val z1 = IO.fromTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"), "UTF-8"))
-    val z2 = IO.fromTry(Table.parseFile(Paths.get("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv")))
+    val z1 = IO.fromTry(Table.parseFile(intPairs.toPath, "UTF-8"))
+    val z2 = IO.fromTry(Table.parseFile(intPairs.toPath))
     matchIO(z1 product z2):
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) => a.size shouldBe 2; b.size shouldBe 2
 
@@ -73,7 +75,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     file.deleteOnExit()
     java.nio.file.Files.writeString(file.toPath, "1,2\n3,4\n")
     val z1: IO[Table[RawRow]] = IO.fromTry(Table.parsePathRaw(file.toPath, TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))))
-    val z2: IO[Table[RawRow]] = IO.fromTry(Table.parseFileRaw("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", TableParser.includeAll))
+    val z2: IO[Table[RawRow]] = IO.fromTry(Table.parseFileRaw(intPairs.getPath, TableParser.includeAll))
     matchIO(z1 product z2):
       case (a@HeadedTable(_, _), b@HeadedTable(_, _)) =>
         a.toSeq.map(_.ws) shouldBe Seq(Seq("1", "2"), Seq("3", "4"))
@@ -271,7 +273,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
       def toColumnNames(po: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
 
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
-    matchIO(IOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))):
+    matchIO(IOTable.parseFile(intPairs)):
       case iIt@HeadedTable(_, _) =>
         val ws = IO.fromTry(iIt.toCSV)
         EvaluateIO(ws) shouldBe "a, b\r\n1, 2\r\n42, 99\r\n"
@@ -290,7 +292,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
       def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
 
-    matchIO(IOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))):
+    matchIO(IOTable.parseFile(intPairs)):
       case iIt@HeadedTable(_, _) =>
         val ws = IO.fromTry(iIt.toCSV)
         EvaluateIO(ws) shouldBe "a|b\r\n1|2\r\n42|99\r\n"
