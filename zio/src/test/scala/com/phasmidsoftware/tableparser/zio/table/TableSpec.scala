@@ -20,6 +20,9 @@ import zio._
 
 class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
+  // intPairs.csv, found as a resource (core's), so that the tests pass whatever the working directory.
+  private lazy val intPairs: File = new File(classOf[Table[?]].getResource("intPairs.csv").toURI)
+
   case class IntPair(a: Int, b: Int):
     infix def map(f: Int => Int): IntPair = IntPair(f(a), f(b))
 
@@ -60,8 +63,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
 //  it should "parse table from file" in {
 //    import IntPair._
-//    val z1 = ZIO.fromTry(Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", "UTF-8"))
-//    val z2 = ZIO.fromTry(Table.parseFile("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))
+//    val z1 = ZIO.fromTry(Table.parseFile(intPairs.toPath, "UTF-8"))
+//    val z2 = ZIO.fromTry(Table.parseFile(intPairs.toPath))
 //    matchZIO(z1 product z2) {
 //      case (a@HeadedTable(_, _), b@HeadedTable(_, _)) => a.size shouldBe 2; b.size shouldBe 2
 //    }
@@ -70,7 +73,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
   // NOTE: this test can be flaky. Perhaps we should just use zip instead of parProduct.
 //  it should "parse table from raw file" in {
 //    val z1: Task[Table[RawRow]] = ZIO.fromTry(Table.parseFileRaw(new File("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))))
-//    val z2: Task[Table[RawRow]] = ZIO.fromTry(Table.parseFileRaw("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv", TableParser.includeAll))
+//    val z2: Task[Table[RawRow]] = ZIO.fromTry(Table.parseFileRaw(intPairs.getPath, TableParser.includeAll))
 //    matchZIO(z1 product z2) {
 //      case (a@HeadedTable(_, _), b@HeadedTable(_, _)) =>
 //        a.size shouldBe 0; b.size shouldBe 1
@@ -266,7 +269,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
       def toColumnNames(po: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
 
     implicit val csvAttributes: CsvAttributes = IntPairCsvRenderer.csvAttributes
-    matchZIO(ZIOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))):
+    matchZIO(ZIOTable.parseFile(intPairs)):
       case iIt@HeadedTable(_, _) =>
         val ws: Task[String] = ZIO.fromTry(iIt.toCSV)
         matchZIO(ws):
@@ -287,7 +290,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
       def toColumnNames(wo: Option[String], no: Option[String]): String = s"a${csvAttributes.delimiter}b"
 
-    matchZIO(ZIOTable.parseFile(new File("core/src/test/resources/com/phasmidsoftware/tableparser/core/table/intPairs.csv"))):
+    matchZIO(ZIOTable.parseFile(intPairs)):
       case iIt@HeadedTable(_, _) =>
         val ws = ZIO.fromTry(iIt.toCSV)
         matchZIO(ws):

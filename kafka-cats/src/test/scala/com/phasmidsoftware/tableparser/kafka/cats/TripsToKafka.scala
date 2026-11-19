@@ -18,7 +18,7 @@ import java.time.Instant
  * {{{
  *   sbt "kafkaCats/Test/runMain com.phasmidsoftware.tableparser.kafka.cats.sendTrips"
  * }}}
- * The optional arguments are the CSV file (yellowtaxitrip.csv), the bootstrap servers (localhost:9092) and the topic (trips).
+ * The optional arguments are the CSV file (by default, yellowtaxitrip.csv, a resource beside this file), the bootstrap servers (localhost:9092) and the topic (trips).
  * Then `sbt "kafkaCats/Test/runMain com.phasmidsoftware.tableparser.kafka.cats.readTrips"` reads the first five trips back.
  */
 object TripsToKafka:
@@ -42,6 +42,11 @@ object TripsToKafka:
     given StringParser[Trip] = StandardRowParser.create[Trip]
 
   object TripTableParser extends HeadedCSVTableParser[Trip]
+
+  /**
+   * The thousand taxi trips of yellowtaxitrip.csv, a resource (so it is found whatever the working directory).
+   */
+  lazy val tripsFile: Path = Paths.get(classOf[Trip].getResource("yellowtaxitrip.csv").toURI)
 
   /**
    * Stream the trips of a file to a topic, each keyed by its vendor.
@@ -77,11 +82,11 @@ object TripsToKafka:
  * @param args the CSV file, the bootstrap servers and the topic (all optional).
  */
 @main def sendTrips(args: String*): Unit =
-  val path = args.headOption.getOrElse("yellowtaxitrip.csv")
+  val path = args.headOption.map(Paths.get(_)).getOrElse(TripsToKafka.tripsFile)
   val servers = args.lift(1).getOrElse("localhost:9092")
   val topic = args.lift(2).getOrElse("trips")
-  val n = TripsToKafka.send(Paths.get(path), servers, topic).unsafeRunSync()
-  println(s"Sent $n messages from $path to topic $topic at $servers")
+  val n = TripsToKafka.send(path, servers, topic).unsafeRunSync()
+  println(s"Sent $n messages from ${path.getFileName} to topic $topic at $servers")
   // The schema with which Spark's from_csv reads them (see KAFKA.md).
   SparkSchema.ddl[TripsToKafka.Trip].foreach(schema => println(s"Spark schema: $schema"))
 

@@ -115,7 +115,7 @@ services:
 
 A row is a case class, with a parser (to read the file), a `CsvProduct` (to write each row, and its column names, as CSV)
 and a `SparkSchema` (the schema with which Spark reads the messages: see step 6).
-The file `yellowtaxitrip.csv` (in the root of this repository) has a thousand taxi trips, with nineteen columns,
+The file `yellowtaxitrip.csv` (in kafka-cats' test resources, beside `TripsToKafka.scala`) has a thousand taxi trips, with nineteen columns,
 and a space after each comma. This takes eight of the columns, and ignores the others.
 The times, such as `2024-01-01T00:34:44Z`, are `Instant`s (from 2.5.0, the `java.time` types parse and render as ISO-8601):
 
