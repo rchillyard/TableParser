@@ -23,9 +23,9 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
   case class IntPair(a: Int, b: Int)
 
+  // NOTE the object is used: `import IntPair._` below brings in its given instances. IntelliJ
+  // does not trace that, hence the suppression; the compiler is content either way.
   //noinspection ScalaUnusedSymbol
-  // NOTE: unused
-
   object IntPair:
 
     object IntPairParser extends JavaTokenParsers:
