@@ -44,7 +44,7 @@ class CellParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
   it should "parse String" in:
     stringCellParser.parse(CellValue("Hello")) shouldBe Success("Hello")
     stringCellParser.parse(CellValue(""""Hello"""")) shouldBe Success(""""Hello"""")
-    // CONSIDER re-instate this test
+    // CONSIDER re-instate this test (#204)
     //    stringCellParser.parse(CellValue(""""Hello with internal "" Goodbye"""")) shouldBe """"Hello with internal " Goodbye""""
 
   behavior of "Implicit parsers"
@@ -105,8 +105,8 @@ class CellParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
     p.convertString("") shouldBe Success(None)
     p.convertString("test") should matchPattern { case Failure(_) => }
 
-  // CONSIDER moving this into the it directory.
-  // TODO why does this take so long?
+  // CONSIDER moving this into the it directory. (#161)
+  // TODO why does this take so long? (#161)
   it should "parse option URL" in:
     val p = summon[CellParser[Option[URL]]]
 

@@ -155,7 +155,7 @@ case class Content[+Row](private val xs: Vector[Row]):
 
   /**
    * Method to concatenate two Contents.
-   * CONSIDER perhaps we should use the combiner functionality more directly?
+   * CONSIDER perhaps we should use the combiner functionality more directly? (#192)
    * (It's what the ++ method uses).
    *
    * @param other the other Content.

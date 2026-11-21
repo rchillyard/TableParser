@@ -51,7 +51,7 @@ trait Table[Row] extends Iterable[Row]:
   /**
    * Transform (flatMap) this Table[Row] into a Table[S].
    *
-   * CONSIDER rewriting this method or redefining it as it can be a major source of inefficiency.
+   * CONSIDER rewriting this method or redefining it as it can be a major source of inefficiency. (#196)
    * In particular, we are doing a ++ operation, which is inherently bad.
    *
    * @param f a function which transforms a Row into an IterableOnce[S].
@@ -161,7 +161,7 @@ trait Table[Row] extends Iterable[Row]:
    * @return a Seq[Row]
    */
   override def toSeq: Seq[Row] =
-    // XXX huh?
+    // ASIDE huh?
     lazy val rs = content.toSeq
     rs
 
@@ -172,7 +172,7 @@ trait Table[Row] extends Iterable[Row]:
    * @return an Array[Element].
    */
   override def toArray[Element >: Row : ClassTag]: Array[Element] =
-    // XXX huh?
+    // ASIDE huh?
     lazy val rs = content.iterator.toArray[Element]
     rs
 
@@ -198,7 +198,7 @@ trait Table[Row] extends Iterable[Row]:
   /**
    * Method to process the rows as an Iterable into an Iterable which will make up the resulting Table.
    *
-   * TESTME
+   * TESTME (#157)
    *
    * @param f a function which takes an Iterable[Row] and returns an Iterable[S]
    * @tparam S the underlying type of the result.
@@ -342,7 +342,7 @@ trait Table[Row] extends Iterable[Row]:
   /**
    * Filter method which operates on the (primary) key of each row.
    *
-   * TESTME (probably tested only in it)
+   * TESTME (probably tested only in it) (#157)
    *
    * @param p a predicate which takes a String.
    * @tparam T a super-class of Row, which provides evidence of HasKey[T].
@@ -436,7 +436,7 @@ trait Table[Row] extends Iterable[Row]:
   private lazy val asOneBasedIndexedSequence = new IndexedSeq[Row]():
     def apply(i: Int): Row = content.toIndexedSeq(i - 1)
 
-    // TESTME
+    // TESTME (#157)
     def length: Int = content.size
 
 object Table:
@@ -574,7 +574,7 @@ object Table:
 //   *
 //   * NOTE: you should use parseFile(String) if you have a pathname in String form.
 //   *
-//   * TESTME
+//   * TESTME (#140)
 //   *
 //   * @param f     the File (call by name in case there is an exception thrown while constructing the file).
 //   * @param codec (implicit) the encoding.
@@ -735,7 +735,7 @@ object Table:
     t.maybeHeader match
       case Some(hdr) =>
         given z: CsvGenerator[Row] = Row.csvGenerator(hdr)
-        // CONSIDER this is a bit ugly
+        // CONSIDER this is a bit ugly (#197)
         t.writeCSVFile(file.toPath)
       case _ =>
         throw TableException("writeCSVFileRow: cannot write this Table to CSV (no header)")

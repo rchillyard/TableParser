@@ -4,7 +4,7 @@ import zio._
 
 /**
  * Interim utilities for checking IO.
- * TODO eliminate use of unsafe methods.
+ * TODO eliminate use of unsafe methods. (#139)
  * Once we move to cats version 3, we will be able to use https://github.com/typelevel/cats-effect-testing
  */
 object EvaluateZIO:
@@ -33,7 +33,7 @@ object EvaluateZIO:
 //   * @return an X.
 //   */
 //  def apply[X](xio: => Task[X], timeout: Timeout = Timeout(Span(1, Second))): X =
-//    // TODO eliminate use of unsafe methods
+//    // TODO eliminate use of unsafe methods (#140)
 //    whenReady(xio.toFuture(), timeout)(identity)
 
   /**
@@ -57,7 +57,7 @@ object EvaluateZIO:
 //  /**
 //   * Check the result by converting it to a Future, and waiting for it to complete.
 //   *
-//   * CONSIDER returning Task[Assertion] like checkFailure.
+//   * CONSIDER returning Task[Assertion] like checkFailure. (#140)
 //   *
 //   * @param xio     an Task[X].
 //   * @param timeout a Timeout value (defaults to 1 second).
@@ -65,7 +65,7 @@ object EvaluateZIO:
 //   * @tparam X the underlying type of the result.
 //   */
 //  def check[X](xio: => Task[X])(check: PartialFunction[X, Unit]): Unit = {
-//    // TODO eliminate use of unsafe methods
+//    // TODO eliminate use of unsafe methods (#140)
 //    assertZIO(xio)(Assertion.fails(new Assertion[Throwable]{}))
 //  }
 

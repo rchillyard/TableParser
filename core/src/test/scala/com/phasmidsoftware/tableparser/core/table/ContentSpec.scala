@@ -23,7 +23,7 @@ class ContentSpec extends AnyFlatSpec with should.Matchers:
 
   it should "drop" in:
     val target: Content[Int] = Content(List(1, 2, 3))
-    // CONSIDER forcing sorted on the drop method.
+    // CONSIDER forcing sorted on the drop method. (#210)
     target.drop(1).toSeq shouldBe List(2, 3)
 
   it should "take" in:

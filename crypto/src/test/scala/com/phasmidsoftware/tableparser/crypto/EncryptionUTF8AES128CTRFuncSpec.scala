@@ -12,7 +12,7 @@ class EncryptionUTF8AES128CTRFuncSpec extends AnyFlatSpec with should.Matchers:
   implicit val encryptor: HexEncryption[AES128CTR] = EncryptionUTF8AES128CTR
 
   it should "buildKey" in:
-    // TODO eliminate use of unsafe methods
+    // TODO eliminate use of unsafe methods (#139)
     val key = for {
       rawKey <- encryptor.genRawKey
     } yield encryptor.buildKey(rawKey)

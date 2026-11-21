@@ -110,7 +110,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     lazy val si: IO[InputStream] = IO(classOf[TableSpec].getResourceAsStream(null))
     val iIty = for (s <- si) yield Table.parseInputStream(s)
     import cats.effect.unsafe.implicits.global
-    // TODO eliminate use of unsafe methods
+    // TODO eliminate use of unsafe methods (#139)
     EvaluateIO.checkFailure(iIty)(classOf[NullPointerException]).unsafeRunSync()
 
   behavior of "other"
@@ -204,7 +204,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     implicit val intPairRenderer: HierarchicalRenderer[IntPair] = HierarchicalRenderer.derived[IntPair]("IntPair")
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
 
-  // TODO this is a mystery: it sometimes fails (?)
+  // TODO this is a mystery: it sometimes fails (?) (#141)
   it should "render the table to CSV" in:
     import IntPair._
     matchIO(IOTable.parse(Seq("1 2", "42 99"))):
@@ -301,12 +301,12 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     import IntPair._
     @unused
     val iIty: IO[Table[IntPair]] = IO.fromTry(Table.parse(Seq("1 2", "42 99")))
-    // TODO restore ...
+    // TODO restore ... (#142)
 //      val hy = iIty map {
 //        case r: HeadedTable[IntPair] => r.render
 //      }
 //      hy should matchPattern { case Success(_) => }
-//      // CONSIDER why do we use ArrayBuffer here instead of List?
+//      // CONSIDER why do we use ArrayBuffer here instead of List? (#140)
 //      hy.get shouldBe HTML("table", None, Map(), List(HTML("thead", None, Map(), List(HTML("tr", None, Map(), Seq(HTML("th", Some("a"), Map(), List()), HTML("th", Some("b"), Map(), List()))))), HTML("tbody", None, Map(), List(HTML("IntPair", None, Map(), List(HTML("", Some("1"), Map("name" -> "a"), List()), HTML("", Some("2"), Map("name" -> "b"), List()))), HTML("IntPair", None, Map(), List(HTML("", Some("42"), Map("name" -> "a"), List()), HTML("", Some("99"), Map("name" -> "b"), List())))))))
 
   def mapTo[T, U](ty: Try[T]): Try[U] = ty match

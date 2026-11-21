@@ -16,5 +16,5 @@ type StringList = List[String]
  */
 type Strings = Seq[String]
 
-// CONSIDER moving this definition and renaming it
+// CONSIDER moving this definition and renaming it (#184)
 def cellReader[T](using cellParser: CellParser[T]): CellParser[T] = cellParser

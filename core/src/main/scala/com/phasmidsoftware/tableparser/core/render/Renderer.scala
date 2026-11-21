@@ -82,7 +82,7 @@ trait HierarchicalRenderer[T] extends Renderer[T, Node]:
   def asString(t: T): String = t.toString
 
 /**
- * CONSIDER having style defined as an Option[String]
+ * CONSIDER having style defined as an Option[String] (#191)
  *
  * @tparam T the type of object to be rendered.
  */
@@ -367,7 +367,7 @@ object HierarchicalRenderer:
    * val renderedOutput = someRenderingMethod(bigIntValue) // Uses BigIntHierarchicalRenderer implicitly
    * println(renderedOutput)
    * }}}
-   */// TESTME
+   */// TESTME (#156)
   given BigIntHierarchicalRenderer: BigIntHierarchicalRenderer with {}
 
   /**
@@ -447,7 +447,7 @@ object HierarchicalRenderer:
    * val rendered = summon[LocalDateHierarchicalRenderer].render(localDate, Map.empty)
    * println(rendered) // Outputs the hierarchical representation of the LocalDate
    * }}}
-   */// TESTME
+   */// TESTME (#156)
   given LocalDateHierarchicalRenderer: LocalDateHierarchicalRenderer with {}
 
 //  implicit object RowStringRenderer extends Renderer[Row,String] {
@@ -458,5 +458,5 @@ object HierarchicalRenderer:
 //     * @param attrs a map of attributes for this value of O.
 //     * @return an instance of type O.
 //     */
-//    def render(t: Row, attrs: Map[String, String]): String = t.toString()  // TESTME
+//    def render(t: Row, attrs: Map[String, String]): String = t.toString()  // TESTME (#140)
 //  }

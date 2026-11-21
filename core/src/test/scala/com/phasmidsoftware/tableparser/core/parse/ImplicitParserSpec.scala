@@ -33,7 +33,7 @@ class ImplicitParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
       super.close()
       open = false
 
-  // TODO use a smaller data set to save time.
+  // TODO use a smaller data set to save time. (#206)
   //  it should "properly close the source" in {
   //    val source = new MySource(Source.fromURL(classOf[Table[_]].getResource("movie_metadata.csv")))
   //    source.open shouldBe true

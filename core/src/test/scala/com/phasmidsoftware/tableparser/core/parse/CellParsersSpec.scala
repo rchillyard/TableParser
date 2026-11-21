@@ -51,7 +51,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers:
 
   /**
    * Case class representing a daily report for raptors at a specific date.
-   * CONSIDER using the `DailyRaptorReport` defined in its own module.
+   * CONSIDER using the `DailyRaptorReport` defined in its own module. (#154)
    *
    * @param date    the date of the report as a LocalDate
    * @param weather the weather condition reported on that date
@@ -112,7 +112,7 @@ class CellParsersSpec extends flatspec.AnyFlatSpec with should.Matchers:
   private val partlyCloudy = "Partly Cloudy"
   it should "convertTo DailyRaptorReport" in:
     val r = RowValues(Row(Seq("09/16/2018", partlyCloudy, "3308", "5"), Header.create("Date", "Weather", "BW", "RT"), 0))
-    // TODO fix deprecation here and 7 lines down.
+    // TODO fix deprecation here and 7 lines down. (#145)
     val date = LocalDate.of(2018, 9, 16)
     r.convertTo[DailyRaptorReport] shouldBe Success(DailyRaptorReport(date, partlyCloudy, 3308, 5))
 

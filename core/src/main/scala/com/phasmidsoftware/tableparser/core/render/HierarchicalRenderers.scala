@@ -30,7 +30,7 @@ trait HierarchicalRenderers:
   /**
    * Method to return a HierarchicalRenderer[T] where you wish to explicitly define a conversion o a T into a String.
    *
-   * TESTME
+   * TESTME (#156)
    *
    * @param style the style of the resulting renderer.
    * @param attrs a set of base attributes which are explicitly set for this HierarchicalRenderer;
@@ -45,7 +45,7 @@ trait HierarchicalRenderers:
   /**
    * Method to return a HierarchicalRenderer[Header].
    *
-   * CONSIDER using sequenceRenderer
+   * CONSIDER using sequenceRenderer (#189)
    *
    * @param style the style for the header (e.g. "th" for an HTML table).
    * @param attrs the attributes.
@@ -55,7 +55,7 @@ trait HierarchicalRenderers:
     new TaggedHierarchicalRenderer[Header](style, attrs):
 
       /**
-       * CONSIDER should we define a different sub-class of HierarchicalRenderer for this case?
+       * CONSIDER should we define a different sub-class of HierarchicalRenderer for this case? (#190)
        *
        * @param h     the Header.
        * @param attrs a map of attributes for this kind of output.

@@ -71,7 +71,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
   behavior of "TableParser with StandardRowParser"
 
   /**
-   * CONSIDER using the DailyRaptorReport defined in its own module.
+   * CONSIDER using the DailyRaptorReport defined in its own module. (#154)
    */
   case class DailyRaptorReport(date: LocalDate, weather: String, bw: Int, rt: Int)
 
@@ -134,7 +134,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
     matchTry(for (r <- Table.parseResource(classOf[TableParserSpec].getResource("/raptors.csv"))) yield r):
       case rt@HeadedTable(_, _) =>
         rt.content.size shouldBe 13
-        // TODO fix deprecation. Also in two other places in this module.
+        // TODO fix deprecation. Also in two other places in this module. (#145)
         //noinspection ScalaDeprecation
         val date = LocalDate.of(2018, 9, 12)
         rt.content.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
@@ -254,7 +254,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
     matchTry(for (r <- Table.parseResource("noHeader.csv", classOf[TableParserSpec])) yield r):
       case rt@HeadedTable(_, _) =>
         rt.content.size shouldBe 13
-        // TODO fix deprecation. Also in two other places in this module.
+        // TODO fix deprecation. Also in two other places in this module. (#145)
         val date = LocalDate.of(2018, 9, 12)
         rt.content.head shouldBe DailyRaptorReport(date, "Dense Fog/Light Rain", 0, 0)
 
@@ -272,7 +272,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
        * Default method to create a new table.
        * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
        *
-       * CONSIDER changing Iterable back to Iterator as it was at V1.0.13.
+       * CONSIDER changing Iterable back to Iterator as it was at V1.0.13. (#150)
        *
        * @param rows   the rows which will make up the table.
        * @param header the Header, derived either from the program or the data.
@@ -303,7 +303,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
       Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
     )
 
-    // TODO note that the column lookup isn't correct for Question ID 1
+    // TODO note that the column lookup isn't correct for Question ID 1 (#208)
     import Submission.TableParser
     matchTry(Table.parseSequence(rows.iterator)):
       case rt@HeadedTable(_, _) =>
@@ -372,7 +372,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
      * The requirements of the application are that the rows of the Player table are grouped by twos
      * and each resulting entity (an array of length 2) is taken to form a Partnership.
      *
-     * CONSIDER merging with duplicate code in: TableParserHelperSpec.scala
+     * CONSIDER merging with duplicate code in: TableParserHelperSpec.scala (#144)
      *
      * @param pt a Table[Player]
      * @return a Table[Partnership]

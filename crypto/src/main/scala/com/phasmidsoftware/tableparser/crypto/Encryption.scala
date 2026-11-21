@@ -183,7 +183,7 @@ object Encryption:
   /**
    * Random number generator wrapped inside IO.
    *
-   * CONSIDER using Cats effect for Random.
+   * CONSIDER using Cats effect for Random. (#211)
    */
   private val asyncRandom: IO[Random] = IO(new Random)
 

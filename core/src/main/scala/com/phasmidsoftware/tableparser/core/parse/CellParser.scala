@@ -18,7 +18,7 @@ import scala.util.{Failure, Success, Try}
  * Type-class trait CellParser[T].
  * This trait has methods to parse and to convert from String to T.
  *
- * TODO Need to define this better so that we don't have any non-implemented methods.
+ * TODO Need to define this better so that we don't have any non-implemented methods. (#166)
  *
  * @tparam T the (covariant) type of the resulting object.
  */
@@ -43,7 +43,7 @@ trait CellParser[+T] extends StringConverter[T]:
    * @param wo      an optional String.
    * @param row     a Row of values.
    * @param columns the column names.
-   *                CONSIDER do we actually need the Header parameter here?
+   *                CONSIDER do we actually need the Header parameter here? (#167)
    * @return a new instance of T.
    */
   def parse(wo: Option[String], row: Row, columns: Header): Try[T]
@@ -61,7 +61,7 @@ trait SingleCellParser[T] extends CellParser[T]:
   override def toString: String = "SingleCellParser"
 
 /**
- * CONSIDER renaming this to something like RowParser, or RawRowParser.
+ * CONSIDER renaming this to something like RowParser, or RawRowParser. (#168)
  *
  * @tparam T the type of the result.
  */
@@ -199,7 +199,7 @@ object CellParser:
     // NOTE used only for debugging
     override def toString: String = "FileParser"
 
-  // TODO why do we have both OptionParser and ParseableOption?
+  // TODO why do we have both OptionParser and ParseableOption? (#169)
   abstract class OptionParser[T: Parseable] extends SingleCellParser[Option[T]]:
     def convertString(w: String): Try[Option[T]] =
       summon[Parseable[T]].parse(w).map(Option(_)).recoverWith[Option[T]]:

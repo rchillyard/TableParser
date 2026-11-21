@@ -14,5 +14,5 @@ class CsvGeneratorSpec extends AnyFlatSpec with should.Matchers:
   it should "toColumnName Option[BigInt]" in:
     val csvGenerator: CsvGenerator[Option[BigInt]] = summon[CsvGenerator[Option[BigInt]]]
     val header = csvGenerator.toColumnName(None, "maybeId")
-    header shouldBe "maybeId" // CONSIDER should this be converted to "id"?
+    header shouldBe "maybeId" // CONSIDER should this be converted to "id"? (#209)
 

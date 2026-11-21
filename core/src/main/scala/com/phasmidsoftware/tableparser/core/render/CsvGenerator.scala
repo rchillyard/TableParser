@@ -10,14 +10,14 @@ import scala.deriving.Mirror
 /**
  * Trait (typeclass) for generating headers for CSV output.
  *
- * CONSIDER why do we need this? It takes a lot of effort to set up, which is essentially the same as for CsvRenderer[T].
+ * CONSIDER why do we need this? It takes a lot of effort to set up, which is essentially the same as for CsvRenderer[T]. (#185)
  *
  * NOTE: this is an unusual type class in that none of its methods reference type T.
  *
  * @tparam T the contravariant type of the objects to be rendered by CSV.
  */
 trait CsvGenerator[-T]:
-  // CONSIDER removing this abstract val.
+  // CONSIDER removing this abstract val. (#146)
   val csvAttributes: CsvAttributes
 
   /**

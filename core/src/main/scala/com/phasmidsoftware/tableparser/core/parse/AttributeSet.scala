@@ -7,7 +7,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * This class is used for the situation where a column in a table actually contains a set of
  * attributes, typically separated by "," and possibly bracketed by "{}".
- * CONSIDER allowing "|" as a separator (as described previously in the documentation here).
+ * CONSIDER allowing "|" as a separator (as described previously in the documentation here). (#165)
  *
  * @param xs the attribute values.
  */

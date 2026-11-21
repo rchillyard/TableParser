@@ -35,7 +35,7 @@ trait TableParser[Table] extends TableBuilder[Table]:
    * The value is usually 1 but some types of CSV file have more than one header line.
    * If maybeHeader exists, then this number is ignored.
    *
-   * CONSIDER if this is really ignored when maybeHeader is defined, then we should eliminate such places where this value has an override of 0.
+   * CONSIDER if this is really ignored when maybeHeader is defined, then we should eliminate such places where this value has an override of 0. (#179)
    */
   val headerRowsToRead: Int = 1
 
@@ -113,7 +113,7 @@ object TableParser:
   /**
    * Method to return a random sampling function.
    *
-   * CONSIDER using FP.sampler
+   * CONSIDER using FP.sampler (#180)
    *
    * @param n this is the sample factor: approximately one in every n successful results will form part of the result.
    * @tparam X the underlying type of the sampler.
@@ -245,7 +245,7 @@ case class RawTableParser(override protected val predicate: Try[RawRow] => Boole
 
   val rowParser: RowParser[Row, String] = StandardRowParser.create[Row]
 
-  // CONSIDER why do we have a concrete Table type mentioned here?
+  // CONSIDER why do we have a concrete Table type mentioned here? (#149)
   protected def builder(rows: Iterator[RawRow], header: Header): Table[Row] =
     HeadedTable(Content(rows), header)
 
@@ -346,7 +346,7 @@ case class PlainTextHeadedStringTableParser[X: CellParser](override val maybeHea
  * This class uses StandardRowParser of its rowParser.
  *
  * NOTE that this class and HeadedCSVTableParser are extremely similar (maybe identical)
- * CONSIDER merging with HeadedCSVTableParser
+ * CONSIDER merging with HeadedCSVTableParser (#181)
  *
  * @param maybeFixedHeader None => requires that the data source has a header row.
  *                         Some(h) => specifies that the header is to be taken from h.
@@ -389,7 +389,7 @@ object HeadedStringTableParser:
  * Abstract base class for implementations of TableParser[T].
  * NOTE: that Table is a parametric type and does NOT refer to the type Table defined elsewhere.
  *
- * CONSIDER making this a trait
+ * CONSIDER making this a trait (#182)
  *
  * @tparam Table the (parametric) Table type.
  */
@@ -413,7 +413,7 @@ abstract class AbstractTableParser[Table] extends TableParser[Table]:
    */
   def parse(xs: Iterator[Input], n: Int = headerRowsToRead): Try[Table] = maybeHeader match
     case Some(h) =>
-      // CONSIDER eliminating the drop here but there is one test in Cats Tests that will fail
+      // CONSIDER eliminating the drop here but there is one test in Cats Tests that will fail (#183)
       parseRows(xs drop n, h)
     case None if n > 0 =>
       val yr: TeeIterator[Input] = new TeeIterator(n)(xs)
@@ -496,7 +496,7 @@ object AbstractTableParser:
    */
   def logException[X](xy: Try[X]): Unit = xy match
     case Success(_) =>
-    // XXX do nothing
+    // ASIDE do nothing
     case Failure(exception) =>
       logException(exception)
 
@@ -599,7 +599,7 @@ abstract class HeadedCSVTableParser[T](using rp: RowParser[T, String]) extends S
    * Default method to create a new table.
    * It does this by invoking either builderWithHeader or builderWithoutHeader, as appropriate.
    *
-   * CONSIDER changing Iterable back to Iterator as it was at V1.0.13.
+   * CONSIDER changing Iterable back to Iterator as it was at V1.0.13. (#150)
    *
    * @param rows   the rows which will make up the table.
    * @param header the Header, derived either from the program or the data.

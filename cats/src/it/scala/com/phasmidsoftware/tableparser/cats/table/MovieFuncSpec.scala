@@ -39,7 +39,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers:
     val errorFunc: Throwable => IO[Unit] = e => IO{errorString = e.getLocalizedMessage}
 
     val mti: IO[Table[Movie]] = IO.fromTry(Table.parseResource("movie_metadataX.csv")).onError { case e => errorFunc(e) }
-    // TODO eliminate use of unsafe
+    // TODO eliminate use of unsafe (#139)
     mti.attempt.unsafeRunSync() should matchPattern { case Left(_) => }
     errorString shouldBe "Table.sourceFromClassResource: cannot find resource 'movie_metadataX.csv' relative to class com.phasmidsoftware.tableparser.core.table.Table$"
 
@@ -55,7 +55,7 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers:
     val mti: IO[Table[Movie]] = IOUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(x => IO.fromTry(Table.parseSource(x)))
 
     val wi: IO[String] = mti flatMap (mt => IO.fromTry(mt.toCSV)) // for (mt <- mti) yield mt.toCSV
-    // TODO eliminate use of unsafe methods
+    // TODO eliminate use of unsafe methods (#139)
     wi.unsafeRunSync().startsWith(
       """movie_title,color,language,aspect_ratio,duration,country,budget,gross,title_year,imdb_score,movie_facebook_likes,content_rating,num_user_for_reviews,num_voted_users,num_critic_for_reviews,cast_total_facebook_likes,director_name,director_facebook_likes,actor_1_name,actor_1_facebook_likes,actor_2_name,actor_2_facebook_likes,actor_3_name,actor_3_facebook_likes,genres,plot_keywords,movie_imdb_link
         |Avatar,Color,English,1.78,178,USA,237000000,760505847,2009,7.9,33000,PG-13,3054,886204,723,4834,James Cameron,0,CCH Pounder,1000,Joel David Moore,936,Wes Studi,855,Action|Adventure|Fantasy|Sci-Fi,avatar|future|marine|native|paraplegic,http://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1""".stripMargin.replace("\n", "\r\n")) shouldBe true
@@ -65,5 +65,5 @@ class MovieFuncSpec extends AnyFlatSpec with Matchers:
     val mti: IO[Table[Movie]] = IOUsing(Source.fromURL(classOf[Movie].getResource("movie_metadata.csv")))(x => IO.fromTry(Table.parseSource(x)))
     implicit val hasKey: HasKey[Movie] = (t: Movie) => t.production.country
     val wi: IO[Int] = for (mt <- mti) yield mt.filterByKey(_ == "New Zealand").size
-    // TODO eliminate use of unsafe methods
+    // TODO eliminate use of unsafe methods (#139)
     wi.unsafeRunSync() shouldBe 4

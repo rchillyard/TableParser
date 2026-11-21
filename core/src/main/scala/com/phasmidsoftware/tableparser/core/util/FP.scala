@@ -49,7 +49,7 @@ object FP:
   /**
    * Sequence method to combine elements of Try.
    *
-   * CONSIDER invoking sequenceRev
+   * CONSIDER invoking sequenceRev (#198)
    *
    * @param xys an Iterator of Try[X]
    * @tparam X the underlying type
@@ -161,10 +161,10 @@ object FP:
    * @tparam X the underlying type.
    * @return an Option of Seq[X].
    *         NOTE: that the output collection type will be Seq, regardless of the input type
-   *         CONSIDER using Builder
+   *         CONSIDER using Builder (#199)
    */
   def sequence[X](xos: Iterable[Option[X]]): Option[Seq[X]] =
-    xos.foldLeft(Option(Seq[X]())): // TODO merge code with duplicate
+    xos.foldLeft(Option(Seq[X]())): // TODO merge code with duplicate (#152)
       (xso, xo) =>
         for (xs <- xso; x <- xo) yield x +: xs
 
@@ -181,7 +181,7 @@ object FP:
    *         NOTE: that the output collection type will be Seq, regardless of the input type
    */
   def sequence[X](xos: Iterator[Option[X]]): Option[Seq[X]] =
-    xos.foldLeft(Option(Seq[X]())): // TODO merge code with duplicate
+    xos.foldLeft(Option(Seq[X]())): // TODO merge code with duplicate (#152)
       (xso, xo) =>
         for (xs <- xso; x <- xo) yield x +: xs
 
@@ -275,7 +275,7 @@ object TryUsing:
    * This method is similar to apply(r) but it takes a Try[R] as its parameter.
    * The definition of f is the same as in the other apply, however.
    *
-   * CONSIDER making the ry parameter non-strict (but then we would have to rename this method something else).
+   * CONSIDER making the ry parameter non-strict (but then we would have to rename this method something else). (#147)
    *
    * @param ry a Try[R] which is passed into f and will be managed via Using.apply
    * @param f  a function of R => Try[A].

@@ -89,7 +89,7 @@ object Hawks extends CsvRenderers with CellParsers with CsvGenerators:
   implicit val csvGenerator: CsvProductGenerator[Hawks] =
     CsvGenerator.derived[Hawks]
 
-  // CONSIDER why do we need this when we have parser (above)
+  // CONSIDER why do we need this when we have parser (above) (#205)
   object HawksParser extends JavaTokenParsers:
     lazy val pair: Parser[(Int, Int)] =
       wholeNumber ~ wholeNumber ^^ { case x ~ y => (x.toInt, y.toInt) }

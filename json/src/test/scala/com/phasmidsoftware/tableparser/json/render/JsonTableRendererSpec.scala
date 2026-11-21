@@ -95,7 +95,7 @@ object JsonTableRendererSpec:
      * The requirements of the application are that the rows of the Player table are grouped by twos
      * and each resulting entity (an array of length 2) is taken to form a Partnership.
      *
-     * CONSIDER merging with duplicate code in: TableParserSpec.scala
+     * CONSIDER merging with duplicate code in: TableParserSpec.scala (#144)
      *
      * @param pt a Table[Player]
      * @return a Table[Partnership]
