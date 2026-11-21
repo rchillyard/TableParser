@@ -18,7 +18,21 @@ import scala.util.{Failure, Success, Try}
  * Type-class trait CellParser[T].
  * This trait has methods to parse and to convert from String to T.
  *
- * TODO Need to define this better so that we don't have any non-implemented methods. (#166)
+ * NOTE: `Convertible` is a sum — a `CellValue` or a `RowValues` — and a parser is expected to
+ * accept both, but no implementation accepts both. A `SingleCellParser` reads a cell and a
+ * `MultiCellParser` reads a row, so one of the two methods below is always unsupported.
+ *
+ * Each of the two subtypes therefore declines the input it does not take, with a single typed
+ * failure — `UnsupportedInputException` — saying which parser was given which input. The
+ * declining belongs to the subtype rather than here: it is `SingleCellParser` that does not read
+ * rows, not every `CellParser`.
+ * `ProductCellParser.readCell` relies on that failure: when a field's column is absent it offers
+ * the whole row to the field's parser, and the failure is how it learns the parser only takes
+ * cells.
+ *
+ * CONSIDER putting the pairing in the type instead, so that the mistake cannot be made rather
+ * than being diagnosed. That means indexing the parser by its input and rewriting the derivation,
+ * which uses the failure as control flow. See #221.
  *
  * @tparam T the (covariant) type of the resulting object.
  */
@@ -51,11 +65,13 @@ trait CellParser[+T] extends StringConverter[T]:
 /**
  * Trait SingleCellParser, which extends CellParser[T].
  *
+ * It reads a cell, so it implements `convertString` and inherits the failing `parse` for a row.
+ *
  * @tparam T the type of the resulting object.
  */
 trait SingleCellParser[T] extends CellParser[T]:
   def parse(w: Option[String], row: Row, columns: Header): Try[T] =
-    Failure(new UnsupportedOperationException)
+    Failure(UnsupportedInputException(toString, "a row"))
 
   // NOTE used only for debugging
   override def toString: String = "SingleCellParser"
@@ -66,13 +82,25 @@ trait SingleCellParser[T] extends CellParser[T]:
  * @tparam T the type of the result.
  */
 trait MultiCellParser[T] extends CellParser[T]:
-  // NOTE not used
-  //noinspection NotImplementedCode
   def convertString(w: String): Try[T] =
-    Failure(new UnsupportedOperationException)
+    Failure(UnsupportedInputException(toString, s"""the cell "$w""""))
 
   // NOTE used only for debugging
   override def toString: String = "MultiCellParser"
+
+/**
+ * The failure a `CellParser` returns when it is given an input it does not accept: a row to a
+ * parser that reads cells, or a cell to one that reads rows.
+ *
+ * NOTE: this is caught, not merely reported. `ProductCellParser.readCell` offers the whole row to
+ * a field's parser when the field's column is absent, and treats this failure as "that parser
+ * needs a column, and there is not one" (#221).
+ *
+ * @param parser the parser that was asked, as it describes itself.
+ * @param input  what it was given.
+ */
+case class UnsupportedInputException(parser: String, input: String)
+  extends Exception(s"$parser cannot parse $input")
 
 object CellParser:
 
@@ -296,7 +324,9 @@ class ProductCellParser[T](typeName: String, fieldNames: List[String], fieldPars
    */
   override def convertString(w: String): Try[T] = fieldParsers match
     case p :: Nil => p.convertString(w) map (x => construct(Seq(x)))
-    case _ => Failure(new UnsupportedOperationException)
+    case ps =>
+      val why = s"""the cell "$w": $typeName has ${ps.size} fields"""
+      Failure(UnsupportedInputException(toString, why))
 
 object ProductCellParser:
   /**
@@ -323,5 +353,5 @@ object ProductCellParser:
         Failure(InvalidParseException(s"Problem parsing '$w' as $typeName from $columnName at index $idx of $row", e))
     }) yield z
     else cellParser.parse(Some(columnName), row, header).recoverWith:
-      case _: UnsupportedOperationException =>
+      case _: UnsupportedInputException =>
         Failure(ParserException(s"$typeName: where original name is based on $wo and $field, unable to find value for column '$columnName' in '${header.xs}'"))

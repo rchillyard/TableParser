@@ -118,20 +118,19 @@ trait CellParsers:
       // NOTE used only for debugging
       override def toString: String = s"cellParserOptionNonEmptyString"
 
+      // NOTE a SingleCellParser, so declining a row comes from the trait
+      // rather than a stub here (#221).
       private val cp: CellParser[String] = 
-        new CellParser[String]():
+        new SingleCellParser[String]():
           def convertString(w: String): Try[String] = 
             Success(if (w.isEmpty) null else w)
-
-          // NOTE not used
-          def parse(wo: Option[String], row: Row, columns: Header): Try[String] = 
-            Failure(new UnsupportedOperationException)
 
       def convertString(w: String): Try[Option[String]] = 
         cp.convertString(w).map(Option(_))
 
-      // NOTE not used
-      override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[String]] = 
+      // NOTE this delegates to a parser that reads cells, so for a row it yields that parser's
+      // UnsupportedInputException rather than a stub of its own (#221).
+      override def parse(wo: Option[String], row: Row, columns: Header): Try[Option[String]] =
         cp.parse(wo, row, columns).map(Option(_))
 
   /**
