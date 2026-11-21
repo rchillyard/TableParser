@@ -182,7 +182,6 @@ lazy val integration = (project in file("integration"))
           name := "tableparser-integration",
           publish / skip := true,
           mimaFailOnNoPrevious := false, // not published, so nothing to compare
-          Test / parallelExecution := false,
                   Test / unmanagedSourceDirectories ++= Seq(
               (LocalRootProject / baseDirectory).value / "core/src/it/scala"
             , (LocalRootProject / baseDirectory).value / "cats/src/it/scala"
@@ -214,4 +213,7 @@ lazy val root = (project in file("."))
           git.remoteRepo := "git@github.com:rchillyard/TableParser.git"
         )
 
-Test / parallelExecution := false
+// NOTE this must be scoped to ThisBuild. A bare `Test / parallelExecution := false` applies to the
+// root project alone, which has no tests of its own, because aggregation does not propagate
+// settings to the aggregated projects: every module would run its suites concurrently (#223).
+ThisBuild / Test / parallelExecution := false
