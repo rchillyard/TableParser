@@ -47,9 +47,16 @@ class CellParserInstancesSpec extends AnyFlatSpec with should.Matchers:
 
   it should "not parse a row with a SingleCellParser, nor convert a String with a MultiCellParser" in:
     val header = Header.create("a")
-    summon[CellParser[Int]].parse(None, Row(Seq("1"), header, 0), header) should matchPattern { case Failure(_: UnsupportedOperationException) => }
+    // NOTE the failure names the parser and the input it was given, rather than being a bare
+    // UnsupportedOperationException: ProductCellParser.readCell catches it, so it is part of the
+    // contract rather than an accident (#166).
+    val single = summon[CellParser[Int]].parse(None, Row(Seq("1"), header, 0), header)
+    single should matchPattern { case Failure(_: UnsupportedInputException) => }
+    single.failed.get.getMessage shouldBe "IntCellParser cannot parse a row"
     val multi = new MultiCellParser[Int] {
       def parse(wo: Option[String], row: Row, columns: Header): scala.util.Try[Int] = Success(0)
     }
-    multi.convertString("1") should matchPattern { case Failure(_: UnsupportedOperationException) => }
+    val converted = multi.convertString("1")
+    converted should matchPattern { case Failure(_: UnsupportedInputException) => }
+    converted.failed.get.getMessage shouldBe "MultiCellParser cannot parse the cell \"1\""
     multi.toString shouldBe "MultiCellParser"
