@@ -28,7 +28,7 @@ object IOUsing:
    * This alternative apply method signature is to allow proper handling of Releasable resources which are themselves wrapped in IO, using IO.
    * This method is to Using.apply as flatMap is to Map.
    *
-   * CONSIDER making the ri parameter non-strict (but then we would have to rename this method something else).
+   * CONSIDER making the ri parameter non-strict (but then we would have to rename this method something else). (#147)
    *
    * @param ri an IO of a resource which is to be used by f and will be managed by Resource.
    * @param f  a function of R => IO[A].
@@ -41,7 +41,7 @@ object IOUsing:
   /**
    * This alternative apply method signature is to allow proper handling of Releasable resources which are themselves wrapped in Try, using IO.
    *
-   * CONSIDER making the ry parameter non-strict (but then we would have to rename this method something else).
+   * CONSIDER making the ry parameter non-strict (but then we would have to rename this method something else). (#147)
    *
    * @param ry a Try of a resource which is to be used by f and will be managed by Resource.
    * @param f  a function of R => IO[A].

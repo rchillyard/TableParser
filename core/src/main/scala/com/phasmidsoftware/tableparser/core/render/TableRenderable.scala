@@ -10,12 +10,12 @@ import com.phasmidsoftware.tableparser.core.write.{TreeWriter, Writable}
 /**
  * Polymorphic trait which defines the behavior of some sort of collection with an underlying type X and which can be rendered.
  *
- * CONSIDER: do we really need this trait?
+ * CONSIDER: do we really need this trait? (#151)
  * This trait is not, strictly speaking, a typeclass because X does not appear as a parameter or result of any of the methods.
  * However, it cannot be sealed which implies that it is used as a typeclass.
  *
  * NOTE: this trait has no direct relationship with Renderer.
- * CONSIDER a refactoring of the whole set of traits.
+ * CONSIDER a refactoring of the whole set of traits. (#151)
  *
  * @tparam X the underlying type of this TableRenderable.
  */
@@ -26,9 +26,9 @@ trait TableRenderable[X]:
    *
    * NOTE this is currently used only by the json module's JsonTableRendererSpec
    *
-   * CONSIDER combining this with renderToWritable.
+   * CONSIDER combining this with renderToWritable. (#151)
    *
-   * CONSIDER generalizing the type of ev.
+   * CONSIDER generalizing the type of ev. (#151)
    *
    * @param ev implicit evidence for Renderer of Table of X.
    * @tparam O the type of the result.
@@ -39,7 +39,7 @@ trait TableRenderable[X]:
   /**
    * NOTE this is never used
    *
-   * CONSIDER redefining the definition of Renderer such that we can accommodate the various different types of output.
+   * CONSIDER redefining the definition of Renderer such that we can accommodate the various different types of output. (#151)
    *
    * Method to render a table in a sequential (serialized) fashion.
    *
@@ -51,7 +51,7 @@ trait TableRenderable[X]:
   /**
    * Method to render a table in a hierarchical fashion.
    *
-   * TESTME
+   * TESTME (#156)
    *
    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
    * outputting each row as you go.
@@ -67,7 +67,7 @@ trait TableRenderable[X]:
   /**
    * Method to render a table in a hierarchical fashion.
    *
-   * TESTME
+   * TESTME (#156)
    *
    * NOTE: if your output structure is not hierarchical in nature, then simply loop through the rows of this table,
    * outputting each row as you go.

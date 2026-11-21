@@ -39,7 +39,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
    * def acceptIf...
    * It's a shame that they didn't make it a constant in Parsers!
    *
-   * CONSIDER checking that sequential lines really are sequential.
+   * CONSIDER checking that sequential lines really are sequential. (#175)
    * Currently, no use is made of `indexedString._2`
    *
    * @param indexedString a tuple of String and Int denoting the line and its index in the file.
@@ -202,7 +202,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
   private def formException(indexedString: (String, Int), x: String) =
     ParserException(s"Cannot parse row ${indexedString._2}: '${indexedString._1}' due to: $x")
 
-  // XXX used only for debugging
+  // ASIDE used only for debugging
   override def toString: String =
     s"""LineParser: delimiter=$delimiter, string=$string, listSeparator='$listSeparator', enclosures='$enclosures', quote="$quote""""
 
@@ -240,7 +240,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
     def check[X](parser: Parser[X], input: String, matchedValue: X) =
       Try(parseAll(parser, input) match {
         case Success(`matchedValue`, _) =>
-        // XXX do nothing
+        // ASIDE do nothing
         case Success(z, _) =>
           throw ParserException(s"Warning: (LineParser constructor validity check): '$input' did not result in $matchedValue but instead matched: $z")
         case Failure(z, _) =>
@@ -254,7 +254,7 @@ class LineParser(delimiter: Regex, string: Regex, enclosures: String, listSepara
         case scala.util.Failure(z) =>
           LineParser.logger.warn(s"squawk: $z")
         case _ =>
-        // XXX do nothing
+        // ASIDE do nothing
 
       def &&(y: Try[Unit]): Try[Unit] =
         if (x.isSuccess) y else x

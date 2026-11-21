@@ -59,7 +59,7 @@ trait RowParser[Row, Input]:
   /**
    * Parse the Input, resulting in a Try[Header]
    *
-   * CONSIDER making this share the same signature as parse but for different Row type.
+   * CONSIDER making this share the same signature as parse but for different Row type. (#177)
    *
    * @param xs a sequence of Inputs to be parsed.
    * @return a Try[Header]

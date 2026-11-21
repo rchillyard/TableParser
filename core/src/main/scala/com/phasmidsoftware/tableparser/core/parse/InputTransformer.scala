@@ -211,7 +211,7 @@ class IndexedInputToRowsAggregator[Input: Joinable, Row](f: ((Input, Int)) => Tr
    */
   def processTriedRows(rys: Iterator[Try[Row]]): Try[Iterator[Row]] = if (forgiving)
     val (good, bad) = partition(rys)
-    // CONSIDER using sequenceRev in order to save time
+    // CONSIDER using sequenceRev in order to save time (#174)
     bad foreach logException[Row] //AbstractTableParser.logException[Row]
     sequence(good filter predicate)
   else

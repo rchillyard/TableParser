@@ -29,7 +29,7 @@ abstract class BaseRow(ws: Seq[String], hdr: Header) extends (String => Try[Stri
   /**
    * Method to yield the value for a given column name
    *
-   * CONSIDER: why is ParserException not found to link to?
+   * CONSIDER: why is ParserException not found to link to? (#195)
    *
    * @param w the column name.
    * @return the value as a String.

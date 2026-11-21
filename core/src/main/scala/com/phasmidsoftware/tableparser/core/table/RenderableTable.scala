@@ -10,7 +10,7 @@ import com.phasmidsoftware.tableparser.core.write.{Node, TreeWriter, Writable}
 import scala.language.postfixOps
 
 /**
- * CONSIDER eliminating this base class or, perhaps, rename it.
+ * CONSIDER eliminating this base class or, perhaps, rename it. (#151)
  *
  * @param rows        the rows of the table
  * @param maybeHeader (optional) header
@@ -43,7 +43,7 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
     ev.render(this)
 
   /**
-   * CONSIDER redefining the definition of Renderer such that we can accommodate the various different types of output.
+   * CONSIDER redefining the definition of Renderer such that we can accommodate the various different types of output. (#151)
    *
    * Method to render a table in a sequential (serialized) fashion.
    *
@@ -55,7 +55,7 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
     val o1 = ww.unit
     val o2 = (maybeHeader map (h => ww.writeRaw(ww.writeRowElements(o1)(h.xs))(ww.newline))).getOrElse(o1)
     val knownSize1 = rows.knownSize
-    // TODO this makes no sense now: the decision is taken inside Content.
+    // TODO this makes no sense now: the decision is taken inside Content. (#193)
     (if (knownSize1 > -1)
       rows.toSeq else rows.toSeq) foreach:
         // NOTE a Seq must be matched before a Product, which a List also is (::), else it's written as its head and tail.
@@ -122,7 +122,7 @@ abstract class RenderableTable[Row](rows: Content[Row], val maybeHeader: Option[
  * NOTE: the existence or not of a Header in a RenderableTable only affects how the table is rendered.
  * The parsing of a table always has a header of some sort.
  *
- * TESTME this: it is currently not used.
+ * TESTME this: it is currently not used. (#157)
  *
  * @param content the rows of the table.
  * @tparam Row the underlying type of each Row
@@ -205,9 +205,9 @@ case class HeadedTable[Row](content: Content[Row], header: Header) extends Rende
 /**
  * Companion object for HeadedTable.
  * The apply methods provided arbitrarily use Vector as the collection for the rows of the table.
- * CONSIDER using something else such as Array.
+ * CONSIDER using something else such as Array. (#194)
  *
- * TESTME ?
+ * TESTME ? (#157)
  */
 object HeadedTable:
 

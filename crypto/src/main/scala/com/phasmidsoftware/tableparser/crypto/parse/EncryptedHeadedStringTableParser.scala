@@ -104,7 +104,7 @@ case class EncryptedHeadedStringTableParser[X: CellParser, A: HexEncryption](enc
   /**
    * Set the Header for the plaintext TableParser.
    *
-   * CONSIDER does this make sense to allow?
+   * CONSIDER does this make sense to allow? (#212)
    *
    * @param header the required Header.
    * @return a TableParser of Table[X]

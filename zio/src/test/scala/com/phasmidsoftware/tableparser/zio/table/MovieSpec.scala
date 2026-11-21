@@ -36,7 +36,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers:
         println(s"Movie: successfully parsed ${mt.size} rows")
         mt.size == 1
 
-  // CONSIDER rework this test to be more significant
+  // CONSIDER rework this test to be more significant (#143)
   it should "parse the first (edited) movie from the IMDB dataset" in:
     import com.phasmidsoftware.tableparser.core.examples.Movie._
 

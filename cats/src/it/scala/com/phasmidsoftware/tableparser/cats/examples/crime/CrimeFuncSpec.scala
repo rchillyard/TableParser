@@ -39,7 +39,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers:
     // The header is the first line of the file (up to 2.0.2, this passed 0, which meant no header: a logic error).
     val wsty: IO[RawTable] = si flatMap (s => IO.fromTry(parser.parse(s.getLines(), parser.headerRowsToRead)))
 
-// CONSIDER how is it that this test runs in around 157 seconds yet the timeout is set to 30 seconds?
+// CONSIDER how is it that this test runs in around 157 seconds yet the timeout is set to 30 seconds? (#162)
     matchIO(wsty, Timeout(Span(30, Seconds))):
       case t@HeadedTable(r, _) =>
         val analysis = Analysis(t)
@@ -57,7 +57,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers:
 
     matchIO(wsty, Timeout(Span(60, Seconds))):
       case t@HeadedTable(r, _) =>
-        t.size shouldBe 87205 // XXX was 87211
+        t.size shouldBe 87205 // ASIDE was 87211
         r.take(100).foreach(println)
         succeed
 
@@ -98,7 +98,7 @@ class CrimeFuncSpec extends AnyFlatSpec with Matchers:
 
     matchIO(wi, Timeout(Span(60, Seconds))):
       case w =>
-        // CONSIDER I'm not sure if this expectedStart is really OK.
+        // CONSIDER I'm not sure if this expectedStart is really OK. (#163)
 //        val expectedStart = "crimeID,longitude,latitude\n8536e93fb3ce916daa4251bd53c1a4416ba4159a938340be4a7c40cd4873bfcf,-0.681541,50.792113\n483d52d514591a895c829dece6091c31f797b7dcfd0735ac89685d1d4dabf899,-0.684107,50.780541\n63343c1f1236bad8ce08d130f37760172dc33b20af2b56fafd9189001d014c39,-0.928552,51.923331\na3d980f554d3ece9e8dcda8518ae87bfa9c75d62396105d63fd10390eb7879ed,-0.772051,51.827897\nbfb1d1da32341b7129e789130001d96f7e603088593dc55e30294bc01670ff9e,-0.804965,51.811332\nde18f4ebeefb1d66f3be2c34f1fc056d751d763b57b86c28955ec793d0f77867,0.724588,52.034478\nunidentified,0.140127,51.588913"
         val expectedStart = "crimeID,longitude,latitude\r\nunidentified,0.140127,51.588913"
         w should startWith(expectedStart)

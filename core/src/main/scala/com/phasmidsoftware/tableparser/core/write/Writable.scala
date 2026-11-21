@@ -14,7 +14,7 @@ import java.io.{File, FileWriter}
  */
 trait Writable[O]:
 
-  // TODO create some off-the-shelf Writables
+  // TODO create some off-the-shelf Writables (#202)
 
   /**
    * Method to return an empty (i.e. new) instance of O
@@ -67,7 +67,7 @@ trait Writable[O]:
    * @return an instance of O which represents the updated output structure.
    */
   def writeRowElements(o: O)(xs: Seq[Any]): O =
-    // CONSIDER using foldLeft so that we can use the updated value of o at each step.
+    // CONSIDER using foldLeft so that we can use the updated value of o at each step. (#203)
     for (x <- xs.headOption) writeValue(o)(x)
     for (x <- xs.tail) writeValue(writeRaw(o)(delimiter))(x)
     o

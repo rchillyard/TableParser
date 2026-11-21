@@ -137,7 +137,7 @@ object Parseable:
   trait ParseableInt extends Parseable[Int]:
     /**
      * Parses a given string into an integer while optionally considering a modifier.
-     * CONSIDER supporting different radix
+     * CONSIDER supporting different radix (#148)
      *
      * This method attempts to interpret the input string `s` using the specified transformation logic.
      * If the input cannot be parsed into an integer, it falls back to a recovery mechanism that
@@ -159,7 +159,7 @@ object Parseable:
   trait ParseableLong extends Parseable[Long]:
     /**
      * Parses a given string to a `Long`, optionally applying a modifier, and returns the result as a `Try`.
-     * CONSIDER supporting different radix
+     * CONSIDER supporting different radix (#148)
      *
      * @param s           the input string to be parsed.
      * @param optModifier an optional string modifier that can influence the parsing process.

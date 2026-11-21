@@ -59,10 +59,10 @@ class EvaluateIOSpec extends AnyFlatSpec with should.Matchers:
     })
 
   it should "check not failure not ok" in:
-    // TODO eliminate use of unsafe methods
+    // TODO eliminate use of unsafe methods (#139)
     a[TestFailedException] shouldBe thrownBy(checkFailure(IO(1))(classOf[NoSuchElementException]).unsafeRunSync())
 
   it should "check not failure ok" in:
-    // TODO eliminate use of unsafe methods
+    // TODO eliminate use of unsafe methods (#139)
     checkFailure(IO.raiseError(new NoSuchElementException))(classOf[NoSuchElementException]).unsafeRunSync()
 

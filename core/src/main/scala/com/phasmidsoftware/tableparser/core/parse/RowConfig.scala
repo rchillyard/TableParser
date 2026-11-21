@@ -77,7 +77,7 @@ object RowConfig:
    */
   val default: RowConfig = RowConfig()
 
-  // CONSIDER removing this default row configuration. It might be better to have the compiler issue a warning when it's missing.
+  // CONSIDER removing this default row configuration. It might be better to have the compiler issue a warning when it's missing. (#176)
   given defaultRowConfig: RowConfig = default
 
   /**

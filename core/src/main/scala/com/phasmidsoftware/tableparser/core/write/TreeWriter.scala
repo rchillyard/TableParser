@@ -11,7 +11,7 @@ import scala.annotation.implicitNotFound
  * For example, U might be defined as an HTML or XML document.
  * TreeWriter is of course typically used as a type class.
  *
- * CONSIDER parameterizing the underlying type of the content parameter.
+ * CONSIDER parameterizing the underlying type of the content parameter. (#201)
  *
  * @tparam U the type of a node of the tree.
  */
@@ -120,7 +120,7 @@ object Node:
     apply(style, None, attributes, children)
 
   /**
-   * TODO can eliminate
+   * TODO can eliminate (#153)
    *
    * Merge two Nodes together, taking the style, content (if any) and attributes from the left node.
    *
@@ -132,7 +132,7 @@ object Node:
     Node(left.style, left.content, left.attributes, left.children ++ right.children)
 
   /**
-   * TODO can eliminate
+   * TODO can eliminate (#153)
    *
    * Merge two Nodes together, taking the style, content (if any) and attributes from the right node.
    *

@@ -211,7 +211,7 @@ object ParquetColumnStatisticsProvider extends ColumnStatisticsProvider {
    * @return optional Statistics if metadata is present.
    */
   private def extractMetadataStatistics(footer: ParquetMetadata, fieldIdx: Int): Option[Statistics] =
-    // TODO: implement metadata extraction from footer block statistics
+    // TODO: implement metadata extraction from footer block statistics (#213)
     None
 
   /**

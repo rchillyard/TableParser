@@ -19,7 +19,7 @@ abstract class RawParsers(optionalHeader: Option[Header], forgiving: Boolean = f
 
   given parser: StandardRowParser[RawRow] = StandardRowParser.create[RawRow]
 
-  // CONSIDER why do we have a concrete Table type mentioned here?
+  // CONSIDER why do we have a concrete Table type mentioned here? (#149)
   given RawTableParser: StringTableParser[RawTable] with
     type Row = RawRow
 

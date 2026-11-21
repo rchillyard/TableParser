@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Typeclass trait representing a row processor that defines how rows of input data can be parsed into specific types,
  * typically useful for parsing and processing tabular data with headers.
- * CONSIDER finding a common super-type between this and `TableParser`.
+ * CONSIDER finding a common super-type between this and `TableParser`. (#178)
  *
  * @tparam Row the type that each row will be processed into.
  */

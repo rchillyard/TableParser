@@ -10,7 +10,7 @@ package com.phasmidsoftware.tableparser.core.util
  *
  * NOTE: this is an odd name for the class. Its purpose appears to be to drop the first n elements of an iterator and make them available via tee.
  *
- * CONSIDER passing the parameter n to the tee method instead of the constructor.
+ * CONSIDER passing the parameter n to the tee method instead of the constructor. (#200)
  *
  * @param n  the number of elements to detach.
  * @param xs the input iterator.
@@ -49,7 +49,7 @@ class TeeIterator[X](n: Int)(xs: Iterator[X]) extends Iterator[X]:
     xs.next()
 
 /**
- * TESTME
+ * TESTME (#158)
  *
  * @param xs an iterator on X.
  * @tparam X the underlying type of the iterator.

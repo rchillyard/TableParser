@@ -12,7 +12,7 @@ import java.time.{Instant, LocalDateTime, LocalTime, OffsetDateTime, ZonedDateTi
  * Trait to define various renderers for rendering instance of case classes (with their various parameters),
  * containers (Seq and Option), etc. to CSV output.
  *
- * CONSIDER a mechanism to ensure that objects involving case classes are presented in the same order as specified by the header.
+ * CONSIDER a mechanism to ensure that objects involving case classes are presented in the same order as specified by the header. (#188)
  */
 trait CsvRenderers:
 

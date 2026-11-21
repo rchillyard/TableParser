@@ -29,9 +29,9 @@ class TableParserHelperSpec extends flatspec.AnyFlatSpec with should.Matchers:
      * The requirements of the application are that the rows of the Player table are grouped by twos
      * and each resulting entity (an array of length 2) is taken to form a Partnership.
      *
-     * CONSIDER extracting a general method and moving it into Content.
+     * CONSIDER extracting a general method and moving it into Content. (#207)
      *
-     * CONSIDER merging with duplicate code in: TableParserSpec.scala
+     * CONSIDER merging with duplicate code in: TableParserSpec.scala (#144)
      *
      * @param pt a Table[Player]
      * @return a Table[Partnership]

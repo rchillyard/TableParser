@@ -38,7 +38,7 @@ trait CellParsers:
    */
   def cellParserRepetition[P: CellParser](start: Int = 1): CellParser[Seq[P]] = 
     new MultiCellParser[Seq[P]]:
-      // XXX used only for debugging
+      // ASIDE used only for debugging
       override def toString: String = "MultiCellParser: cellParserRepetition"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] =
@@ -49,14 +49,14 @@ trait CellParsers:
   /**
    * Method to return a CellParser[Seq[P].
    * This is used only by unit tests.
-   * CONSIDER eliminating this; only used in unit tests
+   * CONSIDER eliminating this; only used in unit tests (#170)
    *
    * @tparam P the underlying type of the result
    * @return a MultiCellParser[Seq[P]
    */
   def cellParserSeq[P: CellParser]: CellParser[Seq[P]] = 
     new MultiCellParser[Seq[P]]:
-      // XXX used only for debugging
+      // ASIDE used only for debugging
       override def toString: String = "MultiCellParser: cellParserSeq"
 
       def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] = 
@@ -72,7 +72,7 @@ trait CellParsers:
    */
   def cellParserOption[P: CellParser]: CellParser[Option[P]] = 
     new SingleCellParser[Option[P]]:
-      // XXX used only for debugging
+      // ASIDE used only for debugging
       override def toString: String = s"cellParserOption with $cp"
 
       private val cp: CellParser[P] = summon[CellParser[P]]
@@ -91,9 +91,9 @@ trait CellParsers:
   /**
    * Method to return a CellParser[Option[String].
    *
-   * TODO: why do we need this in addition to cellParserOption?
+   * TODO: why do we need this in addition to cellParserOption? (#171)
    *
-   * CONSIDER: using BlankException as above...
+   * CONSIDER: using BlankException as above... (#172)
    *
    * @return a SingleCellParser[Option[String]
    */
@@ -201,7 +201,7 @@ trait CellParsers:
     columnHelper(identityMapper, aliases*)
 
 /**
- * TODO resolve the naming issue here.
+ * TODO resolve the naming issue here. (#173)
  */
 object StdCellParsers extends CellParsers
 

@@ -36,7 +36,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers:
 //        println(mt)
         mt.size shouldBe 1
 
-  // CONSIDER rework this test to be more significant
+  // CONSIDER rework this test to be more significant (#143)
   it should "parse the first (edited) movie from the IMDB dataset" in:
     import com.phasmidsoftware.tableparser.core.examples.Movie._
 
@@ -67,7 +67,7 @@ class MovieSpec extends flatspec.AnyFlatSpec with should.Matchers:
       "Color,James Cameron,,178,0,855,Joel David Moore,1000,760505847,Action|Adventure|Fantasy|Sci-Fi,CCH Pounder,Avatar,886204,4834,Wes Studi,0,avatar|future|marine|native|paraplegic,https://www.imdb.com/title/tt0499549/?ref_=fn_tt_tt_1,3054,English,USA,PG-,,2009,936,7.9,1.78,33000"
     )
     val x: IO[Table[Movie]] = IO.fromTry(Table.parse(movies))
-    // TODO eliminate use of unsafe methods
+    // TODO eliminate use of unsafe methods (#139)
     import cats.effect.unsafe.implicits.global
     checkFailure(x)(classOf[InvalidParseException]).unsafeRunSync()
 

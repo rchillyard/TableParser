@@ -17,7 +17,7 @@ import scala.util.Try
  * @tparam T the contravariant type of object to be rendered.
  */
 trait CsvRenderer[-T] extends Renderer[T, String]:
-  // CONSIDER removing this abstract val.
+  // CONSIDER removing this abstract val. (#146)
   val csvAttributes: CsvAttributes
 
 /**
@@ -229,14 +229,14 @@ abstract class CsvTableRenderer[T, O]()(using z1: CsvRenderer[T], z2: CsvGenerat
           _tg.toColumnName(None, "")
       Try(sw.unit) map:
         o =>
-          // CONSIDER can remove o2 here and just use o.
+          // CONSIDER can remove o2 here and just use o. (#186)
           val o2 = writeLine(sw, o, hdr)
           x.content.toSeq.foreach(r => generateText(sw, tc, o2, r))
           o2
 
   /**
-   * CONSIDER replacing ow by implicitly of Writable[O].
-   * CONSIDER replacing tc by implicitly of CsvRenderer[T].
+   * CONSIDER replacing ow by implicitly of Writable[O]. (#160)
+   * CONSIDER replacing tc by implicitly of CsvRenderer[T]. (#160)
    *
    * @param ow Writable[O].
    * @param tc CsvRenderer[T].
@@ -262,7 +262,7 @@ case class CsvTableStringRenderer[T]()(using z1: CsvRenderer[T], z2: CsvGenerato
 /**
  * Case class to help render a Table to a File in CSV format.
  *
- * TODO merge this with CsvTableEncryptedFileRenderer to avoid duplicate code.
+ * TODO merge this with CsvTableEncryptedFileRenderer to avoid duplicate code. (#187)
  *
  * @param path the path to which the table will be written.
  * @param csvAttributes implicit instance of CsvAttributes.

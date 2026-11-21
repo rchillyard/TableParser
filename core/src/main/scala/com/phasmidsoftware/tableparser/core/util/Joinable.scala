@@ -129,7 +129,7 @@ object Joinable:
      * @return A new sequence of strings containing all the elements of `t1`, followed by all the elements of `t2`.
      */
     def join(t1: Seq[String], t2: Seq[String]): Seq[String] =
-      t1 ++ t2 // TESTME
+      t1 ++ t2 // TESTME (#158)
 
     /**
      * Defines the zero value for sequences of strings (`Seq[String]`).
@@ -147,4 +147,4 @@ object Joinable:
      * @return `true` if the sequence is non-empty, otherwise `false`.
      */
     def valid(t: Seq[String]): Boolean =
-      t.nonEmpty // TESTME
+      t.nonEmpty // TESTME (#158)
