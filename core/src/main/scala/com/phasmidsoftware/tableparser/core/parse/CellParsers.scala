@@ -118,7 +118,8 @@ trait CellParsers:
       // NOTE used only for debugging
       override def toString: String = s"cellParserOptionNonEmptyString"
 
-      // NOTE a SingleCellParser, so declining a row comes from the trait rather than a stub here (#221).
+      // NOTE a SingleCellParser, so declining a row comes from the trait
+      // rather than a stub here (#221).
       private val cp: CellParser[String] = 
         new SingleCellParser[String]():
           def convertString(w: String): Try[String] = 

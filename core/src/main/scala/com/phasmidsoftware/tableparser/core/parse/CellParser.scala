@@ -324,7 +324,9 @@ class ProductCellParser[T](typeName: String, fieldNames: List[String], fieldPars
    */
   override def convertString(w: String): Try[T] = fieldParsers match
     case p :: Nil => p.convertString(w) map (x => construct(Seq(x)))
-    case ps => Failure(UnsupportedInputException(toString, s"""the cell "$w": $typeName has ${ps.size} fields"""))
+    case ps =>
+      val why = s"""the cell "$w": $typeName has ${ps.size} fields"""
+      Failure(UnsupportedInputException(toString, why))
 
 object ProductCellParser:
   /**
