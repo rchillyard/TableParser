@@ -200,7 +200,8 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
     implicit val intPairRenderer: HierarchicalRenderer[IntPair] = HierarchicalRenderer.derived[IntPair]("IntPair")
     implicit val r: HierarchicalRenderer[Indexed[IntPair]] = indexedRenderer("", "th")
 
-  // TODO this is a mystery: it sometimes fails (?) (#141)
+  // TODO not reproduced in 35 runs. Until #223 every module ran its suites concurrently in
+  // one JVM, which is the likeliest cause: drop this comment if it stays green (#141).
   it should "render the table to CSV" in:
     import IntPair._
     matchZIO(ZIOTable.parse(Seq("1 2", "42 99"))):
