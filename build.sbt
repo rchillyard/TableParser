@@ -21,6 +21,11 @@ lazy val testScalacOptions = Test / scalacOptions ~= (_.filterNot(_ == "-Wnonuni
 // MiMa checks each published module for binary compatibility with the last release (#120): `sbt mimaReportBinaryIssues`.
 // The version scheme is PVP (see publish.sbt): a patch release must pass; a minor release may break compatibility,
 // on purpose and with a release note, by listing the breaks in mimaBinaryIssueFilters (or, after the release, by moving previousRelease on).
+// DEFERRED BREAKS. These are agreed but cannot land on a patch release. When the version next
+// goes to a minor (2.6.0), make them, add the filters below to the relevant project's
+// mimaBinaryIssueFilters, and put them in the release note:
+//   #225 remove the unused trait Aggregation (core), dead since 2019:
+//     ProblemFilters.exclude[MissingClassProblem]("com.phasmidsoftware.tableparser.core.table.Aggregation")
 val previousRelease = "2.5.1"
 lazy val mimaSettings = mimaPreviousArtifacts := Set(organization.value %% name.value % previousRelease)
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "21")
