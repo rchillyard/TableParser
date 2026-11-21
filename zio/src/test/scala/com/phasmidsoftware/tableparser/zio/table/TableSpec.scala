@@ -70,7 +70,7 @@ class TableSpec extends flatspec.AnyFlatSpec with should.Matchers:
 //    }
 //  }
 
-  // NOTE: this test can be flaky. Perhaps we should just use zip instead of parProduct.
+  // TODO this test can be flaky. Perhaps we should just use zip instead of parProduct. (#141)
 //  it should "parse table from raw file" in {
 //    val z1: Task[Table[RawRow]] = ZIO.fromTry(Table.parseFileRaw(new File("output.csv"), TableParser.includeAll, Some(Header(Seq(Seq("a", "b"))))))
 //    val z2: Task[Table[RawRow]] = ZIO.fromTry(Table.parseFileRaw(intPairs.getPath, TableParser.includeAll))
