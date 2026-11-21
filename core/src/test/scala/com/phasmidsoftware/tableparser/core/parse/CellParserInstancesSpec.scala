@@ -49,7 +49,7 @@ class CellParserInstancesSpec extends AnyFlatSpec with should.Matchers:
     val header = Header.create("a")
     // NOTE the failure names the parser and the input it was given, rather than being a bare
     // UnsupportedOperationException: ProductCellParser.readCell catches it, so it is part of the
-    // contract rather than an accident (#166).
+    // contract rather than an accident (#221).
     val single = summon[CellParser[Int]].parse(None, Row(Seq("1"), header, 0), header)
     single should matchPattern { case Failure(_: UnsupportedInputException) => }
     single.failed.get.getMessage shouldBe "IntCellParser cannot parse a row"

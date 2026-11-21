@@ -94,7 +94,7 @@ trait MultiCellParser[T] extends CellParser[T]:
  *
  * NOTE: this is caught, not merely reported. `ProductCellParser.readCell` offers the whole row to
  * a field's parser when the field's column is absent, and treats this failure as "that parser
- * needs a column, and there is not one" (#166).
+ * needs a column, and there is not one" (#221).
  *
  * @param parser the parser that was asked, as it describes itself.
  * @param input  what it was given.
