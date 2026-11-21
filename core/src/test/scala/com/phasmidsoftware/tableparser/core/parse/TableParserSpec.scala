@@ -288,8 +288,7 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
   case class Question(questionId: String, question: String, answer: Option[String], possiblePoints: Int, autoScore: Option[Double], manualScore: Option[Double])
 
   object Question extends CellParsers:
-    private val mapper: String => String = _.replaceAll("(_)", " ")
-    implicit val helper: ColumnHelper[Question] = columnHelper(mapper, Some("$c $x"), "questionId" -> "question_ID")
+    implicit val helper: ColumnHelper[Question] = columnHelper(ColumnHelper.camelCaseColumnNameMapperSpace, Some("$c $x"), "questionId" -> "Question ID")
     implicit val optParserString: CellParser[Option[String]] = cellParserOption
     implicit val parser: CellParser[Question] = CellParser.derived[Question]
     implicit val seqParser: CellParser[Seq[Question]] = cellParserRepetition[Question]()
@@ -303,12 +302,30 @@ class TableParserSpec extends flatspec.AnyFlatSpec with should.Matchers:
       Seq("001234567s", "Mr.", "Nobody", "Question ID 1", "The following are all good reasons to learn Scala -- except for one.", "Scala is the only functional language available on the Java Virtual Machine", "4", "4", "")
     )
 
-    // TODO note that the column lookup isn't correct for Question ID 1 (#208)
     import Submission.TableParser
     matchTry(Table.parseSequence(rows.iterator)):
       case rt@HeadedTable(_, _) =>
-        println(rt.head)
         rt.size shouldBe 1
+        // NOTE the questions used to come back as List(): the column lookup failed and
+        // cellParserRepetition took that for the end of the group (#208). Asserting the row count
+        // alone could not see it, which is why the whole row is asserted here.
+        rt.head shouldBe Submission("001234567s", "Mr.", "Nobody", Seq(Question(
+          "Question ID 1",
+          "The following are all good reasons to learn Scala -- except for one.",
+          Some("Scala is the only functional language available on the Java Virtual Machine"),
+          4,
+          Some(4.0),
+          None)))
+
+  it should "report a failure when a repetition's columns are present but do not parse" in:
+    val header = Header(Seq(Seq("Question ID 1", "Question 1", "Answer 1", "Possible Points 1", "Auto Score 1", "Manual Score 1")))
+    val row = Row(Seq("Q1", "some question", "an answer", "not-a-number", "4", ""), header, 0)
+    Question.cellParserRepetition[Question]()(using Question.parser).parse(None, row, header) should matchPattern { case Failure(_) => }
+
+  it should "yield an empty sequence when a repeated group is absent altogether" in:
+    val header = Header(Seq(Seq("Username", "Last Name", "First Name")))
+    val row = Row(Seq("001234567s", "Mr.", "Nobody"), header, 0)
+    Question.cellParserRepetition[Question]()(using Question.parser).parse(None, row, header) shouldBe Success(Nil)
 
   it should "fail on incompatible parser" in:
     import Submission.TableParser

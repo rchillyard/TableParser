@@ -7,6 +7,7 @@ package com.phasmidsoftware.tableparser.core.parse
 import com.phasmidsoftware.tableparser.core.parse.ColumnHelper.identityMapper
 import com.phasmidsoftware.tableparser.core.table.{Header, RawRow, Row}
 import com.phasmidsoftware.tableparser.core.util.{Derivation, FP}
+import scala.annotation.tailrec
 import scala.compiletime.constValue
 import scala.deriving.Mirror
 import scala.util.{Failure, Success, Try}
@@ -44,7 +45,22 @@ trait CellParsers:
       def parse(wo: Option[String], row: Row, columns: Header): Try[Seq[P]] =
         def getTryP(i: Int) = summon[CellParser[P]].parse(Some(s"$i"), row, columns)
 
-        FP.sequence(LazyList.from(start).map(getTryP).takeWhile(_.isSuccess))
+        // NOTE a repeated group carries no count, so the end of it is discovered by a parse
+        // failure: the columns for the next index simply are not there. But a failure at an index
+        // whose columns ARE there is a real error, and taking that for the end of the group
+        // silently discarded every repetition, returning an empty Seq indistinguishable from
+        // "there were none" (#208).
+        def columnsExistFor(i: Int): Boolean =
+          val indexAtEnd = s"(^|\\D)$i$$".r
+          columns.xs exists (indexAtEnd.findFirstIn(_).isDefined)
+
+        @tailrec
+        def loop(i: Int, accumulator: Seq[P]): Try[Seq[P]] = getTryP(i) match
+          case Success(p) => loop(i + 1, accumulator :+ p)
+          case Failure(x) if columnsExistFor(i) => Failure(x)
+          case Failure(_) => Success(accumulator)
+
+        loop(start, Nil)
 
   /**
    * Method to return a CellParser[Seq[P].
