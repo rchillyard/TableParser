@@ -27,7 +27,10 @@ lazy val testScalacOptions = Test / scalacOptions ~= (_.filterNot(_ == "-Wnonuni
 //   #225 remove the unused trait Aggregation (core), dead since 2019:
 //     ProblemFilters.exclude[MissingClassProblem]("com.phasmidsoftware.tableparser.core.table.Aggregation")
 val previousRelease = "2.5.1"
-lazy val mimaSettings = mimaPreviousArtifacts := Set(organization.value %% name.value % previousRelease)
+// Note moduleName, not name: it is the published artifactId, not the display name. Identical here, since
+// every publishable module sets a lowercase name, but name.value would resolve the wrong artifact in a
+// project whose name is capitalised (as TableParser's own unpublished root is).
+lazy val mimaSettings = mimaPreviousArtifacts := Set(organization.value %% moduleName.value % previousRelease)
 ThisBuild / scalacOptions ++= Seq("-java-output-version", "21")
 ThisBuild / javacOptions ++= Seq("-source", "21", "-target", "21")
 
@@ -59,7 +62,7 @@ val parquetVersion = "1.18.1"
 val hadoopVersion = "3.4.3"
 val circeVersion = "0.14.17"
 val fs2Version = "3.14.0"
-val visitorVersion = "1.7.0"
+val visitorVersion = "1.8.0"
 val fs2KafkaVersion = "4.1.3"
 val zioKafkaVersion = "3.8.1"
 val embeddedKafkaVersion = "4.4.0"
@@ -72,8 +75,9 @@ lazy val core = project.settings(
     "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
     "org.scala-lang.modules" %% "scala-parser-combinators" % scalaParserCombinatorsVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
-    // Visitor's PrioQueue (a binary heap) is used by TopN. Visitor's runtime logback is excluded: users choose their own SLF4J backend.
-    "com.phasmidsoftware" %% "visitor" % visitorVersion exclude("ch.qos.logback", "logback-classic"),
+    // Visitor's PrioQueue (a binary heap) is used by TopN. From Visitor 1.8.0 its logback is Test-scoped,
+    // so no exclusion is needed here: users still choose their own SLF4J backend (#132).
+    "com.phasmidsoftware" %% "visitor" % visitorVersion,
     "ch.qos.logback" % "logback-classic" % logbackVersion % Test,
     "org.scalatest" %% "scalatest" % scalaTestVersion % Test
   )
