@@ -1,6 +1,9 @@
 *.class
 *.log
 
+# macOS Finder metadata (#138). A bare pattern with no slash matches at every depth.
+.DS_Store
+
 \.idea/
 
 project/target/

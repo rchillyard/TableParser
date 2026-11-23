@@ -112,7 +112,7 @@ The _spark_ module (for use with Apache Spark) is on the 1.x line only, because 
 
 ## Installation
 
-This version of the README.md file refers to version: 2.5.1.
+This version of the README.md file refers to version: 2.5.2.
 
 From version 2.0.0, _TableParser_ is for Scala 3 only, and it needs Java 21 or later.
 Versions 2.0 and 2.1 are built with Scala 3.3 LTS, so they can be used from any later Scala 3 version;
@@ -1456,6 +1456,21 @@ In the table below, "1.x" is what you wrote for 1.7, and "2.0" is what replaces 
 | Names ending in `$` (e.g. `BooleanCellParser$`) | as in 1.x | the `$` is dropped (e.g. `BooleanCellParser`) |
 
 # Release Notes
+
+V2.5.1 -> V2.5.2
+* This release is binary compatible with 2.5.1 (checked by MiMa): it fixes behaviour and adds one exception type.
+* Bug fix (#208): _cellParserRepetition_ discovers how many repetitions a row holds by parsing successive indices
+  until one fails, so it could not tell "the group has ended" from "these columns are present and did not parse".
+  A real failure became an empty sequence, indistinguishable from "there were none".
+  The header is now asked whether it mentions the index: if it does, the failure is reported.
+* (#166): a _CellParser_ reads either a cell or a row, never both, so one of its two read methods is always
+  unsupported. Each subtype used to stub that half by *throwing* a bare _UnsupportedOperationException_;
+  it now *returns* a _Failure(UnsupportedInputException(parser, input))_, which says which parser was given
+  which input (e.g. _IntCellParser cannot parse a row_). So the refusal is now part of the _Try_ the method
+  already returns, rather than an exception thrown past it. If you catch _UnsupportedOperationException_
+  around a cell parser, it will no longer be thrown: inspect the _Failure_ instead.
+* Dependency (#132): Visitor 1.8.0, which scopes its _logback-classic_ to Test, so TableParser no longer has to
+  exclude it. (TableParser uses Visitor only for the _PrioQueue_ behind _TopN_, which did not change in 1.8.0.)
 
 V2.5.0 -> V2.5.1
 * Bug fix (#128): _Table.parse(uri)_, _Table.parseResource(url)_, _Table.rowsURI_, and _IOTable_'s and _ZIOTable_'s
