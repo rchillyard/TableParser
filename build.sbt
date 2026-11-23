@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.phasmidsoftware"
-ThisBuild / version := "2.5.2"
+ThisBuild / version := "2.5.3"
 
 // 2.x is Scala 3 only (for Scala 2.13, use the 1.x line, on the 1.x branch).
 // The current Scala 3 LTS. Code built with 3.9 can only be used from Scala 3.9 or later.
@@ -26,7 +26,7 @@ lazy val testScalacOptions = Test / scalacOptions ~= (_.filterNot(_ == "-Wnonuni
 // mimaBinaryIssueFilters, and put them in the release note:
 //   #225 remove the unused trait Aggregation (core), dead since 2019:
 //     ProblemFilters.exclude[MissingClassProblem]("com.phasmidsoftware.tableparser.core.table.Aggregation")
-val previousRelease = "2.5.1"
+val previousRelease = "2.5.2"
 // Note moduleName, not name: it is the published artifactId, not the display name. Identical here, since
 // every publishable module sets a lowercase name, but name.value would resolve the wrong artifact in a
 // project whose name is capitalised (as TableParser's own unpublished root is).
